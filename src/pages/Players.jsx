@@ -47,23 +47,46 @@ export default function PlayersPage() {
   const watchListPlayerIds = watchList.map(w => w.player_id);
 
   const filteredPlayers = players.filter(player => {
-    if (filters.search && !player.nom.toLowerCase().includes(filters.search.toLowerCase())) {
-      return false;
-    }
-    if (filters.poste !== "all" && player.poste !== filters.poste) {
-      return false;
-    }
-    if (filters.club && !player.club_actuel?.toLowerCase().includes(filters.club.toLowerCase())) {
-      return false;
-    }
-    if (filters.ageRange !== "all") {
-      const age = player.age;
-      if (filters.ageRange === "18-21" && (age < 18 || age > 21)) return false;
-      if (filters.ageRange === "22-25" && (age < 22 || age > 25)) return false;
-      if (filters.ageRange === "26-30" && (age < 26 || age > 30)) return false;
-      if (filters.ageRange === "31+" && age < 31) return false;
-    }
-    return true;
+    const matchesSearch = !filters.search || 
+      player.nom?.toLowerCase().includes(filters.search.toLowerCase()) ||
+      player.club_actuel?.toLowerCase().includes(filters.search.toLowerCase());
+    
+    const matchesPoste = filters.poste === "all" || player.poste === filters.poste;
+    
+    const matchesAge = (!filters.ageMin || player.age >= parseInt(filters.ageMin)) &&
+                       (!filters.ageMax || player.age <= parseInt(filters.ageMax));
+    
+    const matchesClub = !filters.club || 
+      player.club_actuel?.toLowerCase().includes(filters.club.toLowerCase());
+    
+    const matchesBudget = !filters.budgetMax || 
+      !player.valeur_marchande || 
+      player.valeur_marchande <= parseFloat(filters.budgetMax);
+    
+    const matchesContrat = filters.contratExpire === "all" || (() => {
+      if (!player.contrat_fin) return false;
+      const now = new Date();
+      const contractEnd = new Date(player.contrat_fin);
+      
+      switch (filters.contratExpire) {
+        case "expired":
+          return contractEnd < now;
+        case "6months":
+          return contractEnd >= now && contractEnd <= new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000);
+        case "1year":
+          return contractEnd >= now && contractEnd <= new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
+        default:
+          return true;
+      }
+    })();
+    
+    const matchesNationalite = !filters.nationalite || 
+      player.nationalite?.toLowerCase().includes(filters.nationalite.toLowerCase());
+    
+    const matchesPied = filters.piedFort === "all" || player.pied_fort === filters.piedFort;
+    
+    return matchesSearch && matchesPoste && matchesAge && matchesClub && 
+           matchesBudget && matchesContrat && matchesNationalite && matchesPied;
   });
 
   return (
@@ -93,7 +116,7 @@ export default function PlayersPage() {
         )}
 
         <div className="mb-6">
-          <PlayerFilters filters={filters} onFiltersChange={setFilters} />
+          <AdvancedFilters onFiltersChange={setFilters} />
         </div>
 
         {isLoading ? (
