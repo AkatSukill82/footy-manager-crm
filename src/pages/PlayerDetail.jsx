@@ -12,6 +12,8 @@ import TransferHistory from "../components/transfers/TransferHistory";
 import TransferForm from "../components/transfers/TransferForm";
 import PlayerNoteCard from "../components/notes/PlayerNoteCard";
 import SimilarPlayers from "../components/players/SimilarPlayers";
+import ContactHistory from "../components/contacts/ContactHistory";
+import RemindersList from "../components/contacts/RemindersList";
 import { format } from "date-fns";
 
 const posteColors = {
@@ -80,6 +82,30 @@ export default function PlayerDetailPage() {
     queryFn: () => base44.entities.Player.list(),
   });
 
+  const { data: contacts = [] } = useQuery({
+    queryKey: ['contacts', playerId],
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      return base44.entities.Contact.filter({ 
+        player_id: playerId,
+        created_by: user.email
+      });
+    },
+    enabled: !!playerId,
+  });
+
+  const { data: reminders = [] } = useQuery({
+    queryKey: ['reminders', playerId],
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      return base44.entities.Reminder.filter({ 
+        player_id: playerId,
+        created_by: user.email
+      });
+    },
+    enabled: !!playerId,
+  });
+
   const updatePlayerMutation = useMutation({
     mutationFn: (data) => base44.entities.Player.update(playerId, data),
     onSuccess: () => {
@@ -133,6 +159,13 @@ export default function PlayerDetailPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['playerNote', playerId] });
+    },
+  });
+
+  const updateReminderMutation = useMutation({
+    mutationFn: ({ id, statut }) => base44.entities.Reminder.update(id, { statut }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reminders', playerId] });
     },
   });
 
@@ -303,6 +336,8 @@ export default function PlayerDetailPage() {
               playerId={playerId}
               onSubmit={(data) => createTransferMutation.mutate(data)}
             />
+
+            <ContactHistory contacts={contacts} />
           </div>
 
           <div className="space-y-6">
@@ -314,6 +349,11 @@ export default function PlayerDetailPage() {
             <SimilarPlayers 
               currentPlayer={player}
               allPlayers={allPlayers}
+            />
+
+            <RemindersList 
+              reminders={reminders}
+              onUpdateStatus={(id, statut) => updateReminderMutation.mutate({ id, statut })}
             />
           </div>
         </div>
