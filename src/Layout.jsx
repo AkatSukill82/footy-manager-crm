@@ -6,25 +6,34 @@ import { base44 } from "@/api/base44Client";
 
 export default function Layout({ children, currentPageName }) {
   const navItems = [
-    { name: "Dashboard", icon: BarChart3 },
-    { name: "Players", icon: Users },
-    { name: "MyWatchList", icon: Star },
-    { name: "Teams", icon: Shield },
-    { name: "Contacts", icon: Phone },
-    { name: "Alerts", icon: Bell },
-    { name: "Reports", icon: FileText }
+    { name: "Dashboard", label: "Tableau de bord", icon: BarChart3 },
+    { name: "Players", label: "Base de joueurs", icon: Users },
+    { name: "MyWatchList", label: "Ma liste", icon: Star },
+    { name: "Alerts", label: "Alertes", icon: Bell },
+    { name: "Contacts", label: "Contacts", icon: Phone },
+    { name: "Teams", label: "Équipes", icon: Shield },
+    { name: "Reports", label: "Rapports", icon: FileText }
   ];
 
   return (
-    <div className="flex min-h-screen bg-white">
-      <aside className="w-20 bg-slate-950 flex flex-col items-center py-6 border-r border-slate-900">
-        <Link to={createPageUrl("Dashboard")} className="mb-8">
-          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-xl hover:scale-105 transition-transform">
-            <Users className="w-7 h-7 text-slate-950" />
-          </div>
-        </Link>
+    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      {/* Sidebar */}
+      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
+        {/* Logo */}
+        <div className="p-6 border-b border-slate-200">
+          <Link to={createPageUrl("Dashboard")} className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+              <Users className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <div className="font-bold text-lg text-slate-900">Football CRM</div>
+              <div className="text-xs text-slate-500">Gestion de joueurs</div>
+            </div>
+          </Link>
+        </div>
 
-        <nav className="flex-1 flex flex-col gap-2">
+        {/* Navigation */}
+        <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentPageName === item.name;
@@ -32,32 +41,33 @@ export default function Layout({ children, currentPageName }) {
               <Link
                 key={item.name}
                 to={createPageUrl(item.name)}
-                className={`relative w-14 h-14 flex items-center justify-center rounded-2xl transition-all group ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                   isActive
-                    ? "bg-white shadow-xl"
-                    : "hover:bg-slate-900"
+                    ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/30"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 }`}
               >
-                <Icon className={`w-6 h-6 transition-colors ${
-                  isActive ? "text-slate-950" : "text-slate-500 group-hover:text-white"
-                }`} />
-                {isActive && (
-                  <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full" />
-                )}
+                <Icon className={`w-5 h-5 ${isActive ? "text-white" : ""}`} />
+                <span className="font-medium">{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        <button
-          onClick={() => base44.auth.logout()}
-          className="w-14 h-14 flex items-center justify-center rounded-2xl text-slate-500 hover:bg-slate-900 hover:text-red-400 transition-all"
-        >
-          <LogOut className="w-6 h-6" />
-        </button>
+        {/* Logout Button */}
+        <div className="p-4 border-t border-slate-200">
+          <button
+            onClick={() => base44.auth.logout()}
+            className="w-full flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="font-medium">Déconnexion</span>
+          </button>
+        </div>
       </aside>
 
-      <main className="flex-1 overflow-auto bg-slate-50">{children}</main>
+      {/* Main Content */}
+      <main className="flex-1 overflow-auto">{children}</main>
     </div>
   );
 }

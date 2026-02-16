@@ -23,47 +23,62 @@ export default function PlayerCard({ player, inWatchList }) {
   const navigate = useNavigate();
 
   return (
-    <div 
-      className="bg-white rounded-3xl border border-slate-200 p-5 cursor-pointer hover:shadow-xl hover:scale-105 transition-all group"
-      onClick={() => navigate(createPageUrl("PlayerDetail") + "?id=" + player.id)}
-    >
-      <div className="flex items-start justify-between mb-4">
-        <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center overflow-hidden group-hover:scale-110 transition-transform">
-          {player.photo_url ? (
-            <img src={player.photo_url} alt={player.nom} className="w-full h-full object-cover" />
-          ) : (
-            <User className="w-7 h-7 text-slate-400" />
+    <Card className="hover:shadow-lg transition-all cursor-pointer" onClick={() => navigate(createPageUrl("PlayerDetail") + "?id=" + player.id)}>
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex gap-3">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center overflow-hidden">
+              {player.photo_url ? (
+                <img src={player.photo_url} alt={player.nom} className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-8 h-8 text-slate-400" />
+              )}
+            </div>
+            <div>
+              <h3 className="font-bold text-lg">{player.nom}</h3>
+              <div className="flex items-center gap-2 text-sm text-slate-600 mt-1">
+                <Calendar className="w-3 h-3" />
+                <span>{player.age} ans</span>
+                {player.nationalite && (
+                  <>
+                    <span>•</span>
+                    <span>{player.nationalite}</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+          {inWatchList && (
+            <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
           )}
         </div>
-        {inWatchList && (
-          <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-        )}
-      </div>
-      
-      <h3 className="font-bold text-slate-950 text-lg mb-1 truncate">{player.nom}</h3>
-      
-      <div className="flex items-center gap-2 text-sm text-slate-500 mb-3">
-        {player.age && <span>{player.age} ans</span>}
-        {player.age && player.nationalite && <span>•</span>}
-        {player.nationalite && <span>{player.nationalite}</span>}
-      </div>
-
-      <div className="space-y-2">
-        <Badge className={`${posteColors[player.poste] || "bg-gray-100 text-gray-800"} rounded-xl`}>
-          {player.poste}
-        </Badge>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex flex-wrap gap-2">
+          <Badge className={posteColors[player.poste] || "bg-gray-100 text-gray-800"}>
+            {player.poste}
+          </Badge>
+          {player.pied_fort && (
+            <Badge variant="outline">{player.pied_fort}</Badge>
+          )}
+        </div>
         
         {player.club_actuel && (
-          <p className="text-sm text-slate-600 truncate">{player.club_actuel}</p>
+          <div className="flex items-center gap-2 text-sm">
+            <MapPin className="w-4 h-4 text-slate-500" />
+            <span className="font-medium">{player.club_actuel}</span>
+          </div>
         )}
         
         {player.valeur_marchande && (
-          <div className="flex items-center gap-1 pt-2">
-            <div className="text-2xl font-bold text-slate-950">{player.valeur_marchande}M</div>
-            <div className="text-sm text-slate-400">€</div>
+          <div className="flex items-center gap-2 text-sm">
+            <TrendingUp className="w-4 h-4 text-green-600" />
+            <span className="font-semibold text-green-600">
+              {player.valeur_marchande} M€
+            </span>
           </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
