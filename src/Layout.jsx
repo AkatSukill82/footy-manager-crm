@@ -8,10 +8,11 @@ export default function Layout({ children, currentPageName }) {
   const navItems = [
     { name: "Dashboard", label: "Tableau de bord", icon: BarChart3 },
     { name: "Players", label: "Base de joueurs", icon: Users },
+    { name: "Clubs", label: "Clubs", icon: Shield },
     { name: "MyWatchList", label: "Ma liste", icon: Star },
     { name: "Alerts", label: "Alertes", icon: Bell },
     { name: "Contacts", label: "Contacts", icon: Phone },
-    { name: "Teams", label: "Équipes", icon: Shield },
+    { name: "Teams", label: "Équipes virtuelles", icon: Users },
     { name: "TransferManagement", label: "Transferts", icon: ArrowRightLeft },
     { name: "Reports", label: "Rapports", icon: FileText },
     { name: "AgentNetwork", label: "Réseau Agents", icon: Network }
