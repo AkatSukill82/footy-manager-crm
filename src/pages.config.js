@@ -53,6 +53,8 @@ import MyWatchList from './pages/MyWatchList';
 import Dashboard from './pages/Dashboard';
 import Alerts from './pages/Alerts';
 import Contacts from './pages/Contacts';
+import Teams from './pages/Teams';
+import TeamDetail from './pages/TeamDetail';
 import __Layout from './Layout.jsx';
 
 
@@ -63,6 +65,8 @@ export const PAGES = {
     "Dashboard": Dashboard,
     "Alerts": Alerts,
     "Contacts": Contacts,
+    "Teams": Teams,
+    "TeamDetail": TeamDetail,
 }
 
 export const pagesConfig = {

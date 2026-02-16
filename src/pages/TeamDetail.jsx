@@ -1,0 +1,296 @@
+import React, { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Edit2, Trash2, Trophy } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "../utils";
+import TeamForm from "../components/teams/TeamForm";
+import TeamComposition from "../components/teams/TeamComposition";
+import AddPlayerToTeam from "../components/teams/AddPlayerToTeam";
+import MatchSimulator from "../components/teams/MatchSimulator";
+
+export default function TeamDetailPage() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const urlParams = new URLSearchParams(window.location.search);
+  const teamId = urlParams.get('id');
+  const [isEditing, setIsEditing] = useState(false);
+
+  const { data: team } = useQuery({
+    queryKey: ['team', teamId],
+    queryFn: async () => {
+      const teams = await base44.entities.Team.filter({ id: teamId });
+      return teams[0];
+    },
+    enabled: !!teamId,
+  });
+
+  const { data: teamPlayers = [] } = useQuery({
+    queryKey: ['team-players', teamId],
+    queryFn: () => base44.entities.TeamPlayer.filter({ team_id: teamId }),
+    enabled: !!teamId,
+  });
+
+  const { data: players = [] } = useQuery({
+    queryKey: ['players'],
+    queryFn: () => base44.entities.Player.list(),
+  });
+
+  const { data: teams = [] } = useQuery({
+    queryKey: ['teams'],
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      return base44.entities.Team.filter({ created_by: user.email });
+    },
+  });
+
+  const { data: matches = [] } = useQuery({
+    queryKey: ['matches', teamId],
+    queryFn: async () => {
+      const m1 = await base44.entities.Match.filter({ team1_id: teamId });
+      const m2 = await base44.entities.Match.filter({ team2_id: teamId });
+      return [...m1, ...m2].sort((a, b) => new Date(b.date_match) - new Date(a.date_match));
+    },
+    enabled: !!teamId,
+  });
+
+  const updateTeamMutation = useMutation({
+    mutationFn: (data) => base44.entities.Team.update(teamId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['team', teamId] });
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      setIsEditing(false);
+    },
+  });
+
+  const deleteTeamMutation = useMutation({
+    mutationFn: () => base44.entities.Team.delete(teamId),
+    onSuccess: () => {
+      navigate(createPageUrl("Teams"));
+    },
+  });
+
+  const addPlayerMutation = useMutation({
+    mutationFn: (data) => base44.entities.TeamPlayer.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['team-players'] });
+    },
+  });
+
+  const removePlayerMutation = useMutation({
+    mutationFn: (id) => base44.entities.TeamPlayer.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['team-players'] });
+    },
+  });
+
+  const simulateMatchMutation = useMutation({
+    mutationFn: async (matchData) => {
+      await base44.entities.Match.create(matchData);
+      
+      // Update team stats
+      const team1Updates = {};
+      const team2Updates = {};
+      
+      if (matchData.score_team1 > matchData.score_team2) {
+        team1Updates.victoires = (team.victoires || 0) + 1;
+      } else if (matchData.score_team1 < matchData.score_team2) {
+        team1Updates.defaites = (team.defaites || 0) + 1;
+      } else {
+        team1Updates.nuls = (team.nuls || 0) + 1;
+      }
+      
+      team1Updates.matchs_joues = (team.matchs_joues || 0) + 1;
+      team1Updates.buts_pour = (team.buts_pour || 0) + matchData.score_team1;
+      team1Updates.buts_contre = (team.buts_contre || 0) + matchData.score_team2;
+      
+      await base44.entities.Team.update(matchData.team1_id, team1Updates);
+      
+      // Update opponent stats
+      const opponent = teams.find(t => t.id === matchData.team2_id);
+      if (opponent) {
+        if (matchData.score_team2 > matchData.score_team1) {
+          team2Updates.victoires = (opponent.victoires || 0) + 1;
+        } else if (matchData.score_team2 < matchData.score_team1) {
+          team2Updates.defaites = (opponent.defaites || 0) + 1;
+        } else {
+          team2Updates.nuls = (opponent.nuls || 0) + 1;
+        }
+        
+        team2Updates.matchs_joues = (opponent.matchs_joues || 0) + 1;
+        team2Updates.buts_pour = (opponent.buts_pour || 0) + matchData.score_team2;
+        team2Updates.buts_contre = (opponent.buts_contre || 0) + matchData.score_team1;
+        
+        await base44.entities.Team.update(matchData.team2_id, team2Updates);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['team', teamId] });
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      queryClient.invalidateQueries({ queryKey: ['matches'] });
+    },
+  });
+
+  if (!team) return null;
+
+  if (isEditing) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <Button variant="ghost" onClick={() => setIsEditing(false)} className="mb-4">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Annuler
+        </Button>
+        <TeamForm
+          team={team}
+          onSubmit={(data) => updateTeamMutation.mutate(data)}
+          onCancel={() => setIsEditing(false)}
+        />
+      </div>
+    );
+  }
+
+  const points = (team.victoires * 3) + (team.nuls * 1);
+  const goalDiff = team.buts_pour - team.buts_contre;
+
+  return (
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <Button variant="ghost" onClick={() => navigate(createPageUrl("Teams"))}>
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Retour aux équipes
+      </Button>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle className="text-3xl">{team.nom}</CardTitle>
+              <div className="flex items-center gap-2 mt-3">
+                <Badge variant="outline" className="text-base">{team.formation}</Badge>
+                {team.budget && (
+                  <Badge className="bg-green-100 text-green-800 text-base">
+                    Budget: {team.budget}M€
+                  </Badge>
+                )}
+              </div>
+              {team.description && (
+                <p className="text-slate-600 mt-2">{team.description}</p>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="icon" onClick={() => setIsEditing(true)}>
+                <Edit2 className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  if (confirm("Supprimer cette équipe ?")) {
+                    deleteTeamMutation.mutate();
+                  }
+                }}
+              >
+                <Trash2 className="w-4 h-4 text-red-500" />
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-4 gap-6">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-blue-600">{team.matchs_joues || 0}</div>
+              <div className="text-sm text-slate-600">Matchs</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-yellow-600">{points}</div>
+              <div className="text-sm text-slate-600">Points</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-green-600">
+                {team.victoires || 0}-{team.nuls || 0}-{team.defaites || 0}
+              </div>
+              <div className="text-sm text-slate-600">V-N-D</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-purple-600">
+                {goalDiff >= 0 ? '+' : ''}{goalDiff}
+              </div>
+              <div className="text-sm text-slate-600">Diff. buts</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <TeamComposition
+            teamPlayers={teamPlayers}
+            players={players}
+            onRemovePlayer={(id) => removePlayerMutation.mutate(id)}
+          />
+
+          {matches.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Trophy className="w-5 h-5" />
+                  Historique des matchs
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {matches.map((match) => {
+                    const isTeam1 = match.team1_id === teamId;
+                    const teamScore = isTeam1 ? match.score_team1 : match.score_team2;
+                    const opponentScore = isTeam1 ? match.score_team2 : match.score_team1;
+                    const opponentId = isTeam1 ? match.team2_id : match.team1_id;
+                    const opponent = teams.find(t => t.id === opponentId);
+                    
+                    const result = teamScore > opponentScore ? "V" : 
+                                   teamScore < opponentScore ? "D" : "N";
+                    const resultColor = result === "V" ? "text-green-600" : 
+                                       result === "D" ? "text-red-600" : "text-slate-600";
+
+                    return (
+                      <div key={match.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <div className="flex items-center gap-4">
+                          <Badge className={resultColor}>{result}</Badge>
+                          <span className="font-medium">vs {opponent?.nom || "Équipe supprimée"}</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="text-sm text-slate-600">
+                            {new Date(match.date_match).toLocaleDateString("fr-FR")}
+                          </span>
+                          <Badge variant="outline" className="font-bold">
+                            {teamScore} - {opponentScore}
+                          </Badge>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        <div className="space-y-6">
+          <AddPlayerToTeam
+            players={players}
+            teamId={teamId}
+            existingPlayerIds={teamPlayers.map(tp => tp.player_id)}
+            onAdd={(data) => addPlayerMutation.mutate(data)}
+          />
+
+          <MatchSimulator
+            currentTeamId={teamId}
+            allTeams={teams}
+            onSimulate={(data) => simulateMatchMutation.mutate(data)}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
