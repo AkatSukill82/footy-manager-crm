@@ -1,0 +1,312 @@
+import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, User, MapPin, Calendar, TrendingUp, Ruler, Edit2, Star, Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "./utils";
+import PlayerForm from "../components/players/PlayerForm";
+import TransferHistory from "../components/transfers/TransferHistory";
+import TransferForm from "../components/transfers/TransferForm";
+import PlayerNoteCard from "../components/notes/PlayerNoteCard";
+import { format } from "date-fns";
+
+const posteColors = {
+  "Gardien": "bg-yellow-100 text-yellow-800",
+  "Défenseur central": "bg-blue-100 text-blue-800",
+  "Latéral droit": "bg-blue-100 text-blue-800",
+  "Latéral gauche": "bg-blue-100 text-blue-800",
+  "Milieu défensif": "bg-green-100 text-green-800",
+  "Milieu central": "bg-green-100 text-green-800",
+  "Milieu offensif": "bg-purple-100 text-purple-800",
+  "Ailier droit": "bg-orange-100 text-orange-800",
+  "Ailier gauche": "bg-orange-100 text-orange-800",
+  "Attaquant": "bg-red-100 text-red-800"
+};
+
+export default function PlayerDetailPage() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const urlParams = new URLSearchParams(window.location.search);
+  const playerId = urlParams.get('id');
+  const [isEditing, setIsEditing] = useState(false);
+
+  const { data: player } = useQuery({
+    queryKey: ['player', playerId],
+    queryFn: async () => {
+      const players = await base44.entities.Player.filter({ id: playerId });
+      return players[0];
+    },
+    enabled: !!playerId,
+  });
+
+  const { data: transfers = [] } = useQuery({
+    queryKey: ['transfers', playerId],
+    queryFn: () => base44.entities.Transfer.filter({ player_id: playerId }),
+    enabled: !!playerId,
+  });
+
+  const { data: watchListItem } = useQuery({
+    queryKey: ['watchListItem', playerId],
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      const items = await base44.entities.WatchList.filter({ 
+        player_id: playerId,
+        created_by: user.email
+      });
+      return items[0];
+    },
+    enabled: !!playerId,
+  });
+
+  const { data: playerNote } = useQuery({
+    queryKey: ['playerNote', playerId],
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      const notes = await base44.entities.PlayerNote.filter({ 
+        player_id: playerId,
+        created_by: user.email
+      });
+      return notes[0];
+    },
+    enabled: !!playerId,
+  });
+
+  const updatePlayerMutation = useMutation({
+    mutationFn: (data) => base44.entities.Player.update(playerId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['player', playerId] });
+      queryClient.invalidateQueries({ queryKey: ['players'] });
+      setIsEditing(false);
+    },
+  });
+
+  const deletePlayerMutation = useMutation({
+    mutationFn: () => base44.entities.Player.delete(playerId),
+    onSuccess: () => {
+      navigate(createPageUrl("Players"));
+    },
+  });
+
+  const addToWatchListMutation = useMutation({
+    mutationFn: () => base44.entities.WatchList.create({ 
+      player_id: playerId,
+      priorite: "Moyenne",
+      statut: "En observation"
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['watchListItem', playerId] });
+      queryClient.invalidateQueries({ queryKey: ['watchList'] });
+    },
+  });
+
+  const removeFromWatchListMutation = useMutation({
+    mutationFn: () => base44.entities.WatchList.delete(watchListItem.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['watchListItem', playerId] });
+      queryClient.invalidateQueries({ queryKey: ['watchList'] });
+    },
+  });
+
+  const createTransferMutation = useMutation({
+    mutationFn: (data) => base44.entities.Transfer.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transfers', playerId] });
+    },
+  });
+
+  const updateNoteMutation = useMutation({
+    mutationFn: (data) => {
+      if (playerNote) {
+        return base44.entities.PlayerNote.update(playerNote.id, data);
+      } else {
+        return base44.entities.PlayerNote.create({ ...data, player_id: playerId });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['playerNote', playerId] });
+    },
+  });
+
+  if (!player) return null;
+
+  if (isEditing) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+        <div className="max-w-4xl mx-auto">
+          <Button
+            variant="ghost"
+            onClick={() => setIsEditing(false)}
+            className="mb-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Annuler
+          </Button>
+          <PlayerForm
+            player={player}
+            onSubmit={(data) => updatePlayerMutation.mutate(data)}
+            onCancel={() => setIsEditing(false)}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+      <div className="max-w-6xl mx-auto">
+        <Button
+          variant="ghost"
+          onClick={() => navigate(createPageUrl("Players"))}
+          className="mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Retour
+        </Button>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex gap-4">
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center overflow-hidden">
+                      {player.photo_url ? (
+                        <img src={player.photo_url} alt={player.nom} className="w-full h-full object-cover" />
+                      ) : (
+                        <User className="w-12 h-12 text-slate-400" />
+                      )}
+                    </div>
+                    <div>
+                      <CardTitle className="text-3xl">{player.nom}</CardTitle>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge className={posteColors[player.poste] || "bg-gray-100 text-gray-800"}>
+                          {player.poste}
+                        </Badge>
+                        {player.pied_fort && (
+                          <Badge variant="outline">{player.pied_fort}</Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setIsEditing(true)}
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        if (watchListItem) {
+                          removeFromWatchListMutation.mutate();
+                        } else {
+                          addToWatchListMutation.mutate();
+                        }
+                      }}
+                    >
+                      <Star className={watchListItem ? "w-4 h-4 fill-yellow-400 text-yellow-400" : "w-4 h-4"} />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        if (confirm("Êtes-vous sûr de vouloir supprimer ce joueur ?")) {
+                          deletePlayerMutation.mutate();
+                        }
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                  {player.age && (
+                    <div className="flex items-center gap-3">
+                      <Calendar className="w-5 h-5 text-slate-400" />
+                      <div>
+                        <p className="text-sm text-slate-600">Âge</p>
+                        <p className="font-semibold">{player.age} ans</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {player.nationalite && (
+                    <div className="flex items-center gap-3">
+                      <MapPin className="w-5 h-5 text-slate-400" />
+                      <div>
+                        <p className="text-sm text-slate-600">Nationalité</p>
+                        <p className="font-semibold">{player.nationalite}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {player.club_actuel && (
+                    <div className="flex items-center gap-3">
+                      <MapPin className="w-5 h-5 text-slate-400" />
+                      <div>
+                        <p className="text-sm text-slate-600">Club</p>
+                        <p className="font-semibold">{player.club_actuel}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {player.valeur_marchande && (
+                    <div className="flex items-center gap-3">
+                      <TrendingUp className="w-5 h-5 text-green-600" />
+                      <div>
+                        <p className="text-sm text-slate-600">Valeur</p>
+                        <p className="font-bold text-green-600">{player.valeur_marchande} M€</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {player.taille && (
+                    <div className="flex items-center gap-3">
+                      <Ruler className="w-5 h-5 text-slate-400" />
+                      <div>
+                        <p className="text-sm text-slate-600">Taille</p>
+                        <p className="font-semibold">{player.taille} cm</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {player.contrat_fin && (
+                    <div className="flex items-center gap-3">
+                      <Calendar className="w-5 h-5 text-slate-400" />
+                      <div>
+                        <p className="text-sm text-slate-600">Fin de contrat</p>
+                        <p className="font-semibold">{format(new Date(player.contrat_fin), "dd/MM/yyyy")}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <TransferHistory transfers={transfers} />
+            
+            <TransferForm
+              playerId={playerId}
+              onSubmit={(data) => createTransferMutation.mutate(data)}
+            />
+          </div>
+
+          <div className="space-y-6">
+            <PlayerNoteCard
+              note={playerNote}
+              onUpdate={(data) => updateNoteMutation.mutate(data)}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
