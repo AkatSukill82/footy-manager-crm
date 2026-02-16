@@ -1,14 +1,15 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "./utils";
-import { Users, Star, LogOut, BarChart3 } from "lucide-react";
+import { Users, Star, LogOut, BarChart3, Bell } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 export default function Layout({ children, currentPageName }) {
   const navItems = [
     { name: "Dashboard", label: "Tableau de bord", icon: BarChart3 },
     { name: "Players", label: "Base de joueurs", icon: Users },
-    { name: "MyWatchList", label: "Ma liste", icon: Star }
+    { name: "MyWatchList", label: "Ma liste", icon: Star },
+    { name: "Alerts", label: "Alertes", icon: Bell }
   ];
 
   return (

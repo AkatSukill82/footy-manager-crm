@@ -51,6 +51,7 @@ import Players from './pages/Players';
 import PlayerDetail from './pages/PlayerDetail';
 import MyWatchList from './pages/MyWatchList';
 import Dashboard from './pages/Dashboard';
+import Alerts from './pages/Alerts';
 import __Layout from './Layout.jsx';
 
 
@@ -59,6 +60,7 @@ export const PAGES = {
     "PlayerDetail": PlayerDetail,
     "MyWatchList": MyWatchList,
     "Dashboard": Dashboard,
+    "Alerts": Alerts,
 }
 
 export const pagesConfig = {

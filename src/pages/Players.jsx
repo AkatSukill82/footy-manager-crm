@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2 } from "lucide-react";
 import PlayerCard from "../components/players/PlayerCard";
-import PlayerFilters from "../components/players/PlayerFilters";
+import AdvancedFilters from "../components/players/AdvancedFilters";
 import PlayerForm from "../components/players/PlayerForm";
 
 export default function PlayersPage() {
@@ -12,8 +12,13 @@ export default function PlayersPage() {
   const [filters, setFilters] = useState({
     search: "",
     poste: "all",
-    ageRange: "all",
-    club: ""
+    ageMin: "",
+    ageMax: "",
+    club: "",
+    budgetMax: "",
+    contratExpire: "all",
+    nationalite: "",
+    piedFort: "all"
   });
   
   const queryClient = useQueryClient();
