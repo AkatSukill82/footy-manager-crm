@@ -55,6 +55,7 @@ import Alerts from './pages/Alerts';
 import Contacts from './pages/Contacts';
 import Teams from './pages/Teams';
 import TeamDetail from './pages/TeamDetail';
+import Reports from './pages/Reports';
 import __Layout from './Layout.jsx';
 
 
@@ -67,6 +68,7 @@ export const PAGES = {
     "Contacts": Contacts,
     "Teams": Teams,
     "TeamDetail": TeamDetail,
+    "Reports": Reports,
 }
 
 export const pagesConfig = {
