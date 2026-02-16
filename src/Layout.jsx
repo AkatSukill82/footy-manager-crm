@@ -16,52 +16,58 @@ export default function Layout({ children, currentPageName }) {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-8">
-              <Link to={createPageUrl("Players")} className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-                  <Users className="w-5 h-5 text-white" />
-                </div>
-                <span className="font-bold text-xl text-slate-900">Football CRM</span>
-              </Link>
-
-              <div className="flex gap-1">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = currentPageName === item.name;
-                  return (
-                    <Link
-                      key={item.name}
-                      to={createPageUrl(item.name)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                        isActive
-                          ? "bg-green-50 text-green-700 font-semibold"
-                          : "text-slate-600 hover:bg-slate-50"
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      {item.label}
-                    </Link>
-                  );
-                })}
-              </div>
+    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      {/* Sidebar */}
+      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
+        {/* Logo */}
+        <div className="p-6 border-b border-slate-200">
+          <Link to={createPageUrl("Dashboard")} className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+              <Users className="w-6 h-6 text-white" />
             </div>
-
-            <button
-              onClick={() => base44.auth.logout()}
-              className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Déconnexion</span>
-            </button>
-          </div>
+            <div>
+              <div className="font-bold text-lg text-slate-900">Football CRM</div>
+              <div className="text-xs text-slate-500">Gestion de joueurs</div>
+            </div>
+          </Link>
         </div>
-      </nav>
 
-      <main>{children}</main>
+        {/* Navigation */}
+        <nav className="flex-1 p-4 space-y-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentPageName === item.name;
+            return (
+              <Link
+                key={item.name}
+                to={createPageUrl(item.name)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                  isActive
+                    ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/30"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+              >
+                <Icon className={`w-5 h-5 ${isActive ? "text-white" : ""}`} />
+                <span className="font-medium">{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Logout Button */}
+        <div className="p-4 border-t border-slate-200">
+          <button
+            onClick={() => base44.auth.logout()}
+            className="w-full flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="font-medium">Déconnexion</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 overflow-auto">{children}</main>
     </div>
   );
 }
