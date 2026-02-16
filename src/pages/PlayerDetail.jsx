@@ -11,6 +11,7 @@ import PlayerForm from "../components/players/PlayerForm";
 import TransferHistory from "../components/transfers/TransferHistory";
 import TransferForm from "../components/transfers/TransferForm";
 import PlayerNoteCard from "../components/notes/PlayerNoteCard";
+import SimilarPlayers from "../components/players/SimilarPlayers";
 import { format } from "date-fns";
 
 const posteColors = {
@@ -72,6 +73,11 @@ export default function PlayerDetailPage() {
       return notes[0];
     },
     enabled: !!playerId,
+  });
+
+  const { data: allPlayers = [] } = useQuery({
+    queryKey: ['players'],
+    queryFn: () => base44.entities.Player.list(),
   });
 
   const updatePlayerMutation = useMutation({
@@ -303,6 +309,11 @@ export default function PlayerDetailPage() {
             <PlayerNoteCard
               note={playerNote}
               onUpdate={(data) => updateNoteMutation.mutate(data)}
+            />
+            
+            <SimilarPlayers 
+              currentPlayer={player}
+              allPlayers={allPlayers}
             />
           </div>
         </div>
