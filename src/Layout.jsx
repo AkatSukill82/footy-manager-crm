@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "./utils";
-import { Users, Star, LogOut, BarChart3, Bell, Phone, Shield, FileText, Network } from "lucide-react";
+import { Users, Star, LogOut, BarChart3, Bell, Phone, Shield, FileText, Network, ArrowRightLeft } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 export default function Layout({ children, currentPageName }) {
@@ -12,6 +12,7 @@ export default function Layout({ children, currentPageName }) {
     { name: "Alerts", label: "Alertes", icon: Bell },
     { name: "Contacts", label: "Contacts", icon: Phone },
     { name: "Teams", label: "Équipes", icon: Shield },
+    { name: "TransferManagement", label: "Transferts", icon: ArrowRightLeft },
     { name: "Reports", label: "Rapports", icon: FileText },
     { name: "AgentNetwork", label: "Réseau Agents", icon: Network }
   ];

@@ -57,6 +57,7 @@ import Dashboard from './pages/Dashboard';
 import MyWatchList from './pages/MyWatchList';
 import Players from './pages/Players';
 import AgentNetwork from './pages/AgentNetwork';
+import TransferManagement from './pages/TransferManagement';
 import __Layout from './Layout.jsx';
 
 
@@ -71,6 +72,7 @@ export const PAGES = {
     "MyWatchList": MyWatchList,
     "Players": Players,
     "AgentNetwork": AgentNetwork,
+    "TransferManagement": TransferManagement,
 }
 
 export const pagesConfig = {
