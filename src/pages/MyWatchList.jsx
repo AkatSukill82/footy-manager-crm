@@ -72,128 +72,94 @@ export default function MyWatchListPage() {
     .filter(w => w.player);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center gap-3 mb-6">
-          <Star className="w-8 h-8 fill-yellow-400 text-yellow-400" />
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">Ma liste de suivi</h1>
-            <p className="text-slate-600 mt-1">{watchList.length} joueur{watchList.length > 1 ? 's' : ''} suivi{watchList.length > 1 ? 's' : ''}</p>
-          </div>
+    <div className="p-8">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-4xl font-bold text-slate-950">Ma liste</h1>
+          <p className="text-slate-500 mt-2">{watchedPlayers.length} joueur{watchedPlayers.length > 1 ? 's' : ''}</p>
         </div>
-
-        <div className="mb-6 flex gap-4">
-          <Select value={filterStatut} onValueChange={setFilterStatut}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Tous les statuts" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les statuts</SelectItem>
-              <SelectItem value="En observation">En observation</SelectItem>
-              <SelectItem value="À contacter">À contacter</SelectItem>
-              <SelectItem value="Négociation">Négociation</SelectItem>
-              <SelectItem value="Abandonné">Abandonné</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {isLoading ? (
-          <div className="flex justify-center items-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
-          </div>
-        ) : watchedPlayers.length === 0 ? (
-          <Card>
-            <CardContent className="py-20 text-center">
-              <Star className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-              <p className="text-slate-500 text-lg">Aucun joueur dans votre liste de suivi</p>
-              <p className="text-slate-400 mt-2">Ajoutez des joueurs depuis la base commune</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {watchedPlayers.map((item) => (
-              <Card key={item.id} className="relative">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <PlayerCard player={item.player} inWatchList={true} />
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex flex-wrap gap-2">
-                    <Badge className={prioriteColors[item.priorite]}>
-                      Priorité: {item.priorite}
-                    </Badge>
-                    <Badge className={statutColors[item.statut]}>
-                      {item.statut}
-                    </Badge>
-                  </div>
-
-                  {item.note && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <p className="text-sm font-semibold text-blue-900 mb-1">Ma note:</p>
-                      {item.note.evaluation && (
-                        <p className="text-2xl font-bold text-blue-600">{item.note.evaluation}/10</p>
-                      )}
-                      {item.note.interet && (
-                        <Badge className="mt-2 bg-blue-100 text-blue-800">
-                          Intérêt: {item.note.interet}
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="flex gap-2 pt-2">
-                    <Select
-                      value={item.priorite}
-                      onValueChange={(value) => updateWatchListMutation.mutate({ 
-                        id: item.id, 
-                        data: { priorite: value } 
-                      })}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Haute">Priorité haute</SelectItem>
-                        <SelectItem value="Moyenne">Priorité moyenne</SelectItem>
-                        <SelectItem value="Basse">Priorité basse</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    <Select
-                      value={item.statut}
-                      onValueChange={(value) => updateWatchListMutation.mutate({ 
-                        id: item.id, 
-                        data: { statut: value } 
-                      })}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="En observation">En observation</SelectItem>
-                        <SelectItem value="À contacter">À contacter</SelectItem>
-                        <SelectItem value="Négociation">Négociation</SelectItem>
-                        <SelectItem value="Abandonné">Abandonné</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => removeFromWatchListMutation.mutate(item.id)}
-                    >
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+        <Select value={filterStatut} onValueChange={setFilterStatut}>
+          <SelectTrigger className="w-48 rounded-2xl h-12">
+            <SelectValue placeholder="Tous" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous</SelectItem>
+            <SelectItem value="En observation">En observation</SelectItem>
+            <SelectItem value="À contacter">À contacter</SelectItem>
+            <SelectItem value="Négociation">Négociation</SelectItem>
+            <SelectItem value="Abandonné">Abandonné</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+
+      {isLoading ? (
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+        </div>
+      ) : watchedPlayers.length === 0 ? (
+        <div className="bg-white rounded-3xl border border-slate-200 py-20 text-center">
+          <Star className="w-16 h-16 mx-auto text-slate-300 mb-4" />
+          <p className="text-slate-500 text-lg">Aucun joueur suivi</p>
+          <p className="text-slate-400 mt-2">Ajoutez des joueurs depuis la base</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {watchedPlayers.map((item) => (
+            <div key={item.id} className="bg-white rounded-3xl border border-slate-200 p-6 hover:shadow-xl transition-all">
+              <div className="mb-4">
+                <PlayerCard player={item.player} inWatchList={true} />
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  <Badge className={prioriteColors[item.priorite]}>
+                    {item.priorite}
+                  </Badge>
+                  <Badge className={statutColors[item.statut]}>
+                    {item.statut}
+                  </Badge>
+                </div>
+
+                {item.note && item.note.evaluation && (
+                  <div className="bg-slate-50 rounded-2xl p-4">
+                    <div className="text-3xl font-bold text-slate-950">{item.note.evaluation}<span className="text-lg text-slate-400">/10</span></div>
+                    <div className="text-sm text-slate-500 mt-1">Évaluation</div>
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <Select
+                    value={item.statut}
+                    onValueChange={(value) => updateWatchListMutation.mutate({ 
+                      id: item.id, 
+                      data: { statut: value } 
+                    })}
+                  >
+                    <SelectTrigger className="flex-1 rounded-2xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="En observation">En observation</SelectItem>
+                      <SelectItem value="À contacter">À contacter</SelectItem>
+                      <SelectItem value="Négociation">Négociation</SelectItem>
+                      <SelectItem value="Abandonné">Abandonné</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="rounded-2xl"
+                    onClick={() => removeFromWatchListMutation.mutate(item.id)}
+                  >
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

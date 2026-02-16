@@ -39,49 +39,62 @@ export default function Dashboard() {
   const watchListValue = myWatchedPlayers.reduce((sum, p) => sum + (p.valeur_marchande || 0), 0);
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">Tableau de bord</h1>
-        <p className="text-slate-600 mt-1">Vue d'ensemble de votre base de joueurs</p>
+    <div className="p-8 space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-slate-950">Aperçu</h1>
+          <p className="text-slate-500 mt-2">Statistiques et tendances</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard
-          title="Total joueurs"
-          value={totalPlayers}
-          subtitle="Dans la base de données"
-          icon={Database}
-          color="blue"
-        />
-        <StatsCard
-          title="Ma liste"
-          value={watchedPlayers}
-          subtitle="Joueurs suivis"
-          icon={Star}
-          color="purple"
-        />
-        <StatsCard
-          title="Valeur totale"
-          value={`${totalValue.toFixed(1)}M €`}
-          subtitle="Base de données complète"
-          icon={TrendingUp}
-          color="green"
-        />
-        <StatsCard
-          title="Valeur ma liste"
-          value={`${watchListValue.toFixed(1)}M €`}
-          subtitle="Joueurs suivis"
-          icon={TrendingUp}
-          color="orange"
-        />
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-white rounded-3xl p-6 border border-slate-200 hover:shadow-xl transition-all cursor-pointer group">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-slate-950 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Database className="w-6 h-6 text-white" />
+            </div>
+          </div>
+          <div className="text-4xl font-bold text-slate-950 mb-1">{totalPlayers}</div>
+          <div className="text-sm text-slate-500">Joueurs</div>
+        </div>
+
+        <div className="bg-white rounded-3xl p-6 border border-slate-200 hover:shadow-xl transition-all cursor-pointer group">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-slate-950 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Star className="w-6 h-6 text-white" />
+            </div>
+          </div>
+          <div className="text-4xl font-bold text-slate-950 mb-1">{watchedPlayers}</div>
+          <div className="text-sm text-slate-500">Suivis</div>
+        </div>
+
+        <div className="bg-white rounded-3xl p-6 border border-slate-200 hover:shadow-xl transition-all cursor-pointer group">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-slate-950 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <TrendingUp className="w-6 h-6 text-white" />
+            </div>
+          </div>
+          <div className="text-4xl font-bold text-slate-950 mb-1">{totalValue.toFixed(0)}M</div>
+          <div className="text-sm text-slate-500">Valeur totale</div>
+        </div>
+
+        <div className="bg-white rounded-3xl p-6 border border-slate-200 hover:shadow-xl transition-all cursor-pointer group">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-slate-950 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <TrendingUp className="w-6 h-6 text-white" />
+            </div>
+          </div>
+          <div className="text-4xl font-bold text-slate-950 mb-1">{watchListValue.toFixed(0)}M</div>
+          <div className="text-sm text-slate-500">Ma liste</div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 gap-6">
         <PlayersByPosition players={players} />
         <PlayersByAge players={players} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 gap-6">
         <TopPlayers players={players} />
         <ContractExpiring players={players} />
       </div>

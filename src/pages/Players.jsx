@@ -90,57 +90,55 @@ export default function PlayersPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">Base de joueurs</h1>
-            <p className="text-slate-600 mt-1">{players.length} joueurs enregistrés</p>
-          </div>
-          <Button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Ajouter un joueur
-          </Button>
+    <div className="p-8">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-4xl font-bold text-slate-950">Joueurs</h1>
+          <p className="text-slate-500 mt-2">{filteredPlayers.length} / {players.length} joueurs</p>
         </div>
-
-        {showForm && (
-          <div className="mb-6">
-            <PlayerForm
-              onSubmit={(data) => createMutation.mutate(data)}
-              onCancel={() => setShowForm(false)}
-            />
-          </div>
-        )}
-
-        <div className="mb-6">
-          <AdvancedFilters onFiltersChange={setFilters} />
-        </div>
-
-        {isLoading ? (
-          <div className="flex justify-center items-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredPlayers.map((player) => (
-              <PlayerCard
-                key={player.id}
-                player={player}
-                inWatchList={watchListPlayerIds.includes(player.id)}
-              />
-            ))}
-          </div>
-        )}
-
-        {!isLoading && filteredPlayers.length === 0 && (
-          <div className="text-center py-20">
-            <p className="text-slate-500 text-lg">Aucun joueur trouvé</p>
-          </div>
-        )}
+        <Button
+          onClick={() => setShowForm(!showForm)}
+          className="bg-slate-950 hover:bg-slate-800 rounded-2xl h-12 px-6"
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          Ajouter
+        </Button>
       </div>
+
+      {showForm && (
+        <div className="mb-8">
+          <PlayerForm
+            onSubmit={(data) => createMutation.mutate(data)}
+            onCancel={() => setShowForm(false)}
+          />
+        </div>
+      )}
+
+      <div className="mb-8">
+        <AdvancedFilters onFiltersChange={setFilters} />
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredPlayers.map((player) => (
+            <PlayerCard
+              key={player.id}
+              player={player}
+              inWatchList={watchListPlayerIds.includes(player.id)}
+            />
+          ))}
+        </div>
+      )}
+
+      {!isLoading && filteredPlayers.length === 0 && (
+        <div className="text-center py-20">
+          <p className="text-slate-500">Aucun joueur trouvé</p>
+        </div>
+      )}
     </div>
   );
 }
