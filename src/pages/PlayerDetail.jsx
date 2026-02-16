@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, User, MapPin, Calendar, TrendingUp, Ruler, Edit2, Star, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { createPageUrl } from "./utils";
+import { createPageUrl } from "../utils";
 import PlayerForm from "../components/players/PlayerForm";
 import TransferHistory from "../components/transfers/TransferHistory";
 import TransferForm from "../components/transfers/TransferForm";

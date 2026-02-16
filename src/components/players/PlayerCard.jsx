@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { User, MapPin, Calendar, TrendingUp, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { createPageUrl } from "./utils";
+import { createPageUrl } from "../../utils";
 
 const posteColors = {
   "Gardien": "bg-yellow-100 text-yellow-800",
