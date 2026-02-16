@@ -58,115 +58,93 @@ export default function PlayerPerformanceReport({ players, filters }) {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-blue-600">{filteredPlayers.length}</div>
-              <div className="text-sm text-slate-600 mt-1">Joueurs analysés</div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          <div className="text-center">
+            <div className="text-5xl font-bold text-slate-900">{filteredPlayers.length}</div>
+            <div className="text-sm text-slate-500 mt-2">Joueurs analysés</div>
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          <div className="text-center">
+            <div className="text-5xl font-bold text-slate-900">
+              {(filteredPlayers.reduce((sum, p) => sum + (p.valeur_marchande || 0), 0)).toFixed(1)}M€
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-green-600">
-                {(filteredPlayers.reduce((sum, p) => sum + (p.valeur_marchande || 0), 0)).toFixed(1)}M€
-              </div>
-              <div className="text-sm text-slate-600 mt-1">Valeur totale</div>
+            <div className="text-sm text-slate-500 mt-2">Valeur totale</div>
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          <div className="text-center">
+            <div className="text-5xl font-bold text-slate-900">
+              {(filteredPlayers.reduce((sum, p) => sum + (p.age || 0), 0) / filteredPlayers.length).toFixed(1)} ans
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-purple-600">
-                {(filteredPlayers.reduce((sum, p) => sum + (p.age || 0), 0) / filteredPlayers.length).toFixed(1)} ans
-              </div>
-              <div className="text-sm text-slate-600 mt-1">Âge moyen</div>
-            </div>
-          </CardContent>
-        </Card>
+            <div className="text-sm text-slate-500 mt-2">Âge moyen</div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Top 10 joueurs par valeur</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={topByValue}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="nom" angle={-45} textAnchor="end" height={100} />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="valeur" fill="#10b981" name="Valeur (M€)" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Top 10 joueurs par valeur</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={topByValue}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis dataKey="nom" angle={-45} textAnchor="end" height={100} stroke="#64748b" />
+              <YAxis stroke="#64748b" />
+              <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+              <Bar dataKey="valeur" fill="#0f172a" radius={[8, 8, 0, 0]} name="Valeur (M€)" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Répartition par poste</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name.substring(0, 8)}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Répartition par poste</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={pieData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent }) => `${name.substring(0, 8)}: ${(percent * 100).toFixed(0)}%`}
+                outerRadius={100}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {pieData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Distribution par âge</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={ageData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="range" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill="#3b82f6" name="Nombre de joueurs" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Distribution par âge</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={ageData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis dataKey="range" stroke="#64748b" />
+              <YAxis stroke="#64748b" />
+              <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+              <Bar dataKey="count" fill="#0f172a" radius={[8, 8, 0, 0]} name="Nombre de joueurs" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Valeur moyenne par poste</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={avgValueData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="poste" angle={-45} textAnchor="end" height={80} />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="moyenne" stroke="#8b5cf6" strokeWidth={2} name="Valeur moy. (M€)" />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Valeur moyenne par poste</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={avgValueData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis dataKey="poste" angle={-45} textAnchor="end" height={80} stroke="#64748b" />
+              <YAxis stroke="#64748b" />
+              <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+              <Line type="monotone" dataKey="moyenne" stroke="#0f172a" strokeWidth={3} name="Valeur moy. (M€)" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );

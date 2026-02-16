@@ -86,63 +86,60 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="p-8 space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
-            <FileText className="w-8 h-8 text-purple-600" />
-            Rapports et analyses
-          </h1>
-          <p className="text-slate-600 mt-1">
-            Visualisez les performances et tendances avec des graphiques interactifs
-          </p>
+          <h1 className="text-4xl font-bold text-slate-900">Rapports</h1>
+          <p className="text-slate-500 mt-2">Analyse des performances et tendances</p>
         </div>
         <Button 
           onClick={handleExportPDF} 
           disabled={isExporting}
-          className="bg-purple-600 hover:bg-purple-700"
+          className="bg-slate-900 hover:bg-slate-800 shadow-lg"
         >
           <Download className="w-4 h-4 mr-2" />
-          {isExporting ? "Export..." : "Exporter en PDF"}
+          {isExporting ? "Export..." : "Exporter PDF"}
         </Button>
       </div>
 
       <ReportFilters filters={filters} onFiltersChange={setFilters} />
 
-      <div className="flex gap-2 border-b border-slate-200">
-        <button
-          onClick={() => setActiveTab("players")}
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === "players"
-              ? "border-b-2 border-purple-600 text-purple-700"
-              : "text-slate-600 hover:text-slate-900"
-          }`}
-        >
-          <BarChart3 className="w-4 h-4 inline mr-2" />
-          Performance joueurs
-        </button>
-        <button
-          onClick={() => setActiveTab("transfers")}
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === "transfers"
-              ? "border-b-2 border-purple-600 text-purple-700"
-              : "text-slate-600 hover:text-slate-900"
-          }`}
-        >
-          <TrendingUp className="w-4 h-4 inline mr-2" />
-          Tendances transferts
-        </button>
-        <button
-          onClick={() => setActiveTab("teams")}
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === "teams"
-              ? "border-b-2 border-purple-600 text-purple-700"
-              : "text-slate-600 hover:text-slate-900"
-          }`}
-        >
-          <Users className="w-4 h-4 inline mr-2" />
-          Efficacité équipes
-        </button>
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-1">
+        <div className="flex gap-1">
+          <button
+            onClick={() => setActiveTab("players")}
+            className={`flex-1 px-6 py-3 rounded-xl font-medium transition-all ${
+              activeTab === "players"
+                ? "bg-slate-900 text-white shadow-lg"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <BarChart3 className="w-4 h-4 inline mr-2" />
+            Joueurs
+          </button>
+          <button
+            onClick={() => setActiveTab("transfers")}
+            className={`flex-1 px-6 py-3 rounded-xl font-medium transition-all ${
+              activeTab === "transfers"
+                ? "bg-slate-900 text-white shadow-lg"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <TrendingUp className="w-4 h-4 inline mr-2" />
+            Transferts
+          </button>
+          <button
+            onClick={() => setActiveTab("teams")}
+            className={`flex-1 px-6 py-3 rounded-xl font-medium transition-all ${
+              activeTab === "teams"
+                ? "bg-slate-900 text-white shadow-lg"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <Users className="w-4 h-4 inline mr-2" />
+            Équipes
+          </button>
+        </div>
       </div>
 
       <div>

@@ -89,127 +89,105 @@ export default function TeamEfficiencyReport({ teams, teamPlayers, matches, play
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-blue-600">{totalTeams}</div>
-              <div className="text-sm text-slate-600 mt-1">Équipes créées</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-green-600">{activeTeams}</div>
-              <div className="text-sm text-slate-600 mt-1">Équipes actives</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-purple-600">{totalMatches}</div>
-              <div className="text-sm text-slate-600 mt-1">Matchs joués</div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          <div className="text-center">
+            <div className="text-5xl font-bold text-slate-900">{totalTeams}</div>
+            <div className="text-sm text-slate-500 mt-2">Équipes créées</div>
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          <div className="text-center">
+            <div className="text-5xl font-bold text-slate-900">{activeTeams}</div>
+            <div className="text-sm text-slate-500 mt-2">Équipes actives</div>
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          <div className="text-center">
+            <div className="text-5xl font-bold text-slate-900">{totalMatches}</div>
+            <div className="text-sm text-slate-500 mt-2">Matchs joués</div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Classement des équipes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {rankingData.length === 0 ? (
-              <p className="text-center text-slate-500 py-8">Aucun match joué</p>
-            ) : (
-              <div className="space-y-2">
-                {rankingData.map((team) => (
-                  <div key={team.rang} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
-                        {team.rang}
-                      </div>
-                      <span className="font-medium">{team.nom}</span>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Classement des équipes</h3>
+          {rankingData.length === 0 ? (
+            <p className="text-center text-slate-500 py-8">Aucun match joué</p>
+          ) : (
+            <div className="space-y-2">
+              {rankingData.map((team) => (
+                <div key={team.rang} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-slate-900 text-white rounded-full flex items-center justify-center font-bold text-sm">
+                      {team.rang}
                     </div>
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm text-slate-600">
-                        {team.victoires}V-{team.nuls}N-{team.defaites}D
-                      </span>
-                      <Badge className="bg-yellow-100 text-yellow-800 font-bold">
-                        {team.points} pts
-                      </Badge>
+                    <span className="font-medium text-slate-900">{team.nom}</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm text-slate-600 font-medium">
+                      {team.victoires}V-{team.nuls}N-{team.defaites}D
+                    </span>
+                    <div className="bg-slate-900 text-white px-3 py-1 rounded-lg font-bold text-sm">
+                      {team.points} pts
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Valeur des équipes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={valueComparison}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="nom" angle={-45} textAnchor="end" height={80} />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="valeur" fill="#10b981" name="Valeur (M€)" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Valeur des équipes</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={valueComparison}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis dataKey="nom" angle={-45} textAnchor="end" height={80} stroke="#64748b" />
+              <YAxis stroke="#64748b" />
+              <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+              <Bar dataKey="valeur" fill="#0f172a" radius={[8, 8, 0, 0]} name="Valeur (M€)" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Taux de victoire</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={winRateData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="nom" angle={-45} textAnchor="end" height={80} />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="taux" fill="#3b82f6" name="Taux de victoire (%)" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Taux de victoire</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={winRateData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis dataKey="nom" angle={-45} textAnchor="end" height={80} stroke="#64748b" />
+              <YAxis stroke="#64748b" />
+              <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+              <Bar dataKey="taux" fill="#0f172a" radius={[8, 8, 0, 0]} name="Taux de victoire (%)" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
 
         {topTeams.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Performance globale (Top 5)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <RadarChart data={radarData}>
-                  <PolarGrid />
-                  <PolarAngleAxis dataKey="metric" />
-                  <PolarRadiusAxis />
-                  {topTeams.map((team, index) => (
-                    <Radar
-                      key={team.id}
-                      name={team.nom}
-                      dataKey={team.nom}
-                      stroke={`hsl(${index * 72}, 70%, 50%)`}
-                      fill={`hsl(${index * 72}, 70%, 50%)`}
-                      fillOpacity={0.3}
-                    />
-                  ))}
-                  <Tooltip />
-                  <Legend />
-                </RadarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 lg:col-span-2">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">Performance globale (Top 5)</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <RadarChart data={radarData}>
+                <PolarGrid stroke="#e2e8f0" />
+                <PolarAngleAxis dataKey="metric" stroke="#64748b" />
+                <PolarRadiusAxis stroke="#64748b" />
+                {topTeams.map((team, index) => (
+                  <Radar
+                    key={team.id}
+                    name={team.nom}
+                    dataKey={team.nom}
+                    stroke={`hsl(${index * 72}, 70%, 50%)`}
+                    fill={`hsl(${index * 72}, 70%, 50%)`}
+                    fillOpacity={0.3}
+                  />
+                ))}
+                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                <Legend />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
         )}
       </div>
     </div>
