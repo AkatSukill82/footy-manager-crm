@@ -129,61 +129,67 @@ export default function TransferManagementPage() {
   const selectedPlayer = players.find(p => p.id === selectedPlayerId);
 
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-slate-900">Gestion des transferts</h1>
-          <p className="text-slate-500 mt-2">Suivez vos négociations et simulez vos budgets</p>
+    <div className="p-4 md:p-8 space-y-4 md:space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl md:text-4xl font-bold text-slate-900 truncate">Transferts</h1>
+          <p className="text-slate-500 text-sm mt-0.5 hidden md:block">Suivez vos négociations et simulez vos budgets</p>
         </div>
         <Button 
           onClick={() => setShowAddModal(true)}
-          className="bg-slate-900 hover:bg-slate-800 shadow-lg"
+          className="bg-slate-900 hover:bg-slate-800 shadow-lg flex-shrink-0"
+          size="sm"
         >
-          <Plus className="w-4 h-4 mr-2" />
-          Nouvelle négociation
+          <Plus className="w-4 h-4 md:mr-2" />
+          <span className="hidden md:inline">Nouvelle négociation</span>
+          <span className="md:hidden">Nouveau</span>
         </Button>
       </div>
 
+      {/* Tabs — icon-only on mobile */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-1">
         <div className="flex gap-1">
           <button
             onClick={() => setActiveTab("negociations")}
-            className={`flex-1 px-6 py-3 rounded-xl font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-medium transition-all text-sm ${
               activeTab === "negociations"
                 ? "bg-slate-900 text-white shadow-lg"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            <TrendingUp className="w-4 h-4 inline mr-2" />
-            Négociations ({activeNegociations.length})
+            <TrendingUp className="w-4 h-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Négociations</span>
+            <span className="sm:hidden">({activeNegociations.length})</span>
+            <span className="hidden sm:inline">({activeNegociations.length})</span>
           </button>
           <button
             onClick={() => setActiveTab("simulator")}
-            className={`flex-1 px-6 py-3 rounded-xl font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-medium transition-all text-sm ${
               activeTab === "simulator"
                 ? "bg-slate-900 text-white shadow-lg"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            <Calculator className="w-4 h-4 inline mr-2" />
-            Simulateur de budget
+            <Calculator className="w-4 h-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Simulateur</span>
           </button>
           <button
             onClick={() => setActiveTab("history")}
-            className={`flex-1 px-6 py-3 rounded-xl font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-medium transition-all text-sm ${
               activeTab === "history"
                 ? "bg-slate-900 text-white shadow-lg"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            <History className="w-4 h-4 inline mr-2" />
-            Historique
+            <History className="w-4 h-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Historique</span>
           </button>
         </div>
       </div>
 
       {activeTab === "negociations" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {negociations.filter(n => n.statut !== "transfert_finalise" && n.statut !== "annule").map(negociation => {
             const player = players.find(p => p.id === negociation.player_id);
             return (
@@ -235,7 +241,7 @@ export default function TransferManagementPage() {
       )}
 
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Nouvelle négociation de transfert</DialogTitle>
           </DialogHeader>
@@ -254,7 +260,7 @@ export default function TransferManagementPage() {
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>Club vendeur</Label>
                 <Input
@@ -276,7 +282,7 @@ export default function TransferManagementPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>Montant proposé (M€)</Label>
                 <Input
@@ -300,7 +306,7 @@ export default function TransferManagementPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>Date limite</Label>
                 <Input
