@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Plus, Users } from "lucide-react";
+import { Plus, Users, X } from "lucide-react";
 import TeamCard from "../components/teams/TeamCard";
 import TeamForm from "../components/teams/TeamForm";
 
