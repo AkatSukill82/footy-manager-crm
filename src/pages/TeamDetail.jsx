@@ -11,6 +11,8 @@ import TeamForm from "../components/teams/TeamForm";
 import TeamComposition from "../components/teams/TeamComposition";
 import AddPlayerToTeam from "../components/teams/AddPlayerToTeam";
 import MatchSimulator from "../components/teams/MatchSimulator";
+import FootballPitch from "../components/teams/FootballPitch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function TeamDetailPage() {
   const navigate = useNavigate();
