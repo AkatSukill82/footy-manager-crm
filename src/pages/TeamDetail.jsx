@@ -225,74 +225,83 @@ export default function TeamDetailPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <TeamComposition
-            teamPlayers={teamPlayers}
+      <Tabs defaultValue="builder" className="space-y-6">
+        <TabsList className="grid w-full max-w-sm grid-cols-2">
+          <TabsTrigger value="builder">🏟️ Terrain</TabsTrigger>
+          <TabsTrigger value="manage">⚙️ Gestion</TabsTrigger>
+        </TabsList>
+
+        {/* Builder FIFA-style */}
+        <TabsContent value="builder">
+          <FootballPitch
+            formation={team.formation}
             players={players}
-            onRemovePlayer={(id) => removePlayerMutation.mutate(id)}
           />
+        </TabsContent>
 
-          {matches.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Trophy className="w-5 h-5" />
-                  Historique des matchs
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {matches.map((match) => {
-                    const isTeam1 = match.team1_id === teamId;
-                    const teamScore = isTeam1 ? match.score_team1 : match.score_team2;
-                    const opponentScore = isTeam1 ? match.score_team2 : match.score_team1;
-                    const opponentId = isTeam1 ? match.team2_id : match.team1_id;
-                    const opponent = teams.find(t => t.id === opponentId);
-                    
-                    const result = teamScore > opponentScore ? "V" : 
-                                   teamScore < opponentScore ? "D" : "N";
-                    const resultColor = result === "V" ? "text-green-600" : 
-                                       result === "D" ? "text-red-600" : "text-slate-600";
+        {/* Gestion classique */}
+        <TabsContent value="manage">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <TeamComposition
+                teamPlayers={teamPlayers}
+                players={players}
+                onRemovePlayer={(id) => removePlayerMutation.mutate(id)}
+              />
 
-                    return (
-                      <div key={match.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                        <div className="flex items-center gap-4">
-                          <Badge className={resultColor}>{result}</Badge>
-                          <span className="font-medium">vs {opponent?.nom || "Équipe supprimée"}</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-sm text-slate-600">
-                            {new Date(match.date_match).toLocaleDateString("fr-FR")}
-                          </span>
-                          <Badge variant="outline" className="font-bold">
-                            {teamScore} - {opponentScore}
-                          </Badge>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+              {matches.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Trophy className="w-5 h-5" />
+                      Historique des matchs
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {matches.map((match) => {
+                        const isTeam1 = match.team1_id === teamId;
+                        const teamScore = isTeam1 ? match.score_team1 : match.score_team2;
+                        const opponentScore = isTeam1 ? match.score_team2 : match.score_team1;
+                        const opponentId = isTeam1 ? match.team2_id : match.team1_id;
+                        const opponent = teams.find(t => t.id === opponentId);
+                        const result = teamScore > opponentScore ? "V" : teamScore < opponentScore ? "D" : "N";
+                        const resultColor = result === "V" ? "text-green-600" : result === "D" ? "text-red-600" : "text-slate-600";
+                        return (
+                          <div key={match.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                            <div className="flex items-center gap-4">
+                              <Badge className={resultColor}>{result}</Badge>
+                              <span className="font-medium">vs {opponent?.nom || "Équipe supprimée"}</span>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <span className="text-sm text-slate-600">{new Date(match.date_match).toLocaleDateString("fr-FR")}</span>
+                              <Badge variant="outline" className="font-bold">{teamScore} - {opponentScore}</Badge>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
 
-        <div className="space-y-6">
-          <AddPlayerToTeam
-            players={players}
-            teamId={teamId}
-            existingPlayerIds={teamPlayers.map(tp => tp.player_id)}
-            onAdd={(data) => addPlayerMutation.mutate(data)}
-          />
-
-          <MatchSimulator
-            currentTeamId={teamId}
-            allTeams={teams}
-            onSimulate={(data) => simulateMatchMutation.mutate(data)}
-          />
-        </div>
-      </div>
+            <div className="space-y-6">
+              <AddPlayerToTeam
+                players={players}
+                teamId={teamId}
+                existingPlayerIds={teamPlayers.map(tp => tp.player_id)}
+                onAdd={(data) => addPlayerMutation.mutate(data)}
+              />
+              <MatchSimulator
+                currentTeamId={teamId}
+                allTeams={teams}
+                onSimulate={(data) => simulateMatchMutation.mutate(data)}
+              />
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
