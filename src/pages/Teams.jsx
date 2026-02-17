@@ -64,10 +64,20 @@ export default function TeamsPage() {
       </div>
 
       {showForm && (
-        <TeamForm
-          onSubmit={(data) => createTeamMutation.mutate(data)}
-          onCancel={() => setShowForm(false)}
-        />
+        <>
+          {/* Overlay mobile */}
+          <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setShowForm(false)} />
+          <div className="fixed inset-x-0 bottom-0 z-50 md:static md:z-auto bg-white rounded-t-2xl md:rounded-2xl shadow-2xl md:shadow-none p-1 pb-6 md:p-0">
+            {/* Handle mobile */}
+            <div className="flex justify-center pt-2 pb-1 md:hidden">
+              <div className="w-10 h-1 bg-slate-300 rounded-full" />
+            </div>
+            <TeamForm
+              onSubmit={(data) => createTeamMutation.mutate(data)}
+              onCancel={() => setShowForm(false)}
+            />
+          </div>
+        </>
       )}
 
       {teams.length === 0 ? (
