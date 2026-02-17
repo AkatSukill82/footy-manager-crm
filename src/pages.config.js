@@ -80,7 +80,7 @@ export const PAGES = {
 }
 
 export const pagesConfig = {
-    mainPage: "Players",
+    mainPage: "Dashboard",
     Pages: PAGES,
     Layout: __Layout,
 };
