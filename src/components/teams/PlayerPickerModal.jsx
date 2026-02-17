@@ -1,13 +1,12 @@
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Search, X, UserX } from "lucide-react";
 
 const POSITION_GROUPS = {
-  Gardien: ["Gardien"],
+  Gardien:   ["Gardien"],
   Défenseur: ["Défenseur central", "Latéral droit", "Latéral gauche"],
-  Milieu: ["Milieu défensif", "Milieu central", "Milieu offensif"],
+  Milieu:    ["Milieu défensif", "Milieu central", "Milieu offensif"],
   Attaquant: ["Ailier droit", "Ailier gauche", "Attaquant"],
 };
 
@@ -19,15 +18,14 @@ function getGroupForPosition(poste) {
 }
 
 const groupColors = {
-  Gardien: "bg-yellow-400 text-yellow-900",
+  Gardien:   "bg-yellow-400 text-yellow-900",
   Défenseur: "bg-blue-500 text-white",
-  Milieu: "bg-green-500 text-white",
+  Milieu:    "bg-green-500 text-white",
   Attaquant: "bg-red-500 text-white",
 };
 
 export default function PlayerPickerModal({ slot, players, onSelect, onClose }) {
   const [search, setSearch] = useState("");
-
   const compatibleGroup = slot.positionGroup;
 
   const filtered = players.filter(p => {
@@ -40,28 +38,30 @@ export default function PlayerPickerModal({ slot, players, onSelect, onClose }) 
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden">
+    // Full-screen overlay on mobile, centered modal on desktop
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="bg-white w-full md:max-w-2xl md:mx-4 md:rounded-2xl rounded-t-2xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
+        
         {/* Header */}
-        <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-5 flex items-center justify-between">
-          <div>
-            <h2 className="text-white font-bold text-xl">Choisir un joueur</h2>
-            <p className="text-slate-300 text-sm mt-1">
-              Poste : <span className="text-white font-semibold">{slot.label}</span>
-              {compatibleGroup && (
-                <span className="ml-2">
-                  <Badge className={groupColors[compatibleGroup]}>{compatibleGroup}</Badge>
-                </span>
+        <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-4 pt-4 pb-3 flex items-center justify-between flex-shrink-0">
+          {/* Drag handle on mobile */}
+          <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 bg-white/30 rounded-full md:hidden" />
+          <div className="mt-1">
+            <h2 className="text-white font-bold text-lg">Choisir un joueur</h2>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-slate-300 text-sm">Poste : <span className="text-white font-semibold">{slot.label}</span></span>
+              {compatibleGroup && compatibleGroup !== "any" && (
+                <Badge className={`${groupColors[compatibleGroup]} text-xs`}>{compatibleGroup}</Badge>
               )}
-            </p>
+            </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
-            <X className="w-6 h-6" />
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors p-1 ml-2 mt-1">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Search */}
-        <div className="p-4 border-b">
+        <div className="px-4 py-3 border-b flex-shrink-0">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
@@ -69,26 +69,26 @@ export default function PlayerPickerModal({ slot, players, onSelect, onClose }) 
               placeholder="Rechercher par nom ou club..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="pl-10"
+              className="pl-10 h-10"
             />
           </div>
         </div>
 
-        {/* Retirer le joueur */}
-        <div className="px-4 pt-3">
+        {/* Remove player */}
+        <div className="px-4 pt-2 pb-1 flex-shrink-0">
           <button
             onClick={() => onSelect(null)}
-            className="flex items-center gap-2 text-sm text-red-500 hover:text-red-700 transition-colors mb-2"
+            className="flex items-center gap-2 text-sm text-red-500 active:text-red-700 transition-colors py-1"
           >
             <UserX className="w-4 h-4" />
-            Retirer le joueur
+            Retirer le joueur de ce poste
           </button>
         </div>
 
-        {/* Liste */}
-        <div className="overflow-y-auto max-h-[420px] p-4 space-y-2">
+        {/* Player list — scrollable */}
+        <div className="overflow-y-auto flex-1 px-3 pb-4 space-y-1">
           {filtered.length === 0 ? (
-            <p className="text-center text-slate-500 py-8">Aucun joueur trouvé</p>
+            <p className="text-center text-slate-500 py-10">Aucun joueur trouvé</p>
           ) : (
             filtered.map(player => {
               const group = getGroupForPosition(player.poste);
@@ -96,24 +96,27 @@ export default function PlayerPickerModal({ slot, players, onSelect, onClose }) 
                 <button
                   key={player.id}
                   onClick={() => onSelect(player)}
-                  className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all text-left"
+                  className="w-full flex items-center gap-3 p-3 rounded-xl active:bg-slate-100 border border-transparent hover:border-slate-200 transition-all text-left touch-manipulation"
                 >
-                  <div className="w-12 h-12 rounded-full bg-slate-200 overflow-hidden flex-shrink-0">
+                  {/* Avatar */}
+                  <div className="w-11 h-11 rounded-full bg-slate-200 overflow-hidden flex-shrink-0">
                     {player.photo_url ? (
                       <img src={player.photo_url} alt={player.nom} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-400 text-lg font-bold">
+                      <div className="w-full h-full flex items-center justify-center text-slate-500 font-bold text-lg">
                         {player.nom[0]}
                       </div>
                     )}
                   </div>
+                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-slate-900 truncate">{player.nom}</div>
-                    <div className="text-sm text-slate-500 truncate">{player.club_actuel || "Sans club"}</div>
+                    <div className="text-xs text-slate-500 truncate">{player.club_actuel || "Sans club"}</div>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
+                  {/* Badges */}
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
                     {group && (
-                      <Badge className={`${groupColors[group]} text-xs`}>{player.poste}</Badge>
+                      <Badge className={`${groupColors[group]} text-xs px-1.5`}>{player.poste?.split(" ")[0]}</Badge>
                     )}
                     {player.valeur_marchande && (
                       <span className="text-sm font-bold text-green-600">{player.valeur_marchande}M€</span>
