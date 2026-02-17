@@ -47,36 +47,36 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
-import PlayerDetail from './pages/PlayerDetail';
+import AgentNetwork from './pages/AgentNetwork';
 import Alerts from './pages/Alerts';
+import ClubDetail from './pages/ClubDetail';
+import Clubs from './pages/Clubs';
 import Contacts from './pages/Contacts';
-import Teams from './pages/Teams';
-import TeamDetail from './pages/TeamDetail';
-import Reports from './pages/Reports';
 import Dashboard from './pages/Dashboard';
 import MyWatchList from './pages/MyWatchList';
+import PlayerDetail from './pages/PlayerDetail';
 import Players from './pages/Players';
-import AgentNetwork from './pages/AgentNetwork';
+import Reports from './pages/Reports';
+import TeamDetail from './pages/TeamDetail';
+import Teams from './pages/Teams';
 import TransferManagement from './pages/TransferManagement';
-import Clubs from './pages/Clubs';
-import ClubDetail from './pages/ClubDetail';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
-    "PlayerDetail": PlayerDetail,
+    "AgentNetwork": AgentNetwork,
     "Alerts": Alerts,
+    "ClubDetail": ClubDetail,
+    "Clubs": Clubs,
     "Contacts": Contacts,
-    "Teams": Teams,
-    "TeamDetail": TeamDetail,
-    "Reports": Reports,
     "Dashboard": Dashboard,
     "MyWatchList": MyWatchList,
+    "PlayerDetail": PlayerDetail,
     "Players": Players,
-    "AgentNetwork": AgentNetwork,
+    "Reports": Reports,
+    "TeamDetail": TeamDetail,
+    "Teams": Teams,
     "TransferManagement": TransferManagement,
-    "Clubs": Clubs,
-    "ClubDetail": ClubDetail,
 }
 
 export const pagesConfig = {

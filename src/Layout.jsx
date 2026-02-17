@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "./utils";
 import { Users, Star, LogOut, BarChart3, Bell, Phone, Shield, FileText, Network, ArrowRightLeft } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { Toaster } from "@/components/ui/sonner";
 
 export default function Layout({ children, currentPageName }) {
   const navItems = [
@@ -71,6 +72,9 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">{children}</main>
+      
+      {/* Notifications Toast */}
+      <Toaster position="top-right" richColors />
     </div>
   );
 }
