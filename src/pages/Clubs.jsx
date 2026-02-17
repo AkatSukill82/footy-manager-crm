@@ -36,7 +36,7 @@ export default function ClubsPage() {
 
   if (showForm) {
     return (
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
           <Button
             variant="ghost"
@@ -55,36 +55,40 @@ export default function ClubsPage() {
   }
 
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-slate-900">Clubs de football</h1>
-          <p className="text-slate-500 mt-2">Gérez votre base de données des clubs</p>
+    <div className="p-4 md:p-8 space-y-4 md:space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl md:text-4xl font-bold text-slate-900 truncate">Clubs</h1>
+          <p className="text-slate-500 text-sm mt-0.5 hidden md:block">Gérez votre base de données des clubs</p>
         </div>
         <Button 
           onClick={() => setShowForm(true)}
-          className="bg-slate-900 hover:bg-slate-800 shadow-lg"
+          className="bg-slate-900 hover:bg-slate-800 shadow-lg flex-shrink-0"
+          size="sm"
         >
-          <Plus className="w-4 h-4 mr-2" />
-          Ajouter un club
+          <Plus className="w-4 h-4 md:mr-2" />
+          <span className="hidden md:inline">Ajouter un club</span>
+          <span className="md:hidden">Ajouter</span>
         </Button>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+      {/* Filters */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+        <div className="flex flex-col gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Rechercher un club..."
-              className="pl-10"
+              className="pl-9"
             />
           </div>
           <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-slate-400" />
+            <Filter className="w-4 h-4 text-slate-400 flex-shrink-0" />
             <Select value={filterCategorie} onValueChange={setFilterCategorie}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="flex-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
