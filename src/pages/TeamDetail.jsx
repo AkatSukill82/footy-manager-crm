@@ -158,30 +158,30 @@ export default function TeamDetailPage() {
   const goalDiff = team.buts_pour - team.buts_contre;
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      <Button variant="ghost" onClick={() => navigate(createPageUrl("Teams"))}>
+    <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
+      <Button variant="ghost" onClick={() => navigate(createPageUrl("Teams"))} size="sm">
         <ArrowLeft className="w-4 h-4 mr-2" />
-        Retour aux équipes
+        Retour
       </Button>
 
       <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div>
-              <CardTitle className="text-3xl">{team.nom}</CardTitle>
-              <div className="flex items-center gap-2 mt-3">
-                <Badge variant="outline" className="text-base">{team.formation}</Badge>
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <CardTitle className="text-xl md:text-3xl truncate">{team.nom}</CardTitle>
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                <Badge variant="outline">{team.formation}</Badge>
                 {team.budget && (
-                  <Badge className="bg-green-100 text-green-800 text-base">
+                  <Badge className="bg-green-100 text-green-800">
                     Budget: {team.budget}M€
                   </Badge>
                 )}
               </div>
               {team.description && (
-                <p className="text-slate-600 mt-2">{team.description}</p>
+                <p className="text-slate-600 mt-2 text-sm">{team.description}</p>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-shrink-0">
               <Button variant="outline" size="icon" onClick={() => setIsEditing(true)}>
                 <Edit2 className="w-4 h-4" />
               </Button>
@@ -199,34 +199,34 @@ export default function TeamDetailPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-4 gap-6">
+        <CardContent className="pt-0">
+          <div className="grid grid-cols-4 gap-2 md:gap-6">
             <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600">{team.matchs_joues || 0}</div>
-              <div className="text-sm text-slate-600">Matchs</div>
+              <div className="text-xl md:text-3xl font-bold text-blue-600">{team.matchs_joues || 0}</div>
+              <div className="text-xs md:text-sm text-slate-600">Matchs</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-yellow-600">{points}</div>
-              <div className="text-sm text-slate-600">Points</div>
+              <div className="text-xl md:text-3xl font-bold text-yellow-600">{points}</div>
+              <div className="text-xs md:text-sm text-slate-600">Points</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-green-600">
+              <div className="text-lg md:text-3xl font-bold text-green-600">
                 {team.victoires || 0}-{team.nuls || 0}-{team.defaites || 0}
               </div>
-              <div className="text-sm text-slate-600">V-N-D</div>
+              <div className="text-xs md:text-sm text-slate-600">V-N-D</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-purple-600">
+              <div className="text-xl md:text-3xl font-bold text-purple-600">
                 {goalDiff >= 0 ? '+' : ''}{goalDiff}
               </div>
-              <div className="text-sm text-slate-600">Diff. buts</div>
+              <div className="text-xs md:text-sm text-slate-600">Diff.</div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="builder" className="space-y-6">
-        <TabsList className="grid w-full max-w-sm grid-cols-2">
+      <Tabs defaultValue="builder" className="space-y-4 md:space-y-6">
+        <TabsList className="grid w-full max-w-xs grid-cols-2">
           <TabsTrigger value="builder">🏟️ Terrain</TabsTrigger>
           <TabsTrigger value="manage">⚙️ Gestion</TabsTrigger>
         </TabsList>

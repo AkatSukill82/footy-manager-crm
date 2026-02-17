@@ -89,16 +89,16 @@ export default function Dashboard() {
   const watchListValue = myWatchedPlayers.reduce((sum, p) => sum + (p.valeur_marchande || 0), 0);
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
       <NotificationSystem user={user} />
       
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Tableau de bord</h1>
-        <p className="text-slate-600 mt-1">Vue personnalisée et analyses de votre activité</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Tableau de bord</h1>
+        <p className="text-slate-600 mt-0.5 text-sm hidden md:block">Vue personnalisée et analyses de votre activité</p>
       </div>
 
-      <Tabs value={activeView} onValueChange={setActiveView} className="space-y-6">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+      <Tabs value={activeView} onValueChange={setActiveView} className="space-y-4 md:space-y-6">
+        <TabsList className="grid w-full max-w-xs grid-cols-2">
           <TabsTrigger value="personalized" className="flex items-center gap-2">
             <LayoutDashboard className="w-4 h-4" />
             Personnalisé

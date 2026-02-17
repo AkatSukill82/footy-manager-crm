@@ -47,20 +47,19 @@ export default function TeamsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
-            <Users className="w-8 h-8 text-blue-600" />
-            Mes équipes
+    <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-2">
+            <Users className="w-6 h-6 md:w-8 md:h-8 text-blue-600 flex-shrink-0" />
+            <span className="truncate">Mes équipes</span>
           </h1>
-          <p className="text-slate-600 mt-1">
-            Créez et gérez vos équipes virtuelles
-          </p>
+          <p className="text-slate-600 mt-0.5 text-sm hidden md:block">Créez et gérez vos équipes virtuelles</p>
         </div>
-        <Button onClick={() => setShowForm(!showForm)} className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="w-5 h-5 mr-2" />
-          Nouvelle équipe
+        <Button onClick={() => setShowForm(!showForm)} className="bg-blue-600 hover:bg-blue-700 flex-shrink-0" size="sm">
+          <Plus className="w-4 h-4 md:mr-2" />
+          <span className="hidden md:inline">Nouvelle équipe</span>
+          <span className="md:hidden">Nouvelle</span>
         </Button>
       </div>
 
