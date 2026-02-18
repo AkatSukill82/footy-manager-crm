@@ -366,6 +366,7 @@ export default function PlayerSearchPage() {
                       ["Buts", result.stats_saison_actuelle.buts, "bg-green-50 text-green-700"],
                       ["Passes D.", result.stats_saison_actuelle.passes_decisives, "bg-blue-50 text-blue-700"],
                       ["Jaunes", result.stats_saison_actuelle.cartons_jaunes, "bg-yellow-50"],
+                      ["Note Sofascore", result.stats_saison_actuelle.note_sofascore, "bg-indigo-50 text-indigo-700"],
                     ].filter(([, v]) => v != null).map(([label, value, cls]) => (
                       <div key={label} className={`${cls} rounded-xl p-3 text-center`}>
                         <div className={`font-bold text-xl`}>{value}</div>
