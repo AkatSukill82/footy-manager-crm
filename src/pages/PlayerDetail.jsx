@@ -16,6 +16,7 @@ import ContactHistory from "../components/contacts/ContactHistory";
 import RemindersList from "../components/contacts/RemindersList";
 import EnrichPlayerAI from "../components/players/EnrichPlayerAI";
 import PlayerComparison from "../components/players/PlayerComparison";
+import ImportTransfermarktPhoto from "../components/players/ImportTransfermarktPhoto";
 import { format } from "date-fns";
 
 const posteColors = {
