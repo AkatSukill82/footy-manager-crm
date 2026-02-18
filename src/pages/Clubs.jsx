@@ -4,9 +4,10 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Plus, Search, Filter } from "lucide-react";
+import { Building2, Plus, Search, Filter, Globe } from "lucide-react";
 import ClubCard from "../components/clubs/ClubCard";
 import ClubForm from "../components/clubs/ClubForm";
+import ClubSearch from "../components/clubs/ClubSearch";
 
 export default function ClubsPage() {
   const queryClient = useQueryClient();
