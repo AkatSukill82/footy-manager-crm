@@ -40,17 +40,23 @@ export default function ClubsPage() {
     return (
       <div className="p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
-          <Button
-            variant="ghost"
-            onClick={() => setShowForm(false)}
-            className="mb-4"
-          >
-            ← Retour
-          </Button>
-          <ClubForm
-            onSubmit={(data) => createClubMutation.mutate(data)}
-            onCancel={() => setShowForm(false)}
-          />
+          <Button variant="ghost" onClick={() => setShowForm(false)} className="mb-4">← Retour</Button>
+          <ClubForm onSubmit={(data) => createClubMutation.mutate(data)} onCancel={() => setShowForm(false)} />
+        </div>
+      </div>
+    );
+  }
+
+  if (showSearch) {
+    return (
+      <div className="p-4 md:p-8">
+        <div className="max-w-3xl mx-auto">
+          <Button variant="ghost" onClick={() => setShowSearch(false)} className="mb-4">← Retour</Button>
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-slate-900">Rechercher un club</h2>
+            <p className="text-slate-500 text-sm mt-1">Données récupérées depuis Transfermarkt & Sofascore</p>
+          </div>
+          <ClubSearch onClose={() => setShowSearch(false)} />
         </div>
       </div>
     );
