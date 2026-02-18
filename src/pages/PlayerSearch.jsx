@@ -6,11 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Search, Loader2, User, MapPin, Calendar, TrendingUp,
-  Ruler, Trophy, Target, BarChart2, Clock, Plus, ArrowRight
-} from "lucide-react";
+  Ruler, Trophy, Target, BarChart2, Clock, Plus, ArrowRight } from
+"lucide-react";
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
-} from "recharts";
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from
+"recharts";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -163,9 +163,9 @@ export default function PlayerSearchPage() {
       pied_fort: result.pied_fort,
       taille: result.taille,
       contrat_fin: result.contrat_fin,
-      photo_url: result.photo_url,
+      photo_url: result.photo_url
     };
-    Object.keys(playerData).forEach(k => playerData[k] == null && delete playerData[k]);
+    Object.keys(playerData).forEach((k) => playerData[k] == null && delete playerData[k]);
     const created = await base44.entities.Player.create(playerData);
     queryClient.invalidateQueries({ queryKey: ['players'] });
     setSaving(false);
@@ -196,36 +196,36 @@ export default function PlayerSearchPage() {
             <Search className="w-7 h-7 text-green-500" />
             Recherche de joueur
           </h1>
-          <p className="text-sm text-slate-500 mt-1">Données Transfermarkt & Sofascore</p>
+          
         </div>
 
         {/* Search bar */}
         <form onSubmit={handleSearch} className="flex gap-2">
           <Input
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={(e) => setQuery(e.target.value)}
             placeholder="Ex: Kylian Mbappé, Erling Haaland..."
-            className="flex-1 h-12 text-base shadow-sm"
-          />
+            className="flex-1 h-12 text-base shadow-sm" />
+
           <Button type="submit" disabled={loading} className="h-12 px-6 bg-green-600 hover:bg-green-700">
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
           </Button>
         </form>
 
         {/* Loading */}
-        {loading && (
-          <div className="flex flex-col items-center justify-center py-16 gap-4">
+        {loading &&
+        <div className="flex flex-col items-center justify-center py-16 gap-4">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
               <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
             </div>
             <p className="text-slate-600 font-medium">Consultation de Transfermarkt & Sofascore…</p>
             <p className="text-xs text-slate-400">Cela peut prendre 10–20 secondes</p>
           </div>
-        )}
+        }
 
         {/* Result */}
-        {result && (
-          <div className="space-y-4">
+        {result &&
+        <div className="space-y-4">
 
             {/* Identity card */}
             <Card className="overflow-hidden">
@@ -233,9 +233,9 @@ export default function PlayerSearchPage() {
               <CardContent className="pt-5">
                 <div className="flex items-start gap-4">
                   <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-gradient-to-br from-slate-200 to-slate-300 flex-shrink-0 overflow-hidden">
-                    {result.photo_url
-                      ? <img src={result.photo_url} alt={result.nom} className="w-full h-full object-cover" onError={e => e.target.style.display = 'none'} />
-                      : <User className="w-10 h-10 text-slate-400 m-auto mt-6" />}
+                    {result.photo_url ?
+                  <img src={result.photo_url} alt={result.nom} className="w-full h-full object-cover" onError={(e) => e.target.style.display = 'none'} /> :
+                  <User className="w-10 h-10 text-slate-400 m-auto mt-6" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h2 className="text-xl md:text-2xl font-bold text-slate-900">{result.nom_complet || result.nom}</h2>
@@ -245,52 +245,52 @@ export default function PlayerSearchPage() {
                       {result.nationalite && <Badge variant="outline">{result.nationalite}</Badge>}
                       {result.deuxieme_nationalite && <Badge variant="outline">{result.deuxieme_nationalite}</Badge>}
                     </div>
-                    {result.description && (
-                      <p className="text-xs text-slate-500 mt-2 line-clamp-2">{result.description}</p>
-                    )}
+                    {result.description &&
+                  <p className="text-xs text-slate-500 mt-2 line-clamp-2">{result.description}</p>
+                  }
                   </div>
                   <Button
-                    onClick={handleSaveToApp}
-                    disabled={saving || saved}
-                    className={`flex-shrink-0 ${saved ? "bg-green-600" : "bg-slate-900 hover:bg-slate-700"}`}
-                    size="sm"
-                  >
+                  onClick={handleSaveToApp}
+                  disabled={saving || saved}
+                  className={`flex-shrink-0 ${saved ? "bg-green-600" : "bg-slate-900 hover:bg-slate-700"}`}
+                  size="sm">
+
                     {saved ? <><Trophy className="w-4 h-4 mr-1" /> Sauvegardé</> :
-                     saving ? <Loader2 className="w-4 h-4 animate-spin" /> :
-                     <><Plus className="w-4 h-4 mr-1" /> Ajouter</>}
+                  saving ? <Loader2 className="w-4 h-4 animate-spin" /> :
+                  <><Plus className="w-4 h-4 mr-1" /> Ajouter</>}
                   </Button>
                 </div>
 
                 {/* Key stats */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
-                  {result.age && (
-                    <div className="bg-slate-50 rounded-xl p-3 text-center">
+                  {result.age &&
+                <div className="bg-slate-50 rounded-xl p-3 text-center">
                       <Calendar className="w-4 h-4 text-slate-400 mx-auto mb-1" />
                       <div className="font-bold text-lg text-slate-900">{result.age}</div>
                       <div className="text-xs text-slate-500">ans</div>
                     </div>
-                  )}
-                  {result.taille && (
-                    <div className="bg-slate-50 rounded-xl p-3 text-center">
+                }
+                  {result.taille &&
+                <div className="bg-slate-50 rounded-xl p-3 text-center">
                       <Ruler className="w-4 h-4 text-slate-400 mx-auto mb-1" />
                       <div className="font-bold text-lg text-slate-900">{result.taille}</div>
                       <div className="text-xs text-slate-500">cm</div>
                     </div>
-                  )}
-                  {result.valeur_marchande && (
-                    <div className="bg-green-50 rounded-xl p-3 text-center">
+                }
+                  {result.valeur_marchande &&
+                <div className="bg-green-50 rounded-xl p-3 text-center">
                       <TrendingUp className="w-4 h-4 text-green-500 mx-auto mb-1" />
                       <div className="font-bold text-lg text-green-700">{result.valeur_marchande}M€</div>
                       <div className="text-xs text-slate-500">Valeur marchande</div>
                     </div>
-                  )}
-                  {result.pied_fort && (
-                    <div className="bg-slate-50 rounded-xl p-3 text-center">
+                }
+                  {result.pied_fort &&
+                <div className="bg-slate-50 rounded-xl p-3 text-center">
                       <Target className="w-4 h-4 text-slate-400 mx-auto mb-1" />
                       <div className="font-bold text-sm text-slate-900">{result.pied_fort}</div>
                       <div className="text-xs text-slate-500">Pied fort</div>
                     </div>
-                  )}
+                }
                 </div>
               </CardContent>
             </Card>
@@ -305,20 +305,20 @@ export default function PlayerSearchPage() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {[
-                    ["Nom complet", result.nom_complet],
-                    ["Date de naissance", result.date_naissance],
-                    ["Lieu de naissance", result.lieu_naissance],
-                    ["Nationalité", result.nationalite],
-                    ["2ème nationalité", result.deuxieme_nationalite],
-                    ["Taille", result.taille ? `${result.taille} cm` : null],
-                    ["Poids", result.poids ? `${result.poids} kg` : null],
-                    ["Pied fort", result.pied_fort],
-                  ].filter(([, v]) => v).map(([label, value]) => (
-                    <div key={label} className="flex justify-between text-sm py-1 border-b border-slate-50 last:border-0">
+                ["Nom complet", result.nom_complet],
+                ["Date de naissance", result.date_naissance],
+                ["Lieu de naissance", result.lieu_naissance],
+                ["Nationalité", result.nationalite],
+                ["2ème nationalité", result.deuxieme_nationalite],
+                ["Taille", result.taille ? `${result.taille} cm` : null],
+                ["Poids", result.poids ? `${result.poids} kg` : null],
+                ["Pied fort", result.pied_fort]].
+                filter(([, v]) => v).map(([label, value]) =>
+                <div key={label} className="flex justify-between text-sm py-1 border-b border-slate-50 last:border-0">
                       <span className="text-slate-500">{label}</span>
                       <span className="font-medium text-slate-900">{value}</span>
                     </div>
-                  ))}
+                )}
                 </CardContent>
               </Card>
 
@@ -331,26 +331,26 @@ export default function PlayerSearchPage() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {[
-                    ["Club actuel", result.club_actuel],
-                    ["N° maillot", result.numero_maillot],
-                    ["Poste", result.poste],
-                    ["Début de contrat", result.contrat_debut],
-                    ["Fin de contrat", result.contrat_fin],
-                    ["Agent", result.agent],
-                    ["Salaire estimé", result.salaire_mensuel_estime],
-                  ].filter(([, v]) => v).map(([label, value]) => (
-                    <div key={label} className="flex justify-between text-sm py-1 border-b border-slate-50 last:border-0">
+                ["Club actuel", result.club_actuel],
+                ["N° maillot", result.numero_maillot],
+                ["Poste", result.poste],
+                ["Début de contrat", result.contrat_debut],
+                ["Fin de contrat", result.contrat_fin],
+                ["Agent", result.agent],
+                ["Salaire estimé", result.salaire_mensuel_estime]].
+                filter(([, v]) => v).map(([label, value]) =>
+                <div key={label} className="flex justify-between text-sm py-1 border-b border-slate-50 last:border-0">
                       <span className="text-slate-500">{label}</span>
                       <span className="font-medium text-slate-900">{value}</span>
                     </div>
-                  ))}
+                )}
                 </CardContent>
               </Card>
             </div>
 
             {/* Stats saison actuelle */}
-            {result.stats_saison_actuelle && (
-              <Card>
+            {result.stats_saison_actuelle &&
+          <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <BarChart2 className="w-4 h-4 text-purple-500" />
@@ -360,27 +360,27 @@ export default function PlayerSearchPage() {
                 <CardContent>
                   <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
                     {[
-                      ["Matchs", result.stats_saison_actuelle.matchs, "bg-slate-50"],
-                      ["Titulaire", result.stats_saison_actuelle.titulaire, "bg-slate-50"],
-                      ["Minutes", result.stats_saison_actuelle.minutes, "bg-slate-50"],
-                      ["Buts", result.stats_saison_actuelle.buts, "bg-green-50 text-green-700"],
-                      ["Passes D.", result.stats_saison_actuelle.passes_decisives, "bg-blue-50 text-blue-700"],
-                      ["Jaunes", result.stats_saison_actuelle.cartons_jaunes, "bg-yellow-50"],
-                      ["Note Sofascore", result.stats_saison_actuelle.note_sofascore, "bg-indigo-50 text-indigo-700"],
-                    ].filter(([, v]) => v != null).map(([label, value, cls]) => (
-                      <div key={label} className={`${cls} rounded-xl p-3 text-center`}>
+                ["Matchs", result.stats_saison_actuelle.matchs, "bg-slate-50"],
+                ["Titulaire", result.stats_saison_actuelle.titulaire, "bg-slate-50"],
+                ["Minutes", result.stats_saison_actuelle.minutes, "bg-slate-50"],
+                ["Buts", result.stats_saison_actuelle.buts, "bg-green-50 text-green-700"],
+                ["Passes D.", result.stats_saison_actuelle.passes_decisives, "bg-blue-50 text-blue-700"],
+                ["Jaunes", result.stats_saison_actuelle.cartons_jaunes, "bg-yellow-50"],
+                ["Note Sofascore", result.stats_saison_actuelle.note_sofascore, "bg-indigo-50 text-indigo-700"]].
+                filter(([, v]) => v != null).map(([label, value, cls]) =>
+                <div key={label} className={`${cls} rounded-xl p-3 text-center`}>
                         <div className={`font-bold text-xl`}>{value}</div>
                         <div className="text-xs text-slate-500">{label}</div>
                       </div>
-                    ))}
+                )}
                   </div>
                 </CardContent>
               </Card>
-            )}
+          }
 
             {/* Valeur marchande - courbe */}
-            {result.valeur_historique && result.valeur_historique.length > 1 && (
-              <Card>
+            {result.valeur_historique && result.valeur_historique.length > 1 &&
+          <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-green-500" /> Évolution valeur marchande — Transfermarkt (M€)
@@ -404,19 +404,19 @@ export default function PlayerSearchPage() {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
-            )}
+          }
 
             {/* Historique clubs */}
-            {result.historique_clubs && result.historique_clubs.length > 0 && (
-              <Card>
+            {result.historique_clubs && result.historique_clubs.length > 0 &&
+          <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-red-500" /> Historique des clubs
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  {result.historique_clubs.map((club, i) => (
-                    <div key={i} className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-lg">
+                  {result.historique_clubs.map((club, i) =>
+              <div key={i} className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-lg">
                       <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm text-slate-900">{club.club}</div>
@@ -428,14 +428,14 @@ export default function PlayerSearchPage() {
                         {club.passes != null && <div><span className="font-semibold text-blue-600">{club.passes}</span><div className="text-slate-400">passes</div></div>}
                       </div>
                     </div>
-                  ))}
+              )}
                 </CardContent>
               </Card>
-            )}
+          }
 
             {/* Stats par saison */}
-            {result.stats_par_saison && result.stats_par_saison.length > 0 && (
-              <Card>
+            {result.stats_par_saison && result.stats_par_saison.length > 0 &&
+          <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <BarChart2 className="w-4 h-4 text-indigo-500" /> Stats par saison
@@ -454,25 +454,25 @@ export default function PlayerSearchPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {result.stats_par_saison.map((s, i) => (
-                          <tr key={i} className="border-b border-slate-50 last:border-0">
+                        {result.stats_par_saison.map((s, i) =>
+                    <tr key={i} className="border-b border-slate-50 last:border-0">
                             <td className="py-2 font-medium text-slate-700">{s.saison}</td>
                             <td className="py-2 text-slate-500 text-xs">{s.club}</td>
                             <td className="py-2 text-center">{s.matchs ?? "—"}</td>
                             <td className="py-2 text-center font-semibold text-green-600">{s.buts ?? "—"}</td>
                             <td className="py-2 text-center font-semibold text-blue-600">{s.passes ?? "—"}</td>
                           </tr>
-                        ))}
+                    )}
                       </tbody>
                     </table>
                   </div>
                 </CardContent>
               </Card>
-            )}
+          }
 
             {/* Sélection nationale */}
-            {result.selection_nationale && (
-              <Card>
+            {result.selection_nationale &&
+          <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <Trophy className="w-4 h-4 text-yellow-500" /> Sélection nationale
@@ -482,26 +482,26 @@ export default function PlayerSearchPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-semibold text-slate-900">{result.selection_nationale.equipe}</div>
-                      {result.selection_nationale.premiere_selection && (
-                        <div className="text-xs text-slate-500">1ère sélection: {result.selection_nationale.premiere_selection}</div>
-                      )}
+                      {result.selection_nationale.premiere_selection &&
+                  <div className="text-xs text-slate-500">1ère sélection: {result.selection_nationale.premiere_selection}</div>
+                  }
                     </div>
                     <div className="flex gap-4 text-center">
-                      {result.selection_nationale.matchs != null && (
-                        <div><div className="font-bold text-xl text-slate-900">{result.selection_nationale.matchs}</div><div className="text-xs text-slate-500">matchs</div></div>
-                      )}
-                      {result.selection_nationale.buts != null && (
-                        <div><div className="font-bold text-xl text-green-600">{result.selection_nationale.buts}</div><div className="text-xs text-slate-500">buts</div></div>
-                      )}
+                      {result.selection_nationale.matchs != null &&
+                  <div><div className="font-bold text-xl text-slate-900">{result.selection_nationale.matchs}</div><div className="text-xs text-slate-500">matchs</div></div>
+                  }
+                      {result.selection_nationale.buts != null &&
+                  <div><div className="font-bold text-xl text-green-600">{result.selection_nationale.buts}</div><div className="text-xs text-slate-500">buts</div></div>
+                  }
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            )}
+          }
 
             {/* Palmarès */}
-            {result.palmares && result.palmares.length > 0 && (
-              <Card>
+            {result.palmares && result.palmares.length > 0 &&
+          <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <Trophy className="w-4 h-4 text-amber-500" /> Palmarès
@@ -509,29 +509,29 @@ export default function PlayerSearchPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
-                    {result.palmares.map((t, i) => (
-                      <Badge key={i} className="bg-amber-50 text-amber-800 border border-amber-200">{t}</Badge>
-                    ))}
+                    {result.palmares.map((t, i) =>
+                <Badge key={i} className="bg-amber-50 text-amber-800 border border-amber-200">{t}</Badge>
+                )}
                   </div>
                 </CardContent>
               </Card>
-            )}
+          }
 
             {/* CTA Ajouter */}
             <div className="flex justify-end pb-6">
               <Button
-                onClick={handleSaveToApp}
-                disabled={saving || saved}
-                className={`${saved ? "bg-green-600" : "bg-slate-900 hover:bg-slate-700"} px-6`}
-              >
+              onClick={handleSaveToApp}
+              disabled={saving || saved}
+              className={`${saved ? "bg-green-600" : "bg-slate-900 hover:bg-slate-700"} px-6`}>
+
                 {saved ? "Joueur ajouté !" : saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 {!saved && !saving && <><Plus className="w-4 h-4 mr-2" /> Ajouter à mes joueurs</>}
                 {saved && <><ArrowRight className="w-4 h-4 ml-2" /> Voir la fiche</>}
               </Button>
             </div>
           </div>
-        )}
+        }
       </div>
-    </div>
-  );
+    </div>);
+
 }
