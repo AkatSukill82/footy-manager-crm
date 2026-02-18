@@ -97,7 +97,11 @@ export default function PlayerSearchPage() {
               passes_decisives: { type: "number" },
               cartons_jaunes: { type: "number" },
               cartons_rouges: { type: "number" },
-              buts_par_match: { type: "number" }
+              buts_par_match: { type: "number" },
+              note_sofascore: { type: "number" },
+              tirs_par_match: { type: "number" },
+              duels_gagnes_pct: { type: "number" },
+              passes_reussies_pct: { type: "number" }
             }
           },
           stats_par_saison: {
