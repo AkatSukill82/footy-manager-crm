@@ -32,20 +32,21 @@ export default function PlayerSearchPage() {
     setSaved(false);
 
     const data = await base44.integrations.Core.InvokeLLM({
-      prompt: `Recherche des informations COMPLÈTES et à jour sur le joueur de football "${query}".
-      Cherche sur Transfermarkt, Wikipedia, les sites officiels des clubs, Sofascore, FBref, etc.
-      
-      Pour l'historique des clubs, liste tous les clubs dans l'ordre chronologique.
-      Pour les stats par saison, liste les saisons les plus récentes en premier.
-      Pour la valeur marchande historique, donne l'évolution sur les dernières années pour faire une courbe.
-      
-      IMPORTANT:
-      - valeur_marchande en millions d'euros (nombre)
-      - taille en cm (nombre entier)
-      - age en années (nombre entier)
-      - pied_fort: "Droit", "Gauche" ou "Les deux"
-      - poste: parmi Gardien, Défenseur central, Latéral droit, Latéral gauche, Milieu défensif, Milieu central, Milieu offensif, Ailier droit, Ailier gauche, Attaquant
-      - dates au format YYYY-MM-DD
+      prompt: `Tu es un expert en football. Recherche des informations COMPLÈTES et à jour sur le joueur "${query}" en consultant UNIQUEMENT ces deux sources :
+      1. **Transfermarkt** (transfermarkt.fr ou transfermarkt.com) : profil du joueur, valeur marchande actuelle, historique de la valeur marchande avec toutes les dates disponibles (au moins 8-10 points de données pour tracer une courbe précise), historique de tous ses clubs avec dates exactes d'arrivée et de départ, infos contractuelles, infos personnelles (taille, poids, pied fort, date et lieu de naissance, nationalité, agent).
+      2. **Sofascore** (sofascore.com) : statistiques détaillées de la saison en cours (matchs joués, titularisations, minutes jouées, buts, passes décisives, cartons jaunes/rouges, note moyenne Sofascore), et statistiques pour chaque saison précédente (saison, club, matchs, buts, passes).
+
+      Pour l'historique de valeur marchande : donne TOUTES les évaluations disponibles sur Transfermarkt avec leur date exacte (format YYYY-MM) pour créer une courbe d'évolution complète. C'est une priorité absolue.
+      Pour l'historique des clubs : liste TOUS les clubs du joueur depuis ses débuts dans l'ordre chronologique avec les dates précises.
+      Pour les stats par saison : liste toutes les saisons disponibles, de la plus récente à la plus ancienne.
+
+      RÈGLES DE FORMAT :
+      - valeur_marchande : nombre en millions d'euros (ex: 180 pour 180M€)
+      - taille : nombre entier en cm
+      - age : nombre entier en années
+      - pied_fort : "Droit", "Gauche" ou "Les deux"
+      - poste : exactement parmi Gardien, Défenseur central, Latéral droit, Latéral gauche, Milieu défensif, Milieu central, Milieu offensif, Ailier droit, Ailier gauche, Attaquant
+      - toutes les dates au format YYYY-MM-DD (ou YYYY-MM pour valeur_historique)
       - Si une info est introuvable, mets null`,
       add_context_from_internet: true,
       response_json_schema: {
