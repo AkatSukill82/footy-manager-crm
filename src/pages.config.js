@@ -55,12 +55,12 @@ import Contacts from './pages/Contacts';
 import Dashboard from './pages/Dashboard';
 import MyWatchList from './pages/MyWatchList';
 import PlayerDetail from './pages/PlayerDetail';
+import PlayerSearch from './pages/PlayerSearch';
 import Players from './pages/Players';
 import Reports from './pages/Reports';
 import TeamDetail from './pages/TeamDetail';
 import Teams from './pages/Teams';
 import TransferManagement from './pages/TransferManagement';
-import PlayerSearch from './pages/PlayerSearch';
 import __Layout from './Layout.jsx';
 
 
@@ -73,12 +73,12 @@ export const PAGES = {
     "Dashboard": Dashboard,
     "MyWatchList": MyWatchList,
     "PlayerDetail": PlayerDetail,
+    "PlayerSearch": PlayerSearch,
     "Players": Players,
     "Reports": Reports,
     "TeamDetail": TeamDetail,
     "Teams": Teams,
     "TransferManagement": TransferManagement,
-    "PlayerSearch": PlayerSearch,
 }
 
 export const pagesConfig = {
