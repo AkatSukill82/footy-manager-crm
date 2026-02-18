@@ -19,6 +19,7 @@ const navItems = [
   { name: "TransferManagement", label: "Transferts",         icon: ArrowRightLeft },
   { name: "Reports",            label: "Rapports",           icon: FileText },
   { name: "AgentNetwork",       label: "Réseau Agents",      icon: Network },
+  { name: "PlayerSearch",       label: "Recherche IA",        icon: SearchCheck },
 ];
 
 // Bottom nav shows 5 key items; rest accessible via drawer
