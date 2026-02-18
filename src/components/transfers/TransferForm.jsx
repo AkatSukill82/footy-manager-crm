@@ -97,7 +97,7 @@ export default function TransferForm({ playerId, onSubmit }) {
               />
             </div>
             
-            <div className="md:col-span-2">
+            <div>
               <Label htmlFor="montant">Montant (M€)</Label>
               <Input
                 id="montant"
@@ -105,6 +105,40 @@ export default function TransferForm({ playerId, onSubmit }) {
                 step="0.1"
                 value={formData.montant}
                 onChange={(e) => setFormData({ ...formData, montant: parseFloat(e.target.value) })}
+                placeholder={formData.type_transfert === "Libre" ? "Gratuit" : "ex: 25.5"}
+                disabled={formData.type_transfert === "Libre" || formData.type_transfert === "Fin de prêt"}
+              />
+            </div>
+
+            {!isPret ? (
+              <div>
+                <Label htmlFor="duree_contrat">Durée du contrat</Label>
+                <Input
+                  id="duree_contrat"
+                  value={formData.duree_contrat}
+                  onChange={(e) => setFormData({ ...formData, duree_contrat: e.target.value })}
+                  placeholder="ex: 3 ans, jusqu'en 2028"
+                />
+              </div>
+            ) : (
+              <div>
+                <Label htmlFor="date_fin_pret">Fin de prêt</Label>
+                <Input
+                  id="date_fin_pret"
+                  type="date"
+                  value={formData.date_fin_pret}
+                  onChange={(e) => setFormData({ ...formData, date_fin_pret: e.target.value })}
+                />
+              </div>
+            )}
+
+            <div className="md:col-span-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Input
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Informations complémentaires…"
               />
             </div>
           </div>
