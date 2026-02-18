@@ -196,7 +196,7 @@ export default function PlayerSearchPage() {
             <Search className="w-7 h-7 text-green-500" />
             Recherche de joueur
           </h1>
-          <p className="text-sm text-slate-500 mt-1">Toutes les données disponibles sur internet</p>
+          <p className="text-sm text-slate-500 mt-1">Données Transfermarkt & Sofascore</p>
         </div>
 
         {/* Search bar */}
