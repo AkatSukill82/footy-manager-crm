@@ -383,7 +383,7 @@ export default function PlayerSearchPage() {
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-green-500" /> Évolution valeur marchande (M€)
+                    <TrendingUp className="w-4 h-4 text-green-500" /> Évolution valeur marchande — Transfermarkt (M€)
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
