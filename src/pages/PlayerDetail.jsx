@@ -363,6 +363,14 @@ export default function PlayerDetailPage() {
               onApply={(data) => updatePlayerMutation.mutate(data)}
             />
           </div>
+
+          {/* Comparison section - full width below */}
+          <div className="lg:col-span-3">
+            <PlayerComparison
+              currentPlayer={player}
+              allPlayers={allPlayers}
+            />
+          </div>
         </div>
       </div>
     </div>
