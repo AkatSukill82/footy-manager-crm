@@ -359,6 +359,11 @@ export default function PlayerDetailPage() {
               onUpdateStatus={(id, statut) => updateReminderMutation.mutate({ id, statut })}
             />
 
+            <ImportTransfermarktPhoto
+              player={player}
+              onApply={(data) => updatePlayerMutation.mutate(data)}
+            />
+
             <EnrichPlayerAI
               player={player}
               onApply={(data) => updatePlayerMutation.mutate(data)}
