@@ -70,15 +70,26 @@ export default function ClubsPage() {
           <h1 className="text-2xl md:text-4xl font-bold text-slate-900 truncate">Clubs</h1>
           <p className="text-slate-500 text-sm mt-0.5 hidden md:block">Gérez votre base de données des clubs</p>
         </div>
-        <Button 
-          onClick={() => setShowForm(true)}
-          className="bg-slate-900 hover:bg-slate-800 shadow-lg flex-shrink-0"
-          size="sm"
-        >
-          <Plus className="w-4 h-4 md:mr-2" />
-          <span className="hidden md:inline">Ajouter un club</span>
-          <span className="md:hidden">Ajouter</span>
-        </Button>
+        <div className="flex gap-2 flex-shrink-0">
+          <Button
+            onClick={() => setShowSearch(true)}
+            variant="outline"
+            size="sm"
+            className="border-green-300 text-green-700 hover:bg-green-50"
+          >
+            <Globe className="w-4 h-4 md:mr-2" />
+            <span className="hidden md:inline">Rechercher en ligne</span>
+          </Button>
+          <Button 
+            onClick={() => setShowForm(true)}
+            className="bg-slate-900 hover:bg-slate-800 shadow-lg"
+            size="sm"
+          >
+            <Plus className="w-4 h-4 md:mr-2" />
+            <span className="hidden md:inline">Ajouter manuellement</span>
+            <span className="md:hidden">Ajouter</span>
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
