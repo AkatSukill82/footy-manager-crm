@@ -12,6 +12,7 @@ import ClubSearch from "../components/clubs/ClubSearch";
 export default function ClubsPage() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategorie, setFilterCategorie] = useState("all");
 
