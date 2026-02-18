@@ -60,6 +60,7 @@ import Reports from './pages/Reports';
 import TeamDetail from './pages/TeamDetail';
 import Teams from './pages/Teams';
 import TransferManagement from './pages/TransferManagement';
+import PlayerSearch from './pages/PlayerSearch';
 import __Layout from './Layout.jsx';
 
 
@@ -77,6 +78,7 @@ export const PAGES = {
     "TeamDetail": TeamDetail,
     "Teams": Teams,
     "TransferManagement": TransferManagement,
+    "PlayerSearch": PlayerSearch,
 }
 
 export const pagesConfig = {
