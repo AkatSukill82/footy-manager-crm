@@ -17,12 +17,12 @@ export default function Dashboard() {
 
   const { data: user } = useQuery({
     queryKey: ['current-user'],
-    queryFn: () => base44.auth.me(),
+    queryFn: () => base44.auth.me()
   });
 
   const { data: players = [], isLoading: loadingPlayers } = useQuery({
     queryKey: ['players'],
-    queryFn: () => base44.entities.Player.list(),
+    queryFn: () => base44.entities.Player.list()
   });
 
   const { data: watchList = [], isLoading: loadingWatchList } = useQuery({
@@ -30,7 +30,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const user = await base44.auth.me();
       return base44.entities.WatchList.filter({ created_by: user.email });
-    },
+    }
   });
 
   const { data: negociations = [] } = useQuery({
@@ -38,12 +38,12 @@ export default function Dashboard() {
     queryFn: async () => {
       const user = await base44.auth.me();
       return base44.entities.TransferNegociation.filter({ created_by: user.email });
-    },
+    }
   });
 
   const { data: insights = [] } = useQuery({
     queryKey: ['dashboard-insights'],
-    queryFn: () => base44.entities.AgentInsight.list('-created_date', 20),
+    queryFn: () => base44.entities.AgentInsight.list('-created_date', 20)
   });
 
   const { data: reminders = [] } = useQuery({
@@ -51,17 +51,17 @@ export default function Dashboard() {
     queryFn: async () => {
       const user = await base44.auth.me();
       return base44.entities.Reminder.filter({ created_by: user.email });
-    },
+    }
   });
 
   const { data: sharedContent = [] } = useQuery({
     queryKey: ['dashboard-shared'],
-    queryFn: () => base44.entities.SharedContent.list('-created_date', 20),
+    queryFn: () => base44.entities.SharedContent.list('-created_date', 20)
   });
 
   const { data: transfers = [] } = useQuery({
     queryKey: ['dashboard-transfers'],
-    queryFn: () => base44.entities.Transfer.list(),
+    queryFn: () => base44.entities.Transfer.list()
   });
 
   const { data: teams = [] } = useQuery({
@@ -69,23 +69,23 @@ export default function Dashboard() {
     queryFn: async () => {
       const user = await base44.auth.me();
       return base44.entities.Team.filter({ created_by: user.email });
-    },
+    }
   });
 
   if (loadingPlayers || loadingWatchList) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-slate-500">Chargement des statistiques...</div>
-      </div>
-    );
+      </div>);
+
   }
 
   const totalPlayers = players.length;
   const watchedPlayers = watchList.length;
   const totalValue = players.reduce((sum, p) => sum + (p.valeur_marchande || 0), 0);
-  
-  const watchedPlayerIds = new Set(watchList.map(w => w.player_id));
-  const myWatchedPlayers = players.filter(p => watchedPlayerIds.has(p.id));
+
+  const watchedPlayerIds = new Set(watchList.map((w) => w.player_id));
+  const myWatchedPlayers = players.filter((p) => watchedPlayerIds.has(p.id));
   const watchListValue = myWatchedPlayers.reduce((sum, p) => sum + (p.valeur_marchande || 0), 0);
 
   return (
@@ -94,7 +94,7 @@ export default function Dashboard() {
       
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Tableau de bord</h1>
-        <p className="text-slate-600 mt-0.5 text-sm hidden md:block">Vue personnalisée et analyses de votre activité</p>
+        
       </div>
 
       <Tabs value={activeView} onValueChange={setActiveView} className="space-y-4 md:space-y-6">
@@ -110,12 +110,12 @@ export default function Dashboard() {
         </TabsList>
 
         <TabsContent value="personalized" className="space-y-6">
-          <PersonalizedDashboard 
+          <PersonalizedDashboard
             negociations={negociations}
             insights={insights}
             reminders={reminders}
-            sharedContent={sharedContent}
-          />
+            sharedContent={sharedContent} />
+
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6">
@@ -124,26 +124,26 @@ export default function Dashboard() {
               title="Total joueurs"
               value={totalPlayers}
               subtitle="Dans la base de données"
-              color="blue"
-            />
+              color="blue" />
+
             <StatsCard
               title="Ma liste"
               value={watchedPlayers}
               subtitle="Joueurs suivis"
-              color="purple"
-            />
+              color="purple" />
+
             <StatsCard
               title="Valeur totale"
               value={`${totalValue.toFixed(1)}M €`}
               subtitle="Base de données complète"
-              color="green"
-            />
+              color="green" />
+
             <StatsCard
               title="Valeur ma liste"
               value={`${watchListValue.toFixed(1)}M €`}
               subtitle="Joueurs suivis"
-              color="orange"
-            />
+              color="orange" />
+
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -158,12 +158,12 @@ export default function Dashboard() {
         </TabsContent>
       </Tabs>
 
-      <EnhancedCharts 
+      <EnhancedCharts
         players={players}
         transfers={transfers}
         watchList={watchList}
-        teams={teams}
-      />
-    </div>
-  );
+        teams={teams} />
+
+    </div>);
+
 }
