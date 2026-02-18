@@ -13,7 +13,10 @@ export default function TransferForm({ playerId, onSubmit }) {
     club_depart: "",
     club_arrivee: "",
     montant: "",
-    type_transfert: "Transfert définitif"
+    type_transfert: "Transfert définitif",
+    duree_contrat: "",
+    date_fin_pret: "",
+    notes: ""
   });
 
   const handleSubmit = (e) => {
@@ -25,9 +28,14 @@ export default function TransferForm({ playerId, onSubmit }) {
       club_depart: "",
       club_arrivee: "",
       montant: "",
-      type_transfert: "Transfert définitif"
+      type_transfert: "Transfert définitif",
+      duree_contrat: "",
+      date_fin_pret: "",
+      notes: ""
     });
   };
+
+  const isPret = formData.type_transfert === "Prêt";
 
   return (
     <Card>
