@@ -356,6 +356,11 @@ export default function PlayerDetailPage() {
               reminders={reminders}
               onUpdateStatus={(id, statut) => updateReminderMutation.mutate({ id, statut })}
             />
+
+            <EnrichPlayerAI
+              player={player}
+              onApply={(data) => updatePlayerMutation.mutate(data)}
+            />
           </div>
         </div>
       </div>
