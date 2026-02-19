@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, User, MapPin, Calendar, TrendingUp, Ruler, Edit2, Star, Trash2 } from "lucide-react";
+import { ArrowLeft, User, MapPin, Calendar, TrendingUp, Ruler, Edit2, Star, Trash2, BarChart2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import PlayerForm from "../components/players/PlayerForm";
@@ -17,6 +17,7 @@ import RemindersList from "../components/contacts/RemindersList";
 import EnrichPlayerAI from "../components/players/EnrichPlayerAI";
 import PlayerComparison from "../components/players/PlayerComparison";
 import ImportTransfermarktPhoto from "../components/players/ImportTransfermarktPhoto";
+import PlayerStatsPanel from "../components/players/PlayerStatsPanel";
 import { format } from "date-fns";
 
 const posteColors = {
