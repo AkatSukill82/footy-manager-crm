@@ -63,16 +63,22 @@ Retourne TOUTES les informations disponibles. Si une info est inconnue, mets nul
 Règles de format :
 - valeur_marchande : en millions d'euros (nombre décimal, ex: 80.5)
 - salaire : salaire annuel en millions d'euros (nombre décimal, ex: 12.0)
-- taille : en cm (entier, ex: 181)
-- poids : en kg (entier, ex: 73)
-- age : entier
-- dates : format YYYY-MM-DD
+- taille : en cm (entier, ex: 181), poids : en kg (entier, ex: 73)
+- age : entier, dates : format YYYY-MM-DD
 - pied_fort : "Droit", "Gauche" ou "Les deux" uniquement
 - poste / poste_secondaire : parmi : Gardien, Défenseur central, Latéral droit, Latéral gauche, Milieu défensif, Milieu central, Milieu offensif, Ailier droit, Ailier gauche, Attaquant
-- buts / passes_decisives / matchs_joues : entiers pour la saison en cours
+- matchs_joues / buts / passes_decisives / cartons_jaunes / cartons_rouges : entiers pour la saison en cours
+- blessures : nombre total de blessures en carrière (entier)
+- matchs_carriere / buts_carriere / passes_carriere : totaux sur toute la carrière
+- nb_clubs : nombre total de clubs différents dans la carrière
+- matchs_international / buts_international : stats en équipe nationale
 - note_moyenne : note SofaScore (décimal, ex: 7.42)
+- coach : entraîneur principal du club actuel
+- manager : directeur sportif ou manager du club actuel
+- stade : nom du stade du club actuel
+- ligue : nom du championnat actuel (ex: Ligue 1, Premier League)
 - palmares : tous les titres séparés par des virgules
-- stats_resume : résumé des stats en carrière en quelques phrases
+- stats_resume : résumé complet de la carrière en 2-3 phrases
 - transfermarkt_id : uniquement le numéro de l'ID (ex: 342229)`,
       add_context_from_internet: true,
       response_json_schema: {
