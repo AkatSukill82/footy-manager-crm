@@ -335,18 +335,8 @@ export default function PlayerDetailPage() {
               </CardContent>
             </Card>
 
-            {/* Stats card */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <BarChart2 className="w-4 h-4 text-green-600" />
-                  Statistiques & informations détaillées
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <PlayerStatsPanel player={player} transfers={transfers} />
-              </CardContent>
-            </Card>
+            {/* Profil complet identique à Recherche Joueurs */}
+            <PlayerFullProfile player={player} />
 
             {/* Charts & Evolution */}
             <PlayerChartsPanel playerId={playerId} player={player} />
