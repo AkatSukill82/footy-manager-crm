@@ -6,14 +6,49 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Search, Loader2, User, MapPin, Calendar, TrendingUp,
-  Ruler, Trophy, Target, BarChart2, Clock, Plus, ArrowRight } from
-"lucide-react";
+  Ruler, Trophy, Target, BarChart2, Clock, Plus, ArrowRight,
+  Activity, Shield, Zap, Heart, Globe, Star, Dumbbell
+} from "lucide-react";
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from
-"recharts";
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar
+} from "recharts";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+
+const posteColors = {
+  "Gardien": "bg-yellow-100 text-yellow-800",
+  "Défenseur central": "bg-blue-100 text-blue-800",
+  "Latéral droit": "bg-blue-100 text-blue-800",
+  "Latéral gauche": "bg-blue-100 text-blue-800",
+  "Milieu défensif": "bg-green-100 text-green-800",
+  "Milieu central": "bg-green-100 text-green-800",
+  "Milieu offensif": "bg-purple-100 text-purple-800",
+  "Ailier droit": "bg-orange-100 text-orange-800",
+  "Ailier gauche": "bg-orange-100 text-orange-800",
+  "Attaquant": "bg-red-100 text-red-800"
+};
+
+function InfoRow({ label, value }) {
+  if (value == null || value === "") return null;
+  return (
+    <div className="flex justify-between text-sm py-1.5 border-b border-slate-50 last:border-0">
+      <span className="text-slate-500">{label}</span>
+      <span className="font-medium text-slate-900 text-right max-w-[60%]">{value}</span>
+    </div>
+  );
+}
+
+function StatBox({ label, value, color = "bg-slate-50", textColor = "text-slate-900" }) {
+  if (value == null) return null;
+  return (
+    <div className={`${color} rounded-xl p-3 text-center`}>
+      <div className={`font-bold text-lg ${textColor}`}>{value}</div>
+      <div className="text-xs text-slate-500 leading-tight mt-0.5">{label}</div>
+    </div>
+  );
+}
 
 export default function PlayerSearchPage() {
   const [query, setQuery] = useState("");
@@ -32,30 +67,32 @@ export default function PlayerSearchPage() {
     setSaved(false);
 
     const data = await base44.integrations.Core.InvokeLLM({
-      prompt: `Tu es un expert en données football. Recherche des informations ULTRA-COMPLÈTES sur le joueur "${query}" en consultant ces sources :
-      1. **Transfermarkt.fr** : profil complet, valeur marchande actuelle et TOUT l'historique des valeurs (minimum 8-10 points), tous les clubs avec dates précises, contrat, agent, agence, salaire estimé, infos personnelles, blessures.
-      2. **SofaScore** : stats saison en cours (xG, xA, tirs, duels, dribbles, passes, physique, note), stats par saison complètes, infos avancées.
-      3. **Wikipedia / Presse** : palmarès, distinctions individuelles, style de jeu, carrière complète.
+      prompt: `Tu es un expert en données football. Recherche des informations ULTRA-COMPLÈTES et à jour sur le joueur "${query}".
 
-      PRIORITÉ ABSOLUE :
-      - historique_valeur_marchande : TOUTES les évaluations Transfermarkt avec date exacte (YYYY-MM)
-      - historique_clubs : TOUS les clubs depuis les débuts avec dates précises et stats
-      - stats_par_saison : toutes les saisons avec stats détaillées
-      - stats_saison_actuelle : stats SofaScore les plus complètes possibles (xG, xA, duels, dribbles, physique…)
+Consulte impérativement ces sources :
+1. **Transfermarkt.fr** : profil complet, valeur marchande actuelle + tout l'historique de valeurs avec dates (minimum 8-10 points), historique de TOUS les clubs depuis les débuts avec dates précises, infos contractuelles, agent/agence, données physiques, blessures, palmarès.
+2. **SofaScore.com** : stats complètes saison en cours (matchs, titulaire, minutes, buts, passes, cartons, note, xG, xA, tirs, passes clés, dribbles, duels, interceptions, physique), et stats pour TOUTES les saisons précédentes.
+3. **Wikipedia / presse** : biographie, distinctions individuelles, style de jeu, anecdotes.
 
-      RÈGLES FORMAT STRICTES :
-      - valeur_marchande, valeur_marchande_peak : en millions € (ex: 180.0)
-      - salaire_annuel_estime : en millions € (ex: 12.0)
-      - taille : cm entier, poids : kg entier, age : entier
-      - pied_fort : "Droit", "Gauche" ou "Les deux" UNIQUEMENT
-      - poste / poste_secondaire : parmi exactement : Gardien, Défenseur central, Latéral droit, Latéral gauche, Milieu défensif, Milieu central, Milieu offensif, Ailier droit, Ailier gauche, Attaquant
-      - toutes dates : YYYY-MM-DD (YYYY-MM pour historique valeur)
-      - pourcentages (pct) : entre 0 et 100
-      - Si info introuvable : null (jamais inventer)`,
+RETOURNE TOUTES LES DONNÉES. Si une info est inconnue = null. NE PAS INVENTER.
+
+RÈGLES FORMAT STRICTES :
+- valeur_marchande, valeur_marchande_peak, salaire_annuel : en millions € (ex: 85.0)
+- salaire_semaine : en milliers € (ex: 250)  
+- taille : cm entier, poids : kg entier
+- age : entier, dates : YYYY-MM-DD (valeur_historique dates : YYYY-MM)
+- pied_fort : "Droit", "Gauche" ou "Les deux" UNIQUEMENT
+- poste/poste_secondaire parmi : Gardien, Défenseur central, Latéral droit, Latéral gauche, Milieu défensif, Milieu central, Milieu offensif, Ailier droit, Ailier gauche, Attaquant
+- pourcentages : entre 0 et 100 sans symbole %
+- xg, xa : décimaux (ex: 14.3)
+- distance_course : km/match (ex: 11.2), vitesse_max : km/h (ex: 36.5)
+- palmares : tableau de strings (ex: ["Ligue 1 2022", "Champions League 2023"])
+- historique_valeur : TOUTES les évaluations Transfermarkt avec date YYYY-MM et valeur en M€`,
       add_context_from_internet: true,
       response_json_schema: {
         type: "object",
         properties: {
+          // Identité
           nom: { type: "string" },
           nom_complet: { type: "string" },
           age: { type: "number" },
@@ -68,35 +105,126 @@ export default function PlayerSearchPage() {
           pied_fort: { type: "string" },
           taille: { type: "number" },
           poids: { type: "number" },
-          club_actuel: { type: "string" },
-          ligue: { type: "string" },
-          stade: { type: "string" },
-          coach: { type: "string" },
-          manager: { type: "string" },
-          numero_maillot: { type: "number" },
-          agent: { type: "string" },
-          agence: { type: "string" },
-          valeur_marchande: { type: "number" },
-          valeur_marchande_peak: { type: "number" },
-          salaire_mensuel_estime: { type: "string" },
-          salaire_annuel_estime: { type: "number" },
-          contrat_debut: { type: "string" },
-          contrat_fin: { type: "string" },
           photo_url: { type: "string" },
-          transfermarkt_id: { type: "string" },
-          sofascore_id: { type: "string" },
-          blessures: { type: "number" },
-          jours_blesses: { type: "number" },
-          type_blessures: { type: "string" },
-          nb_clubs: { type: "number" },
-          matchs_carriere: { type: "number" },
-          buts_carriere: { type: "number" },
-          passes_carriere: { type: "number" },
-          saisons_pro: { type: "number" },
-          distinctions: { type: "string" },
+          description: { type: "string" },
           style_jeu: { type: "string" },
           forces: { type: "string" },
           faiblesses: { type: "string" },
+          // Club & contrat
+          club_actuel: { type: "string" },
+          ligue: { type: "string" },
+          pays_ligue: { type: "string" },
+          stade: { type: "string" },
+          numero_maillot: { type: "number" },
+          contrat_debut: { type: "string" },
+          contrat_fin: { type: "string" },
+          salaire_annuel: { type: "number" },
+          salaire_semaine: { type: "number" },
+          agent: { type: "string" },
+          agence: { type: "string" },
+          coach: { type: "string" },
+          manager: { type: "string" },
+          transfermarkt_id: { type: "string" },
+          sofascore_id: { type: "string" },
+          // Valeur marchande
+          valeur_marchande: { type: "number" },
+          valeur_marchande_peak: { type: "number" },
+          valeur_historique: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                date: { type: "string" },
+                valeur: { type: "number" }
+              }
+            }
+          },
+          // Stats saison en cours (SofaScore)
+          stats_saison: {
+            type: "object",
+            properties: {
+              saison: { type: "string" },
+              matchs: { type: "number" },
+              titulaire: { type: "number" },
+              minutes: { type: "number" },
+              buts: { type: "number" },
+              passes_decisives: { type: "number" },
+              buts_passes: { type: "number" },
+              cartons_jaunes: { type: "number" },
+              cartons_rouges: { type: "number" },
+              note_sofascore: { type: "number" },
+              // Offensif
+              xg: { type: "number" },
+              xa: { type: "number" },
+              xg_par_90: { type: "number" },
+              tirs: { type: "number" },
+              tirs_cadres: { type: "number" },
+              tirs_cadres_pct: { type: "number" },
+              grandes_chances: { type: "number" },
+              grandes_chances_manquees: { type: "number" },
+              buts_tete: { type: "number" },
+              buts_pied_droit: { type: "number" },
+              buts_pied_gauche: { type: "number" },
+              penaltys_marques: { type: "number" },
+              penaltys_tires: { type: "number" },
+              // Passes
+              passes_reussies_pct: { type: "number" },
+              passes_longues_pct: { type: "number" },
+              passes_cles: { type: "number" },
+              centres: { type: "number" },
+              centres_reussis_pct: { type: "number" },
+              // Dribbles & physique
+              dribbles_reussis: { type: "number" },
+              dribbles_tentes: { type: "number" },
+              dribbles_pct: { type: "number" },
+              touches_balle: { type: "number" },
+              pertes_balle: { type: "number" },
+              distance_course: { type: "number" },
+              sprints: { type: "number" },
+              vitesse_max: { type: "number" },
+              // Défense
+              interceptions: { type: "number" },
+              tacles: { type: "number" },
+              tacles_reussis_pct: { type: "number" },
+              degagements: { type: "number" },
+              duels_gagnes_pct: { type: "number" },
+              duels_aeriens_pct: { type: "number" },
+              recuperations: { type: "number" },
+              fautes_commises: { type: "number" },
+              fautes_subies: { type: "number" },
+              hors_jeu: { type: "number" },
+              // Gardien
+              arrets: { type: "number" },
+              arrets_pct: { type: "number" },
+              clean_sheets: { type: "number" },
+              buts_encaisses: { type: "number" },
+              xg_contre: { type: "number" },
+              sorties_reussies: { type: "number" }
+            }
+          },
+          // Historique stats saison par saison
+          stats_par_saison: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                saison: { type: "string" },
+                club: { type: "string" },
+                ligue: { type: "string" },
+                matchs: { type: "number" },
+                titulaire: { type: "number" },
+                minutes: { type: "number" },
+                buts: { type: "number" },
+                passes: { type: "number" },
+                cartons_jaunes: { type: "number" },
+                cartons_rouges: { type: "number" },
+                note_sofascore: { type: "number" },
+                xg: { type: "number" },
+                xa: { type: "number" }
+              }
+            }
+          },
+          // Historique des clubs
           historique_clubs: {
             type: "array",
             items: {
@@ -115,89 +243,7 @@ export default function PlayerSearchPage() {
               }
             }
           },
-          stats_saison_actuelle: {
-            type: "object",
-            properties: {
-              saison: { type: "string" },
-              matchs: { type: "number" },
-              titulaire: { type: "number" },
-              minutes: { type: "number" },
-              buts: { type: "number" },
-              passes_decisives: { type: "number" },
-              cartons_jaunes: { type: "number" },
-              cartons_rouges: { type: "number" },
-              note_sofascore: { type: "number" },
-              xg: { type: "number" },
-              xa: { type: "number" },
-              xg_par_90: { type: "number" },
-              tirs: { type: "number" },
-              tirs_cadres: { type: "number" },
-              tirs_cadres_pct: { type: "number" },
-              tirs_par_match: { type: "number" },
-              grandes_chances: { type: "number" },
-              passes_reussies_pct: { type: "number" },
-              passes_cles: { type: "number" },
-              duels_gagnes_pct: { type: "number" },
-              duels_aeriens_pct: { type: "number" },
-              dribbles_reussis: { type: "number" },
-              dribbles_pct: { type: "number" },
-              interceptions: { type: "number" },
-              tacles: { type: "number" },
-              fautes_commises: { type: "number" },
-              fautes_subies: { type: "number" },
-              hors_jeu: { type: "number" },
-              touches_balle: { type: "number" },
-              distance_course: { type: "number" },
-              vitesse_max: { type: "number" },
-              buts_tete: { type: "number" },
-              penaltys_marques: { type: "number" },
-              arrets: { type: "number" },
-              arrets_pct: { type: "number" },
-              clean_sheets: { type: "number" },
-              buts_encaisses: { type: "number" }
-            }
-          },
-          stats_par_saison: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                saison: { type: "string" },
-                club: { type: "string" },
-                ligue: { type: "string" },
-                matchs: { type: "number" },
-                titulaire: { type: "number" },
-                minutes: { type: "number" },
-                buts: { type: "number" },
-                passes: { type: "number" },
-                cartons_jaunes: { type: "number" },
-                cartons_rouges: { type: "number" },
-                note_sofascore: { type: "number" },
-                xg: { type: "number" },
-                xa: { type: "number" },
-                tirs_par_match: { type: "number" },
-                passes_reussies_pct: { type: "number" },
-                duels_gagnes_pct: { type: "number" },
-                dribbles_reussis: { type: "number" },
-                interceptions: { type: "number" },
-                clean_sheets: { type: "number" }
-              }
-            }
-          },
-          valeur_historique: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                date: { type: "string" },
-                valeur: { type: "number" }
-              }
-            }
-          },
-          palmares: {
-            type: "array",
-            items: { type: "string" }
-          },
+          // Sélection nationale
           selection_nationale: {
             type: "object",
             properties: {
@@ -205,10 +251,25 @@ export default function PlayerSearchPage() {
               matchs: { type: "number" },
               buts: { type: "number" },
               passes: { type: "number" },
-              premiere_selection: { type: "string" }
+              premiere_selection: { type: "string" },
+              selection_u21: { type: "boolean" }
             }
           },
-          description: { type: "string" }
+          // Blessures
+          blessures_total: { type: "number" },
+          jours_blesses: { type: "number" },
+          type_blessures: { type: "string" },
+          // Carrière totale
+          matchs_carriere: { type: "number" },
+          buts_carriere: { type: "number" },
+          passes_carriere: { type: "number" },
+          // Palmarès
+          palmares: {
+            type: "array",
+            items: { type: "string" }
+          },
+          distinctions: { type: "string" },
+          note_globale_scout: { type: "number" }
         }
       }
     });
@@ -220,8 +281,9 @@ export default function PlayerSearchPage() {
   const handleSaveToApp = async () => {
     if (!result) return;
     setSaving(true);
+    const s = result.stats_saison;
 
-    // ── 1. Données principales du joueur ──
+    // ── 1. Fiche joueur principale ──
     const playerData = {
       nom: result.nom || query,
       age: result.age,
@@ -231,145 +293,160 @@ export default function PlayerSearchPage() {
       nationalite_secondaire: result.deuxieme_nationalite,
       poste: result.poste,
       poste_secondaire: result.poste_secondaire,
-      club_actuel: result.club_actuel,
-      ligue: result.ligue || result.stats_saison_actuelle?.ligue,
-      valeur_marchande: result.valeur_marchande,
       pied_fort: result.pied_fort,
       taille: result.taille,
       poids: result.poids,
-      contrat_fin: result.contrat_fin,
       photo_url: result.photo_url,
+      club_actuel: result.club_actuel,
+      ligue: result.ligue,
+      pays_ligue: result.pays_ligue,
+      stade: result.stade,
+      numero_maillot: result.numero_maillot,
+      contrat_fin: result.contrat_fin,
+      salaire: result.salaire_annuel,
+      salaire_semaine: result.salaire_semaine,
       agent: result.agent,
       agence: result.agence,
-      numero_maillot: result.numero_maillot,
-      stade: result.stade,
       coach: result.coach,
       manager: result.manager,
       transfermarkt_id: result.transfermarkt_id,
       sofascore_id: result.sofascore_id,
-      // Stats saison actuelle
-      matchs_joues: result.stats_saison_actuelle?.matchs,
-      titularisations: result.stats_saison_actuelle?.titulaire,
-      minutes_jouees: result.stats_saison_actuelle?.minutes,
-      buts: result.stats_saison_actuelle?.buts,
-      passes_decisives: result.stats_saison_actuelle?.passes_decisives,
-      cartons_jaunes: result.stats_saison_actuelle?.cartons_jaunes,
-      cartons_rouges: result.stats_saison_actuelle?.cartons_rouges,
-      note_moyenne: result.stats_saison_actuelle?.note_sofascore,
-      xg: result.stats_saison_actuelle?.xg,
-      xa: result.stats_saison_actuelle?.xa,
-      xg_par_90: result.stats_saison_actuelle?.xg_par_90,
-      tirs: result.stats_saison_actuelle?.tirs,
-      tirs_cadres: result.stats_saison_actuelle?.tirs_cadres,
-      tirs_cadres_pct: result.stats_saison_actuelle?.tirs_cadres_pct,
-      passes_reussies_pct: result.stats_saison_actuelle?.passes_reussies_pct,
-      duels_gagnes_pct: result.stats_saison_actuelle?.duels_gagnes_pct,
-      duels_aeriens_pct: result.stats_saison_actuelle?.duels_aeriens_pct,
-      dribbles_reussis: result.stats_saison_actuelle?.dribbles_reussis,
-      interceptions: result.stats_saison_actuelle?.interceptions,
-      grandes_chances: result.stats_saison_actuelle?.grandes_chances,
-      passes_cles: result.stats_saison_actuelle?.passes_cles,
-      touches_balle: result.stats_saison_actuelle?.touches_balle,
-      distance_course: result.stats_saison_actuelle?.distance_course,
-      vitesse_max: result.stats_saison_actuelle?.vitesse_max,
-      fautes_commises: result.stats_saison_actuelle?.fautes_commises,
-      fautes_subies: result.stats_saison_actuelle?.fautes_subies,
-      hors_jeu: result.stats_saison_actuelle?.hors_jeu,
-      buts_tete: result.stats_saison_actuelle?.buts_tete,
-      penaltys_marques: result.stats_saison_actuelle?.penaltys_marques,
-      // Gardien
-      arrets: result.stats_saison_actuelle?.arrets,
-      arrets_pct: result.stats_saison_actuelle?.arrets_pct,
-      clean_sheets: result.stats_saison_actuelle?.clean_sheets,
-      buts_encaisses: result.stats_saison_actuelle?.buts_encaisses,
+      valeur_marchande: result.valeur_marchande,
+      valeur_marchande_peak: result.valeur_marchande_peak,
+      // Stats saison
+      matchs_joues: s?.matchs,
+      titularisations: s?.titulaire,
+      minutes_jouees: s?.minutes,
+      buts: s?.buts,
+      passes_decisives: s?.passes_decisives,
+      buts_passes: s?.buts_passes,
+      cartons_jaunes: s?.cartons_jaunes,
+      cartons_rouges: s?.cartons_rouges,
+      note_moyenne: s?.note_sofascore,
+      xg: s?.xg,
+      xa: s?.xa,
+      xg_par_90: s?.xg_par_90,
+      tirs: s?.tirs,
+      tirs_cadres: s?.tirs_cadres,
+      tirs_cadres_pct: s?.tirs_cadres_pct,
+      grandes_chances: s?.grandes_chances,
+      grandes_chances_manquees: s?.grandes_chances_manquees,
+      buts_tete: s?.buts_tete,
+      buts_pied_droit: s?.buts_pied_droit,
+      buts_pied_gauche: s?.buts_pied_gauche,
+      penaltys_marques: s?.penaltys_marques,
+      penaltys_tires: s?.penaltys_tires,
+      passes_reussies_pct: s?.passes_reussies_pct,
+      passes_longues_pct: s?.passes_longues_pct,
+      passes_cles: s?.passes_cles,
+      centres: s?.centres,
+      centres_reussis_pct: s?.centres_reussis_pct,
+      dribbles_reussis: s?.dribbles_reussis,
+      dribbles_tentes: s?.dribbles_tentes,
+      dribbles_pct: s?.dribbles_pct,
+      touches_balle: s?.touches_balle,
+      pertes_balle: s?.pertes_balle,
+      distance_course: s?.distance_course,
+      sprints: s?.sprints,
+      vitesse_max: s?.vitesse_max,
+      interceptions: s?.interceptions,
+      tacles: s?.tacles,
+      tacles_reussis_pct: s?.tacles_reussis_pct,
+      degagements: s?.degagements,
+      duels_gagnes_pct: s?.duels_gagnes_pct,
+      duels_aeriens_pct: s?.duels_aeriens_pct,
+      recuperations: s?.recuperations,
+      fautes_commises: s?.fautes_commises,
+      fautes_subies: s?.fautes_subies,
+      hors_jeu: s?.hors_jeu,
+      arrets: s?.arrets,
+      arrets_pct: s?.arrets_pct,
+      clean_sheets: s?.clean_sheets,
+      buts_encaisses: s?.buts_encaisses,
+      xg_contre: s?.xg_contre,
+      sorties_reussies: s?.sorties_reussies,
       // Sélection
       matchs_international: result.selection_nationale?.matchs,
       buts_international: result.selection_nationale?.buts,
       passes_international: result.selection_nationale?.passes,
       premier_match_selection: result.selection_nationale?.premiere_selection,
+      selection_u21: result.selection_nationale?.selection_u21,
       // Carrière
       matchs_carriere: result.matchs_carriere,
       buts_carriere: result.buts_carriere,
       passes_carriere: result.passes_carriere,
-      nb_clubs: result.historique_clubs?.length || result.nb_clubs,
-      blessures: result.blessures,
+      nb_clubs: result.historique_clubs?.length,
+      blessures: result.blessures_total,
       jours_blesses: result.jours_blesses,
       type_blessures: result.type_blessures,
-      // Palmarès
+      // Profil
       palmares: Array.isArray(result.palmares) ? result.palmares.join(", ") : result.palmares,
       distinctions: result.distinctions,
       stats_resume: result.description,
       style_jeu: result.style_jeu,
       forces: result.forces,
       faiblesses: result.faiblesses,
+      note_globale_scout: result.note_globale_scout,
     };
-    Object.keys(playerData).forEach((k) => (playerData[k] == null || playerData[k] === "") && delete playerData[k]);
+    Object.keys(playerData).forEach(k => (playerData[k] == null || playerData[k] === "") && delete playerData[k]);
 
     const created = await base44.entities.Player.create(playerData);
 
-    // ── 2. Historique clubs ──
+    // ── 2. Historique clubs (PlayerCareerHistory) ──
     if (result.historique_clubs?.length > 0) {
       await base44.entities.PlayerCareerHistory.bulkCreate(
-        result.historique_clubs.map(c => ({
-          player_id: created.id,
-          club: c.club,
-          debut: c.debut,
-          fin: c.fin || null,
-          matchs: c.matchs,
-          buts: c.buts,
-          passes: c.passes,
-          ligue: c.ligue,
-          pays: c.pays,
-          type_passage: c.type_passage || "Transfert",
-          montant_transfert: c.montant_transfert
-        })).filter(c => c.club)
+        result.historique_clubs
+          .filter(c => c.club)
+          .map(c => ({
+            player_id: created.id,
+            club: c.club,
+            debut: c.debut,
+            fin: c.fin || null,
+            matchs: c.matchs,
+            buts: c.buts,
+            passes: c.passes,
+            ligue: c.ligue,
+            pays: c.pays,
+            type_passage: c.type_passage || "Transfert",
+            montant_transfert: c.montant_transfert
+          }))
       );
     }
 
-    // ── 3. Historique valeur marchande ──
+    // ── 3. Historique valeur marchande (PlayerMarketValue) ──
     if (result.valeur_historique?.length > 0) {
       await base44.entities.PlayerMarketValue.bulkCreate(
-        result.valeur_historique.map(v => ({
-          player_id: created.id,
-          date: v.date,
-          valeur: v.valeur,
-          source: "Transfermarkt"
-        })).filter(v => v.date && v.valeur != null)
+        result.valeur_historique
+          .filter(v => v.date && v.valeur != null)
+          .map(v => ({ player_id: created.id, date: v.date, valeur: v.valeur, source: "Transfermarkt" }))
       );
     }
 
-    // ── 4. Stats par saison ──
+    // ── 4. Stats par saison (PlayerSeasonStats) ──
+    const allSeasons = [];
     if (result.stats_par_saison?.length > 0) {
-      await base44.entities.PlayerSeasonStats.bulkCreate(
-        result.stats_par_saison.map(s => ({
+      result.stats_par_saison.filter(s2 => s2.saison).forEach(s2 => {
+        allSeasons.push({
           player_id: created.id,
-          saison: s.saison,
-          club: s.club,
-          ligue: s.ligue,
-          matchs: s.matchs,
-          titularisations: s.titulaire || s.titularisations,
-          minutes: s.minutes,
-          buts: s.buts,
-          passes_decisives: s.passes,
-          cartons_jaunes: s.cartons_jaunes,
-          cartons_rouges: s.cartons_rouges,
-          note_sofascore: s.note_sofascore,
-          xg: s.xg,
-          xa: s.xa,
-          tirs_par_match: s.tirs_par_match,
-          passes_reussies_pct: s.passes_reussies_pct,
-          duels_gagnes_pct: s.duels_gagnes_pct,
-          dribbles_reussis: s.dribbles_reussis,
-          interceptions: s.interceptions,
-          clean_sheets: s.clean_sheets
-        })).filter(s => s.saison)
-      );
+          saison: s2.saison,
+          club: s2.club,
+          ligue: s2.ligue,
+          matchs: s2.matchs,
+          titularisations: s2.titulaire,
+          minutes: s2.minutes,
+          buts: s2.buts,
+          passes_decisives: s2.passes,
+          cartons_jaunes: s2.cartons_jaunes,
+          cartons_rouges: s2.cartons_rouges,
+          note_sofascore: s2.note_sofascore,
+          xg: s2.xg,
+          xa: s2.xa
+        });
+      });
     }
-
-    // ── 5. Saison actuelle aussi en PlayerSeasonStats ──
-    if (result.stats_saison_actuelle) {
-      const s = result.stats_saison_actuelle;
-      await base44.entities.PlayerSeasonStats.create({
+    // Saison actuelle dans PlayerSeasonStats
+    if (s) {
+      allSeasons.unshift({
         player_id: created.id,
         saison: s.saison || "2024/2025",
         club: result.club_actuel,
@@ -384,13 +461,16 @@ export default function PlayerSearchPage() {
         note_sofascore: s.note_sofascore,
         xg: s.xg,
         xa: s.xa,
-        tirs_par_match: s.tirs_par_match,
+        tirs_par_match: s.tirs ? (s.tirs / (s.matchs || 1)).toFixed(1) : null,
         passes_reussies_pct: s.passes_reussies_pct,
         duels_gagnes_pct: s.duels_gagnes_pct,
         dribbles_reussis: s.dribbles_reussis,
         interceptions: s.interceptions,
         clean_sheets: s.clean_sheets
       });
+    }
+    if (allSeasons.length > 0) {
+      await base44.entities.PlayerSeasonStats.bulkCreate(allSeasons.filter(s2 => s2.saison));
     }
 
     queryClient.invalidateQueries({ queryKey: ['players'] });
@@ -399,22 +479,11 @@ export default function PlayerSearchPage() {
     setTimeout(() => navigate(createPageUrl("PlayerDetail") + `?id=${created.id}`), 800);
   };
 
-  const posteColors = {
-    "Gardien": "bg-yellow-100 text-yellow-800",
-    "Défenseur central": "bg-blue-100 text-blue-800",
-    "Latéral droit": "bg-blue-100 text-blue-800",
-    "Latéral gauche": "bg-blue-100 text-blue-800",
-    "Milieu défensif": "bg-green-100 text-green-800",
-    "Milieu central": "bg-green-100 text-green-800",
-    "Milieu offensif": "bg-purple-100 text-purple-800",
-    "Ailier droit": "bg-orange-100 text-orange-800",
-    "Ailier gauche": "bg-orange-100 text-orange-800",
-    "Attaquant": "bg-red-100 text-red-800"
-  };
+  const s = result?.stats_saison;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-5xl mx-auto space-y-5">
 
         {/* Header */}
         <div>
@@ -422,46 +491,46 @@ export default function PlayerSearchPage() {
             <Search className="w-7 h-7 text-green-500" />
             Recherche de joueur
           </h1>
-          
+          <p className="text-xs text-slate-500 mt-1">Toutes les données Transfermarkt & SofaScore enregistrées automatiquement</p>
         </div>
 
-        {/* Search bar */}
+        {/* Search */}
         <form onSubmit={handleSearch} className="flex gap-2">
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Ex: Kylian Mbappé, Erling Haaland..."
+          <Input value={query} onChange={e => setQuery(e.target.value)}
+            placeholder="Ex: Kylian Mbappé, Erling Haaland, Pedri…"
             className="flex-1 h-12 text-base shadow-sm" />
-
           <Button type="submit" disabled={loading} className="h-12 px-6 bg-green-600 hover:bg-green-700">
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
           </Button>
         </form>
 
         {/* Loading */}
-        {loading &&
-        <div className="flex flex-col items-center justify-center py-16 gap-4">
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-16 gap-4">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
               <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
             </div>
-            <p className="text-slate-600 font-medium">Recherche dans la base de données…</p>
-            <p className="text-xs text-slate-400">Cela peut prendre 10–20 secondes</p>
+            <p className="text-slate-600 font-medium">Recherche complète en cours…</p>
+            <div className="flex flex-col items-center gap-1">
+              {["Transfermarkt…", "SofaScore…", "Historique & palmarès…"].map(t => (
+                <p key={t} className="text-xs text-slate-400">{t}</p>
+              ))}
+            </div>
           </div>
-        }
+        )}
 
-        {/* Result */}
-        {result &&
-        <div className="space-y-4">
+        {result && (
+          <div className="space-y-4">
 
-            {/* Identity card */}
+            {/* ── Carte identité ── */}
             <Card className="overflow-hidden">
               <div className="h-2 bg-gradient-to-r from-green-500 to-emerald-400" />
               <CardContent className="pt-5">
                 <div className="flex items-start gap-4">
-                  <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-gradient-to-br from-slate-200 to-slate-300 flex-shrink-0 overflow-hidden">
-                    {result.photo_url ?
-                  <img src={result.photo_url} alt={result.nom} className="w-full h-full object-cover" onError={(e) => e.target.style.display = 'none'} /> :
-                  <User className="w-10 h-10 text-slate-400 m-auto mt-6" />}
+                  <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-slate-200 to-slate-300 flex-shrink-0 overflow-hidden">
+                    {result.photo_url
+                      ? <img src={result.photo_url} alt={result.nom} className="w-full h-full object-cover" onError={e => e.target.style.display = 'none'} />
+                      : <User className="w-10 h-10 text-slate-400 m-auto mt-7" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h2 className="text-xl md:text-2xl font-bold text-slate-900">{result.nom_complet || result.nom}</h2>
@@ -470,146 +539,184 @@ export default function PlayerSearchPage() {
                       {result.poste_secondaire && <Badge variant="outline" className="text-xs">{result.poste_secondaire}</Badge>}
                       {result.nationalite && <Badge variant="outline">{result.nationalite}</Badge>}
                       {result.deuxieme_nationalite && <Badge variant="outline">{result.deuxieme_nationalite}</Badge>}
+                      {result.club_actuel && <Badge className="bg-slate-800 text-white">{result.club_actuel}</Badge>}
                     </div>
-                    {result.description &&
-                  <p className="text-xs text-slate-500 mt-2 line-clamp-2">{result.description}</p>
-                  }
+                    {result.description && <p className="text-xs text-slate-500 mt-2 line-clamp-3">{result.description}</p>}
                   </div>
-                  <Button
-                  onClick={handleSaveToApp}
-                  disabled={saving || saved}
-                  className={`flex-shrink-0 ${saved ? "bg-green-600" : "bg-slate-900 hover:bg-slate-700"}`}
-                  size="sm">
-
+                  <Button onClick={handleSaveToApp} disabled={saving || saved}
+                    className={`flex-shrink-0 ${saved ? "bg-green-600" : "bg-slate-900 hover:bg-slate-700"}`} size="sm">
                     {saved ? <><Trophy className="w-4 h-4 mr-1" /> Sauvegardé</> :
-                  saving ? <Loader2 className="w-4 h-4 animate-spin" /> :
-                  <><Plus className="w-4 h-4 mr-1" /> Ajouter</>}
+                      saving ? <Loader2 className="w-4 h-4 animate-spin" /> :
+                        <><Plus className="w-4 h-4 mr-1" /> Ajouter</>}
                   </Button>
                 </div>
 
-                {/* Key stats */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
-                  {result.age &&
-                <div className="bg-slate-50 rounded-xl p-3 text-center">
-                      <Calendar className="w-4 h-4 text-slate-400 mx-auto mb-1" />
-                      <div className="font-bold text-lg text-slate-900">{result.age}</div>
-                      <div className="text-xs text-slate-500">ans</div>
-                    </div>
-                }
-                  {result.taille &&
-                <div className="bg-slate-50 rounded-xl p-3 text-center">
-                      <Ruler className="w-4 h-4 text-slate-400 mx-auto mb-1" />
-                      <div className="font-bold text-lg text-slate-900">{result.taille}</div>
-                      <div className="text-xs text-slate-500">cm</div>
-                    </div>
-                }
-                  {result.valeur_marchande &&
-                <div className="bg-green-50 rounded-xl p-3 text-center">
-                      <TrendingUp className="w-4 h-4 text-green-500 mx-auto mb-1" />
-                      <div className="font-bold text-lg text-green-700">{result.valeur_marchande}M€</div>
-                      <div className="text-xs text-slate-500">Valeur marchande</div>
-                    </div>
-                }
-                  {result.pied_fort &&
-                <div className="bg-slate-50 rounded-xl p-3 text-center">
-                      <Target className="w-4 h-4 text-slate-400 mx-auto mb-1" />
-                      <div className="font-bold text-sm text-slate-900">{result.pied_fort}</div>
-                      <div className="text-xs text-slate-500">Pied fort</div>
-                    </div>
-                }
+                {/* Quick stats */}
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-4">
+                  <StatBox label="Âge" value={result.age ? `${result.age} ans` : null} />
+                  <StatBox label="Taille" value={result.taille ? `${result.taille} cm` : null} />
+                  <StatBox label="Poids" value={result.poids ? `${result.poids} kg` : null} />
+                  <StatBox label="Pied fort" value={result.pied_fort} />
+                  <StatBox label="Valeur marchande" value={result.valeur_marchande ? `${result.valeur_marchande} M€` : null} color="bg-green-50" textColor="text-green-700" />
+                  <StatBox label="Valeur max" value={result.valeur_marchande_peak ? `${result.valeur_marchande_peak} M€` : null} color="bg-emerald-50" textColor="text-emerald-700" />
                 </div>
               </CardContent>
             </Card>
 
+            {/* ── Identité + Contrat ── */}
             <div className="grid md:grid-cols-2 gap-4">
-              {/* Infos personnelles */}
               <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <User className="w-4 h-4 text-blue-500" /> Infos personnelles
-                  </CardTitle>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2"><User className="w-4 h-4 text-blue-500" /> Identité</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  {[
-                ["Nom complet", result.nom_complet],
-                ["Date de naissance", result.date_naissance],
-                ["Lieu de naissance", result.lieu_naissance],
-                ["Nationalité", result.nationalite],
-                ["2ème nationalité", result.deuxieme_nationalite],
-                ["Taille", result.taille ? `${result.taille} cm` : null],
-                ["Poids", result.poids ? `${result.poids} kg` : null],
-                ["Pied fort", result.pied_fort]].
-                filter(([, v]) => v).map(([label, value]) =>
-                <div key={label} className="flex justify-between text-sm py-1 border-b border-slate-50 last:border-0">
-                      <span className="text-slate-500">{label}</span>
-                      <span className="font-medium text-slate-900">{value}</span>
-                    </div>
-                )}
+                <CardContent>
+                  <InfoRow label="Nom complet" value={result.nom_complet} />
+                  <InfoRow label="Date de naissance" value={result.date_naissance} />
+                  <InfoRow label="Lieu de naissance" value={result.lieu_naissance} />
+                  <InfoRow label="Nationalité" value={result.nationalite} />
+                  <InfoRow label="2ème nationalité" value={result.deuxieme_nationalite} />
+                  <InfoRow label="Taille" value={result.taille ? `${result.taille} cm` : null} />
+                  <InfoRow label="Poids" value={result.poids ? `${result.poids} kg` : null} />
+                  <InfoRow label="Pied fort" value={result.pied_fort} />
                 </CardContent>
               </Card>
 
-              {/* Infos contractuelles */}
               <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-orange-500" /> Contrat & Club
-                  </CardTitle>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2"><Clock className="w-4 h-4 text-orange-500" /> Contrat & Club</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  {[
-                ["Club actuel", result.club_actuel],
-                ["N° maillot", result.numero_maillot],
-                ["Poste", result.poste],
-                ["Début de contrat", result.contrat_debut],
-                ["Fin de contrat", result.contrat_fin],
-                ["Agent", result.agent],
-                ["Salaire estimé", result.salaire_mensuel_estime]].
-                filter(([, v]) => v).map(([label, value]) =>
-                <div key={label} className="flex justify-between text-sm py-1 border-b border-slate-50 last:border-0">
-                      <span className="text-slate-500">{label}</span>
-                      <span className="font-medium text-slate-900">{value}</span>
-                    </div>
-                )}
+                <CardContent>
+                  <InfoRow label="Club actuel" value={result.club_actuel} />
+                  <InfoRow label="Ligue" value={result.ligue} />
+                  <InfoRow label="Stade" value={result.stade} />
+                  <InfoRow label="N° maillot" value={result.numero_maillot} />
+                  <InfoRow label="Début contrat" value={result.contrat_debut} />
+                  <InfoRow label="Fin contrat" value={result.contrat_fin} />
+                  <InfoRow label="Salaire annuel" value={result.salaire_annuel ? `${result.salaire_annuel} M€` : null} />
+                  <InfoRow label="Salaire / semaine" value={result.salaire_semaine ? `${result.salaire_semaine} k€` : null} />
+                  <InfoRow label="Agent" value={result.agent} />
+                  <InfoRow label="Agence" value={result.agence} />
+                  <InfoRow label="Entraîneur" value={result.coach} />
+                  <InfoRow label="Directeur sportif" value={result.manager} />
+                  <InfoRow label="ID Transfermarkt" value={result.transfermarkt_id} />
+                  <InfoRow label="ID SofaScore" value={result.sofascore_id} />
                 </CardContent>
               </Card>
             </div>
 
-            {/* Stats saison actuelle */}
-            {result.stats_saison_actuelle &&
-          <Card>
-                <CardHeader className="pb-3">
+            {/* ── Stats saison actuelle ── */}
+            {s && (
+              <Card>
+                <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <BarChart2 className="w-4 h-4 text-purple-500" />
-                    Stats — {result.stats_saison_actuelle.saison || "Saison actuelle"}
+                    Stats saison {s.saison || "2024/2025"} — SofaScore
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-                    {[
-                ["Matchs", result.stats_saison_actuelle.matchs, "bg-slate-50"],
-                ["Titulaire", result.stats_saison_actuelle.titulaire, "bg-slate-50"],
-                ["Minutes", result.stats_saison_actuelle.minutes, "bg-slate-50"],
-                ["Buts", result.stats_saison_actuelle.buts, "bg-green-50 text-green-700"],
-                ["Passes D.", result.stats_saison_actuelle.passes_decisives, "bg-blue-50 text-blue-700"],
-                ["Jaunes", result.stats_saison_actuelle.cartons_jaunes, "bg-yellow-50"],
-                ["Note Sofascore", result.stats_saison_actuelle.note_sofascore, "bg-indigo-50 text-indigo-700"]].
-                filter(([, v]) => v != null).map(([label, value, cls]) =>
-                <div key={label} className={`${cls} rounded-xl p-3 text-center`}>
-                        <div className={`font-bold text-xl`}>{value}</div>
-                        <div className="text-xs text-slate-500">{label}</div>
-                      </div>
-                )}
+                <CardContent className="space-y-4">
+                  {/* Basiques */}
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400 uppercase mb-2">Général</p>
+                    <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
+                      <StatBox label="Matchs" value={s.matchs} />
+                      <StatBox label="Titulaire" value={s.titulaire} />
+                      <StatBox label="Minutes" value={s.minutes} />
+                      <StatBox label="Buts" value={s.buts} color="bg-green-50" textColor="text-green-700" />
+                      <StatBox label="Passes D." value={s.passes_decisives} color="bg-blue-50" textColor="text-blue-700" />
+                      <StatBox label="Jaunes" value={s.cartons_jaunes} color="bg-yellow-50" />
+                      <StatBox label="Note" value={s.note_sofascore} color="bg-indigo-50" textColor="text-indigo-700" />
+                    </div>
                   </div>
+                  {/* Offensif */}
+                  {(s.xg != null || s.tirs != null || s.grandes_chances != null) && (
+                    <div>
+                      <p className="text-xs font-semibold text-slate-400 uppercase mb-2">Offensif</p>
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                        <StatBox label="xG" value={s.xg} color="bg-green-50" textColor="text-green-700" />
+                        <StatBox label="xA" value={s.xa} color="bg-blue-50" textColor="text-blue-700" />
+                        <StatBox label="xG/90" value={s.xg_par_90} />
+                        <StatBox label="Tirs" value={s.tirs} />
+                        <StatBox label="Tirs cadrés" value={s.tirs_cadres} />
+                        <StatBox label="% cadrés" value={s.tirs_cadres_pct != null ? `${s.tirs_cadres_pct}%` : null} />
+                        <StatBox label="Gdes chances" value={s.grandes_chances} />
+                        <StatBox label="Gdes ch. manq." value={s.grandes_chances_manquees} />
+                        <StatBox label="Buts tête" value={s.buts_tete} />
+                        <StatBox label="Buts pied D" value={s.buts_pied_droit} />
+                        <StatBox label="Buts pied G" value={s.buts_pied_gauche} />
+                        <StatBox label="Penaltys" value={s.penaltys_marques != null ? `${s.penaltys_marques}/${s.penaltys_tires}` : null} />
+                      </div>
+                    </div>
+                  )}
+                  {/* Passes */}
+                  {(s.passes_reussies_pct != null || s.passes_cles != null) && (
+                    <div>
+                      <p className="text-xs font-semibold text-slate-400 uppercase mb-2">Passes & création</p>
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                        <StatBox label="% passes" value={s.passes_reussies_pct != null ? `${s.passes_reussies_pct}%` : null} />
+                        <StatBox label="% pass. longues" value={s.passes_longues_pct != null ? `${s.passes_longues_pct}%` : null} />
+                        <StatBox label="Passes clés" value={s.passes_cles} />
+                        <StatBox label="Centres" value={s.centres} />
+                        <StatBox label="% centres" value={s.centres_reussis_pct != null ? `${s.centres_reussis_pct}%` : null} />
+                      </div>
+                    </div>
+                  )}
+                  {/* Dribbles & physique */}
+                  {(s.dribbles_reussis != null || s.distance_course != null) && (
+                    <div>
+                      <p className="text-xs font-semibold text-slate-400 uppercase mb-2">Dribbles & physique</p>
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                        <StatBox label="Dribbles réussis" value={s.dribbles_reussis} />
+                        <StatBox label="% dribbles" value={s.dribbles_pct != null ? `${s.dribbles_pct}%` : null} />
+                        <StatBox label="Touches/match" value={s.touches_balle} />
+                        <StatBox label="Pertes balle" value={s.pertes_balle} />
+                        <StatBox label="Distance km/match" value={s.distance_course} />
+                        <StatBox label="Vitesse max" value={s.vitesse_max ? `${s.vitesse_max} km/h` : null} />
+                        <StatBox label="Sprints/match" value={s.sprints} />
+                      </div>
+                    </div>
+                  )}
+                  {/* Défense */}
+                  {(s.interceptions != null || s.tacles != null || s.duels_gagnes_pct != null) && (
+                    <div>
+                      <p className="text-xs font-semibold text-slate-400 uppercase mb-2">Défense & duels</p>
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                        <StatBox label="Interceptions" value={s.interceptions} />
+                        <StatBox label="Tacles" value={s.tacles} />
+                        <StatBox label="% tacles" value={s.tacles_reussis_pct != null ? `${s.tacles_reussis_pct}%` : null} />
+                        <StatBox label="Dégagements" value={s.degagements} />
+                        <StatBox label="% duels" value={s.duels_gagnes_pct != null ? `${s.duels_gagnes_pct}%` : null} />
+                        <StatBox label="% duels aériens" value={s.duels_aeriens_pct != null ? `${s.duels_aeriens_pct}%` : null} />
+                        <StatBox label="Récupérations" value={s.recuperations} />
+                        <StatBox label="Fautes commises" value={s.fautes_commises} />
+                        <StatBox label="Fautes subies" value={s.fautes_subies} />
+                        <StatBox label="Hors-jeu" value={s.hors_jeu} />
+                      </div>
+                    </div>
+                  )}
+                  {/* Gardien */}
+                  {(s.arrets != null || s.clean_sheets != null) && (
+                    <div>
+                      <p className="text-xs font-semibold text-slate-400 uppercase mb-2">Gardien</p>
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                        <StatBox label="Arrêts" value={s.arrets} />
+                        <StatBox label="% arrêts" value={s.arrets_pct != null ? `${s.arrets_pct}%` : null} />
+                        <StatBox label="Clean sheets" value={s.clean_sheets} color="bg-green-50" textColor="text-green-700" />
+                        <StatBox label="Buts encaissés" value={s.buts_encaisses} />
+                        <StatBox label="xG encaissés" value={s.xg_contre} />
+                        <StatBox label="Sorties" value={s.sorties_reussies} />
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-          }
+            )}
 
-            {/* Valeur marchande - courbe */}
-            {result.valeur_historique && result.valeur_historique.length > 1 &&
-          <Card>
-                <CardHeader className="pb-3">
+            {/* ── Évolution valeur marchande ── */}
+            {result.valeur_historique?.length > 1 && (
+              <Card>
+                <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-green-500" /> Évolution valeur marchande — Transfermarkt (M€)
+                    <TrendingUp className="w-4 h-4 text-green-500" /> Évolution valeur marchande — Transfermarkt
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -622,47 +729,20 @@ export default function PlayerSearchPage() {
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                      <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                      <YAxis tick={{ fontSize: 11 }} unit="M" />
-                      <Tooltip formatter={(v) => [`${v} M€`, "Valeur"]} />
+                      <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} unit="M" />
+                      <Tooltip formatter={v => [`${v} M€`, "Valeur"]} />
                       <Area type="monotone" dataKey="valeur" stroke="#22c55e" strokeWidth={2} fill="url(#valGrad)" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
-          }
+            )}
 
-            {/* Historique clubs */}
-            {result.historique_clubs && result.historique_clubs.length > 0 &&
-          <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-red-500" /> Historique des clubs
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {result.historique_clubs.map((club, i) =>
-              <div key={i} className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-lg">
-                      <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm text-slate-900">{club.club}</div>
-                        <div className="text-xs text-slate-500">{club.debut}{club.fin ? ` → ${club.fin}` : " → maintenant"}</div>
-                      </div>
-                      <div className="flex gap-3 text-xs text-right flex-shrink-0">
-                        {club.matchs != null && <div><span className="font-semibold text-slate-700">{club.matchs}</span><div className="text-slate-400">matchs</div></div>}
-                        {club.buts != null && <div><span className="font-semibold text-green-600">{club.buts}</span><div className="text-slate-400">buts</div></div>}
-                        {club.passes != null && <div><span className="font-semibold text-blue-600">{club.passes}</span><div className="text-slate-400">passes</div></div>}
-                      </div>
-                    </div>
-              )}
-                </CardContent>
-              </Card>
-          }
-
-            {/* Stats par saison */}
-            {result.stats_par_saison && result.stats_par_saison.length > 0 &&
-          <Card>
-                <CardHeader className="pb-3">
+            {/* ── Stats par saison ── */}
+            {result.stats_par_saison?.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <BarChart2 className="w-4 h-4 text-indigo-500" /> Stats par saison
                   </CardTitle>
@@ -672,92 +752,175 @@ export default function PlayerSearchPage() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="text-xs text-slate-400 border-b border-slate-100">
-                          <th className="text-left pb-2">Saison</th>
-                          <th className="text-left pb-2">Club</th>
+                          <th className="text-left pb-2 pr-3">Saison</th>
+                          <th className="text-left pb-2 pr-3">Club</th>
+                          <th className="text-left pb-2 pr-3">Ligue</th>
                           <th className="text-center pb-2">MJ</th>
+                          <th className="text-center pb-2">Tit.</th>
+                          <th className="text-center pb-2">Min.</th>
                           <th className="text-center pb-2">Buts</th>
                           <th className="text-center pb-2">PD</th>
+                          <th className="text-center pb-2">Note</th>
+                          <th className="text-center pb-2">xG</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {result.stats_par_saison.map((s, i) =>
-                    <tr key={i} className="border-b border-slate-50 last:border-0">
-                            <td className="py-2 font-medium text-slate-700">{s.saison}</td>
-                            <td className="py-2 text-slate-500 text-xs">{s.club}</td>
-                            <td className="py-2 text-center">{s.matchs ?? "—"}</td>
-                            <td className="py-2 text-center font-semibold text-green-600">{s.buts ?? "—"}</td>
-                            <td className="py-2 text-center font-semibold text-blue-600">{s.passes ?? "—"}</td>
+                        {result.stats_par_saison.map((ss, i) => (
+                          <tr key={i} className="border-b border-slate-50 last:border-0 hover:bg-slate-50">
+                            <td className="py-2 pr-3 font-medium text-slate-700 whitespace-nowrap">{ss.saison}</td>
+                            <td className="py-2 pr-3 text-slate-500 text-xs whitespace-nowrap">{ss.club}</td>
+                            <td className="py-2 pr-3 text-slate-400 text-xs">{ss.ligue}</td>
+                            <td className="py-2 text-center">{ss.matchs ?? "—"}</td>
+                            <td className="py-2 text-center text-slate-400">{ss.titulaire ?? "—"}</td>
+                            <td className="py-2 text-center text-slate-400">{ss.minutes ?? "—"}</td>
+                            <td className="py-2 text-center font-semibold text-green-600">{ss.buts ?? "—"}</td>
+                            <td className="py-2 text-center font-semibold text-blue-600">{ss.passes ?? "—"}</td>
+                            <td className="py-2 text-center text-indigo-600">{ss.note_sofascore ?? "—"}</td>
+                            <td className="py-2 text-center text-purple-600">{ss.xg ?? "—"}</td>
                           </tr>
-                    )}
+                        ))}
                       </tbody>
                     </table>
                   </div>
                 </CardContent>
               </Card>
-          }
+            )}
 
-            {/* Sélection nationale */}
-            {result.selection_nationale &&
-          <Card>
-                <CardHeader className="pb-3">
+            {/* ── Historique clubs ── */}
+            {result.historique_clubs?.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <Trophy className="w-4 h-4 text-yellow-500" /> Sélection nationale
+                    <MapPin className="w-4 h-4 text-red-500" /> Historique des clubs — Transfermarkt
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-semibold text-slate-900">{result.selection_nationale.equipe}</div>
-                      {result.selection_nationale.premiere_selection &&
-                  <div className="text-xs text-slate-500">1ère sélection: {result.selection_nationale.premiere_selection}</div>
-                  }
+                <CardContent className="space-y-2">
+                  {result.historique_clubs.map((club, i) => (
+                    <div key={i} className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-lg">
+                      <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm text-slate-900">{club.club}</div>
+                        <div className="text-xs text-slate-500">
+                          {club.debut}{club.fin ? ` → ${club.fin}` : " → maintenant"}
+                          {club.ligue && ` · ${club.ligue}`}
+                          {club.type_passage && ` · ${club.type_passage}`}
+                          {club.montant_transfert ? ` · ${club.montant_transfert} M€` : ""}
+                        </div>
+                      </div>
+                      <div className="flex gap-3 text-xs text-right flex-shrink-0">
+                        {club.matchs != null && <div><span className="font-semibold text-slate-700">{club.matchs}</span><div className="text-slate-400">MJ</div></div>}
+                        {club.buts != null && <div><span className="font-semibold text-green-600">{club.buts}</span><div className="text-slate-400">buts</div></div>}
+                        {club.passes != null && <div><span className="font-semibold text-blue-600">{club.passes}</span><div className="text-slate-400">PD</div></div>}
+                      </div>
                     </div>
-                    <div className="flex gap-4 text-center">
-                      {result.selection_nationale.matchs != null &&
-                  <div><div className="font-bold text-xl text-slate-900">{result.selection_nationale.matchs}</div><div className="text-xs text-slate-500">matchs</div></div>
-                  }
-                      {result.selection_nationale.buts != null &&
-                  <div><div className="font-bold text-xl text-green-600">{result.selection_nationale.buts}</div><div className="text-xs text-slate-500">buts</div></div>
-                  }
-                    </div>
-                  </div>
+                  ))}
                 </CardContent>
               </Card>
-          }
+            )}
 
-            {/* Palmarès */}
-            {result.palmares && result.palmares.length > 0 &&
-          <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Trophy className="w-4 h-4 text-amber-500" /> Palmarès
-                  </CardTitle>
+            {/* ── Sélection + Blessures + Carrière ── */}
+            <div className="grid md:grid-cols-3 gap-4">
+              {result.selection_nationale && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2"><Globe className="w-4 h-4 text-blue-500" /> Sélection nationale</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="font-semibold text-slate-900 mb-2">{result.selection_nationale.equipe}</p>
+                    <InfoRow label="Matchs" value={result.selection_nationale.matchs} />
+                    <InfoRow label="Buts" value={result.selection_nationale.buts} />
+                    <InfoRow label="Passes déc." value={result.selection_nationale.passes} />
+                    <InfoRow label="1ère sélection" value={result.selection_nationale.premiere_selection} />
+                    <InfoRow label="U21" value={result.selection_nationale.selection_u21 != null ? (result.selection_nationale.selection_u21 ? "Oui" : "Non") : null} />
+                  </CardContent>
+                </Card>
+              )}
+
+              {(result.blessures_total != null || result.jours_blesses != null) && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2"><Heart className="w-4 h-4 text-red-500" /> Blessures (carrière)</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <InfoRow label="Nombre de blessures" value={result.blessures_total} />
+                    <InfoRow label="Jours manqués" value={result.jours_blesses} />
+                    <InfoRow label="Types" value={result.type_blessures} />
+                  </CardContent>
+                </Card>
+              )}
+
+              {(result.matchs_carriere != null || result.buts_carriere != null) && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2"><Activity className="w-4 h-4 text-slate-500" /> Carrière complète</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <InfoRow label="Matchs (carrière)" value={result.matchs_carriere} />
+                    <InfoRow label="Buts (carrière)" value={result.buts_carriere} />
+                    <InfoRow label="Passes (carrière)" value={result.passes_carriere} />
+                    <InfoRow label="Clubs différents" value={result.historique_clubs?.length} />
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* ── Profil scout ── */}
+            {(result.style_jeu || result.forces || result.faiblesses) && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2"><Star className="w-4 h-4 text-amber-500" /> Profil scout</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {result.palmares.map((t, i) =>
-                <Badge key={i} className="bg-amber-50 text-amber-800 border border-amber-200">{t}</Badge>
+                <CardContent className="space-y-3">
+                  {result.style_jeu && <div><p className="text-xs font-semibold text-slate-400 uppercase mb-1">Style de jeu</p><p className="text-sm text-slate-700">{result.style_jeu}</p></div>}
+                  {result.forces && <div><p className="text-xs font-semibold text-green-600 uppercase mb-1">Points forts</p><p className="text-sm text-slate-700">{result.forces}</p></div>}
+                  {result.faiblesses && <div><p className="text-xs font-semibold text-red-500 uppercase mb-1">Points faibles</p><p className="text-sm text-slate-700">{result.faiblesses}</p></div>}
+                  {result.note_globale_scout != null && <div className="flex items-center gap-2"><Star className="w-4 h-4 text-amber-400" /><span className="font-bold text-lg text-slate-900">{result.note_globale_scout}/100</span><span className="text-xs text-slate-500">Note scout</span></div>}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* ── Palmarès & distinctions ── */}
+            {(result.palmares?.length > 0 || result.distinctions) && (
+              <div className="grid md:grid-cols-2 gap-4">
+                {result.palmares?.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2"><Trophy className="w-4 h-4 text-amber-500" /> Palmarès</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        {result.palmares.map((t, i) => (
+                          <Badge key={i} className="bg-amber-50 text-amber-800 border border-amber-200">{t}</Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
                 )}
-                  </div>
-                </CardContent>
-              </Card>
-          }
+                {result.distinctions && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2"><Zap className="w-4 h-4 text-purple-500" /> Distinctions individuelles</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-slate-700">{result.distinctions}</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
 
-            {/* CTA Ajouter */}
-            <div className="flex justify-end pb-6">
-              <Button
-              onClick={handleSaveToApp}
-              disabled={saving || saved}
-              className={`${saved ? "bg-green-600" : "bg-slate-900 hover:bg-slate-700"} px-6`}>
-
-                {saved ? "Joueur ajouté !" : saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                {!saved && !saving && <><Plus className="w-4 h-4 mr-2" /> Ajouter à mes joueurs</>}
-                {saved && <><ArrowRight className="w-4 h-4 ml-2" /> Voir la fiche</>}
+            {/* ── CTA final ── */}
+            <div className="flex justify-end pb-6 gap-3">
+              <p className="text-xs text-slate-400 self-center">Toutes les données ci-dessus seront sauvegardées</p>
+              <Button onClick={handleSaveToApp} disabled={saving || saved}
+                className={`${saved ? "bg-green-600" : "bg-slate-900 hover:bg-slate-700"} px-8`}>
+                {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                {saved ? <><Trophy className="w-4 h-4 mr-2" /> Joueur ajouté ! <ArrowRight className="w-4 h-4 ml-2" /></> : <><Plus className="w-4 h-4 mr-2" /> Ajouter à mes joueurs</>}
               </Button>
             </div>
           </div>
-        }
+        )}
       </div>
-    </div>);
-
+    </div>
+  );
 }
