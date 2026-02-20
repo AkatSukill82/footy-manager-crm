@@ -17,7 +17,7 @@ import RemindersList from "../components/contacts/RemindersList";
 import EnrichPlayerAI from "../components/players/EnrichPlayerAI";
 import PlayerComparison from "../components/players/PlayerComparison";
 import ImportTransfermarktPhoto from "../components/players/ImportTransfermarktPhoto";
-import PlayerStatsPanel from "../components/players/PlayerStatsPanel";
+import PlayerFullProfile from "../components/players/PlayerFullProfile";
 import PlayerChartsPanel from "../components/players/PlayerChartsPanel";
 import { format } from "date-fns";
 
