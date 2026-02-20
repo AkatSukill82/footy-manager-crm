@@ -152,21 +152,179 @@ export default function PlayerSearchPage() {
   const handleSaveToApp = async () => {
     if (!result) return;
     setSaving(true);
+
+    // ── 1. Données principales du joueur ──
     const playerData = {
       nom: result.nom || query,
       age: result.age,
       date_naissance: result.date_naissance,
+      lieu_naissance: result.lieu_naissance,
       nationalite: result.nationalite,
+      nationalite_secondaire: result.deuxieme_nationalite,
       poste: result.poste,
+      poste_secondaire: result.poste_secondaire,
       club_actuel: result.club_actuel,
+      ligue: result.ligue || result.stats_saison_actuelle?.ligue,
       valeur_marchande: result.valeur_marchande,
       pied_fort: result.pied_fort,
       taille: result.taille,
+      poids: result.poids,
       contrat_fin: result.contrat_fin,
-      photo_url: result.photo_url
+      photo_url: result.photo_url,
+      agent: result.agent,
+      agence: result.agence,
+      numero_maillot: result.numero_maillot,
+      stade: result.stade,
+      coach: result.coach,
+      manager: result.manager,
+      transfermarkt_id: result.transfermarkt_id,
+      sofascore_id: result.sofascore_id,
+      // Stats saison actuelle
+      matchs_joues: result.stats_saison_actuelle?.matchs,
+      titularisations: result.stats_saison_actuelle?.titulaire,
+      minutes_jouees: result.stats_saison_actuelle?.minutes,
+      buts: result.stats_saison_actuelle?.buts,
+      passes_decisives: result.stats_saison_actuelle?.passes_decisives,
+      cartons_jaunes: result.stats_saison_actuelle?.cartons_jaunes,
+      cartons_rouges: result.stats_saison_actuelle?.cartons_rouges,
+      note_moyenne: result.stats_saison_actuelle?.note_sofascore,
+      xg: result.stats_saison_actuelle?.xg,
+      xa: result.stats_saison_actuelle?.xa,
+      xg_par_90: result.stats_saison_actuelle?.xg_par_90,
+      tirs: result.stats_saison_actuelle?.tirs,
+      tirs_cadres: result.stats_saison_actuelle?.tirs_cadres,
+      tirs_cadres_pct: result.stats_saison_actuelle?.tirs_cadres_pct,
+      passes_reussies_pct: result.stats_saison_actuelle?.passes_reussies_pct,
+      duels_gagnes_pct: result.stats_saison_actuelle?.duels_gagnes_pct,
+      duels_aeriens_pct: result.stats_saison_actuelle?.duels_aeriens_pct,
+      dribbles_reussis: result.stats_saison_actuelle?.dribbles_reussis,
+      interceptions: result.stats_saison_actuelle?.interceptions,
+      grandes_chances: result.stats_saison_actuelle?.grandes_chances,
+      passes_cles: result.stats_saison_actuelle?.passes_cles,
+      touches_balle: result.stats_saison_actuelle?.touches_balle,
+      distance_course: result.stats_saison_actuelle?.distance_course,
+      vitesse_max: result.stats_saison_actuelle?.vitesse_max,
+      fautes_commises: result.stats_saison_actuelle?.fautes_commises,
+      fautes_subies: result.stats_saison_actuelle?.fautes_subies,
+      hors_jeu: result.stats_saison_actuelle?.hors_jeu,
+      buts_tete: result.stats_saison_actuelle?.buts_tete,
+      penaltys_marques: result.stats_saison_actuelle?.penaltys_marques,
+      // Gardien
+      arrets: result.stats_saison_actuelle?.arrets,
+      arrets_pct: result.stats_saison_actuelle?.arrets_pct,
+      clean_sheets: result.stats_saison_actuelle?.clean_sheets,
+      buts_encaisses: result.stats_saison_actuelle?.buts_encaisses,
+      // Sélection
+      matchs_international: result.selection_nationale?.matchs,
+      buts_international: result.selection_nationale?.buts,
+      passes_international: result.selection_nationale?.passes,
+      premier_match_selection: result.selection_nationale?.premiere_selection,
+      // Carrière
+      matchs_carriere: result.matchs_carriere,
+      buts_carriere: result.buts_carriere,
+      passes_carriere: result.passes_carriere,
+      nb_clubs: result.historique_clubs?.length || result.nb_clubs,
+      blessures: result.blessures,
+      jours_blesses: result.jours_blesses,
+      type_blessures: result.type_blessures,
+      // Palmarès
+      palmares: Array.isArray(result.palmares) ? result.palmares.join(", ") : result.palmares,
+      distinctions: result.distinctions,
+      stats_resume: result.description,
+      style_jeu: result.style_jeu,
+      forces: result.forces,
+      faiblesses: result.faiblesses,
     };
-    Object.keys(playerData).forEach((k) => playerData[k] == null && delete playerData[k]);
+    Object.keys(playerData).forEach((k) => (playerData[k] == null || playerData[k] === "") && delete playerData[k]);
+
     const created = await base44.entities.Player.create(playerData);
+
+    // ── 2. Historique clubs ──
+    if (result.historique_clubs?.length > 0) {
+      await base44.entities.PlayerCareerHistory.bulkCreate(
+        result.historique_clubs.map(c => ({
+          player_id: created.id,
+          club: c.club,
+          debut: c.debut,
+          fin: c.fin || null,
+          matchs: c.matchs,
+          buts: c.buts,
+          passes: c.passes,
+          ligue: c.ligue,
+          pays: c.pays,
+          type_passage: c.type_passage || "Transfert",
+          montant_transfert: c.montant_transfert
+        })).filter(c => c.club)
+      );
+    }
+
+    // ── 3. Historique valeur marchande ──
+    if (result.valeur_historique?.length > 0) {
+      await base44.entities.PlayerMarketValue.bulkCreate(
+        result.valeur_historique.map(v => ({
+          player_id: created.id,
+          date: v.date,
+          valeur: v.valeur,
+          source: "Transfermarkt"
+        })).filter(v => v.date && v.valeur != null)
+      );
+    }
+
+    // ── 4. Stats par saison ──
+    if (result.stats_par_saison?.length > 0) {
+      await base44.entities.PlayerSeasonStats.bulkCreate(
+        result.stats_par_saison.map(s => ({
+          player_id: created.id,
+          saison: s.saison,
+          club: s.club,
+          ligue: s.ligue,
+          matchs: s.matchs,
+          titularisations: s.titulaire || s.titularisations,
+          minutes: s.minutes,
+          buts: s.buts,
+          passes_decisives: s.passes,
+          cartons_jaunes: s.cartons_jaunes,
+          cartons_rouges: s.cartons_rouges,
+          note_sofascore: s.note_sofascore,
+          xg: s.xg,
+          xa: s.xa,
+          tirs_par_match: s.tirs_par_match,
+          passes_reussies_pct: s.passes_reussies_pct,
+          duels_gagnes_pct: s.duels_gagnes_pct,
+          dribbles_reussis: s.dribbles_reussis,
+          interceptions: s.interceptions,
+          clean_sheets: s.clean_sheets
+        })).filter(s => s.saison)
+      );
+    }
+
+    // ── 5. Saison actuelle aussi en PlayerSeasonStats ──
+    if (result.stats_saison_actuelle) {
+      const s = result.stats_saison_actuelle;
+      await base44.entities.PlayerSeasonStats.create({
+        player_id: created.id,
+        saison: s.saison || "2024/2025",
+        club: result.club_actuel,
+        ligue: result.ligue,
+        matchs: s.matchs,
+        titularisations: s.titulaire,
+        minutes: s.minutes,
+        buts: s.buts,
+        passes_decisives: s.passes_decisives,
+        cartons_jaunes: s.cartons_jaunes,
+        cartons_rouges: s.cartons_rouges,
+        note_sofascore: s.note_sofascore,
+        xg: s.xg,
+        xa: s.xa,
+        tirs_par_match: s.tirs_par_match,
+        passes_reussies_pct: s.passes_reussies_pct,
+        duels_gagnes_pct: s.duels_gagnes_pct,
+        dribbles_reussis: s.dribbles_reussis,
+        interceptions: s.interceptions,
+        clean_sheets: s.clean_sheets
+      });
+    }
+
     queryClient.invalidateQueries({ queryKey: ['players'] });
     setSaving(false);
     setSaved(true);
