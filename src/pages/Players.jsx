@@ -87,8 +87,8 @@ export default function PlayersPage() {
     
     const matchesPied = filters.piedFort === "all" || player.pied_fort === filters.piedFort;
     
-    return matchesSearch && matchesPoste && matchesAge && matchesClub && 
-           matchesBudget && matchesContrat && matchesNationalite && matchesPied;
+    return matchesSearch && matchesPoste && matchesAge && matchesClub &&
+           matchesBudget && matchesBudgetLegacy && matchesContrat && matchesNationalite && matchesPied;
   });
 
   return (
