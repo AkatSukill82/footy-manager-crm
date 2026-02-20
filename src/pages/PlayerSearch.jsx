@@ -32,22 +32,26 @@ export default function PlayerSearchPage() {
     setSaved(false);
 
     const data = await base44.integrations.Core.InvokeLLM({
-      prompt: `Tu es un expert en football. Recherche des informations COMPLÈTES et à jour sur le joueur "${query}" en consultant UNIQUEMENT ces deux sources :
-      1. **Transfermarkt** (transfermarkt.fr ou transfermarkt.com) : profil du joueur, valeur marchande actuelle, historique de la valeur marchande avec toutes les dates disponibles (au moins 8-10 points de données pour tracer une courbe précise), historique de tous ses clubs avec dates exactes d'arrivée et de départ, infos contractuelles, infos personnelles (taille, poids, pied fort, date et lieu de naissance, nationalité, agent).
-      2. **Sofascore** (sofascore.com) : statistiques détaillées de la saison en cours (matchs joués, titularisations, minutes jouées, buts, passes décisives, cartons jaunes/rouges, note moyenne Sofascore), et statistiques pour chaque saison précédente (saison, club, matchs, buts, passes).
+      prompt: `Tu es un expert en données football. Recherche des informations ULTRA-COMPLÈTES sur le joueur "${query}" en consultant ces sources :
+      1. **Transfermarkt.fr** : profil complet, valeur marchande actuelle et TOUT l'historique des valeurs (minimum 8-10 points), tous les clubs avec dates précises, contrat, agent, agence, salaire estimé, infos personnelles, blessures.
+      2. **SofaScore** : stats saison en cours (xG, xA, tirs, duels, dribbles, passes, physique, note), stats par saison complètes, infos avancées.
+      3. **Wikipedia / Presse** : palmarès, distinctions individuelles, style de jeu, carrière complète.
 
-      Pour l'historique de valeur marchande : donne TOUTES les évaluations disponibles sur Transfermarkt avec leur date exacte (format YYYY-MM) pour créer une courbe d'évolution complète. C'est une priorité absolue.
-      Pour l'historique des clubs : liste TOUS les clubs du joueur depuis ses débuts dans l'ordre chronologique avec les dates précises.
-      Pour les stats par saison : liste toutes les saisons disponibles, de la plus récente à la plus ancienne.
+      PRIORITÉ ABSOLUE :
+      - historique_valeur_marchande : TOUTES les évaluations Transfermarkt avec date exacte (YYYY-MM)
+      - historique_clubs : TOUS les clubs depuis les débuts avec dates précises et stats
+      - stats_par_saison : toutes les saisons avec stats détaillées
+      - stats_saison_actuelle : stats SofaScore les plus complètes possibles (xG, xA, duels, dribbles, physique…)
 
-      RÈGLES DE FORMAT :
-      - valeur_marchande : nombre en millions d'euros (ex: 180 pour 180M€)
-      - taille : nombre entier en cm
-      - age : nombre entier en années
-      - pied_fort : "Droit", "Gauche" ou "Les deux"
-      - poste : exactement parmi Gardien, Défenseur central, Latéral droit, Latéral gauche, Milieu défensif, Milieu central, Milieu offensif, Ailier droit, Ailier gauche, Attaquant
-      - toutes les dates au format YYYY-MM-DD (ou YYYY-MM pour valeur_historique)
-      - Si une info est introuvable, mets null`,
+      RÈGLES FORMAT STRICTES :
+      - valeur_marchande, valeur_marchande_peak : en millions € (ex: 180.0)
+      - salaire_annuel_estime : en millions € (ex: 12.0)
+      - taille : cm entier, poids : kg entier, age : entier
+      - pied_fort : "Droit", "Gauche" ou "Les deux" UNIQUEMENT
+      - poste / poste_secondaire : parmi exactement : Gardien, Défenseur central, Latéral droit, Latéral gauche, Milieu défensif, Milieu central, Milieu offensif, Ailier droit, Ailier gauche, Attaquant
+      - toutes dates : YYYY-MM-DD (YYYY-MM pour historique valeur)
+      - pourcentages (pct) : entre 0 et 100
+      - Si info introuvable : null (jamais inventer)`,
       add_context_from_internet: true,
       response_json_schema: {
         type: "object",
@@ -65,13 +69,34 @@ export default function PlayerSearchPage() {
           taille: { type: "number" },
           poids: { type: "number" },
           club_actuel: { type: "string" },
+          ligue: { type: "string" },
+          stade: { type: "string" },
+          coach: { type: "string" },
+          manager: { type: "string" },
           numero_maillot: { type: "number" },
           agent: { type: "string" },
+          agence: { type: "string" },
           valeur_marchande: { type: "number" },
+          valeur_marchande_peak: { type: "number" },
           salaire_mensuel_estime: { type: "string" },
+          salaire_annuel_estime: { type: "number" },
           contrat_debut: { type: "string" },
           contrat_fin: { type: "string" },
           photo_url: { type: "string" },
+          transfermarkt_id: { type: "string" },
+          sofascore_id: { type: "string" },
+          blessures: { type: "number" },
+          jours_blesses: { type: "number" },
+          type_blessures: { type: "string" },
+          nb_clubs: { type: "number" },
+          matchs_carriere: { type: "number" },
+          buts_carriere: { type: "number" },
+          passes_carriere: { type: "number" },
+          saisons_pro: { type: "number" },
+          distinctions: { type: "string" },
+          style_jeu: { type: "string" },
+          forces: { type: "string" },
+          faiblesses: { type: "string" },
           historique_clubs: {
             type: "array",
             items: {
@@ -82,7 +107,11 @@ export default function PlayerSearchPage() {
                 fin: { type: "string" },
                 matchs: { type: "number" },
                 buts: { type: "number" },
-                passes: { type: "number" }
+                passes: { type: "number" },
+                ligue: { type: "string" },
+                pays: { type: "string" },
+                type_passage: { type: "string" },
+                montant_transfert: { type: "number" }
               }
             }
           },
@@ -97,11 +126,35 @@ export default function PlayerSearchPage() {
               passes_decisives: { type: "number" },
               cartons_jaunes: { type: "number" },
               cartons_rouges: { type: "number" },
-              buts_par_match: { type: "number" },
               note_sofascore: { type: "number" },
+              xg: { type: "number" },
+              xa: { type: "number" },
+              xg_par_90: { type: "number" },
+              tirs: { type: "number" },
+              tirs_cadres: { type: "number" },
+              tirs_cadres_pct: { type: "number" },
               tirs_par_match: { type: "number" },
+              grandes_chances: { type: "number" },
+              passes_reussies_pct: { type: "number" },
+              passes_cles: { type: "number" },
               duels_gagnes_pct: { type: "number" },
-              passes_reussies_pct: { type: "number" }
+              duels_aeriens_pct: { type: "number" },
+              dribbles_reussis: { type: "number" },
+              dribbles_pct: { type: "number" },
+              interceptions: { type: "number" },
+              tacles: { type: "number" },
+              fautes_commises: { type: "number" },
+              fautes_subies: { type: "number" },
+              hors_jeu: { type: "number" },
+              touches_balle: { type: "number" },
+              distance_course: { type: "number" },
+              vitesse_max: { type: "number" },
+              buts_tete: { type: "number" },
+              penaltys_marques: { type: "number" },
+              arrets: { type: "number" },
+              arrets_pct: { type: "number" },
+              clean_sheets: { type: "number" },
+              buts_encaisses: { type: "number" }
             }
           },
           stats_par_saison: {
@@ -111,9 +164,23 @@ export default function PlayerSearchPage() {
               properties: {
                 saison: { type: "string" },
                 club: { type: "string" },
+                ligue: { type: "string" },
                 matchs: { type: "number" },
+                titulaire: { type: "number" },
+                minutes: { type: "number" },
                 buts: { type: "number" },
-                passes: { type: "number" }
+                passes: { type: "number" },
+                cartons_jaunes: { type: "number" },
+                cartons_rouges: { type: "number" },
+                note_sofascore: { type: "number" },
+                xg: { type: "number" },
+                xa: { type: "number" },
+                tirs_par_match: { type: "number" },
+                passes_reussies_pct: { type: "number" },
+                duels_gagnes_pct: { type: "number" },
+                dribbles_reussis: { type: "number" },
+                interceptions: { type: "number" },
+                clean_sheets: { type: "number" }
               }
             }
           },
@@ -137,6 +204,7 @@ export default function PlayerSearchPage() {
               equipe: { type: "string" },
               matchs: { type: "number" },
               buts: { type: "number" },
+              passes: { type: "number" },
               premiere_selection: { type: "string" }
             }
           },
