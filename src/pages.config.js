@@ -61,6 +61,7 @@ import Reports from './pages/Reports';
 import TeamDetail from './pages/TeamDetail';
 import Teams from './pages/Teams';
 import TransferManagement from './pages/TransferManagement';
+import PredictiveDashboard from './pages/PredictiveDashboard';
 import __Layout from './Layout.jsx';
 
 
@@ -79,6 +80,7 @@ export const PAGES = {
     "TeamDetail": TeamDetail,
     "Teams": Teams,
     "TransferManagement": TransferManagement,
+    "PredictiveDashboard": PredictiveDashboard,
 }
 
 export const pagesConfig = {
