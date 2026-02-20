@@ -2,169 +2,177 @@ import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, X, Filter } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Search, X, Filter, ChevronDown, ChevronUp } from "lucide-react";
 
-export default function AdvancedFilters({ onFiltersChange }) {
+const POSTES = [
+  "Gardien", "Défenseur central", "Latéral droit", "Latéral gauche",
+  "Milieu défensif", "Milieu central", "Milieu offensif",
+  "Ailier droit", "Ailier gauche", "Attaquant"
+];
+
+const EMPTY = {
+  search: "", poste: "all", nationalite: "", club: "",
+  valeurMin: "", valeurMax: "", ageMin: "", ageMax: "",
+  piedFort: "all", contratExpire: "all",
+};
+
+export default function AdvancedFilters({ onFiltersChange, players = [] }) {
   const [expanded, setExpanded] = useState(false);
-  const [filters, setFilters] = useState({
-    search: "",
-    poste: "all",
-    ageMin: "",
-    ageMax: "",
-    club: "",
-    budgetMax: "",
-    contratExpire: "all",
-    nationalite: "",
-    piedFort: "all"
-  });
+  const [filters, setFilters] = useState(EMPTY);
 
-  const handleChange = (key, value) => {
-    const newFilters = { ...filters, [key]: value };
-    setFilters(newFilters);
-    onFiltersChange(newFilters);
+  const handle = (key, value) => {
+    const next = { ...filters, [key]: value };
+    setFilters(next);
+    onFiltersChange(next);
   };
 
-  const clearFilters = () => {
-    const emptyFilters = {
-      search: "",
-      poste: "all",
-      ageMin: "",
-      ageMax: "",
-      club: "",
-      budgetMax: "",
-      contratExpire: "all",
-      nationalite: "",
-      piedFort: "all"
-    };
-    setFilters(emptyFilters);
-    onFiltersChange(emptyFilters);
+  const clear = () => {
+    setFilters(EMPTY);
+    onFiltersChange(EMPTY);
   };
 
-  const hasActiveFilters = Object.entries(filters).some(([key, value]) => 
-    value !== "" && value !== "all"
-  );
+  // Derive unique values from player data
+  const clubs = [...new Set(players.map(p => p.club_actuel).filter(Boolean))].sort();
+  const nationalites = [...new Set(players.map(p => p.nationalite).filter(Boolean))].sort();
+
+  const activeCount = Object.entries(filters).filter(([k, v]) => v !== "" && v !== "all").length;
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="w-5 h-5" />
-            Recherche avancée
-          </CardTitle>
-          <div className="flex gap-2">
-            {hasActiveFilters && (
-              <Button variant="outline" size="sm" onClick={clearFilters}>
-                <X className="w-4 h-4 mr-2" />
-                Réinitialiser
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setExpanded(!expanded)}
-            >
-              {expanded ? "Réduire" : "Plus de filtres"}
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      {/* Top bar — always visible */}
+      <div className="flex items-center gap-3 p-3 flex-wrap">
+        {/* Search */}
+        <div className="relative flex-1 min-w-[180px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
-            placeholder="Rechercher un joueur..."
+            placeholder="Rechercher un joueur ou un club..."
             value={filters.search}
-            onChange={(e) => handleChange("search", e.target.value)}
-            className="pl-10"
+            onChange={e => handle("search", e.target.value)}
+            className="pl-9 h-9 bg-slate-50 border-slate-200"
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Select value={filters.poste} onValueChange={(value) => handleChange("poste", value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Position" />
+        {/* Poste */}
+        <Select value={filters.poste} onValueChange={v => handle("poste", v)}>
+          <SelectTrigger className="w-44 h-9 bg-slate-50 border-slate-200 text-sm">
+            <SelectValue placeholder="Poste" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les postes</SelectItem>
+            {POSTES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+          </SelectContent>
+        </Select>
+
+        {/* Valeur marchande max */}
+        <div className="flex items-center gap-1">
+          <Input
+            placeholder="Valeur min (M€)"
+            type="number"
+            value={filters.valeurMin}
+            onChange={e => handle("valeurMin", e.target.value)}
+            className="w-28 h-9 bg-slate-50 border-slate-200 text-sm"
+          />
+          <span className="text-slate-400 text-sm">—</span>
+          <Input
+            placeholder="max (M€)"
+            type="number"
+            value={filters.valeurMax}
+            onChange={e => handle("valeurMax", e.target.value)}
+            className="w-24 h-9 bg-slate-50 border-slate-200 text-sm"
+          />
+        </div>
+
+        {/* Toggle more + clear */}
+        <div className="flex items-center gap-2 ml-auto">
+          {activeCount > 0 && (
+            <button onClick={clear} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded-lg hover:bg-red-50 transition-colors">
+              <X className="w-3 h-3" /> Effacer
+              <Badge className="bg-red-100 text-red-700 border-0 text-[10px] px-1.5 py-0">{activeCount}</Badge>
+            </button>
+          )}
+          <button
+            onClick={() => setExpanded(e => !e)}
+            className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors"
+          >
+            <Filter className="w-3 h-3" />
+            {expanded ? "Moins" : "Plus de filtres"}
+            {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Expanded filters */}
+      {expanded && (
+        <div className="border-t border-slate-100 p-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          {/* Nationalité */}
+          <Select value={filters.nationalite || "__all__"} onValueChange={v => handle("nationalite", v === "__all__" ? "" : v)}>
+            <SelectTrigger className="h-9 bg-slate-50 border-slate-200 text-sm">
+              <SelectValue placeholder="Nationalité" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Toutes les positions</SelectItem>
-              <SelectItem value="Gardien">Gardien</SelectItem>
-              <SelectItem value="Défenseur central">Défenseur central</SelectItem>
-              <SelectItem value="Latéral droit">Latéral droit</SelectItem>
-              <SelectItem value="Latéral gauche">Latéral gauche</SelectItem>
-              <SelectItem value="Milieu défensif">Milieu défensif</SelectItem>
-              <SelectItem value="Milieu central">Milieu central</SelectItem>
-              <SelectItem value="Milieu offensif">Milieu offensif</SelectItem>
-              <SelectItem value="Ailier droit">Ailier droit</SelectItem>
-              <SelectItem value="Ailier gauche">Ailier gauche</SelectItem>
-              <SelectItem value="Attaquant">Attaquant</SelectItem>
+              <SelectItem value="__all__">Toutes nationalités</SelectItem>
+              {nationalites.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
             </SelectContent>
           </Select>
 
-          <Input
-            placeholder="Budget max (M€)"
-            type="number"
-            value={filters.budgetMax}
-            onChange={(e) => handleChange("budgetMax", e.target.value)}
-          />
+          {/* Club */}
+          <Select value={filters.club || "__all__"} onValueChange={v => handle("club", v === "__all__" ? "" : v)}>
+            <SelectTrigger className="h-9 bg-slate-50 border-slate-200 text-sm">
+              <SelectValue placeholder="Club actuel" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">Tous les clubs</SelectItem>
+              {clubs.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
 
-          <Select value={filters.contratExpire} onValueChange={(value) => handleChange("contratExpire", value)}>
-            <SelectTrigger>
+          {/* Age */}
+          <div className="flex items-center gap-1">
+            <Input
+              placeholder="Âge min"
+              type="number"
+              value={filters.ageMin}
+              onChange={e => handle("ageMin", e.target.value)}
+              className="h-9 bg-slate-50 border-slate-200 text-sm"
+            />
+            <span className="text-slate-400 text-sm">—</span>
+            <Input
+              placeholder="max"
+              type="number"
+              value={filters.ageMax}
+              onChange={e => handle("ageMax", e.target.value)}
+              className="h-9 bg-slate-50 border-slate-200 text-sm"
+            />
+          </div>
+
+          {/* Pied fort */}
+          <Select value={filters.piedFort} onValueChange={v => handle("piedFort", v)}>
+            <SelectTrigger className="h-9 bg-slate-50 border-slate-200 text-sm">
+              <SelectValue placeholder="Pied fort" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Pied fort</SelectItem>
+              <SelectItem value="Droit">Droit</SelectItem>
+              <SelectItem value="Gauche">Gauche</SelectItem>
+              <SelectItem value="Les deux">Les deux</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Fin de contrat */}
+          <Select value={filters.contratExpire} onValueChange={v => handle("contratExpire", v)}>
+            <SelectTrigger className="h-9 bg-slate-50 border-slate-200 text-sm">
               <SelectValue placeholder="Fin de contrat" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous</SelectItem>
-              <SelectItem value="6months">Dans 6 mois</SelectItem>
-              <SelectItem value="1year">Dans 1 an</SelectItem>
+              <SelectItem value="all">Tous contrats</SelectItem>
+              <SelectItem value="6months">Expire dans 6 mois</SelectItem>
+              <SelectItem value="1year">Expire dans 1 an</SelectItem>
               <SelectItem value="expired">Expiré</SelectItem>
             </SelectContent>
           </Select>
         </div>
-
-        {expanded && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Âge min"
-                type="number"
-                value={filters.ageMin}
-                onChange={(e) => handleChange("ageMin", e.target.value)}
-              />
-              <Input
-                placeholder="Âge max"
-                type="number"
-                value={filters.ageMax}
-                onChange={(e) => handleChange("ageMax", e.target.value)}
-              />
-            </div>
-
-            <Input
-              placeholder="Nationalité"
-              value={filters.nationalite}
-              onChange={(e) => handleChange("nationalite", e.target.value)}
-            />
-
-            <Select value={filters.piedFort} onValueChange={(value) => handleChange("piedFort", value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Pied fort" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous</SelectItem>
-                <SelectItem value="Droit">Droit</SelectItem>
-                <SelectItem value="Gauche">Gauche</SelectItem>
-                <SelectItem value="Les deux">Les deux</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Input
-              placeholder="Club actuel"
-              value={filters.club}
-              onChange={(e) => handleChange("club", e.target.value)}
-              className="md:col-span-2"
-            />
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 }
