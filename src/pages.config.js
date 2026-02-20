@@ -57,11 +57,11 @@ import MyWatchList from './pages/MyWatchList';
 import PlayerDetail from './pages/PlayerDetail';
 import PlayerSearch from './pages/PlayerSearch';
 import Players from './pages/Players';
+import PredictiveDashboard from './pages/PredictiveDashboard';
 import Reports from './pages/Reports';
 import TeamDetail from './pages/TeamDetail';
 import Teams from './pages/Teams';
 import TransferManagement from './pages/TransferManagement';
-import PredictiveDashboard from './pages/PredictiveDashboard';
 import __Layout from './Layout.jsx';
 
 
@@ -76,11 +76,11 @@ export const PAGES = {
     "PlayerDetail": PlayerDetail,
     "PlayerSearch": PlayerSearch,
     "Players": Players,
+    "PredictiveDashboard": PredictiveDashboard,
     "Reports": Reports,
     "TeamDetail": TeamDetail,
     "Teams": Teams,
     "TransferManagement": TransferManagement,
-    "PredictiveDashboard": PredictiveDashboard,
 }
 
 export const pagesConfig = {

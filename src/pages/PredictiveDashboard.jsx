@@ -7,6 +7,7 @@ import CareerTrajectory from "../components/dashboard/predictive/CareerTrajector
 import TransferRenewalPredictor from "../components/dashboard/predictive/TransferRenewalPredictor";
 import MarketValueImpact from "../components/dashboard/predictive/MarketValueImpact";
 import EmergingTalents from "../components/dashboard/predictive/EmergingTalents";
+import PlayerComparisonTool from "../components/dashboard/predictive/PlayerComparisonTool";
 
 export default function PredictiveDashboard() {
   const { data: players = [], isLoading } = useQuery({
