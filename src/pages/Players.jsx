@@ -59,9 +59,11 @@ export default function PlayersPage() {
     const matchesClub = !filters.club || 
       player.club_actuel?.toLowerCase().includes(filters.club.toLowerCase());
     
-    const matchesBudget = !filters.budgetMax || 
-      !player.valeur_marchande || 
-      player.valeur_marchande <= parseFloat(filters.budgetMax);
+    const matchesBudget = 
+      (!filters.valeurMin || (player.valeur_marchande && player.valeur_marchande >= parseFloat(filters.valeurMin))) &&
+      (!filters.valeurMax || !player.valeur_marchande || player.valeur_marchande <= parseFloat(filters.valeurMax));
+    // legacy support
+    const matchesBudgetLegacy = !filters.budgetMax || !player.valeur_marchande || player.valeur_marchande <= parseFloat(filters.budgetMax);
     
     const matchesContrat = filters.contratExpire === "all" || (() => {
       if (!player.contrat_fin) return false;
