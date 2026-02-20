@@ -62,6 +62,9 @@ export default function PredictiveDashboard() {
         <MarketValueImpact players={players} />
       </div>
 
+      {/* Comparaison avancée */}
+      <PlayerComparisonTool allPlayers={players} />
+
       {/* Légende méthodologie */}
       <div className="border border-slate-200 rounded-xl p-4 bg-slate-50 text-xs text-slate-500 space-y-1">
         <p className="font-semibold text-slate-700">📌 Méthodologie</p>
