@@ -118,7 +118,7 @@ export default function PlayersPage() {
         )}
 
         <div className="mb-6">
-          <AdvancedFilters onFiltersChange={setFilters} />
+          <AdvancedFilters onFiltersChange={setFilters} players={players} />
         </div>
 
         {isLoading ? (
