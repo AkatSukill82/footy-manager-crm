@@ -348,7 +348,7 @@ export default function PlayerDetailPage() {
               </CardContent>
             </Card>
 
-            {/* Charts - courbes évolution */}
+            {/* Charts & Evolution */}
             <PlayerChartsPanel playerId={playerId} player={player} />
 
             <TransferHistory transfers={transfers} />
