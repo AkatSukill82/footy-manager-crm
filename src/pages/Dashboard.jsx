@@ -11,6 +11,7 @@ import ContractExpiring from "../components/dashboard/ContractExpiring";
 import PersonalizedDashboard from "../components/dashboard/PersonalizedDashboard";
 import EnhancedCharts from "../components/dashboard/EnhancedCharts";
 import NotificationSystem from "../components/notifications/NotificationSystem";
+import ContractTimeline from "../components/dashboard/ContractTimeline";
 
 export default function Dashboard() {
   const [activeView, setActiveView] = useState("personalized");
