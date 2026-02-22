@@ -159,6 +159,8 @@ export default function Dashboard() {
         </TabsContent>
       </Tabs>
 
+      <ContractTimeline players={players} />
+
       <EnhancedCharts
         players={players}
         transfers={transfers}
