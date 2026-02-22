@@ -120,7 +120,7 @@ Ne retourne QUE des joueurs de football professionnels réels.`,
     setCandidates(null);
 
     const data = await base44.integrations.Core.InvokeLLM({
-      prompt: `Tu es un expert en données football. Recherche des informations ULTRA-COMPLÈTES et à jour sur le joueur "${query}".
+      prompt: `Tu es un expert en données football. Recherche des informations ULTRA-COMPLÈTES et à jour sur le joueur "${playerName}".
 
 Consulte impérativement ces sources :
 1. **Transfermarkt.fr** : profil complet, valeur marchande actuelle + tout l'historique de valeurs avec dates (minimum 8-10 points), historique de TOUS les clubs depuis les débuts avec dates précises, infos contractuelles, agent/agence, données physiques, blessures, palmarès.
