@@ -328,7 +328,7 @@ RÈGLES FORMAT STRICTES :
     });
 
     setResult(data);
-    setLoading(false);
+    setLoadingFull(false);
   };
 
   const handleSaveToApp = async () => {
