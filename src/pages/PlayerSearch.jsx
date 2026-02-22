@@ -53,18 +53,71 @@ function StatBox({ label, value, color = "bg-slate-50", textColor = "text-slate-
 export default function PlayerSearchPage() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingFull, setLoadingFull] = useState(false);
+  const [candidates, setCandidates] = useState(null); // liste de candidats
   const [result, setResult] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  // Étape 1 : chercher les candidats possibles
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
     setLoading(true);
     setResult(null);
+    setCandidates(null);
     setSaved(false);
+
+    const data = await base44.integrations.Core.InvokeLLM({
+      prompt: `Tu es un expert en données football. Pour la recherche "${query}", trouve TOUS les joueurs de football professionnels qui correspondent à ce nom (homonymes, variations du nom, joueurs actifs et récents).
+
+Retourne une liste de 1 à 6 joueurs possibles avec leurs infos de base. Si le nom est très précis et ne correspond qu'à un seul joueur connu, retourne juste ce joueur.
+
+Ne retourne QUE des joueurs de football professionnels réels.`,
+      add_context_from_internet: true,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          candidats: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                nom: { type: "string" },
+                nom_complet: { type: "string" },
+                age: { type: "number" },
+                nationalite: { type: "string" },
+                poste: { type: "string" },
+                club_actuel: { type: "string" },
+                ligue: { type: "string" },
+                valeur_marchande: { type: "number" },
+                photo_url: { type: "string" },
+                description_courte: { type: "string" }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    const list = data?.candidats || [];
+    if (list.length === 1) {
+      // Un seul résultat → charger directement le profil complet
+      setLoading(false);
+      await fetchFullProfile(list[0].nom_complet || list[0].nom);
+    } else {
+      setCandidates(list);
+      setLoading(false);
+    }
+  };
+
+  // Étape 2 : charger le profil complet d'un candidat choisi
+  const fetchFullProfile = async (playerName) => {
+    setLoadingFull(true);
+    setResult(null);
+    setCandidates(null);
 
     const data = await base44.integrations.Core.InvokeLLM({
       prompt: `Tu es un expert en données football. Recherche des informations ULTRA-COMPLÈTES et à jour sur le joueur "${query}".
