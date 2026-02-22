@@ -557,8 +557,59 @@ RÈGLES FORMAT STRICTES :
           </Button>
         </form>
 
-        {/* Loading */}
+        {/* Loading candidats */}
         {loading && (
+          <div className="flex flex-col items-center justify-center py-16 gap-4">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+              <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
+            </div>
+            <p className="text-slate-600 font-medium">Recherche des joueurs correspondants…</p>
+          </div>
+        )}
+
+        {/* Sélection du candidat */}
+        {candidates && candidates.length > 0 && !result && !loadingFull && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Search className="w-4 h-4 text-green-500" />
+                Plusieurs joueurs correspondent à "{query}" — Lequel voulez-vous ?
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {candidates.map((c, i) => (
+                <button
+                  key={i}
+                  onClick={() => fetchFullProfile(c.nom_complet || c.nom)}
+                  className="w-full flex items-center gap-4 p-3 rounded-xl border border-slate-200 hover:border-green-400 hover:bg-green-50 transition-all text-left group"
+                >
+                  <div className="w-14 h-14 rounded-xl bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-200">
+                    {c.photo_url
+                      ? <img src={c.photo_url} alt={c.nom} className="w-full h-full object-cover" onError={e => e.target.style.display = 'none'} />
+                      : <User className="w-7 h-7 text-slate-400 m-auto mt-3.5" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-slate-900 group-hover:text-green-700 transition-colors">{c.nom_complet || c.nom}</p>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {c.poste && <Badge className={`text-xs ${posteColors[c.poste] || "bg-slate-100 text-slate-700"}`}>{c.poste}</Badge>}
+                      {c.nationalite && <Badge variant="outline" className="text-xs">{c.nationalite}</Badge>}
+                      {c.club_actuel && <Badge className="bg-slate-800 text-white text-xs">{c.club_actuel}</Badge>}
+                      {c.age && <Badge variant="outline" className="text-xs">{c.age} ans</Badge>}
+                    </div>
+                    {c.description_courte && <p className="text-xs text-slate-400 mt-1 truncate">{c.description_courte}</p>}
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    {c.valeur_marchande && <p className="font-bold text-green-600 text-sm">{c.valeur_marchande} M€</p>}
+                    <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-green-500 transition-colors mt-1 ml-auto" />
+                  </div>
+                </button>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Loading profil complet */}
+        {loadingFull && (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
               <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
