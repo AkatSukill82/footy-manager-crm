@@ -21,6 +21,7 @@ const navItems = [
   { name: "AgentNetwork",       label: "Réseau Agents",      icon: Network },
   { name: "PlayerSearch",       label: "Recherche Joueurs",   icon: SearchCheck },
   { name: "PredictiveDashboard", label: "Prédictif IA",        icon: Sparkles },
+  { name: "News",               label: "Journal du jour",    icon: Newspaper },
 ];
 
 // Bottom nav shows 5 key items; rest accessible via drawer
