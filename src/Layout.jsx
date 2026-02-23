@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "./utils";
 import {
   Users, Star, LogOut, BarChart3, Bell, Phone, Shield,
-  FileText, Network, ArrowRightLeft, Menu, X, Building2, SearchCheck, Sparkles
+  FileText, Network, ArrowRightLeft, Menu, X, Building2, SearchCheck, Sparkles, Newspaper
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Toaster } from "@/components/ui/sonner";
