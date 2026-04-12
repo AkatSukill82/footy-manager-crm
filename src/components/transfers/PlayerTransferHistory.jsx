@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Calendar, Building2, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 const typeColors = {
   "Transfert définitif": "bg-blue-100 text-blue-800",
@@ -58,7 +59,7 @@ export default function PlayerTransferHistory({ player, transfers }) {
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-slate-600" />
                         <span className="font-medium text-slate-900">
-                          {format(new Date(transfer.date_transfert), "dd MMMM yyyy", { locale: require('date-fns/locale/fr') })}
+                          {format(new Date(transfer.date_transfert), "dd MMMM yyyy", { locale: fr })}
                         </span>
                       </div>
                       <Badge className={typeColors[transfer.type_transfert]}>

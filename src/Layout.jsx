@@ -22,6 +22,7 @@ const navItems = [
   { name: "PlayerSearch",       label: "Recherche Joueurs",   icon: SearchCheck },
   { name: "PredictiveDashboard", label: "Prédictif IA",        icon: Sparkles },
   { name: "News",               label: "Journal du jour",    icon: Newspaper },
+  { name: "ScoutingIA",         label: "Scouting IA",        icon: Sparkles },
 ];
 
 // Bottom nav shows 5 key items; rest accessible via drawer
