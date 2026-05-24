@@ -2,242 +2,72 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import {
   Calendar, Plus, Loader2, CheckCircle2, AlertCircle, Trash2,
-  RefreshCw, Settings, X, Clock, CalendarDays, Zap, User,
-  FileText, Trophy, ChevronRight, ExternalLink, ChevronDown,
-  LogOut, Check
+  RefreshCw, X, Clock, CalendarDays, Zap, User,
+  FileText, Trophy, ChevronRight, ExternalLink
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
-import GoogleCalendarService from "../services/googleCalendar";
 
-const GCAL_COLORS = {
-  '1': 'bg-blue-100 text-blue-800 border-blue-200',
-  '2': 'bg-green-100 text-green-800 border-green-200',
-  '3': 'bg-purple-100 text-purple-800 border-purple-200',
-  '4': 'bg-pink-100 text-pink-800 border-pink-200',
-  '5': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  '6': 'bg-orange-100 text-orange-800 border-orange-200',
-  '7': 'bg-cyan-100 text-cyan-800 border-cyan-200',
-  '10': 'bg-green-100 text-green-800 border-green-200',
-  '11': 'bg-red-100 text-red-800 border-red-200',
-  default: 'bg-slate-100 text-slate-700 border-slate-200',
-};
-
-function CalDot({ backgroundColor }) {
-  return (
-    <span
-      className="inline-block w-3 h-3 rounded-full flex-shrink-0"
-      style={{ backgroundColor: backgroundColor || '#4285f4' }}
-    />
-  );
-}
-
-function EventCard({ event, onDelete }) {
-  const colorClass = GCAL_COLORS[event.colorId] || GCAL_COLORS.default;
-  const allDay = GoogleCalendarService.isAllDay(event);
-  const dateStr = GoogleCalendarService.formatEventDate(event);
-
-  return (
-    <div className={`flex items-start gap-3 p-3 rounded-xl border ${colorClass} group`}>
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm truncate">{event.summary}</p>
-        <div className="flex items-center gap-1.5 mt-0.5">
-          <Clock className="w-3 h-3 opacity-60 flex-shrink-0" />
-          <p className="text-xs opacity-70">{dateStr}{allDay ? ' · Journée entière' : ''}</p>
-        </div>
-        {event.description && (
-          <p className="text-xs opacity-60 mt-1 line-clamp-1">{event.description}</p>
-        )}
-      </div>
-      <button
-        onClick={() => onDelete(event)}
-        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-black/10"
-      >
-        <Trash2 className="w-3.5 h-3.5" />
-      </button>
-    </div>
-  );
-}
-
-function CalendarPickerModal({ onSelected, userInfo }) {
-  const [calendars, setCalendars] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [selected, setSelected] = useState(null);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    GoogleCalendarService.getCalendars()
-      .then(items => {
-        setCalendars(items);
-        const primary = items.find(c => c.primary) || items[0];
-        if (primary) setSelected(primary);
-      })
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const handleConfirm = () => {
-    if (!selected) return;
-    setSaving(true);
-    GoogleCalendarService.setSelectedCalendar({
-      id: selected.id,
-      summary: selected.summary,
-      backgroundColor: selected.backgroundColor,
-    });
-    setTimeout(() => onSelected(selected), 300);
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div className="h-1.5 bg-gradient-to-r from-green-500 to-emerald-400" />
-        <div className="p-6 space-y-5">
-          {userInfo && (
-            <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
-              {userInfo.picture
-                ? <img src={userInfo.picture} alt="" className="w-10 h-10 rounded-full" referrerPolicy="no-referrer" />
-                : <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold">{userInfo.name?.[0]}</div>
-              }
-              <div>
-                <p className="font-semibold text-slate-900 text-sm">{userInfo.name}</p>
-                <p className="text-xs text-slate-500">{userInfo.email}</p>
-              </div>
-              <CheckCircle2 className="w-5 h-5 text-green-500 ml-auto flex-shrink-0" />
-            </div>
-          )}
-
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">Choisir un calendrier</h2>
-            <p className="text-sm text-slate-500 mt-0.5">Sélectionne le calendrier à synchroniser avec FDM.</p>
-          </div>
-
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-green-500" />
-            </div>
-          ) : error ? (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">{error}</div>
-          ) : (
-            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-              {calendars.map(cal => (
-                <button
-                  key={cal.id}
-                  onClick={() => setSelected(cal)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${
-                    selected?.id === cal.id
-                      ? 'border-green-400 bg-green-50'
-                      : 'border-transparent bg-slate-50 hover:bg-slate-100'
-                  }`}
-                >
-                  <CalDot backgroundColor={cal.backgroundColor} />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm text-slate-900 truncate">{cal.summary}</p>
-                    {cal.primary && <Badge variant="outline" className="text-[10px] mt-0.5">Principal</Badge>}
-                  </div>
-                  {selected?.id === cal.id && <Check className="w-4 h-4 text-green-600 flex-shrink-0" />}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <Button onClick={handleConfirm} disabled={!selected || saving} className="w-full bg-green-600 hover:bg-green-700">
-            {saving
-              ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Synchronisation…</>
-              : <><CheckCircle2 className="w-4 h-4 mr-2" />Synchroniser ce calendrier</>
-            }
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function AdminSetupPanel({ onSaved, onClose }) {
-  const [clientId, setClientId] = useState(GoogleCalendarService.getClientId());
-  const [saved, setSaved] = useState(false);
-
-  const handleSave = () => {
-    if (!clientId.trim()) return;
-    GoogleCalendarService.setClientId(clientId.trim());
-    setSaved(true);
-    setTimeout(() => { setSaved(false); onSaved(); }, 800);
-  };
-
-  return (
-    <Card className="border-2 border-dashed border-amber-200 bg-amber-50/30">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm flex items-center gap-2 text-amber-700">
-            <Settings className="w-4 h-4" /> Configuration OAuth Google
-          </CardTitle>
-          <button onClick={onClose} className="p-1 rounded hover:bg-amber-100">
-            <X className="w-4 h-4 text-amber-400" />
-          </button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="text-xs text-amber-700 space-y-1 leading-relaxed">
-          <p className="font-semibold">À faire une seule fois :</p>
-          <ol className="list-decimal list-inside space-y-0.5">
-            <li>Ouvre <strong>console.cloud.google.com</strong></li>
-            <li>APIs &amp; Services → activer <strong>Google Calendar API</strong></li>
-            <li>Identifiants → ID client OAuth → <strong>Application Web</strong></li>
-            <li>Origines JS autorisées → colle l'URL de cette app</li>
-            <li>⚠️ Pas de redirect URI — juste l'origine</li>
-          </ol>
-        </div>
-        <div>
-          <Label className="text-xs">Client ID</Label>
-          <Input
-            value={clientId}
-            onChange={e => setClientId(e.target.value)}
-            placeholder="123456789-abc...apps.googleusercontent.com"
-            className="mt-1 font-mono text-xs"
-          />
-        </div>
-        <Button onClick={handleSave} disabled={!clientId.trim() || saved} className="w-full bg-green-600 hover:bg-green-700" size="sm">
-          {saved ? <><CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />Enregistré</> : 'Enregistrer'}
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
+// ID du connecteur Google Calendar déclaré dans base44/connectors/googlecalendar.jsonc
+const CONNECTOR_ID = "6a136187a4bae80428554350";
 
 const EVENT_TEMPLATES = [
-  { icon: FileText, label: "Expiration contrat", color: "text-red-500", colorId: '11' },
-  { icon: User, label: "RDV joueur", color: "text-blue-500", colorId: '1' },
-  { icon: User, label: "RDV agent", color: "text-purple-500", colorId: '3' },
-  { icon: Trophy, label: "Match à surveiller", color: "text-green-500", colorId: '10' },
-  { icon: CalendarDays, label: "Mercato", color: "text-orange-500", colorId: '6' },
-  { icon: Zap, label: "Autre", color: "text-slate-500", colorId: '7' },
+  { icon: FileText, label: "Expiration contrat", color: "text-red-500" },
+  { icon: User,     label: "RDV joueur",          color: "text-blue-500" },
+  { icon: User,     label: "RDV agent",            color: "text-purple-500" },
+  { icon: Trophy,   label: "Match à surveiller",   color: "text-green-500" },
+  { icon: CalendarDays, label: "Mercato",          color: "text-orange-500" },
+  { icon: Zap,      label: "Autre",                color: "text-slate-500" },
 ];
 
-function NewEventModal({ onClose, onCreated, players }) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [time, setTime] = useState('10:00');
-  const [allDay, setAllDay] = useState(false);
-  const [duration, setDuration] = useState(60);
-  const [colorId, setColorId] = useState('1');
-  const [selectedPlayer, setSelectedPlayer] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+function EventCard({ event, onDelete }) {
+  const raw = event.start?.dateTime || event.start?.date;
+  let dateStr = raw;
+  try {
+    dateStr = raw?.includes('T')
+      ? format(parseISO(raw), "EEE d MMM · HH'h'mm", { locale: fr })
+      : format(parseISO(raw), "EEE d MMM", { locale: fr });
+  } catch {}
 
-  const applyTemplate = (tpl) => {
-    setTitle(tpl.label);
-    setColorId(tpl.colorId);
-    if (tpl.label === 'Match à surveiller') setDuration(105);
-    if (tpl.label === 'Expiration contrat') setAllDay(true);
-  };
+  return (
+    <div className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 bg-white group">
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-sm truncate text-slate-900">{event.summary}</p>
+        <div className="flex items-center gap-1.5 mt-0.5">
+          <Clock className="w-3 h-3 text-slate-400 flex-shrink-0" />
+          <p className="text-xs text-slate-500">{dateStr}</p>
+        </div>
+        {event.description && (
+          <p className="text-xs text-slate-400 mt-1 line-clamp-1">{event.description}</p>
+        )}
+      </div>
+      {onDelete && (
+        <button
+          onClick={() => onDelete(event)}
+          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-50 text-red-400"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function NewEventModal({ onClose, onCreated, players }) {
+  const [title, setTitle]             = useState('');
+  const [description, setDescription] = useState('');
+  const [date, setDate]               = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [time, setTime]               = useState('10:00');
+  const [duration, setDuration]       = useState(60);
+  const [selectedPlayer, setSelectedPlayer] = useState('');
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState('');
 
   const handleCreate = async () => {
     if (!title.trim() || !date) return;
@@ -245,23 +75,22 @@ function NewEventModal({ onClose, onCreated, players }) {
     setError('');
     try {
       const playerSuffix = selectedPlayer ? ` — ${selectedPlayer}` : '';
-      let event;
-      if (allDay) {
-        event = { summary: title + playerSuffix, description, start: { date }, end: { date }, colorId, reminders: { useDefault: true } };
-      } else {
-        const dt = new Date(`${date}T${time}:00`);
-        event = {
-          summary: title + playerSuffix, description,
-          start: { dateTime: dt.toISOString() },
-          end: { dateTime: new Date(dt.getTime() + duration * 60_000).toISOString() },
-          colorId, reminders: { useDefault: true },
-        };
-      }
-      await GoogleCalendarService.createEvent(event);
+      const dateTime    = new Date(`${date}T${time}:00`);
+      const endDateTime = new Date(dateTime.getTime() + duration * 60_000);
+
+      await base44.functions.invoke('syncToGoogleCalendar', {
+        action: 'create',
+        event: {
+          summary:     title + playerSuffix,
+          description,
+          start: dateTime.toISOString(),
+          end:   endDateTime.toISOString(),
+        },
+      });
       onCreated();
       onClose();
     } catch (e) {
-      setError(e.message);
+      setError(e.response?.data?.error || e.message);
     } finally {
       setLoading(false);
     }
@@ -269,21 +98,25 @@ function NewEventModal({ onClose, onCreated, players }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+           onClick={e => e.stopPropagation()}>
         <div className="h-1.5 bg-gradient-to-r from-green-500 to-emerald-400 rounded-t-2xl" />
         <div className="p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-slate-900 text-lg">Nouvel événement</h2>
-            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100"><X className="w-4 h-4" /></button>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100">
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
+          {/* Templates */}
           <div>
             <p className="text-xs font-semibold text-slate-400 uppercase mb-2">Modèle rapide</p>
             <div className="flex flex-wrap gap-2">
               {EVENT_TEMPLATES.map(tpl => {
                 const Icon = tpl.icon;
                 return (
-                  <button key={tpl.label} onClick={() => applyTemplate(tpl)}
+                  <button key={tpl.label} onClick={() => setTitle(tpl.label)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-green-300 hover:bg-green-50 text-xs font-medium transition-all">
                     <Icon className={`w-3.5 h-3.5 ${tpl.color}`} /> {tpl.label}
                   </button>
@@ -303,51 +136,45 @@ function NewEventModal({ onClose, onCreated, players }) {
               <select value={selectedPlayer} onChange={e => setSelectedPlayer(e.target.value)}
                 className="mt-1.5 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
                 <option value="">— Aucun —</option>
-                {players.map(p => <option key={p.id} value={p.nom}>{p.nom}{p.club_actuel ? ` (${p.club_actuel})` : ''}</option>)}
+                {players.map(p => (
+                  <option key={p.id} value={p.nom}>{p.nom}{p.club_actuel ? ` (${p.club_actuel})` : ''}</option>
+                ))}
               </select>
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            <div><Label>Date *</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} className="mt-1.5" /></div>
-            <div><Label>Heure</Label><Input type="time" value={time} onChange={e => setTime(e.target.value)} disabled={allDay} className="mt-1.5" /></div>
+            <div>
+              <Label>Date *</Label>
+              <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="mt-1.5" />
+            </div>
+            <div>
+              <Label>Heure</Label>
+              <Input type="time" value={time} onChange={e => setTime(e.target.value)} className="mt-1.5" />
+            </div>
           </div>
 
-          <div className="flex items-center gap-5">
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" checked={allDay} onChange={e => setAllDay(e.target.checked)} className="rounded" />
-              Journée entière
-            </label>
-            {!allDay && (
-              <div className="flex items-center gap-2">
-                <Label className="whitespace-nowrap">Durée</Label>
-                <select value={duration} onChange={e => setDuration(Number(e.target.value))} className="border border-slate-200 rounded-lg px-2 py-1 text-sm">
-                  {[30, 45, 60, 90, 105, 120, 180].map(d => (
-                    <option key={d} value={d}>{d < 60 ? `${d} min` : `${Math.floor(d/60)}h${d%60 || ''}`}</option>
-                  ))}
-                </select>
-              </div>
-            )}
+          <div className="flex items-center gap-2">
+            <Label className="whitespace-nowrap">Durée</Label>
+            <select value={duration} onChange={e => setDuration(Number(e.target.value))}
+              className="border border-slate-200 rounded-lg px-2 py-1 text-sm">
+              {[30, 45, 60, 90, 120].map(d => (
+                <option key={d} value={d}>{d < 60 ? `${d} min` : `${Math.floor(d/60)}h${d%60 || ''}`}</option>
+              ))}
+            </select>
           </div>
-
-          <div><Label>Description (optionnel)</Label><Textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} className="mt-1.5" /></div>
 
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase mb-2">Couleur</p>
-            <div className="flex gap-2 flex-wrap">
-              {[{id:'1',bg:'bg-blue-500'},{id:'2',bg:'bg-green-400'},{id:'3',bg:'bg-purple-500'},
-                {id:'6',bg:'bg-orange-400'},{id:'10',bg:'bg-green-700'},{id:'11',bg:'bg-red-500'},{id:'7',bg:'bg-cyan-500'}].map(c => (
-                <button key={c.id} onClick={() => setColorId(c.id)}
-                  className={`w-7 h-7 rounded-full ${c.bg} transition-transform ${colorId === c.id ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : 'hover:scale-105'}`} />
-              ))}
-            </div>
+            <Label>Description (optionnel)</Label>
+            <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} className="mt-1.5" />
           </div>
 
           {error && <p className="text-red-600 text-sm bg-red-50 rounded-lg px-3 py-2">{error}</p>}
 
           <div className="flex gap-3 pt-2">
             <Button variant="outline" onClick={onClose} className="flex-1">Annuler</Button>
-            <Button onClick={handleCreate} disabled={!title.trim() || !date || loading} className="flex-1 bg-green-600 hover:bg-green-700">
+            <Button onClick={handleCreate} disabled={!title.trim() || !date || loading}
+              className="flex-1 bg-green-600 hover:bg-green-700">
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
               Créer l'événement
             </Button>
@@ -359,88 +186,75 @@ function NewEventModal({ onClose, onCreated, players }) {
 }
 
 export default function CalendarPage() {
-  const [connected, setConnected] = useState(GoogleCalendarService.isConnected());
-  const [selectedCal, setSelectedCal] = useState(GoogleCalendarService.getSelectedCalendar());
-  const [userInfo, setUserInfo] = useState(GoogleCalendarService.getUserInfoCache());
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const [events, setEvents]       = useState([]);
+  const [loading, setLoading]     = useState(true);
   const [connecting, setConnecting] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError]         = useState('');
   const [showNewEvent, setShowNewEvent] = useState(false);
-  const [showAdminSetup, setShowAdminSetup] = useState(false);
-  const [showCalPicker, setShowCalPicker] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
 
   const { data: players = [] } = useQuery({
     queryKey: ['players'],
     queryFn: () => base44.entities.Player.list('-created_date'),
   });
 
-  const calendarId = selectedCal?.id || 'primary';
-
-  const loadEvents = useCallback(async () => {
-    if (!GoogleCalendarService.isConnected()) return;
+  const fetchEvents = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const data = await GoogleCalendarService.getUpcomingEvents(calendarId, 30);
-      setEvents(data);
-    } catch (e) {
-      setError(e.message);
-      if (e.message.includes('expirée') || e.message.includes('connecté')) {
-        setConnected(false);
-        setSelectedCal(null);
-      }
+      const res = await base44.functions.invoke('syncToGoogleCalendar', { action: 'list' });
+      setEvents(res.data?.events || []);
+      setConnected(true);
+    } catch {
+      setConnected(false);
     } finally {
       setLoading(false);
     }
-  }, [calendarId]);
+  }, []);
 
-  useEffect(() => {
-    if (connected && selectedCal) loadEvents();
-  }, [connected, selectedCal, loadEvents]);
+  useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
+  // Ouvre le popup OAuth Base44 puis re-vérifie la connexion
   const handleConnect = async () => {
     setConnecting(true);
     setError('');
     try {
-      await GoogleCalendarService.connect();
-      setConnected(true);
-      const info = await GoogleCalendarService.getUserInfo();
-      setUserInfo(info);
-      setShowCalPicker(true);
+      const url = await base44.connectors.connectAppUser(CONNECTOR_ID);
+      const popup = window.open(url, '_blank', 'width=520,height=620');
+      const timer = setInterval(() => {
+        if (!popup || popup.closed) {
+          clearInterval(timer);
+          setConnecting(false);
+          fetchEvents();
+        }
+      }, 500);
     } catch (e) {
       setError(e.message);
-    } finally {
       setConnecting(false);
     }
   };
 
-  const handleCalendarSelected = (cal) => {
-    setSelectedCal({ id: cal.id, summary: cal.summary, backgroundColor: cal.backgroundColor });
-    setShowCalPicker(false);
-  };
-
-  const handleDisconnect = () => {
-    GoogleCalendarService.disconnect();
+  const handleDisconnect = async () => {
+    try {
+      await base44.connectors.disconnectAppUser(CONNECTOR_ID);
+    } catch {}
     setConnected(false);
-    setSelectedCal(null);
-    setUserInfo(null);
     setEvents([]);
   };
 
   const handleDelete = async (event) => {
     if (!confirm(`Supprimer "${event.summary}" ?`)) return;
-    setDeletingId(event.id);
     try {
-      await GoogleCalendarService.deleteEvent(event.id);
+      await base44.functions.invoke('syncToGoogleCalendar', {
+        action: 'delete',
+        googleEventId: event.id,
+      });
       setEvents(prev => prev.filter(e => e.id !== event.id));
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setDeletingId(null);
-    }
+    } catch (e) { setError(e.message); }
   };
+
+  const today    = format(new Date(), 'yyyy-MM-dd');
+  const tomorrow = format(new Date(Date.now() + 86400000), 'yyyy-MM-dd');
 
   const grouped = events.reduce((acc, ev) => {
     const raw = ev.start?.dateTime || ev.start?.date;
@@ -450,11 +264,8 @@ export default function CalendarPage() {
     return acc;
   }, {});
 
-  const today = format(new Date(), 'yyyy-MM-dd');
-  const tomorrow = format(new Date(Date.now() + 86400000), 'yyyy-MM-dd');
-
   const dayLabel = (day) => {
-    if (day === today) return "Aujourd'hui";
+    if (day === today)    return "Aujourd'hui";
     if (day === tomorrow) return 'Demain';
     try { return format(parseISO(day), 'EEEE d MMMM', { locale: fr }); }
     catch { return day; }
@@ -468,17 +279,34 @@ export default function CalendarPage() {
 
   const addContractEvent = async (player) => {
     try {
-      await GoogleCalendarService.createEvent(GoogleCalendarService.buildContractExpiryEvent(player.nom, player.contrat_fin));
-      await loadEvents();
+      const start = new Date(player.contrat_fin);
+      start.setHours(10, 0, 0, 0);
+      await base44.functions.invoke('syncToGoogleCalendar', {
+        action: 'create',
+        event: {
+          summary:     `⚠️ Contrat expire — ${player.nom}`,
+          description: `Fin de contrat de ${player.nom}${player.club_actuel ? ` (${player.club_actuel})` : ''}`,
+          start: start.toISOString(),
+          end:   new Date(start.getTime() + 3_600_000).toISOString(),
+        },
+      });
+      fetchEvents();
     } catch (e) { setError(e.message); }
   };
 
-  const isConfigured = GoogleCalendarService.hasClientId();
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-green-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-6">
       <div className="max-w-5xl mx-auto space-y-6">
 
+        {/* Header */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-2">
@@ -486,27 +314,17 @@ export default function CalendarPage() {
             </h1>
             <p className="text-slate-500 text-sm mt-0.5">Synchronisé avec Google Calendar</p>
           </div>
-          <div className="flex items-center gap-2">
-            {connected && (
-              <>
-                <Button onClick={() => setShowNewEvent(true)} size="sm" className="bg-green-600 hover:bg-green-700 gap-1.5">
-                  <Plus className="w-4 h-4" /> Événement
-                </Button>
-                <Button onClick={loadEvents} variant="outline" size="sm" disabled={loading}>
-                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                </Button>
-              </>
-            )}
-            <Button onClick={() => setShowAdminSetup(s => !s)} variant="ghost" size="sm"
-              className="text-slate-300 hover:text-slate-500" title="Configuration">
-              <Settings className="w-4 h-4" />
-            </Button>
-          </div>
+          {connected && (
+            <div className="flex items-center gap-2">
+              <Button onClick={() => setShowNewEvent(true)} size="sm" className="bg-green-600 hover:bg-green-700 gap-1.5">
+                <Plus className="w-4 h-4" /> Événement
+              </Button>
+              <Button onClick={fetchEvents} variant="outline" size="sm">
+                <RefreshCw className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
         </div>
-
-        {showAdminSetup && (
-          <AdminSetupPanel onSaved={() => setShowAdminSetup(false)} onClose={() => setShowAdminSetup(false)} />
-        )}
 
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 flex items-start gap-2">
@@ -516,6 +334,7 @@ export default function CalendarPage() {
           </div>
         )}
 
+        {/* Non connecté */}
         {!connected && (
           <Card className="overflow-hidden">
             <div className="h-1 bg-gradient-to-r from-green-400 to-emerald-500" />
@@ -541,67 +360,46 @@ export default function CalendarPage() {
                 </p>
               </div>
 
-              {!isConfigured ? (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700 text-center max-w-xs">
-                  Configuration requise — clique sur <Settings className="w-3.5 h-3.5 inline mx-0.5" /> en haut à droite.
-                </div>
-              ) : (
-                <Button onClick={handleConnect} disabled={connecting} size="lg"
-                  className="bg-white border-2 border-slate-200 hover:border-green-400 text-slate-900 hover:bg-green-50 gap-3 px-8 shadow-sm transition-all">
-                  {connecting ? (
-                    <><Loader2 className="w-5 h-5 animate-spin" /> Connexion…</>
-                  ) : (
-                    <>
-                      <svg viewBox="0 0 48 48" className="w-5 h-5 flex-shrink-0">
-                        <path fill="#4285F4" d="M47.532 24.552c0-1.636-.138-3.2-.395-4.705H24.48v9.01h12.97c-.56 3.01-2.24 5.56-4.77 7.27v6.04h7.72c4.52-4.17 7.13-10.3 7.13-17.615z"/>
-                        <path fill="#34A853" d="M24.48 48c6.49 0 11.94-2.154 15.92-5.833l-7.72-6.04c-2.153 1.44-4.9 2.29-8.2 2.29-6.3 0-11.64-4.256-13.55-9.978H3v6.24C6.97 43.14 15.1 48 24.48 48z"/>
-                        <path fill="#FBBC05" d="M10.93 28.44A14.48 14.48 0 0 1 9.93 24c0-1.54.266-3.04.737-4.44v-6.24H3A24.02 24.02 0 0 0 .48 24c0 3.87.928 7.53 2.52 10.68l7.93-6.24z"/>
-                        <path fill="#EA4335" d="M24.48 9.583c3.55 0 6.73 1.22 9.24 3.62l6.93-6.93C36.41 2.37 30.96 0 24.48 0 15.1 0 6.97 4.86 3 12.32l7.93 6.24c1.91-5.72 7.25-8.977 13.55-8.977z"/>
-                      </svg>
-                      Se connecter avec Google
-                    </>
-                  )}
-                </Button>
-              )}
+              <Button onClick={handleConnect} disabled={connecting} size="lg"
+                className="bg-white border-2 border-slate-200 hover:border-green-400 text-slate-900 hover:bg-green-50 gap-3 px-8 shadow-sm transition-all">
+                {connecting ? (
+                  <><Loader2 className="w-5 h-5 animate-spin" /> Connexion…</>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 48 48" className="w-5 h-5 flex-shrink-0">
+                      <path fill="#4285F4" d="M47.532 24.552c0-1.636-.138-3.2-.395-4.705H24.48v9.01h12.97c-.56 3.01-2.24 5.56-4.77 7.27v6.04h7.72c4.52-4.17 7.13-10.3 7.13-17.615z"/>
+                      <path fill="#34A853" d="M24.48 48c6.49 0 11.94-2.154 15.92-5.833l-7.72-6.04c-2.153 1.44-4.9 2.29-8.2 2.29-6.3 0-11.64-4.256-13.55-9.978H3v6.24C6.97 43.14 15.1 48 24.48 48z"/>
+                      <path fill="#FBBC05" d="M10.93 28.44A14.48 14.48 0 0 1 9.93 24c0-1.54.266-3.04.737-4.44v-6.24H3A24.02 24.02 0 0 0 .48 24c0 3.87.928 7.53 2.52 10.68l7.93-6.24z"/>
+                      <path fill="#EA4335" d="M24.48 9.583c3.55 0 6.73 1.22 9.24 3.62l6.93-6.93C36.41 2.37 30.96 0 24.48 0 15.1 0 6.97 4.86 3 12.32l7.93 6.24c1.91-5.72 7.25-8.977 13.55-8.977z"/>
+                    </svg>
+                    Se connecter avec Google
+                  </>
+                )}
+              </Button>
               <p className="text-xs text-slate-400">Accès limité au calendrier uniquement</p>
             </CardContent>
           </Card>
         )}
 
-        {connected && selectedCal && (
+        {/* Connecté */}
+        {connected && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-2.5 flex-wrap">
-              <div className="flex items-center gap-3">
-                {userInfo?.picture && (
-                  <img src={userInfo.picture} alt="" className="w-7 h-7 rounded-full" referrerPolicy="no-referrer" />
-                )}
-                <div className="flex items-center gap-2 text-sm text-green-700">
-                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                  <span className="font-medium">{userInfo?.name ? `${userInfo.name} · ` : ''}Google Calendar connecté</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-green-600 bg-white rounded-lg px-2 py-1 border border-green-200">
-                  <CalDot backgroundColor={selectedCal.backgroundColor} />
-                  <span className="truncate max-w-[120px]">{selectedCal.summary}</span>
-                  <button onClick={() => setShowCalPicker(true)} className="ml-0.5 hover:text-green-800">
-                    <ChevronDown className="w-3 h-3" />
-                  </button>
-                </div>
+            <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-2.5">
+              <div className="flex items-center gap-2 text-sm text-green-700">
+                <CheckCircle2 className="w-4 h-4" />
+                <span className="font-medium">Google Calendar connecté</span>
+                <span className="text-green-500">· {events.length} événement{events.length !== 1 ? 's' : ''} à venir</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-green-500">{events.length} événement{events.length !== 1 ? 's' : ''}</span>
-                <button onClick={handleDisconnect} className="text-xs text-green-500 hover:text-red-500 underline transition-colors flex items-center gap-1">
-                  <LogOut className="w-3 h-3" /> Déconnecter
-                </button>
-              </div>
+              <button onClick={handleDisconnect}
+                className="text-xs text-green-500 hover:text-red-500 underline transition-colors">
+                Déconnecter
+              </button>
             </div>
 
             <div className="grid md:grid-cols-3 gap-6">
+              {/* Liste des événements */}
               <div className="md:col-span-2 space-y-5">
-                {loading ? (
-                  <div className="flex items-center justify-center py-16">
-                    <Loader2 className="w-8 h-8 animate-spin text-green-500" />
-                  </div>
-                ) : events.length === 0 ? (
+                {events.length === 0 ? (
                   <Card>
                     <CardContent className="flex flex-col items-center py-12 gap-3 text-center">
                       <CalendarDays className="w-10 h-10 text-slate-300" />
@@ -620,7 +418,7 @@ export default function CalendarPage() {
                       </h3>
                       <div className="space-y-2">
                         {dayEvents.map(ev => (
-                          <EventCard key={ev.id} event={ev} onDelete={deletingId === ev.id ? () => {} : handleDelete} />
+                          <EventCard key={ev.id} event={ev} onDelete={handleDelete} />
                         ))}
                       </div>
                     </div>
@@ -628,13 +426,14 @@ export default function CalendarPage() {
                 )}
               </div>
 
+              {/* Panneau droit */}
               <div className="space-y-4">
                 {expiringPlayers.length > 0 && (
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center gap-2 text-orange-600">
+                      <div className="text-sm font-semibold flex items-center gap-2 text-orange-600">
                         <AlertCircle className="w-4 h-4" /> Contrats qui expirent
-                      </CardTitle>
+                      </div>
                     </CardHeader>
                     <CardContent className="space-y-2">
                       {expiringPlayers.slice(0, 5).map(p => (
@@ -643,7 +442,7 @@ export default function CalendarPage() {
                             <p className="text-xs font-semibold text-slate-900 truncate">{p.nom}</p>
                             <p className="text-[10px] text-slate-500">{p.contrat_fin}</p>
                           </div>
-                          <button onClick={() => addContractEvent(p)}
+                          <button onClick={() => addContractEvent(p)} title="Ajouter au calendrier"
                             className="w-6 h-6 flex-shrink-0 bg-orange-100 hover:bg-orange-200 rounded-md flex items-center justify-center transition-colors">
                             <Plus className="w-3.5 h-3.5 text-orange-600" />
                           </button>
@@ -654,7 +453,9 @@ export default function CalendarPage() {
                 )}
 
                 <Card>
-                  <CardHeader className="pb-2"><CardTitle className="text-sm">Actions rapides</CardTitle></CardHeader>
+                  <CardHeader className="pb-2">
+                    <div className="text-sm font-semibold">Actions rapides</div>
+                  </CardHeader>
                   <CardContent className="space-y-2">
                     {EVENT_TEMPLATES.slice(0, 5).map(tpl => {
                       const Icon = tpl.icon;
@@ -678,25 +479,14 @@ export default function CalendarPage() {
             </div>
           </div>
         )}
-
-        {connected && !selectedCal && !showCalPicker && (
-          <Card>
-            <CardContent className="flex flex-col items-center py-12 gap-4 text-center">
-              <CalendarDays className="w-10 h-10 text-green-400" />
-              <p className="font-semibold text-slate-800">Choisis un calendrier à synchroniser</p>
-              <Button onClick={() => setShowCalPicker(true)} className="bg-green-600 hover:bg-green-700">
-                Choisir un calendrier
-              </Button>
-            </CardContent>
-          </Card>
-        )}
       </div>
 
-      {showCalPicker && (
-        <CalendarPickerModal onSelected={handleCalendarSelected} userInfo={userInfo} />
-      )}
       {showNewEvent && (
-        <NewEventModal onClose={() => setShowNewEvent(false)} onCreated={loadEvents} players={players} />
+        <NewEventModal
+          onClose={() => setShowNewEvent(false)}
+          onCreated={fetchEvents}
+          players={players}
+        />
       )}
     </div>
   );
