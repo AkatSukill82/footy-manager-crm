@@ -75,7 +75,7 @@ export default function PlayerDetailPage() {
         player_id: playerId,
         created_by: userEmail
       });
-      return items[0];
+      return items[0] ?? null;
     },
     enabled: !!playerId && !!userEmail,
   });
@@ -87,7 +87,7 @@ export default function PlayerDetailPage() {
         player_id: playerId,
         created_by: userEmail
       });
-      return notes[0];
+      return notes[0] ?? null;
     },
     enabled: !!playerId && !!userEmail,
   });
