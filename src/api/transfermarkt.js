@@ -60,7 +60,11 @@ const TransfermarktAPI = {
   async searchPlayers(query, page = 1) {
     const url = `${this.BASE}/players/search/${encodeURIComponent(query)}?page_number=${page}`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error('Erreur API Transfermarkt');
+    if (!res.ok) {
+      let body = '';
+      try { body = await res.text(); } catch (_) {}
+      throw new Error(`HTTP ${res.status} — ${body.slice(0, 200)}`);
+    }
     return await res.json();
   },
 
