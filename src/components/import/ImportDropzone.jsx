@@ -70,21 +70,83 @@ Les noms de colonnes peuvent varier : NOM/NAME/LAST_NAME/PRÉNOM/FIRST_NAME, CLU
         throw new Error(result.details || "Erreur lors de l'extraction");
       }
 
-      // result.output peut être un tableau (une entrée par feuille) ou un objet
-      let rows = [];
-      if (Array.isArray(result.output)) {
-        for (const sheet of result.output) {
-          if (Array.isArray(sheet?.rows)) rows = rows.concat(sheet.rows);
-          else if (Array.isArray(sheet)) rows = rows.concat(sheet);
-        }
-      } else {
-        rows = result.output?.rows || [];
-      }
+      // Log brut pour débug
+      console.log("ExtractDataFromUploadedFile raw output:", JSON.stringify(result, null, 2));
 
-      rows = rows.filter(r => r.nom && String(r.nom).trim());
+      // Extraire toutes les lignes quelle que soit la clé retournée par l'IA
+      const extractRows = (output) => {
+        if (!output) return [];
+        if (Array.isArray(output)) {
+          // Tableau de feuilles ou tableau de lignes directement
+          const flat = [];
+          for (const item of output) {
+            if (typeof item === "object" && !Array.isArray(item) && item !== null) {
+              // C'est une feuille — chercher un tableau dedans
+              const arr = Object.values(item).find(v => Array.isArray(v));
+              if (arr) flat.push(...arr);
+              else flat.push(item); // la feuille elle-même est une ligne
+            } else if (Array.isArray(item)) {
+              flat.push(...item);
+            }
+          }
+          return flat;
+        }
+        if (typeof output === "object") {
+          // Essayer toutes les clés connues puis fallback sur le premier tableau trouvé
+          const knownKeys = ["rows","contacts","data","items","joueurs","players","clubs","results","records","entries","lignes"];
+          for (const k of knownKeys) {
+            if (Array.isArray(output[k]) && output[k].length > 0) return output[k];
+          }
+          // Fallback : premier tableau non-vide dans l'objet
+          const found = Object.values(output).find(v => Array.isArray(v) && v.length > 0);
+          if (found) return found;
+        }
+        return [];
+      };
+
+      let rows = extractRows(result.output ?? result);
+
+      // Normaliser chaque ligne : mapper les noms de champs alternatifs vers nos clés
+      const FIELD_MAP = {
+        name: "nom", last_name: "nom", lastname: "nom", surname: "nom",
+        first_name: "prenom", firstname: "prenom",
+        full_name: "nom", fullname: "nom", player: "nom", joueur: "nom",
+        team: "club", equipe: "club", club_name: "club",
+        country: "pays", nation: "pays",
+        position: "poste", role: "poste", title: "poste",
+        mail: "email", email_club: "email", courriel: "email",
+        phone: "telephone", tel: "telephone", mobile: "telephone",
+        birth: "date_naissance", dob: "date_naissance", birthdate: "date_naissance",
+        height: "taille", weight: "poids",
+        goals: "buts", assists: "passes_decisives", games: "matchs_joues",
+        value: "valeur_marchande", market_value: "valeur_marchande",
+        contract: "contrat_fin", contract_end: "contrat_fin", expiry: "contrat_fin",
+        salary: "salaire", wage: "salaire",
+        rating: "note_moyenne", score: "note_moyenne",
+        league: "ligue", nationality: "nationalite",
+      };
+
+      rows = rows.map(r => {
+        const normalized = { ...r };
+        for (const [raw, mapped] of Object.entries(FIELD_MAP)) {
+          if (r[raw] !== undefined && r[mapped] === undefined) {
+            normalized[mapped] = r[raw];
+          }
+        }
+        return normalized;
+      });
+
+      // Filtre : garder toute ligne avec au moins un champ nom/prenom non-vide
+      rows = rows.filter(r => {
+        const nom = r.nom || r.prenom || r.full_name || r.name || r.first_name;
+        return nom && String(nom).trim().length > 0;
+      });
 
       if (rows.length === 0) {
-        throw new Error("Aucune donnée reconnue dans ce fichier. Vérifiez que le fichier contient une colonne NOM ou NAME.");
+        const rawKeys = Object.keys(result.output || result || {}).join(", ");
+        throw new Error(
+          `Aucune donnée reconnue dans ce fichier.\n\nClés reçues de l'IA : ${rawKeys || "aucune"}\n\nAssurez-vous que le fichier contient une colonne de nom (NOM, NAME, PRÉNOM...).`
+        );
       }
 
       // Classification joueurs vs contacts staff
@@ -97,11 +159,13 @@ Les noms de colonnes peuvent varier : NOM/NAME/LAST_NAME/PRÉNOM/FIRST_NAME, CLU
       const staffContacts = [];
 
       for (const row of rows) {
-        const nomComplet = [row.prenom, row.nom].filter(Boolean).map(s => String(s).trim()).join(" ") || String(row.nom).trim();
-        const postelower = (row.poste || "").toLowerCase();
+        const nomComplet = [row.prenom, row.nom]
+          .filter(Boolean).map(s => String(s).trim()).join(" ").trim()
+          || String(row.nom || row.name || row.full_name || "").trim();
+        const postelower = (row.poste || row.position || row.role || "").toLowerCase();
         const isPlayer = footballPositions.some(k => postelower.includes(k));
         if (isPlayer) {
-          joueurs.push({ ...row, nom: nomComplet, club_actuel: row.club });
+          joueurs.push({ ...row, nom: nomComplet, club_actuel: row.club || row.team });
         } else {
           staffContacts.push({ ...row, nom: nomComplet });
         }
