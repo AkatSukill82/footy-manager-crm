@@ -1,5 +1,3 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
-
 /**
  * Enrichit un joueur depuis des APIs football gratuites :
  *  1. TheSportsDB (gratuit, sans clé) — photo, bio, poste, club, social
@@ -9,10 +7,6 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
  */
 Deno.serve(async (req) => {
   try {
-    const base44Client = createClientFromRequest(req);
-    const user = await base44Client.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
     const { playerName, apiFootballKey } = await req.json();
     if (!playerName) return Response.json({ error: 'playerName requis' }, { status: 400 });
 
