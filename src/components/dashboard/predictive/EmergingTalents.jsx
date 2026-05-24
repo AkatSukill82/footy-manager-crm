@@ -107,7 +107,7 @@ export default function EmergingTalents({ players }) {
                   )}
                   <div className="flex items-center gap-3 mb-3">
                     {player.photo_url ? (
-                      <img src={player.photo_url} alt={player.nom} className="w-10 h-10 rounded-full object-cover border-2 border-purple-100" />
+                      <img src={player.photo_url} alt={player.nom} className="w-10 h-10 rounded-full object-cover border-2 border-purple-100" referrerPolicy="no-referrer" />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center">
                         <Zap className="w-5 h-5 text-purple-400" />

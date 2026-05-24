@@ -105,7 +105,7 @@ function PlayerSelector({ allPlayers, selected, onSelect, onRemove, max }) {
           className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border-2"
           style={{ borderColor: PLAYER_COLORS[i], color: PLAYER_COLORS[i], backgroundColor: PLAYER_COLORS[i] + "18" }}
         >
-          {p.photo_url && <img src={p.photo_url} alt="" className="w-5 h-5 rounded-full object-cover" />}
+          {p.photo_url && <img src={p.photo_url} alt="" className="w-5 h-5 rounded-full object-cover" referrerPolicy="no-referrer" />}
           {p.nom}
           <button onClick={() => onRemove(p.id)} className="hover:opacity-70">
             <X className="w-3.5 h-3.5" />
@@ -143,7 +143,7 @@ function PlayerSelector({ allPlayers, selected, onSelect, onRemove, max }) {
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-purple-50 transition-colors"
                   >
                     {p.photo_url
-                      ? <img src={p.photo_url} alt="" className="w-6 h-6 rounded-full object-cover" />
+                      ? <img src={p.photo_url} alt="" className="w-6 h-6 rounded-full object-cover" referrerPolicy="no-referrer" />
                       : <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center"><Star className="w-3 h-3 text-slate-400" /></div>
                     }
                     <div>
@@ -246,7 +246,7 @@ export default function PlayerComparisonTool({ allPlayers }) {
               {selected.map((p, i) => (
                 <div key={p.id} className="text-center p-3 rounded-xl border-2" style={{ borderColor: PLAYER_COLORS[i] + "55" }}>
                   {p.photo_url
-                    ? <img src={p.photo_url} alt="" className="w-12 h-12 rounded-full object-cover mx-auto mb-2 border-2" style={{ borderColor: PLAYER_COLORS[i] }} />
+                    ? <img src={p.photo_url} alt="" className="w-12 h-12 rounded-full object-cover mx-auto mb-2 border-2" referrerPolicy="no-referrer" style={{ borderColor: PLAYER_COLORS[i] }} />
                     : <div className="w-12 h-12 rounded-full mx-auto mb-2 flex items-center justify-center" style={{ backgroundColor: PLAYER_COLORS[i] + "22" }}>
                         <Star className="w-6 h-6" style={{ color: PLAYER_COLORS[i] }} />
                       </div>

@@ -192,7 +192,7 @@ export default function ContractTimeline({ players }) {
                         >
                           <div className="w-7 h-7 rounded-full bg-white border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
                             {p.photo_url
-                              ? <img src={p.photo_url} alt="" className="w-full h-full object-cover" />
+                              ? <img src={p.photo_url} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                               : <User className="w-3.5 h-3.5 text-slate-400" />
                             }
                           </div>

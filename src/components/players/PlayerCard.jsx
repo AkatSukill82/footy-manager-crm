@@ -45,7 +45,7 @@ export default function PlayerCard({ player, inWatchList }) {
         <div className="flex items-start gap-3">
           <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0">
             {player.photo_url ? (
-              <img src={player.photo_url} alt={player.nom} className="w-full h-full object-cover"
+              <img src={player.photo_url} alt={player.nom} className="w-full h-full object-cover" referrerPolicy="no-referrer"
                 onError={e => e.target.style.display = 'none'} />
             ) : (
               <User className="w-7 h-7 text-slate-400" />

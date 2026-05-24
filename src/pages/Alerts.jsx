@@ -205,7 +205,7 @@ export default function AlertsPage() {
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     {alert.photo_url
-                      ? <img src={alert.photo_url} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                      ? <img src={alert.photo_url} className="w-10 h-10 rounded-full object-cover flex-shrink-0" referrerPolicy="no-referrer" />
                       : <div className="w-10 h-10 bg-slate-200 rounded-full flex-shrink-0" />}
                     <div className="min-w-0">
                       <div className="font-semibold text-slate-900 truncate">{alert.nom}</div>

@@ -218,7 +218,7 @@ export default function PlayerDetailPage() {
                   <div className="flex gap-4">
                     <div className="w-24 h-24 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center overflow-hidden">
                       {player.photo_url ? (
-                        <img src={player.photo_url} alt={player.nom} className="w-full h-full object-cover" />
+                        <img src={player.photo_url} alt={player.nom} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       ) : (
                         <User className="w-12 h-12 text-slate-400" />
                       )}

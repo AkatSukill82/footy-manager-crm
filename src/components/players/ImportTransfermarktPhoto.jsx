@@ -88,7 +88,7 @@ IMPORTANT :
             <img
               src={player.photo_url}
               alt={player.nom}
-              className="w-12 h-12 rounded-full object-cover border border-slate-200"
+              className="w-12 h-12 rounded-full object-cover border border-slate-200" referrerPolicy="no-referrer"
               onError={(e) => { e.target.style.display = 'none'; }}
             />
             <div className="text-xs text-slate-500">Photo actuelle</div>
@@ -128,7 +128,7 @@ IMPORTANT :
                 <img
                   src={manualUrl}
                   alt="Aperçu"
-                  className="h-24 w-24 rounded-lg object-cover"
+                  className="h-24 w-24 rounded-lg object-cover" referrerPolicy="no-referrer"
                   onError={(e) => { e.target.src = ""; e.currentTarget.parentElement.innerHTML = '<p class="text-xs text-red-500 p-2">Image non accessible</p>'; }}
                 />
               </div>
@@ -197,7 +197,7 @@ IMPORTANT :
                               <img
                                 src={candidate.url}
                                 alt={`Photo ${i + 1}`}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover" referrerPolicy="no-referrer"
                                 onError={() => setImageErrors(prev => ({ ...prev, [i]: true }))}
                               />
                             )}

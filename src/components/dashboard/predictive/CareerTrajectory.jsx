@@ -93,7 +93,7 @@ export default function CareerTrajectory({ players }) {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
                     {player.photo_url ? (
-                      <img src={player.photo_url} alt={player.nom} className="w-9 h-9 rounded-full object-cover border" />
+                      <img src={player.photo_url} alt={player.nom} className="w-9 h-9 rounded-full object-cover border" referrerPolicy="no-referrer" />
                     ) : (
                       <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center">
                         <Star className="w-4 h-4 text-slate-400" />

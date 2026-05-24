@@ -169,7 +169,7 @@ export default function PlayerForm({ player, onSubmit, onCancel }) {
                     <Input id="photo_url" value={formData.photo_url} onChange={set("photo_url")} placeholder="https://..." />
                   </Field>
                   {formData.photo_url && (
-                    <img src={formData.photo_url} alt="Aperçu" className="mt-2 h-16 w-16 rounded-full object-cover border" />
+                    <img src={formData.photo_url} alt="Aperçu" className="mt-2 h-16 w-16 rounded-full object-cover border" referrerPolicy="no-referrer" />
                   )}
                 </div>
               </div>

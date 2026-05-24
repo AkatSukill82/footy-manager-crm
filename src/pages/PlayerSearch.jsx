@@ -446,7 +446,7 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
                 >
                   <div className="w-14 h-14 rounded-xl bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-200">
                     {c.image
-                      ? <img src={c.image} alt={c.name} className="w-full h-full object-cover" onError={e => e.target.style.display = 'none'} />
+                      ? <img src={c.image} alt={c.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={e => e.target.style.display = 'none'} />
                       : <User className="w-7 h-7 text-slate-400 m-auto mt-3.5" />}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -494,7 +494,7 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
                 <div className="flex items-start gap-4">
                   <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-slate-200 to-slate-300 flex-shrink-0 overflow-hidden">
                     {result.photo_url
-                      ? <img src={result.photo_url} alt={result.nom} className="w-full h-full object-cover" onError={e => e.target.style.display = 'none'} />
+                      ? <img src={result.photo_url} alt={result.nom} className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={e => e.target.style.display = 'none'} />
                       : <User className="w-10 h-10 text-slate-400 m-auto mt-7" />}
                   </div>
                   <div className="flex-1 min-w-0">

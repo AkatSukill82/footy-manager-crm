@@ -101,7 +101,7 @@ export default function PlayerPickerModal({ slot, players, onSelect, onClose }) 
                   {/* Avatar */}
                   <div className="w-11 h-11 rounded-full bg-slate-200 overflow-hidden flex-shrink-0">
                     {player.photo_url ? (
-                      <img src={player.photo_url} alt={player.nom} className="w-full h-full object-cover" />
+                      <img src={player.photo_url} alt={player.nom} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-slate-500 font-bold text-lg">
                         {player.nom[0]}
