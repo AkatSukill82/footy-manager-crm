@@ -20,6 +20,7 @@ import ImportTransfermarktPhoto from "../components/players/ImportTransfermarktP
 import PlayerFullProfile from "../components/players/PlayerFullProfile";
 import PlayerScoutingRatings from "../components/players/PlayerScoutingRatings";
 import PlayerChartsPanel from "../components/players/PlayerChartsPanel";
+import SyncPlayerButton from "../components/players/SyncPlayerButton";
 import { format } from "date-fns";
 import TransfermarktImage from "../components/ui/TransfermarktImage";
 
@@ -239,6 +240,15 @@ export default function PlayerDetailPage() {
                         {player.pied_fort && (
                           <Badge variant="outline">{player.pied_fort}</Badge>
                         )}
+                        {player.club_actuel && (
+                          <Badge variant="outline" className="text-slate-500">{player.club_actuel}</Badge>
+                        )}
+                      </div>
+                      <div className="mt-3">
+                        <SyncPlayerButton
+                          player={player}
+                          onApply={(data) => updatePlayerMutation.mutate(data)}
+                        />
                       </div>
                     </div>
                   </div>

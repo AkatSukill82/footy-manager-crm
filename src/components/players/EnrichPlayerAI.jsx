@@ -35,6 +35,8 @@ const ALL_FIELDS = [
   // Valeur marchande
   { key: "valeur_marchande", label: "Valeur marchande", fmt: v => `${v} M€` },
   { key: "valeur_marchande_peak", label: "Valeur max carrière", fmt: v => `${v} M€` },
+  // Photo
+  { key: "photo_url", label: "Photo" },
   // IDs
   { key: "transfermarkt_id", label: "ID Transfermarkt" },
   { key: "sofascore_id", label: "ID SofaScore" },
@@ -142,6 +144,7 @@ Consulte impérativement :
 - Transfermarkt.fr (profil, valeur marchande, contrat, historique clubs, agent, historique valeurs)
 - SofaScore (stats saison en cours, notes, stats avancées xG/xA, physique, duels)
 - Wikipedia / presse sportive (biographie, palmarès, distinctions)
+- TheSportsDB ou tout site officiel pour trouver une URL de photo du joueur
 
 Retourne UN JSON COMPLET avec TOUTES les données disponibles. Si une donnée est inconnue, mets null.
 
@@ -156,6 +159,7 @@ RÈGLES DE FORMAT STRICTES :
 - xg, xa, xg_par_90 : décimaux (ex: 14.3)
 - tous les pourcentages (pct) : nombre entre 0 et 100 (ex: 87.5)
 - tirs_cadres_pct, passes_reussies_pct, etc. : entre 0 et 100
+- photo_url : URL directe et publique vers une photo du joueur (Transfermarkt, site officiel, TheSportsDB, Wikipedia…)
 - transfermarkt_id : uniquement le numéro (ex: 342229)
 - palmares : tous titres séparés par des virgules
 - distinctions : récompenses individuelles séparées par virgules (Ballon d'or, TOTY, meilleur joueur, etc.)
@@ -195,6 +199,7 @@ RÈGLES DE FORMAT STRICTES :
           valeur_marchande_peak: { type: "number" },
           transfermarkt_id: { type: "string" },
           sofascore_id: { type: "string" },
+          photo_url: { type: "string" },
           matchs_joues: { type: "number" },
           titularisations: { type: "number" },
           minutes_jouees: { type: "number" },
