@@ -1,18 +1,20 @@
 /* ============================================
    TRANSFERMARKT API SERVICE
-   Calls https://transfermarkt-api.fly.dev via a Deno proxy (proxyTMApi)
-   so it works in both dev and production (no Vite proxy dependency).
+   Direct calls to https://transfermarkt-api.fly.dev
+   The API has CORS enabled (allow_origins=["*"]) so no proxy is needed.
    ============================================ */
 
-import { base44 } from "@/api/base44Client";
+const TM_BASE = "https://transfermarkt-api.fly.dev";
 
 const TransfermarktAPI = {
 
-  // ── Internal proxy call ──────────────────────────────────────────────────
+  // ── Direct fetch — works in browser (CORS enabled on TM API) ────────────
   async _call(path) {
-    const res = await base44.functions.invoke("proxyTMApi", { path });
-    if (res?.error) throw new Error(res.error);
-    return res;
+    const res = await fetch(`${TM_BASE}${path}`, {
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
   },
 
   // ── Formatters ───────────────────────────────────────────────────────────
