@@ -1,0 +1,775 @@
+{
+  "joueurs": [],
+  "clubs": [],
+  "contacts": [
+    {
+      "pays": "Denmark",
+      "club": "Aarhus Gymnastikforening  AGF",
+      "nom": "Jacob Nielsen",
+      "poste": "CEO",
+      "email": "jn@agf-as.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Aarhus Gymnastikforening  AGF",
+      "nom": "Ole Hall",
+      "poste": "SPORTS ADMINISTRATOR",
+      "email": "oh@agf-as.dk",
+      "telephone": "4551573234"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Aarhus Gymnastikforening  AGF",
+      "nom": "Dennis Pedersen",
+      "poste": "HEAD OF COACHING",
+      "email": "dp@agf-as.dk",
+      "telephone": "4551159308"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Aarhus Gymnastikforening  AGF",
+      "nom": "Niki Zimling",
+      "poste": "U19 HEAD COACH",
+      "email": "nz@agf-as.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Aarhus Gymnastikforening  AGF",
+      "nom": "Hakan Basel",
+      "poste": "U19 assistant coach",
+      "email": "hb@agf-as.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Aarhus Gymnastikforening  AGF",
+      "nom": "Jesper Orskov",
+      "poste": "HEAD OF RECRUITMENT",
+      "email": "joe@agf-as.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Brøndby IF",
+      "nom": "Leif Mortensen",
+      "poste": "team manager",
+      "email": "lm@brondby.com",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Brøndby IF",
+      "nom": "Bengt Sæternes",
+      "poste": "Head coach",
+      "email": "bes@brondby.com",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Brøndby IF",
+      "nom": "Søren Hanghøj",
+      "poste": "Communications Director",
+      "email": "sh@brondby.com",
+      "telephone": "+4525 45 68 68"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Brøndby IF",
+      "nom": "Daniel Martinus",
+      "poste": "",
+      "email": "",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Brøndby IF",
+      "nom": "Daniel Martinus",
+      "poste": "Football Operations Manager",
+      "email": "dma@brondby.com",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "FC Fredericia",
+      "nom": "Stig Pedersen",
+      "poste": "Director and Sports Manager",
+      "email": "sp@fcfredericia.dk",
+      "telephone": "4540514399"
+    },
+    {
+      "pays": "Denmark",
+      "club": "FC Fredericia",
+      "nom": "Soren Pabst",
+      "poste": "Communications Manager",
+      "email": "pa@fcfredericia.dk",
+      "telephone": "+452621 6525"
+    },
+    {
+      "pays": "Denmark",
+      "club": "FC Fredericia",
+      "nom": "Ole Nikolajsen",
+      "poste": "Team leader",
+      "email": "on@fcfredericia.dk",
+      "telephone": "+453059 4950"
+    },
+    {
+      "pays": "Denmark",
+      "club": "FC Midtjylland",
+      "nom": "JACOB LARSEN",
+      "poste": "Director of Football",
+      "email": "jal@fcm.dk",
+      "telephone": "+45 92 72 92 90"
+    },
+    {
+      "pays": "Denmark",
+      "club": "FC Midtjylland",
+      "nom": "CHRISTIAN BAK",
+      "poste": "Sports Director",
+      "email": "kba@fcm.dk",
+      "telephone": "+45 61 68 15 25"
+    },
+    {
+      "pays": "Denmark",
+      "club": "FC Midtjylland",
+      "nom": "OVE PEDERSEN",
+      "poste": "Vice Director of Football",
+      "email": "ope@fcm.dk",
+      "telephone": "+45 21 76 85 82"
+    },
+    {
+      "pays": "Denmark",
+      "club": "FC Midtjylland",
+      "nom": "KRISTIAN KJAER",
+      "poste": "Technical Director",
+      "email": "kfk@fcm.dk",
+      "telephone": "+45 25 60 00 52"
+    },
+    {
+      "pays": "Denmark",
+      "club": "FC Midtjylland",
+      "nom": "FLEMMING BRIDGE",
+      "poste": "Director of Recruitment",
+      "email": "fbr@fcm.dk",
+      "telephone": "+45 51 29 88 42"
+    },
+    {
+      "pays": "Denmark",
+      "club": "FC Midtjylland",
+      "nom": "ANITA HAUGE",
+      "poste": "Team Manager",
+      "email": "aha@fcm.dk",
+      "telephone": "+45 25 60 00 51"
+    },
+    {
+      "pays": "Denmark",
+      "club": "FC Midtjylland",
+      "nom": "CASPER PEDERSEN",
+      "poste": "Head of Scouting Operations",
+      "email": "cpe@fcm.dk",
+      "telephone": "+45 25 60 00 48"
+    },
+    {
+      "pays": "Denmark",
+      "club": "FC Midtjylland",
+      "nom": "MARCUS LUNDHOLM",
+      "poste": "Assistant Football Operations Manager",
+      "email": "mlu@fcm.dk",
+      "telephone": "+45 60 21 59 07"
+    },
+    {
+      "pays": "Denmark",
+      "club": "FC Nordsjælland",
+      "nom": "Herekol Tanrisever",
+      "poste": "Head of Scouting & Recruitment",
+      "email": "ht@fcn.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "FC Nordsjælland",
+      "nom": "Mirhan Fazliu",
+      "poste": "Head of Recruitment",
+      "email": "mf@fcn.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "FC Nordsjælland",
+      "nom": "Andreas Gründler",
+      "poste": "Assistant Sports Director",
+      "email": "ag@fcn.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "FC Nordsjælland",
+      "nom": "Juan Jose Jacob",
+      "poste": "Academy Director",
+      "email": "jp@fcn.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Odense Boldklub",
+      "nom": "Elhardt Holm",
+      "poste": "Team leader",
+      "email": "elho@ob.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Odense Boldklub",
+      "nom": "Tony Hermansen",
+      "poste": "Academy Director",
+      "email": "tohe@ob.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Odense Boldklub",
+      "nom": "Nick Mikuta",
+      "poste": "Talent Manager",
+      "email": "nimi@ob.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Odense Boldklub",
+      "nom": "Ivan Poulsen",
+      "poste": "Head Coach - U19",
+      "email": "ivpo@ob.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Randers FC",
+      "nom": "Tine Krogh Madsen",
+      "poste": "administrator",
+      "email": "tkm@randersfc.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Randers FC",
+      "nom": "rasmus gissel",
+      "poste": "Head of Coaching",
+      "email": "rgi@randersfc.dk",
+      "telephone": "4540273719"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Randers FC",
+      "nom": "Christian Victor Abildskov Hansen",
+      "poste": "U19 Head Coach",
+      "email": "cah@randersfc.dk",
+      "telephone": "4528251510"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Randers FC",
+      "nom": "Soren Emil Overgaard",
+      "poste": "U19 Assistant Coach and Analyst",
+      "email": "seo@randersfc.dk",
+      "telephone": "4560210805"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Randers FC",
+      "nom": "Peter Elstrup",
+      "poste": "Director of youth department",
+      "email": "pe@randersfc.dk",
+      "telephone": "4525602151"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Silkeborg IF",
+      "nom": "Kent Madsen",
+      "poste": "CEO",
+      "email": "kmadsen@silkeborgif.com",
+      "telephone": "+45 2146 7355"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Silkeborg IF",
+      "nom": "Jack Frandsen",
+      "poste": "Technical Director",
+      "email": "jmf@silkeborgif.com",
+      "telephone": "+45 2810 7110"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Silkeborg IF",
+      "nom": "Jesper Stuker",
+      "poste": "Sports manager",
+      "email": "js@silkeborgif.com",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Silkeborg IF",
+      "nom": "Nicolaj Baekgaard",
+      "poste": "Recruitment Manager",
+      "email": "nb@silkeborgif.com",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Silkeborg IF",
+      "nom": "Anders Weller",
+      "poste": "Head of Coaching",
+      "email": "av@silkeborgif.com",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "F.C. Copenhagen",
+      "nom": "Rasmus Anker",
+      "poste": "Chief scout and recruitment manager youth",
+      "email": "rsa@fck.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "F.C. Copenhagen",
+      "nom": "Rasmus Hahnemann",
+      "poste": "Chief scout and recruitment manager youth",
+      "email": "raha@fck.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "F.C. Copenhagen",
+      "nom": "Peter Christiansen",
+      "poste": "Director of Football",
+      "email": "45 22 47 17 47",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Sønderjyske Fodbold",
+      "nom": "Markus Kristoffer Hansen",
+      "poste": "Director",
+      "email": "mah@soenderjyskefodbold.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Sønderjyske Fodbold",
+      "nom": "Casper Daather",
+      "poste": "Sports manager",
+      "email": "cd@soenderjyskefodbold.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Sønderjyske Fodbold",
+      "nom": "Michael Larsen",
+      "poste": "Technical Manager",
+      "email": "ml@soenderjyskefodbold.dk",
+      "telephone": "+45 2830 3518"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Sønderjyske Fodbold",
+      "nom": "Leon Sievert",
+      "poste": "Technical scout and Club Manager",
+      "email": "ls@soenderjyskefodbold.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Sønderjyske Fodbold",
+      "nom": "Steffen Dam",
+      "poste": "Recruitment Manager",
+      "email": "dam@soenderjyskefodbold.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Sønderjyske Fodbold",
+      "nom": "Niels Esbensen",
+      "poste": "Head of Administration",
+      "email": "nje@soenderjyskefodbold.dk",
+      "telephone": "+45 2323 1176"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Sønderjyske Fodbold",
+      "nom": "John Rosiak",
+      "poste": "Team leader",
+      "email": "jros@soenderjyskefodbold.dk",
+      "telephone": "+45 2141 9031"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Vejle Boldklub",
+      "nom": "Vlad Ionita",
+      "poste": "Team Manager",
+      "email": "vi@vejle-boldklub.dk",
+      "telephone": "+45 52 70 25 06"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Vejle Boldklub",
+      "nom": "Helle Thychosen",
+      "poste": "Head of Administration",
+      "email": "hth@vejle-boldklub.dk",
+      "telephone": "+45 22 14 75 06"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Vejle Boldklub",
+      "nom": "Steen Thychosen",
+      "poste": "Head of the VB Academy",
+      "email": "st@vejle-boldklub.dk",
+      "telephone": "+45 24 97 70 10"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Viborg FF",
+      "nom": "Soren Unger",
+      "poste": "Team leader",
+      "email": "su@vff.dk",
+      "telephone": "22100691"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Viborg FF",
+      "nom": "Tobias Bendixen",
+      "poste": "Head of Coaching",
+      "email": "tb@vff.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Viborg FF",
+      "nom": "Lassse Broberg",
+      "poste": "U19 Head Coach",
+      "email": "lb@vff.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Viborg FF",
+      "nom": "Simon Vetter",
+      "poste": "U19 Assistant Coach",
+      "email": "sv@vff.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Viborg FF",
+      "nom": "Mads Holm",
+      "poste": "Academy  Manager",
+      "email": "madsholm@vff.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Viborg FF",
+      "nom": "Alexander Juel Andersen",
+      "poste": "Academy Chief Scout",
+      "email": "aja@vff.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Esbjerg fB",
+      "nom": "ALLAN L. AGERHOLM",
+      "poste": "CEO",
+      "email": "ala@efb.dk",
+      "telephone": "+45 50 60 44 00"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Esbjerg fB",
+      "nom": "SEBASTIAN BRYDEGAARD",
+      "poste": "​​Sports Manager",
+      "email": "sbb@efb.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Esbjerg fB",
+      "nom": "NIELS ERIK SØNDERGÅRD",
+      "poste": "Sports coordinator",
+      "email": "nes@efb.dk",
+      "telephone": "+45 21 76 68 52"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Hillerød Fodbold",
+      "nom": "Jimmy Brinksby",
+      "poste": "HEAD OF COACHING",
+      "email": "jib@hilleroedfodbold.dk",
+      "telephone": "30333208"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Hobro IK",
+      "nom": "Mads Justesen",
+      "poste": "Director",
+      "email": "mj@hikfodbold.dk",
+      "telephone": "+4560141966"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Hobro IK",
+      "nom": "Lars Justesen",
+      "poste": "Sports manager",
+      "email": "lj@hikfodbold.dk",
+      "telephone": "+45 25 36 32 95"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Hobro IK",
+      "nom": "Jakob Hjorth",
+      "poste": "Head coach",
+      "email": "Jakob-hjorth@hotmail.com",
+      "telephone": "51488712"
+    },
+    {
+      "pays": "Denmark",
+      "club": "AC Horsens",
+      "nom": "Christian Nielsen",
+      "poste": "Director",
+      "email": "kn@achorsens.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "AC Horsens",
+      "nom": "Erling Hedegaard",
+      "poste": "Office assistant",
+      "email": "eh@achorsens.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "AC Horsens",
+      "nom": "Esben Hansen",
+      "poste": "Sports Director",
+      "email": "eha@achorsens.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "AC Horsens",
+      "nom": "Mads Dahl-Larsen",
+      "poste": "Assistant Sporting Director",
+      "email": "mdl@achorsens.dk",
+      "telephone": "4548881906"
+    },
+    {
+      "pays": "Denmark",
+      "club": "AC Horsens",
+      "nom": "Alexander Greene Larsen",
+      "poste": "First Team Analyst",
+      "email": "agl@achorsens.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "AC Horsens",
+      "nom": "Claus Troelsen",
+      "poste": "Academy Director",
+      "email": "ct@achorsens.dk",
+      "telephone": "20940285"
+    },
+    {
+      "pays": "Denmark",
+      "club": "AC Horsens",
+      "nom": "Nikolaj Drejer",
+      "poste": "Head of Academy Scouting",
+      "email": "nds@achorsens.dk",
+      "telephone": "4520144478"
+    },
+    {
+      "pays": "Denmark",
+      "club": "AC Horsens",
+      "nom": "Frederic Bodineau",
+      "poste": "Head Coach",
+      "email": "fb@achorsens.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Hvidovre IF",
+      "nom": "Bo Tue Knudsen",
+      "poste": "Adm. Direktør",
+      "email": "btk@hif.dk",
+      "telephone": "+45 4050 5004"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Hvidovre IF",
+      "nom": "Kim Garde Madsen",
+      "poste": "Football Director",
+      "email": "kgm@hif.dk",
+      "telephone": "+45 2835 1299"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Hvidovre IF",
+      "nom": "Peter Lassen",
+      "poste": "Sports manager",
+      "email": "pl@hif.dk",
+      "telephone": "+45 5118 4775"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Hvidovre IF",
+      "nom": "Claus Grønborg",
+      "poste": "Head of Administration",
+      "email": "clg@hif.dk",
+      "telephone": "+45 2022 7969"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Kolding IF",
+      "nom": "FREDERIK LUND",
+      "poste": "Technical Manager",
+      "email": "fl@kolding-if.dk",
+      "telephone": "+45 28 59 82 24"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Kolding IF",
+      "nom": "ESBEN JENSEN",
+      "poste": "Head of Coaching",
+      "email": "ej@kolding-if.dk",
+      "telephone": "+45 40 48 09 50"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Kolding IF",
+      "nom": "THOMAS OLANDER",
+      "poste": "Talentchef",
+      "email": "to@kolding-if.dk",
+      "telephone": "+45 20 64 02 06"
+    },
+    {
+      "pays": "Denmark",
+      "club": "HB Køge",
+      "nom": "Jason Arnold",
+      "poste": "CEO",
+      "email": "jarnold@hbkoge.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "HB Køge",
+      "nom": "Casper Jensen",
+      "poste": "Head of Administration",
+      "email": "cj@hbkoge.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "HB Køge",
+      "nom": "Kenneth Hoier",
+      "poste": "Head of Coaching",
+      "email": "kh@hbkoge.dk",
+      "telephone": "+45 60 60 40 34"
+    },
+    {
+      "pays": "Denmark",
+      "club": "HB Køge",
+      "nom": "Steen Knudsen",
+      "poste": "Talent Manager",
+      "email": "sk@hbkoge.dk",
+      "telephone": "+45 40 42 45 59"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Vendsyssel FF",
+      "nom": "LARS GLINVAD",
+      "poste": "Director",
+      "email": "lg@vendsysselff.dk",
+      "telephone": "+45 40 64 33 49"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Vendsyssel FF",
+      "nom": "JENS HAMMER SORENSEN",
+      "poste": "Sports manager",
+      "email": "jhs@vendsysselff.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "FC Roskilde",
+      "nom": "Christopher Johannsen",
+      "poste": "Head coach",
+      "email": "kj@fc-roskilde.dk",
+      "telephone": "31408294"
+    },
+    {
+      "pays": "Denmark",
+      "club": "FC Roskilde",
+      "nom": "Thomas Axel Madsen",
+      "poste": "Assistant coach",
+      "email": "tm@fc-roskilde.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "FC Roskilde",
+      "nom": "Carsten Knudsen",
+      "poste": "Team leader",
+      "email": "ck@sivertsenas.dk",
+      "telephone": "28342501"
+    },
+    {
+      "pays": "Denmark",
+      "club": "FC Roskilde",
+      "nom": "Anders Theil",
+      "poste": "Sports manager",
+      "email": "anders.theil@ft.dk",
+      "telephone": "61623744"
+    },
+    {
+      "pays": "Denmark",
+      "club": "FC Roskilde",
+      "nom": "Lorenz Sonderby",
+      "poste": "Football manager",
+      "email": "los@b93.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Boldklubben af 1893",
+      "nom": "Jesper Nielsen",
+      "poste": "Head of the Senior Department",
+      "email": "jesper@b93.dk",
+      "telephone": "27 200 230"
+    },
+    {
+      "pays": "Denmark",
+      "club": "Boldklubben af 1893",
+      "nom": "Christian Louring Engell",
+      "poste": "CEO",
+      "email": "ce@b93cph.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Boldklubben af 1893",
+      "nom": "Kasper Lorentzen",
+      "poste": "Head coach Senior Team",
+      "email": "kl@b93cph.dk",
+      "telephone": ""
+    },
+    {
+      "pays": "Denmark",
+      "club": "Boldklubben af 1893",
+      "nom": "Finn Christensen",
+      "poste": "Technical Director",
+      "email": "fsc@b93.dk",
+      "telephone": "20 41 23 67"
+    }
+  ],
+  "nom_fichier": "9ce3cc05d_DENMARK.xlsx"
+}
