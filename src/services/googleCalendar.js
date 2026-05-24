@@ -41,7 +41,7 @@ const GoogleCalendarService = {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(TOKEN_EXPIRY_KEY);
     if (window.google?.accounts?.oauth2) {
-      google.accounts.oauth2.revoke(this.getToken() || '', () => {});
+      window.google.accounts.oauth2.revoke(this.getToken() || '', () => {});
     }
   },
 
@@ -76,7 +76,7 @@ const GoogleCalendarService = {
     await this.loadGIS();
 
     return new Promise((resolve, reject) => {
-      const client = google.accounts.oauth2.initTokenClient({
+      const client = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: SCOPES,
         callback: (response) => {
