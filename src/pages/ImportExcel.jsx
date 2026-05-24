@@ -23,10 +23,21 @@ export default function ImportExcel() {
   const handleConfirmImport = async () => {
     setStep("processing");
     setProcessing(true);
-    const res = await base44.functions.invoke("importExcelData", { data: extractedData });
-    setResults(res.data);
-    setProcessing(false);
-    setStep("results");
+    try {
+      const res = await base44.functions.invoke("importExcelData", { data: extractedData });
+      const data = res?.data ?? res;
+      if (!data || data.error) {
+        throw new Error(data?.error || data?.message || "Erreur lors de l'import");
+      }
+      setResults(data);
+      setStep("results");
+    } catch (err) {
+      console.error("Import function error:", err);
+      setResults({ erreurs: [err.message || "Erreur inconnue"], joueurs_crees: 0, joueurs_mis_a_jour: 0, contacts_crees: 0, contacts_mis_a_jour: 0, clubs_crees: 0, clubs_mis_a_jour: 0 });
+      setStep("results");
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const handleReset = () => {
