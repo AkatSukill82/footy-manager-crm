@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Search, Loader2, User, MapPin, TrendingUp,
   Trophy, Plus, ArrowRight, BarChart2,
-  Activity, Heart, Globe, Star, Building2
+  Activity, Globe, Star, Building2
 } from "lucide-react";
 import TransfermarktImage from "../ui/TransfermarktImage";
 import {
@@ -16,6 +16,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../../utils";
 import { useQueryClient } from "@tanstack/react-query";
+import TransfermarktAPI from "../../api/transfermarkt";
 
 const posteColors = {
   "Gardien": "bg-yellow-100 text-yellow-800",
@@ -50,125 +51,21 @@ function StatBox({ label, value, color = "bg-slate-50", textColor = "text-slate-
   );
 }
 
-const FULL_PROFILE_SCHEMA = {
-  type: "object",
-  properties: {
-    nom: { type: "string" },
-    nom_complet: { type: "string" },
-    age: { type: "number" },
-    date_naissance: { type: "string" },
-    lieu_naissance: { type: "string" },
-    nationalite: { type: "string" },
-    nationalite_secondaire: { type: "string" },
-    poste: { type: "string" },
-    poste_secondaire: { type: "string" },
-    pied_fort: { type: "string" },
-    taille: { type: "number" },
-    poids: { type: "number" },
-    photo_url: { type: "string" },
-    club_actuel: { type: "string" },
-    ligue: { type: "string" },
-    pays_ligue: { type: "string" },
-    numero_maillot: { type: "number" },
-    contrat_fin: { type: "string" },
-    salaire_annuel: { type: "number" },
-    salaire_semaine: { type: "number" },
-    agent: { type: "string" },
-    coach: { type: "string" },
-    transfermarkt_id: { type: "string" },
-    sofascore_id: { type: "string" },
-    valeur_marchande: { type: "number" },
-    valeur_marchande_peak: { type: "number" },
-    description: { type: "string" },
-    style_jeu: { type: "string" },
-    forces: { type: "string" },
-    faiblesses: { type: "string" },
-    note_globale_scout: { type: "number" },
-    distinctions: { type: "string" },
-    palmares: { type: "array", items: { type: "string" } },
-    blessures_total: { type: "number" },
-    jours_blesses: { type: "number" },
-    type_blessures: { type: "string" },
-    matchs_carriere: { type: "number" },
-    buts_carriere: { type: "number" },
-    passes_carriere: { type: "number" },
-    selection_nationale: {
-      type: "object",
-      properties: {
-        equipe: { type: "string" },
-        matchs: { type: "number" },
-        buts: { type: "number" },
-        passes: { type: "number" },
-        premiere_selection: { type: "string" },
-      },
-    },
-    stats_saison: {
-      type: "object",
-      properties: {
-        saison: { type: "string" },
-        matchs: { type: "number" },
-        titulaire: { type: "number" },
-        minutes: { type: "number" },
-        buts: { type: "number" },
-        passes_decisives: { type: "number" },
-        cartons_jaunes: { type: "number" },
-        cartons_rouges: { type: "number" },
-        note_sofascore: { type: "number" },
-        xg: { type: "number" },
-        xa: { type: "number" },
-        tirs: { type: "number" },
-        tirs_cadres: { type: "number" },
-        passes_cles: { type: "number" },
-        dribbles_reussis: { type: "number" },
-        interceptions: { type: "number" },
-        tacles: { type: "number" },
-        duels_gagnes_pct: { type: "number" },
-        distance_course: { type: "number" },
-        vitesse_max: { type: "number" },
-      },
-    },
-    valeur_historique: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          date: { type: "string" },
-          valeur: { type: "number" },
-        },
-      },
-    },
-    historique_clubs: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          club: { type: "string" },
-          debut: { type: "string" },
-          fin: { type: "string" },
-          montant_transfert: { type: "number" },
-          type_passage: { type: "string" },
-          ligue: { type: "string" },
-          pays: { type: "string" },
-        },
-      },
-    },
-    stats_par_saison: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          saison: { type: "string" },
-          club: { type: "string" },
-          ligue: { type: "string" },
-          matchs: { type: "number" },
-          buts: { type: "number" },
-          passes: { type: "number" },
-          minutes: { type: "number" },
-        },
-      },
-    },
-  },
-};
+// Normalize candidate from TM search result
+function normalizeCandidate(raw) {
+  return {
+    id:             raw.id,
+    nom:            raw.name || raw.nom || '',
+    club:           (typeof raw.club === 'object' ? raw.club?.name : raw.club) || '',
+    poste:          TransfermarktAPI.mapPosition(
+                      typeof raw.position === 'object' ? raw.position?.main : raw.position
+                    ),
+    nationalite:    Array.isArray(raw.nationality) ? raw.nationality[0] : (raw.nationality || ''),
+    age:            raw.age || null,
+    valeur_marchande: raw.marketValue ? TransfermarktAPI.toMillion(raw.marketValue) : null,
+    photo_url:      raw.imageUrl || raw.photo_url || '',
+  };
+}
 
 export default function TransfermarktSearch() {
   const [query, setQuery] = useState("");
@@ -183,7 +80,7 @@ export default function TransfermarktSearch() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // ── Étape 1 : recherche via LLM + internet ───────────────────────────────────
+  // ── Step 1: Search via real TM API ───────────────────────────────────────
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -194,98 +91,91 @@ export default function TransfermarktSearch() {
     setError(null);
 
     try {
-      const data = await base44.integrations.Core.InvokeLLM({
-        prompt: `Recherche le joueur de football professionnel "${query.trim()}" sur Transfermarkt.com et les sources sportives.
+      const data = await TransfermarktAPI.searchPlayers(query.trim());
+      const players = (data?.players || []).map(normalizeCandidate);
 
-Retourne jusqu'à 5 joueurs correspondants avec leurs infos de base. Si le nom est très précis et unique, retourne 1 seul joueur. Inclus l'URL de la photo Transfermarkt si disponible.
-
-Joueurs à retourner : ceux qui sont des footballeurs professionnels actuels ou récents.`,
-        add_context_from_internet: true,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            candidats: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  nom: { type: "string" },
-                  club: { type: "string" },
-                  poste: { type: "string" },
-                  nationalite: { type: "string" },
-                  age: { type: "number" },
-                  valeur_marchande: { type: "number" },
-                  transfermarkt_id: { type: "string" },
-                  photo_url: { type: "string" },
-                },
-              },
-            },
-          },
-        },
-      });
-
-      const list = data?.candidats || [];
-      if (list.length === 0) {
-        setError(`Aucun joueur trouvé pour "${query}". Essayez un autre nom.`);
-        setLoading(false);
+      if (players.length === 0) {
+        setError(`Aucun joueur trouvé pour "${query}". Vérifiez l'orthographe.`);
         return;
       }
-      if (list.length === 1) {
-        setLoading(false);
-        await fetchFullProfile(list[0]);
+      if (players.length === 1) {
+        await fetchFullProfile(players[0]);
       } else {
-        setCandidates(list);
-        setLoading(false);
+        setCandidates(players);
       }
     } catch (err) {
       setError(`Erreur de recherche : ${err.message}`);
+    } finally {
       setLoading(false);
     }
   };
 
-  // ── Étape 2 : profil complet via LLM + internet ──────────────────────────────
+  // ── Step 2: Full profile from real TM API ────────────────────────────────
   const fetchFullProfile = async (candidate) => {
     setLoadingFull(true);
     setResult(null);
     setCandidates(null);
     setError(null);
 
-    const playerName = candidate.nom;
-    const playerClub = candidate.club || "";
-
     try {
-      setLoadingStatus("Récupération du profil complet depuis Transfermarkt…");
-      const data = await base44.integrations.Core.InvokeLLM({
-        prompt: `Profil complet et détaillé du joueur de football professionnel : ${playerName}${playerClub ? ` (${playerClub})` : ""}.
+      setLoadingStatus("Chargement du profil Transfermarkt…");
+      const { profile, stats, marketValue, transfers } =
+        await TransfermarktAPI.getFullPlayerData(candidate.id);
 
-Cherche sur Transfermarkt, SofaScore, WhoScored, L'Équipe, et toutes les sources sportives disponibles.
+      if (!profile) throw new Error("Profil introuvable sur Transfermarkt.");
 
-Données demandées :
-- Identité : date/lieu naissance, nationalités, taille, poids, pied fort, numéro maillot
-- Club : club actuel, ligue, pays, fin de contrat, salaire, agent, entraîneur
-- IDs : Transfermarkt ID, SofaScore ID, URL photo Transfermarkt
-- Valeur marchande actuelle (en millions €) et valeur peak
-- Historique valeur marchande (date YYYY-MM et valeur en millions €)
-- Stats saison 2024/2025 : matchs, buts, passes déc., minutes, note, xG, xA, tirs, dribbles, interceptions
-- Stats par saison (toute la carrière si possible)
-- Historique des transferts (clubs, dates, montants en millions €, type)
-- Sélection nationale : équipe, matchs, buts, passes
-- Palmarès : liste des titres remportés
-- Distinctions individuelles
-- Profil scout : description, style de jeu, forces, faiblesses, note /100
-- Blessures : nombre, jours manqués, types
-- Stats carrière complète : matchs, buts, passes
+      const crmData = TransfermarktAPI.buildCRMPlayer(profile, stats, marketValue, transfers);
 
-Si une info est inconnue = null. Ne PAS inventer de chiffres.`,
-        add_context_from_internet: true,
-        response_json_schema: FULL_PROFILE_SCHEMA,
-      });
+      // Optional LLM enrichment for scout text only (style, forces, faiblesses, palmares)
+      setLoadingStatus("Analyse profil scout…");
+      try {
+        const scoutData = await base44.integrations.Core.InvokeLLM({
+          prompt: `Profil scout pour ${profile.name}${profile.club?.name ? ` (${profile.club.name})` : ""}.
+Réponds uniquement avec ces champs (null si inconnu, NE PAS inventer de stats) :
+- style_jeu : style de jeu caractéristique (2-3 phrases)
+- forces : points forts principaux (1-2 phrases)
+- faiblesses : points faibles (1-2 phrases)
+- palmares : liste des titres remportés (seulement si tu es certain)
+- distinctions : distinctions individuelles
+- note_globale_scout : note /100 (appréciation globale)
+- selection_nationale : { equipe, matchs, buts, passes, premiere_selection } si sélectionné`,
+          add_context_from_internet: true,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              style_jeu:          { type: "string" },
+              forces:             { type: "string" },
+              faiblesses:         { type: "string" },
+              palmares:           { type: "array", items: { type: "string" } },
+              distinctions:       { type: "string" },
+              note_globale_scout: { type: "number" },
+              selection_nationale: {
+                type: "object",
+                properties: {
+                  equipe:              { type: "string" },
+                  matchs:              { type: "number" },
+                  buts:                { type: "number" },
+                  passes:              { type: "number" },
+                  premiere_selection:  { type: "string" },
+                },
+              },
+            },
+          },
+        });
+        if (scoutData) {
+          Object.assign(crmData, {
+            style_jeu:          scoutData.style_jeu          || null,
+            forces:             scoutData.forces             || null,
+            faiblesses:         scoutData.faiblesses         || null,
+            palmares:           scoutData.palmares           || null,
+            distinctions:       scoutData.distinctions       || null,
+            note_globale_scout: scoutData.note_globale_scout || null,
+            selection_nationale: scoutData.selection_nationale || null,
+          });
+        }
+      } catch (_) { /* scout enrichment is optional */ }
 
-      if (!data || !data.nom) {
-        throw new Error("Données introuvables pour ce joueur.");
-      }
-
-      setResult(data);
+      setResult(crmData);
     } catch (err) {
       setError(err.message || "Erreur lors du chargement du profil.");
     } finally {
@@ -294,46 +184,42 @@ Si une info est inconnue = null. Ne PAS inventer de chiffres.`,
     }
   };
 
-  // ── Étape 3 : sauvegarder joueur + club ──────────────────────────────────────
+  // ── Step 3: Save player + club to DB ─────────────────────────────────────
   const handleSaveToApp = async () => {
     if (!result) return;
     setSaving(true);
-    const s = result.stats_saison;
 
     try {
+      // Auto-create club if needed
       if (result.club_actuel) {
         const existingClubs = await base44.entities.Club.filter({ nom: result.club_actuel });
         if (!existingClubs || existingClubs.length === 0) {
-          // Enrichissement LLM pour le club
           let clubData = {
-            nom: result.club_actuel,
+            nom:  result.club_actuel,
             pays: result.pays_ligue || '',
-            ligue: result.ligue || '',
+            ligue: result.ligue    || '',
           };
           try {
             const clubInfo = await base44.integrations.Core.InvokeLLM({
-              prompt: `Données complètes du club de football "${result.club_actuel}" (${result.ligue || ''}, ${result.pays_ligue || ''}).
-
-Retourne toutes les infos disponibles : stade, capacité, président, entraîneur, directeur sportif, année fondation, logo URL, site web officiel, email de contact officiel, téléphone standard, valeur effectif, budget transfert, palmarès (liste des titres principaux). Si inconnu = null.`,
+              prompt: `Données du club "${result.club_actuel}" (${result.ligue || ''}, ${result.pays_ligue || ''}). Retourne stade, capacité, président, entraîneur, logo URL, site web. Si inconnu = null.`,
               add_context_from_internet: true,
               response_json_schema: {
                 type: "object",
                 properties: {
-                  ville: { type: "string" },
-                  stade: { type: "string" },
-                  capacite_stade: { type: "number" },
-                  annee_fondation: { type: "number" },
-                  president: { type: "string" },
-                  entraineur: { type: "string" },
+                  ville:            { type: "string" },
+                  stade:            { type: "string" },
+                  capacite_stade:   { type: "number" },
+                  annee_fondation:  { type: "number" },
+                  president:        { type: "string" },
+                  entraineur:       { type: "string" },
                   directeur_sportif: { type: "string" },
-                  logo_url: { type: "string" },
-                  site_web: { type: "string" },
-                  email: { type: "string" },
-                  telephone: { type: "string" },
-                  valeur_effectif: { type: "number" },
+                  logo_url:         { type: "string" },
+                  site_web:         { type: "string" },
+                  email:            { type: "string" },
+                  telephone:        { type: "string" },
+                  valeur_effectif:  { type: "number" },
                   budget_transfert: { type: "number" },
-                  palmares: { type: "string" },
-                  historique: { type: "string" },
+                  palmares:         { type: "string" },
                 },
               },
             });
@@ -342,113 +228,80 @@ Retourne toutes les infos disponibles : stade, capacité, président, entraîneu
                 if (clubInfo[k] != null && clubInfo[k] !== '') clubData[k] = clubInfo[k];
               });
             }
-          } catch (_) { /* enrichissement optionnel */ }
+          } catch (_) { /* club enrichment is optional */ }
           await base44.entities.Club.create(clubData);
           queryClient.invalidateQueries({ queryKey: ['clubs'] });
         }
       }
 
       const playerData = {
-        nom: result.nom || query,
-        age: result.age,
-        date_naissance: result.date_naissance,
-        lieu_naissance: result.lieu_naissance,
-        nationalite: result.nationalite,
+        nom:                  result.nom,
+        age:                  result.age,
+        date_naissance:       result.date_naissance,
+        lieu_naissance:       result.lieu_naissance,
+        nationalite:          result.nationalite,
         nationalite_secondaire: result.nationalite_secondaire,
-        poste: result.poste,
-        poste_secondaire: result.poste_secondaire,
-        pied_fort: result.pied_fort,
-        taille: result.taille,
-        poids: result.poids,
-        photo_url: result.photo_url,
-        club_actuel: result.club_actuel,
-        ligue: result.ligue,
-        pays_ligue: result.pays_ligue,
-        numero_maillot: result.numero_maillot,
-        contrat_fin: result.contrat_fin,
-        salaire: result.salaire_annuel,
-        salaire_semaine: result.salaire_semaine,
-        agent: result.agent,
-        coach: result.coach,
-        transfermarkt_id: result.transfermarkt_id,
-        sofascore_id: result.sofascore_id,
-        valeur_marchande: result.valeur_marchande,
+        poste:                result.poste,
+        poste_secondaire:     result.poste_secondaire,
+        pied_fort:            result.pied_fort,
+        taille:               result.taille,
+        photo_url:            result.photo_url,
+        club_actuel:          result.club_actuel,
+        ligue:                result.ligue,
+        pays_ligue:           result.pays_ligue,
+        numero_maillot:       result.numero_maillot,
+        contrat_fin:          result.contrat_fin,
+        agent:                result.agent,
+        transfermarkt_id:     result.transfermarkt_id,
+        valeur_marchande:     result.valeur_marchande,
         valeur_marchande_peak: result.valeur_marchande_peak,
-        matchs_joues: s?.matchs,
-        buts: s?.buts,
-        passes_decisives: s?.passes_decisives,
-        minutes_jouees: s?.minutes,
-        note_moyenne: s?.note_sofascore,
-        xg: s?.xg,
-        xa: s?.xa,
-        tirs: s?.tirs,
-        tirs_cadres: s?.tirs_cadres,
-        passes_cles: s?.passes_cles,
-        dribbles_reussis: s?.dribbles_reussis,
-        interceptions: s?.interceptions,
-        tacles: s?.tacles,
-        duels_gagnes_pct: s?.duels_gagnes_pct,
-        cartons_jaunes: s?.cartons_jaunes,
-        cartons_rouges: s?.cartons_rouges,
-        distance_course: s?.distance_course,
-        vitesse_max: s?.vitesse_max,
+        matchs_joues:         result.matchs_joues,
+        buts:                 result.buts,
+        passes_decisives:     result.passes_decisives,
+        minutes_jouees:       result.minutes_jouees,
+        cartons_jaunes:       result.cartons_jaunes,
+        cartons_rouges:       result.cartons_rouges,
+        style_jeu:            result.style_jeu,
+        forces:               result.forces,
+        faiblesses:           result.faiblesses,
+        stats_resume:         result.description,
+        note_globale_scout:   result.note_globale_scout,
+        distinctions:         result.distinctions,
+        palmares:             Array.isArray(result.palmares) ? result.palmares.join(", ") : result.palmares,
         matchs_international: result.selection_nationale?.matchs,
-        buts_international: result.selection_nationale?.buts,
+        buts_international:   result.selection_nationale?.buts,
         passes_international: result.selection_nationale?.passes,
         premier_match_selection: result.selection_nationale?.premiere_selection,
-        matchs_carriere: result.matchs_carriere,
-        buts_carriere: result.buts_carriere,
-        passes_carriere: result.passes_carriere,
-        blessures: result.blessures_total,
-        jours_blesses: result.jours_blesses,
-        type_blessures: result.type_blessures,
-        palmares: Array.isArray(result.palmares) ? result.palmares.join(", ") : result.palmares,
-        distinctions: result.distinctions,
-        style_jeu: result.style_jeu,
-        forces: result.forces,
-        faiblesses: result.faiblesses,
-        stats_resume: result.description,
-        note_globale_scout: result.note_globale_scout,
-        nb_clubs: result.historique_clubs?.length,
+        nb_clubs:             result.historique_clubs?.length,
       };
-      Object.keys(playerData).forEach(k => (playerData[k] == null || playerData[k] === "") && delete playerData[k]);
+      Object.keys(playerData).forEach(k =>
+        (playerData[k] == null || playerData[k] === "") && delete playerData[k]
+      );
 
       const created = await base44.entities.Player.create(playerData);
 
-      if (result.historique_clubs?.length > 0) {
-        await base44.entities.PlayerCareerHistory.bulkCreate(
-          result.historique_clubs.filter(c => c.club).map(c => ({ player_id: created.id, ...c }))
-        );
-      }
+      // Save career history, market values, season stats in parallel
+      await Promise.allSettled([
+        result.historique_clubs?.length > 0
+          ? base44.entities.PlayerCareerHistory.bulkCreate(
+              result.historique_clubs.filter(c => c.club).map(c => ({ player_id: created.id, ...c }))
+            )
+          : Promise.resolve(),
 
-      if (result.valeur_historique?.length > 0) {
-        await base44.entities.PlayerMarketValue.bulkCreate(
-          result.valeur_historique
-            .filter(v => v.date && v.valeur != null)
-            .map(v => ({ player_id: created.id, date: v.date, valeur: v.valeur, source: "Transfermarkt" }))
-        );
-      }
+        result.valeur_historique?.length > 0
+          ? base44.entities.PlayerMarketValue.bulkCreate(
+              result.valeur_historique
+                .filter(v => v.date && v.valeur != null)
+                .map(v => ({ player_id: created.id, date: v.date, valeur: v.valeur, source: "Transfermarkt" }))
+            )
+          : Promise.resolve(),
 
-      const allSeasons = [];
-      (result.stats_par_saison || []).filter(s2 => s2.saison).forEach(s2 => {
-        allSeasons.push({ player_id: created.id, ...s2 });
-      });
-      if (s?.matchs) {
-        allSeasons.unshift({
-          player_id: created.id,
-          saison: s.saison || "2024/2025",
-          club: result.club_actuel,
-          ligue: result.ligue,
-          matchs: s.matchs, buts: s.buts,
-          passes_decisives: s.passes_decisives,
-          minutes: s.minutes,
-          note_sofascore: s.note_sofascore,
-          xg: s.xg, xa: s.xa,
-        });
-      }
-      if (allSeasons.length > 0) {
-        await base44.entities.PlayerSeasonStats.bulkCreate(allSeasons.filter(s2 => s2.saison));
-      }
+        result.stats_par_saison?.length > 0
+          ? base44.entities.PlayerSeasonStats.bulkCreate(
+              result.stats_par_saison.filter(s => s.saison).map(s => ({ player_id: created.id, ...s }))
+            )
+          : Promise.resolve(),
+      ]);
 
       queryClient.invalidateQueries({ queryKey: ['players'] });
       setSaved(true);
@@ -466,10 +319,10 @@ Retourne toutes les infos disponibles : stade, capacité, président, entraîneu
   return (
     <div className="space-y-5">
       <p className="text-xs text-slate-500">
-        Données via IA + sources web (Transfermarkt, SofaScore…) · Club créé automatiquement si absent
+        Données réelles via Transfermarkt · Profil scout enrichi par IA · Club créé automatiquement si absent
       </p>
 
-      {/* Search */}
+      {/* Search bar */}
       <form onSubmit={handleSearch} className="flex gap-2">
         <Input
           value={query}
@@ -488,18 +341,17 @@ Retourne toutes les infos disponibles : stade, capacité, président, entraîneu
         </div>
       )}
 
-      {/* Loading recherche */}
+      {/* Loading search */}
       {loading && (
         <div className="flex flex-col items-center justify-center py-16 gap-4">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
             <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
           </div>
-          <p className="text-slate-600 font-medium">Recherche en cours…</p>
-          <p className="text-xs text-slate-400">Consultation des sources sportives</p>
+          <p className="text-slate-600 font-medium">Recherche sur Transfermarkt…</p>
         </div>
       )}
 
-      {/* Sélection candidat */}
+      {/* Candidate selection */}
       {candidates && candidates.length > 0 && !result && !loadingFull && (
         <Card>
           <CardHeader className="pb-3">
@@ -509,9 +361,9 @@ Retourne toutes les infos disponibles : stade, capacité, président, entraîneu
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {candidates.map((c, i) => (
+            {candidates.map((c) => (
               <button
-                key={i}
+                key={c.id}
                 onClick={() => fetchFullProfile(c)}
                 className="w-full flex items-center gap-4 p-3 rounded-xl border border-slate-200 hover:border-green-400 hover:bg-green-50 transition-all text-left group"
               >
@@ -533,7 +385,9 @@ Retourne toutes les infos disponibles : stade, capacité, président, entraîneu
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  {c.valeur_marchande && <p className="font-bold text-green-600 text-sm">{c.valeur_marchande} M€</p>}
+                  {c.valeur_marchande != null && c.valeur_marchande > 0 && (
+                    <p className="font-bold text-green-600 text-sm">{c.valeur_marchande} M€</p>
+                  )}
                   <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-green-500 mt-1 ml-auto" />
                 </div>
               </button>
@@ -542,7 +396,7 @@ Retourne toutes les infos disponibles : stade, capacité, président, entraîneu
         </Card>
       )}
 
-      {/* Loading profil complet */}
+      {/* Loading full profile */}
       {loadingFull && (
         <div className="flex flex-col items-center justify-center py-16 gap-4">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
@@ -550,14 +404,14 @@ Retourne toutes les infos disponibles : stade, capacité, président, entraîneu
           </div>
           <p className="text-slate-600 font-medium">{loadingStatus || "Chargement du profil…"}</p>
           <div className="flex flex-col items-center gap-1">
-            {["Transfermarkt · SofaScore · WhoScored…", "Stats, valeur marchande, transferts…", "Profil scout & palmarès…"].map(t => (
+            {["Stats · Valeur marchande · Transferts…", "Historique carrière…", "Profil scout IA…"].map(t => (
               <p key={t} className="text-xs text-slate-400">{t}</p>
             ))}
           </div>
         </div>
       )}
 
-      {/* ── PROFIL COMPLET ── */}
+      {/* ── FULL PROFILE ── */}
       {result && (
         <div className="space-y-4">
           <Card className="overflow-hidden">
@@ -581,22 +435,30 @@ Retourne toutes les infos disponibles : stade, capacité, président, entraîneu
                     {result.club_actuel && <Badge className="bg-slate-800 text-white">{result.club_actuel}</Badge>}
                     {result.ligue && <Badge variant="outline" className="text-xs">{result.ligue}</Badge>}
                   </div>
-                  {result.description && <p className="text-xs text-slate-500 mt-2 line-clamp-3">{result.description}</p>}
+                  {result.description && (
+                    <p className="text-xs text-slate-500 mt-2 line-clamp-3">{result.description}</p>
+                  )}
                 </div>
-                <Button onClick={handleSaveToApp} disabled={saving || saved}
-                  className={`flex-shrink-0 ${saved ? "bg-green-600" : "bg-slate-900 hover:bg-slate-700"}`} size="sm">
-                  {saved ? <><Trophy className="w-4 h-4 mr-1" /> Sauvegardé</> :
-                    saving ? <Loader2 className="w-4 h-4 animate-spin" /> :
-                      <><Plus className="w-4 h-4 mr-1" /> Ajouter</>}
+                <Button
+                  onClick={handleSaveToApp}
+                  disabled={saving || saved}
+                  className={`flex-shrink-0 ${saved ? "bg-green-600" : "bg-slate-900 hover:bg-slate-700"}`}
+                  size="sm"
+                >
+                  {saved
+                    ? <><Trophy className="w-4 h-4 mr-1" /> Sauvegardé</>
+                    : saving
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : <><Plus className="w-4 h-4 mr-1" /> Ajouter</>}
                 </Button>
               </div>
 
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-4">
-                <StatBox label="Âge" value={result.age ? `${result.age} ans` : null} />
-                <StatBox label="Taille" value={result.taille ? `${result.taille} cm` : null} />
-                <StatBox label="Poids" value={result.poids ? `${result.poids} kg` : null} />
-                <StatBox label="Pied fort" value={result.pied_fort} />
-                <StatBox label="Valeur" value={result.valeur_marchande ? `${result.valeur_marchande} M€` : null} color="bg-green-50" textColor="text-green-700" />
+                <StatBox label="Âge"      value={result.age ? `${result.age} ans` : null} />
+                <StatBox label="Taille"   value={result.taille ? `${result.taille} cm` : null} />
+                <StatBox label="Pied"     value={result.pied_fort} />
+                <StatBox label="N° maillot" value={result.numero_maillot} />
+                <StatBox label="Valeur"   value={result.valeur_marchande ? `${result.valeur_marchande} M€` : null} color="bg-green-50" textColor="text-green-700" />
                 <StatBox label="Valeur max" value={result.valeur_marchande_peak ? `${result.valeur_marchande_peak} M€` : null} color="bg-emerald-50" textColor="text-emerald-700" />
               </div>
             </CardContent>
@@ -613,7 +475,6 @@ Retourne toutes les infos disponibles : stade, capacité, président, entraîneu
                 <InfoRow label="Nationalité" value={result.nationalite} />
                 <InfoRow label="2ème nationalité" value={result.nationalite_secondaire} />
                 <InfoRow label="Taille" value={result.taille ? `${result.taille} cm` : null} />
-                <InfoRow label="Poids" value={result.poids ? `${result.poids} kg` : null} />
                 <InfoRow label="Pied fort" value={result.pied_fort} />
               </CardContent>
             </Card>
@@ -622,7 +483,9 @@ Retourne toutes les infos disponibles : stade, capacité, président, entraîneu
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <Building2 className="w-4 h-4 text-orange-500" /> Contrat & Club
-                  {result.club_actuel && <span className="text-xs text-green-600 font-normal ml-auto">→ club créé automatiquement</span>}
+                  {result.club_actuel && (
+                    <span className="text-xs text-green-600 font-normal ml-auto">→ club créé automatiquement</span>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -631,10 +494,7 @@ Retourne toutes les infos disponibles : stade, capacité, président, entraîneu
                 <InfoRow label="Pays" value={result.pays_ligue} />
                 <InfoRow label="N° maillot" value={result.numero_maillot} />
                 <InfoRow label="Fin contrat" value={result.contrat_fin} />
-                <InfoRow label="Salaire annuel" value={result.salaire_annuel ? `${result.salaire_annuel} M€` : null} />
-                <InfoRow label="Salaire / semaine" value={result.salaire_semaine ? `${result.salaire_semaine} k€` : null} />
                 <InfoRow label="Agent" value={result.agent} />
-                <InfoRow label="Entraîneur" value={result.coach} />
                 <InfoRow label="ID Transfermarkt" value={result.transfermarkt_id} />
               </CardContent>
             </Card>
@@ -645,34 +505,18 @@ Retourne toutes les infos disponibles : stade, capacité, président, entraîneu
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <BarChart2 className="w-4 h-4 text-purple-500" />
-                  Stats saison {s.saison || "2024/2025"}
+                  Stats saison {s.saison || "en cours"}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                   <StatBox label="Matchs" value={s.matchs} />
-                  <StatBox label="Titulaire" value={s.titulaire} />
                   <StatBox label="Minutes" value={s.minutes} />
                   <StatBox label="Buts" value={s.buts} color="bg-green-50" textColor="text-green-700" />
                   <StatBox label="Passes D." value={s.passes_decisives} color="bg-blue-50" textColor="text-blue-700" />
                   <StatBox label="Jaunes" value={s.cartons_jaunes} color="bg-yellow-50" />
-                  <StatBox label="Note" value={s.note_sofascore} color="bg-indigo-50" textColor="text-indigo-700" />
+                  <StatBox label="Rouges" value={s.cartons_rouges} color="bg-red-50" textColor="text-red-700" />
                 </div>
-                {(s.xg != null || s.tirs != null) && (
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-2">
-                    <StatBox label="xG" value={s.xg} color="bg-green-50" textColor="text-green-700" />
-                    <StatBox label="xA" value={s.xa} color="bg-blue-50" textColor="text-blue-700" />
-                    <StatBox label="Tirs" value={s.tirs} />
-                    <StatBox label="Tirs cadrés" value={s.tirs_cadres} />
-                    <StatBox label="Passes clés" value={s.passes_cles} />
-                    <StatBox label="Dribbles" value={s.dribbles_reussis} />
-                    <StatBox label="Interceptions" value={s.interceptions} />
-                    <StatBox label="Tacles" value={s.tacles} />
-                    <StatBox label="% duels" value={s.duels_gagnes_pct != null ? `${s.duels_gagnes_pct}%` : null} />
-                    <StatBox label="Distance" value={s.distance_course} />
-                    <StatBox label="Vitesse max" value={s.vitesse_max ? `${s.vitesse_max} km/h` : null} />
-                  </div>
-                )}
               </CardContent>
             </Card>
           )}
@@ -689,7 +533,7 @@ Retourne toutes les infos disponibles : stade, capacité, président, entraîneu
                   <AreaChart data={result.valeur_historique}>
                     <defs>
                       <linearGradient id="valGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                        <stop offset="5%"  stopColor="#22c55e" stopOpacity={0.3} />
                         <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
                       </linearGradient>
                     </defs>
@@ -768,11 +612,13 @@ Retourne toutes les infos disponibles : stade, capacité, président, entraîneu
             </Card>
           )}
 
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-2 gap-4">
             {result.selection_nationale && (
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2"><Globe className="w-4 h-4 text-blue-500" /> Sélection nationale</CardTitle>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-blue-500" /> Sélection nationale
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="font-semibold text-slate-900 mb-2">{result.selection_nationale.equipe}</p>
@@ -783,57 +629,36 @@ Retourne toutes les infos disponibles : stade, capacité, président, entraîneu
                 </CardContent>
               </Card>
             )}
-            {(result.blessures_total != null || result.jours_blesses != null) && (
+
+            {(result.style_jeu || result.forces || result.faiblesses) && (
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2"><Heart className="w-4 h-4 text-red-500" /> Blessures</CardTitle>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Star className="w-4 h-4 text-amber-500" /> Profil scout
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <InfoRow label="Nombre" value={result.blessures_total} />
-                  <InfoRow label="Jours manqués" value={result.jours_blesses} />
-                  <InfoRow label="Types" value={result.type_blessures} />
-                </CardContent>
-              </Card>
-            )}
-            {(result.matchs_carriere != null || result.buts_carriere != null) && (
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2"><Activity className="w-4 h-4 text-slate-500" /> Carrière complète</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <InfoRow label="Matchs" value={result.matchs_carriere} />
-                  <InfoRow label="Buts" value={result.buts_carriere} />
-                  <InfoRow label="Passes déc." value={result.passes_carriere} />
-                  <InfoRow label="Clubs" value={result.historique_clubs?.length} />
+                <CardContent className="space-y-3">
+                  {result.style_jeu   && <div><p className="text-xs font-semibold text-slate-400 uppercase mb-1">Style de jeu</p><p className="text-sm text-slate-700">{result.style_jeu}</p></div>}
+                  {result.forces      && <div><p className="text-xs font-semibold text-green-600 uppercase mb-1">Points forts</p><p className="text-sm text-slate-700">{result.forces}</p></div>}
+                  {result.faiblesses  && <div><p className="text-xs font-semibold text-red-500 uppercase mb-1">Points faibles</p><p className="text-sm text-slate-700">{result.faiblesses}</p></div>}
+                  {result.note_globale_scout != null && (
+                    <div className="flex items-center gap-2">
+                      <Star className="w-4 h-4 text-amber-400" />
+                      <span className="font-bold text-lg">{result.note_globale_scout}/100</span>
+                      <span className="text-xs text-slate-500">Note scout</span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
           </div>
 
-          {(result.style_jeu || result.forces || result.faiblesses) && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2"><Star className="w-4 h-4 text-amber-500" /> Profil scout</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {result.style_jeu && <div><p className="text-xs font-semibold text-slate-400 uppercase mb-1">Style de jeu</p><p className="text-sm text-slate-700">{result.style_jeu}</p></div>}
-                {result.forces && <div><p className="text-xs font-semibold text-green-600 uppercase mb-1">Points forts</p><p className="text-sm text-slate-700">{result.forces}</p></div>}
-                {result.faiblesses && <div><p className="text-xs font-semibold text-red-500 uppercase mb-1">Points faibles</p><p className="text-sm text-slate-700">{result.faiblesses}</p></div>}
-                {result.note_globale_scout != null && (
-                  <div className="flex items-center gap-2">
-                    <Star className="w-4 h-4 text-amber-400" />
-                    <span className="font-bold text-lg">{result.note_globale_scout}/100</span>
-                    <span className="text-xs text-slate-500">Note scout</span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
           {result.palmares?.length > 0 && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2"><Trophy className="w-4 h-4 text-amber-500" /> Palmarès</CardTitle>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-amber-500" /> Palmarès
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
@@ -847,10 +672,15 @@ Retourne toutes les infos disponibles : stade, capacité, président, entraîneu
 
           <div className="flex justify-end pb-6 gap-3">
             {result.club_actuel && (
-              <p className="text-xs text-slate-400 self-center">Le club "{result.club_actuel}" sera créé automatiquement si absent</p>
+              <p className="text-xs text-slate-400 self-center">
+                Le club "{result.club_actuel}" sera créé automatiquement si absent
+              </p>
             )}
-            <Button onClick={handleSaveToApp} disabled={saving || saved}
-              className={`${saved ? "bg-green-600" : "bg-slate-900 hover:bg-slate-700"} px-8`}>
+            <Button
+              onClick={handleSaveToApp}
+              disabled={saving || saved}
+              className={`${saved ? "bg-green-600" : "bg-slate-900 hover:bg-slate-700"} px-8`}
+            >
               {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
               {saved
                 ? <><Trophy className="w-4 h-4 mr-2" /> Joueur ajouté ! <ArrowRight className="w-4 h-4 ml-2" /></>
