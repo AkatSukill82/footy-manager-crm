@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   User, Clock, Globe, Heart, Activity, Star, Zap, Trophy,
-  Shield, Target, Dumbbell, BarChart2
+  Shield, Target, Dumbbell, BarChart2, Phone, Mail, MessageCircle,
+  Instagram, Twitter, Linkedin, MapPin
 } from "lucide-react";
 
 function InfoRow({ label, value }) {
@@ -37,6 +38,8 @@ function SectionTitle({ icon: Icon, label, color = "text-slate-700" }) {
 export default function PlayerFullProfile({ player }) {
   if (!player) return null;
 
+  const hasContacts = player.email || player.telephone || player.whatsapp || player.instagram || player.twitter || player.linkedin;
+  const hasAddress = player.adresse || player.ville_residence || player.pays_residence;
   const hasSaisonStats = player.matchs_joues != null || player.buts != null || player.note_moyenne != null;
   const hasOffStats = player.xg != null || player.tirs != null || player.grandes_chances != null;
   const hasPassStats = player.passes_reussies_pct != null || player.passes_cles != null;
@@ -86,6 +89,8 @@ export default function PlayerFullProfile({ player }) {
             <InfoRow label="Salaire / semaine" value={player.salaire_semaine ? `${player.salaire_semaine} k€` : null} />
             <InfoRow label="Agent" value={player.agent} />
             <InfoRow label="Agence" value={player.agence} />
+            <InfoRow label="Email agent" value={player.agent_email} />
+            <InfoRow label="Tél. agent" value={player.agent_telephone} />
             <InfoRow label="Entraîneur" value={player.coach} />
             <InfoRow label="Directeur sportif" value={player.manager} />
             <InfoRow label="ID Transfermarkt" value={player.transfermarkt_id} />
@@ -93,6 +98,98 @@ export default function PlayerFullProfile({ player }) {
           </CardContent>
         </Card>
       </div>
+
+      {/* ── Contacts & Réseaux ── */}
+      {(hasContacts || hasAddress) && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2"><Phone className="w-4 h-4 text-green-500" />Contacts & Réseaux</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {player.telephone && (
+                <a href={`tel:${player.telephone}`} className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-50 hover:bg-green-50 transition-colors">
+                  <div className="w-7 h-7 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Phone className="w-3.5 h-3.5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400">Téléphone</p>
+                    <p className="text-xs font-medium text-slate-900">{player.telephone}</p>
+                  </div>
+                </a>
+              )}
+              {player.email && (
+                <a href={`mailto:${player.email}`} className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-50 hover:bg-blue-50 transition-colors">
+                  <div className="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Mail className="w-3.5 h-3.5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400">Email</p>
+                    <p className="text-xs font-medium text-slate-900">{player.email}</p>
+                  </div>
+                </a>
+              )}
+              {player.whatsapp && (
+                <a href={`https://wa.me/${player.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-50 hover:bg-emerald-50 transition-colors">
+                  <div className="w-7 h-7 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400">WhatsApp</p>
+                    <p className="text-xs font-medium text-slate-900">{player.whatsapp}</p>
+                  </div>
+                </a>
+              )}
+              {player.instagram && (
+                <a href={`https://instagram.com/${player.instagram.replace('@','')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-50 hover:bg-pink-50 transition-colors">
+                  <div className="w-7 h-7 bg-pink-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Instagram className="w-3.5 h-3.5 text-pink-600" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400">Instagram</p>
+                    <p className="text-xs font-medium text-slate-900">{player.instagram}</p>
+                  </div>
+                </a>
+              )}
+              {player.twitter && (
+                <a href={`https://twitter.com/${player.twitter.replace('@','')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-50 hover:bg-sky-50 transition-colors">
+                  <div className="w-7 h-7 bg-sky-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Twitter className="w-3.5 h-3.5 text-sky-600" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400">Twitter / X</p>
+                    <p className="text-xs font-medium text-slate-900">{player.twitter}</p>
+                  </div>
+                </a>
+              )}
+              {player.linkedin && (
+                <a href={player.linkedin.startsWith('http') ? player.linkedin : `https://linkedin.com/in/${player.linkedin}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-50 hover:bg-blue-50 transition-colors">
+                  <div className="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Linkedin className="w-3.5 h-3.5 text-blue-700" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400">LinkedIn</p>
+                    <p className="text-xs font-medium text-slate-900">{player.linkedin}</p>
+                  </div>
+                </a>
+              )}
+              {(player.adresse || player.ville_residence || player.pays_residence) && (
+                <div className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-50">
+                  <div className="w-7 h-7 bg-slate-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <MapPin className="w-3.5 h-3.5 text-slate-600" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400">Résidence</p>
+                    <p className="text-xs font-medium text-slate-900">
+                      {[player.adresse, player.ville_residence, player.pays_residence].filter(Boolean).join(', ')}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Valeur marchande ── */}
       {(player.valeur_marchande != null || player.valeur_marchande_peak != null) && (

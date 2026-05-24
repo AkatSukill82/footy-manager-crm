@@ -218,13 +218,17 @@ export default function PlayerDetailPage() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex gap-4">
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center overflow-hidden">
-                      <TransfermarktImage
-                        src={player.photo_url}
-                        alt={player.nom}
-                        className="w-full h-full object-cover"
-                        fallback={<User className="w-12 h-12 text-slate-400" />}
-                      />
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center overflow-hidden border-2 border-white shadow-md">
+                      {player.photo_url ? (
+                        <TransfermarktImage
+                          src={player.photo_url}
+                          alt={player.nom}
+                          className="w-full h-full object-cover"
+                          fallback={<User className="w-12 h-12 text-slate-400" />}
+                        />
+                      ) : (
+                        <User className="w-12 h-12 text-slate-400" />
+                      )}
                     </div>
                     <div>
                       <CardTitle className="text-3xl">{player.nom}</CardTitle>

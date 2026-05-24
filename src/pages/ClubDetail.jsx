@@ -6,12 +6,52 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, Building2, MapPin, Users, TrendingUp, Trophy,
-  Edit2, Trash2, Calendar, Phone, Mail, Globe, User, ExternalLink
+  Edit2, Trash2, Calendar, Phone, Mail, Globe, User, ExternalLink,
+  Instagram, Twitter, Palette
 } from "lucide-react";
 import TransfermarktImage from "../components/ui/TransfermarktImage";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import ClubForm from "../components/clubs/ClubForm";
+
+function Row({ label, value, valueClass = "font-medium text-slate-900" }) {
+  if (!value) return null;
+  return (
+    <div className="flex justify-between items-start py-1.5 border-b border-slate-50 last:border-0 gap-2">
+      <span className="text-slate-500 text-sm shrink-0">{label}</span>
+      <span className={`${valueClass} text-sm text-right break-all`}>{value}</span>
+    </div>
+  );
+}
+
+function ContactLink({ href, icon: Icon, label, value, color = "blue" }) {
+  if (!value) return null;
+  const colorMap = {
+    blue: "bg-blue-100 text-blue-600 hover:bg-blue-50",
+    green: "bg-green-100 text-green-600 hover:bg-green-50",
+    slate: "bg-slate-200 text-slate-600 hover:bg-slate-100",
+    purple: "bg-purple-100 text-purple-600 hover:bg-purple-50",
+    pink: "bg-pink-100 text-pink-600 hover:bg-pink-50",
+    sky: "bg-sky-100 text-sky-600 hover:bg-sky-50",
+  };
+  return (
+    <a
+      href={href || "#"}
+      target={href?.startsWith("http") ? "_blank" : undefined}
+      rel="noopener noreferrer"
+      className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors group"
+    >
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${colorMap[color]}`}>
+        <Icon className="w-4 h-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs text-slate-400">{label}</p>
+        <p className="font-medium text-slate-900 truncate text-sm">{value}</p>
+      </div>
+      {href?.startsWith("http") && <ExternalLink className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />}
+    </a>
+  );
+}
 
 export default function ClubDetailPage() {
   const navigate = useNavigate();
@@ -73,8 +113,12 @@ export default function ClubDetailPage() {
 
   const arrivals = transfers.filter(t => t.club_arrivee === club.nom);
   const departures = transfers.filter(t => t.club_depart === club.nom);
-  const hasContact = club.email || club.telephone || club.site_web;
+
+  const hasClubContact = club.telephone || club.email || club.site_web || club.instagram || club.twitter;
   const hasPersonContact = club.contact_nom || club.contact_email || club.contact_telephone;
+  const hasPresidentContact = club.president && (club.president_email || club.president_telephone);
+  const hasCoachContact = club.entraineur && club.entraineur_email;
+  const hasDSContact = club.directeur_sportif && (club.directeur_sportif_email || club.directeur_sportif_telephone);
 
   return (
     <div className="p-4 md:p-8 space-y-6">
@@ -85,11 +129,11 @@ export default function ClubDetailPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex gap-4 md:gap-6 items-center">
-          <div className="w-20 h-20 md:w-24 md:h-24 bg-slate-100 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0">
+          <div className="w-20 h-20 md:w-24 md:h-24 bg-slate-100 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0 border border-slate-200">
             <TransfermarktImage
               src={club.logo_url}
               alt={club.nom}
-              className="w-full h-full object-contain p-1"
+              className="w-full h-full object-contain p-2"
               fallback={<Building2 className="w-10 h-10 text-slate-400" />}
             />
           </div>
@@ -97,14 +141,28 @@ export default function ClubDetailPage() {
             <h1 className="text-2xl md:text-4xl font-bold text-slate-900">{club.nom}</h1>
             <div className="flex flex-wrap items-center gap-2 md:gap-3 text-slate-600 mt-1 text-sm">
               {(club.ville || club.pays) && (
-                <span className="flex items-center gap-1"><MapPin className="w-4 h-4" />{[club.ville, club.pays].filter(Boolean).join(', ')}</span>
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-4 h-4" />{[club.ville, club.pays].filter(Boolean).join(', ')}
+                </span>
               )}
               {club.annee_fondation && (
-                <span className="flex items-center gap-1"><Calendar className="w-4 h-4" />Fondé en {club.annee_fondation}</span>
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-4 h-4" />Fondé en {club.annee_fondation}
+                </span>
               )}
               {club.ligue && <Badge variant="outline">{club.ligue}</Badge>}
               {club.categorie && <Badge className="bg-slate-100 text-slate-700">{club.categorie}</Badge>}
+              {club.couleurs && (
+                <span className="flex items-center gap-1 text-xs text-slate-500">
+                  <Palette className="w-3.5 h-3.5" />{club.couleurs}
+                </span>
+              )}
             </div>
+            {club.adresse && (
+              <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                <MapPin className="w-3 h-3" />{club.adresse}
+              </p>
+            )}
           </div>
         </div>
         <div className="flex gap-2 flex-shrink-0">
@@ -138,76 +196,116 @@ export default function ClubDetailPage() {
         {/* Infos générales */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2"><Building2 className="w-4 h-4" /> Informations générales</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Building2 className="w-4 h-4" /> Informations générales
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2.5 text-sm">
-            {club.stade && <Row label="Stade" value={`${club.stade}${club.capacite_stade ? ` (${club.capacite_stade.toLocaleString()} places)` : ''}`} />}
-            {club.president && <Row label="Président" value={club.president} />}
-            {club.entraineur && <Row label="Entraîneur" value={club.entraineur} />}
-            {club.directeur_sportif && <Row label="Directeur sportif" value={club.directeur_sportif} />}
+          <CardContent>
+            <Row label="Stade" value={club.stade ? `${club.stade}${club.capacite_stade ? ` — ${club.capacite_stade.toLocaleString()} places` : ''}` : null} />
+            <Row label="Ligue" value={club.ligue} />
+            <Row label="Pays" value={club.pays} />
+            <Row label="Ville" value={club.ville} />
+            <Row label="Année de fondation" value={club.annee_fondation} />
+            <Row label="Couleurs" value={club.couleurs} />
+            <Row label="Adresse" value={club.adresse} />
+            {!club.stade && !club.ligue && !club.annee_fondation && (
+              <p className="text-slate-400 italic text-xs">Aucune info — cliquez sur Modifier pour renseigner.</p>
+            )}
           </CardContent>
         </Card>
 
-        {/* Contact club */}
+        {/* Direction */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2"><Phone className="w-4 h-4 text-green-500" /> Contact du club</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              <User className="w-4 h-4 text-purple-500" /> Direction
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            {!hasContact && !hasPersonContact ? (
-              <p className="text-slate-400 italic text-xs">Aucun contact renseigné — cliquez sur Modifier pour en ajouter.</p>
-            ) : (
-              <>
-                {club.telephone && (
-                  <a href={`tel:${club.telephone}`} className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-50 hover:bg-green-50 transition-colors group">
-                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Phone className="w-4 h-4 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-400">Téléphone</p>
-                      <p className="font-medium text-slate-900 group-hover:text-green-700">{club.telephone}</p>
-                    </div>
+          <CardContent className="space-y-2">
+            {club.president && (
+              <div className="p-2 rounded-lg bg-slate-50">
+                <p className="text-xs text-slate-400 mb-0.5">Président</p>
+                <p className="font-semibold text-slate-900 text-sm">{club.president}</p>
+                <div className="flex flex-wrap gap-3 mt-1">
+                  {club.president_email && (
+                    <a href={`mailto:${club.president_email}`} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                      <Mail className="w-3 h-3" />{club.president_email}
+                    </a>
+                  )}
+                  {club.president_telephone && (
+                    <a href={`tel:${club.president_telephone}`} className="text-xs text-green-600 hover:underline flex items-center gap-1">
+                      <Phone className="w-3 h-3" />{club.president_telephone}
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+            {club.entraineur && (
+              <div className="p-2 rounded-lg bg-slate-50">
+                <p className="text-xs text-slate-400 mb-0.5">Entraîneur</p>
+                <p className="font-semibold text-slate-900 text-sm">{club.entraineur}</p>
+                {club.entraineur_email && (
+                  <a href={`mailto:${club.entraineur_email}`} className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1">
+                    <Mail className="w-3 h-3" />{club.entraineur_email}
                   </a>
                 )}
-                {club.email && (
-                  <a href={`mailto:${club.email}`} className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-50 hover:bg-blue-50 transition-colors group">
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Mail className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-400">Email</p>
-                      <p className="font-medium text-slate-900 group-hover:text-blue-700">{club.email}</p>
-                    </div>
-                  </a>
-                )}
-                {club.site_web && (
-                  <a href={club.site_web} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors group">
-                    <div className="w-8 h-8 bg-slate-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Globe className="w-4 h-4 text-slate-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-slate-400">Site web</p>
-                      <p className="font-medium text-slate-900 truncate group-hover:text-slate-700">{club.site_web}</p>
-                    </div>
-                    <ExternalLink className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 flex-shrink-0" />
-                  </a>
-                )}
-              </>
+              </div>
+            )}
+            {club.directeur_sportif && (
+              <div className="p-2 rounded-lg bg-slate-50">
+                <p className="text-xs text-slate-400 mb-0.5">Directeur sportif</p>
+                <p className="font-semibold text-slate-900 text-sm">{club.directeur_sportif}</p>
+                <div className="flex flex-wrap gap-3 mt-1">
+                  {club.directeur_sportif_email && (
+                    <a href={`mailto:${club.directeur_sportif_email}`} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                      <Mail className="w-3 h-3" />{club.directeur_sportif_email}
+                    </a>
+                  )}
+                  {club.directeur_sportif_telephone && (
+                    <a href={`tel:${club.directeur_sportif_telephone}`} className="text-xs text-green-600 hover:underline flex items-center gap-1">
+                      <Phone className="w-3 h-3" />{club.directeur_sportif_telephone}
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+            {!club.president && !club.entraineur && !club.directeur_sportif && (
+              <p className="text-slate-400 italic text-xs">Aucune direction renseignée.</p>
             )}
           </CardContent>
         </Card>
       </div>
 
+      {/* Contact club */}
+      {hasClubContact && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Phone className="w-4 h-4 text-green-500" /> Contact du club
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <ContactLink href={`tel:${club.telephone}`} icon={Phone} label="Téléphone" value={club.telephone} color="green" />
+            <ContactLink href={`mailto:${club.email}`} icon={Mail} label="Email" value={club.email} color="blue" />
+            <ContactLink href={club.site_web} icon={Globe} label="Site web" value={club.site_web} color="slate" />
+            <ContactLink href={club.instagram ? `https://instagram.com/${club.instagram.replace('@','')}` : null} icon={Instagram} label="Instagram" value={club.instagram} color="pink" />
+            <ContactLink href={club.twitter ? `https://twitter.com/${club.twitter.replace('@','')}` : null} icon={Twitter} label="Twitter / X" value={club.twitter} color="sky" />
+          </CardContent>
+        </Card>
+      )}
+
       {/* Personne de contact */}
       {hasPersonContact && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2"><User className="w-4 h-4 text-purple-500" /> Personne de contact</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              <User className="w-4 h-4 text-indigo-500" /> Personne de contact
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                <User className="w-6 h-6 text-purple-600" />
+              <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <User className="w-6 h-6 text-indigo-600" />
               </div>
               <div className="flex-1 space-y-1">
                 {club.contact_nom && <p className="font-bold text-slate-900">{club.contact_nom}</p>}
@@ -234,13 +332,35 @@ export default function ClubDetailPage() {
       {(club.budget_annuel || club.budget_transfert || club.dette || club.valeur_effectif) && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2"><TrendingUp className="w-4 h-4 text-green-500" /> Situation financière</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-green-500" /> Situation financière
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2.5 text-sm">
-            {club.budget_annuel && <Row label="Budget annuel" value={`${club.budget_annuel}M€`} valueClass="text-green-600 font-bold" />}
-            {club.budget_transfert && <Row label="Budget transfert" value={`${club.budget_transfert}M€`} valueClass="text-blue-600 font-bold" />}
-            {club.dette && <Row label="Dette" value={`${club.dette}M€`} valueClass="text-red-600 font-bold" />}
-            {club.valeur_effectif && <Row label="Valeur effectif" value={`${club.valeur_effectif}M€`} valueClass="text-purple-600 font-bold" />}
+          <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {club.budget_annuel && (
+              <div className="bg-green-50 rounded-xl p-3 text-center">
+                <p className="font-bold text-green-700 text-lg">{club.budget_annuel}M€</p>
+                <p className="text-xs text-slate-500">Budget annuel</p>
+              </div>
+            )}
+            {club.budget_transfert && (
+              <div className="bg-blue-50 rounded-xl p-3 text-center">
+                <p className="font-bold text-blue-700 text-lg">{club.budget_transfert}M€</p>
+                <p className="text-xs text-slate-500">Budget transfert</p>
+              </div>
+            )}
+            {club.valeur_effectif && (
+              <div className="bg-purple-50 rounded-xl p-3 text-center">
+                <p className="font-bold text-purple-700 text-lg">{club.valeur_effectif}M€</p>
+                <p className="text-xs text-slate-500">Valeur effectif</p>
+              </div>
+            )}
+            {club.dette && (
+              <div className="bg-red-50 rounded-xl p-3 text-center">
+                <p className="font-bold text-red-700 text-lg">{club.dette}M€</p>
+                <p className="text-xs text-slate-500">Dette</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -249,7 +369,9 @@ export default function ClubDetailPage() {
       {players.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2"><Users className="w-4 h-4 text-blue-500" /> Joueurs ({players.length})</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users className="w-4 h-4 text-blue-500" /> Joueurs ({players.length})
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -259,14 +381,17 @@ export default function ClubDetailPage() {
                   onClick={() => navigate(createPageUrl("PlayerDetail") + `?id=${p.id}`)}
                   className="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-100 hover:border-green-300 hover:bg-green-50 transition-all text-left"
                 >
-                  <div className="w-9 h-9 rounded-full bg-slate-100 flex-shrink-0 overflow-hidden">
+                  <div className="w-9 h-9 rounded-full bg-slate-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
                     {p.photo_url
                       ? <img src={p.photo_url} alt={p.nom} className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={e => e.target.style.display = 'none'} />
-                      : <User className="w-4 h-4 text-slate-400 m-auto mt-2.5" />}
+                      : <User className="w-4 h-4 text-slate-400" />}
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-slate-900 truncate">{p.nom}</p>
                     <p className="text-[10px] text-slate-400 truncate">{p.poste}</p>
+                    {p.valeur_marchande && (
+                      <p className="text-[10px] text-green-600 font-bold">{p.valeur_marchande}M€</p>
+                    )}
                   </div>
                 </button>
               ))}
@@ -280,18 +405,20 @@ export default function ClubDetailPage() {
         {club.historique && (
           <Card>
             <CardHeader className="pb-3"><CardTitle className="text-base">Historique</CardTitle></CardHeader>
-            <CardContent><p className="text-slate-700 text-sm whitespace-pre-line">{club.historique}</p></CardContent>
+            <CardContent><p className="text-slate-700 text-sm whitespace-pre-line leading-relaxed">{club.historique}</p></CardContent>
           </Card>
         )}
         {club.palmares && (
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2"><Trophy className="w-4 h-4 text-yellow-600" /> Palmarès</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Trophy className="w-4 h-4 text-yellow-600" /> Palmarès
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
                 {club.palmares.split(',').map((t, i) => (
-                  <Badge key={i} variant="outline" className="bg-yellow-50">{t.trim()}</Badge>
+                  <Badge key={i} variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200">🏆 {t.trim()}</Badge>
                 ))}
               </div>
             </CardContent>
@@ -302,7 +429,9 @@ export default function ClubDetailPage() {
       {/* Transferts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base">Arrivées ({arrivals.length})</CardTitle></CardHeader>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Arrivées ({arrivals.length})</CardTitle>
+          </CardHeader>
           <CardContent>
             {arrivals.length === 0 ? (
               <p className="text-center text-slate-500 py-4 text-sm">Aucune arrivée</p>
@@ -310,7 +439,7 @@ export default function ClubDetailPage() {
               <div className="space-y-2">
                 {arrivals.slice(0, 5).map(t => (
                   <div key={t.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
-                    <span className="font-medium text-slate-900 text-sm">{players.find(p => p.id === t.player_id)?.nom || "Joueur"}</span>
+                    <span className="font-medium text-slate-900 text-sm">{players.find(p => p.id === t.player_id)?.nom || t.joueur || "Joueur"}</span>
                     {t.montant && <span className="text-green-600 font-bold text-sm">{t.montant}M€</span>}
                   </div>
                 ))}
@@ -319,7 +448,9 @@ export default function ClubDetailPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base">Départs ({departures.length})</CardTitle></CardHeader>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Départs ({departures.length})</CardTitle>
+          </CardHeader>
           <CardContent>
             {departures.length === 0 ? (
               <p className="text-center text-slate-500 py-4 text-sm">Aucun départ</p>
@@ -327,7 +458,7 @@ export default function ClubDetailPage() {
               <div className="space-y-2">
                 {departures.slice(0, 5).map(t => (
                   <div key={t.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
-                    <span className="font-medium text-slate-900 text-sm">{players.find(p => p.id === t.player_id)?.nom || "Joueur"}</span>
+                    <span className="font-medium text-slate-900 text-sm">{players.find(p => p.id === t.player_id)?.nom || t.joueur || "Joueur"}</span>
                     {t.montant && <span className="text-orange-600 font-bold text-sm">{t.montant}M€</span>}
                   </div>
                 ))}
@@ -336,15 +467,6 @@ export default function ClubDetailPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
-}
-
-function Row({ label, value, valueClass = "font-medium text-slate-900" }) {
-  return (
-    <div className="flex justify-between items-center py-1 border-b border-slate-50 last:border-0">
-      <span className="text-slate-500">{label}</span>
-      <span className={valueClass}>{value}</span>
     </div>
   );
 }

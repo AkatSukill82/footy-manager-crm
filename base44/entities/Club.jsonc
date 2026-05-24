@@ -14,37 +14,45 @@
       "type": "string",
       "description": "Ville du club"
     },
+    "ligue": {
+      "type": "string",
+      "description": "Ligue / Championnat"
+    },
     "stade": {
       "type": "string",
       "description": "Nom du stade"
     },
     "capacite_stade": {
       "type": "number",
-      "description": "Capacit\u00e9 du stade"
+      "description": "Capacité du stade"
     },
     "annee_fondation": {
       "type": "number",
-      "description": "Ann\u00e9e de fondation"
+      "description": "Année de fondation"
+    },
+    "couleurs": {
+      "type": "string",
+      "description": "Couleurs du club (ex: Rouge et Blanc)"
     },
     "president": {
       "type": "string",
-      "description": "Pr\u00e9sident du club"
+      "description": "Président du club"
     },
     "president_email": {
       "type": "string",
-      "description": "Email du pr\u00e9sident"
+      "description": "Email du président"
     },
     "president_telephone": {
       "type": "string",
-      "description": "T\u00e9l\u00e9phone du pr\u00e9sident"
+      "description": "Téléphone du président"
     },
     "entraineur": {
       "type": "string",
-      "description": "Entra\u00eeneur principal"
+      "description": "Entraîneur principal"
     },
     "entraineur_email": {
       "type": "string",
-      "description": "Email de l'entra\u00eeneur"
+      "description": "Email de l'entraîneur"
     },
     "directeur_sportif": {
       "type": "string",
@@ -56,15 +64,15 @@
     },
     "directeur_sportif_telephone": {
       "type": "string",
-      "description": "T\u00e9l\u00e9phone du directeur sportif"
+      "description": "Téléphone du directeur sportif"
     },
-    "email_general": {
+    "email": {
       "type": "string",
-      "description": "Email g\u00e9n\u00e9ral du club"
+      "description": "Email général du club"
     },
-    "telephone_general": {
+    "telephone": {
       "type": "string",
-      "description": "T\u00e9l\u00e9phone g\u00e9n\u00e9ral du club"
+      "description": "Téléphone général du club"
     },
     "site_web": {
       "type": "string",
@@ -80,7 +88,23 @@
     },
     "adresse": {
       "type": "string",
-      "description": "Adresse du si\u00e8ge"
+      "description": "Adresse du siège"
+    },
+    "contact_nom": {
+      "type": "string",
+      "description": "Nom de la personne de contact"
+    },
+    "contact_poste": {
+      "type": "string",
+      "description": "Poste de la personne de contact"
+    },
+    "contact_email": {
+      "type": "string",
+      "description": "Email de la personne de contact"
+    },
+    "contact_telephone": {
+      "type": "string",
+      "description": "Téléphone de la personne de contact"
     },
     "budget_annuel": {
       "type": "number",
@@ -100,7 +124,7 @@
     },
     "palmares": {
       "type": "string",
-      "description": "Palmar\u00e8s (titres s\u00e9par\u00e9s par virgules)"
+      "description": "Palmarès (titres séparés par virgules)"
     },
     "historique": {
       "type": "string",
@@ -115,11 +139,11 @@
       "enum": [
         "Elite",
         "Premier plan",
-        "Interm\u00e9diaire",
-        "En d\u00e9veloppement"
+        "Intermédiaire",
+        "En développement"
       ],
-      "default": "Interm\u00e9diaire",
-      "description": "Cat\u00e9gorie du club"
+      "default": "Intermédiaire",
+      "description": "Catégorie du club"
     }
   },
   "required": [
