@@ -1,0 +1,129 @@
+{
+  "name": "Club",
+  "type": "object",
+  "properties": {
+    "nom": {
+      "type": "string",
+      "description": "Nom du club"
+    },
+    "pays": {
+      "type": "string",
+      "description": "Pays du club"
+    },
+    "ville": {
+      "type": "string",
+      "description": "Ville du club"
+    },
+    "stade": {
+      "type": "string",
+      "description": "Nom du stade"
+    },
+    "capacite_stade": {
+      "type": "number",
+      "description": "Capacit\u00e9 du stade"
+    },
+    "annee_fondation": {
+      "type": "number",
+      "description": "Ann\u00e9e de fondation"
+    },
+    "president": {
+      "type": "string",
+      "description": "Pr\u00e9sident du club"
+    },
+    "president_email": {
+      "type": "string",
+      "description": "Email du pr\u00e9sident"
+    },
+    "president_telephone": {
+      "type": "string",
+      "description": "T\u00e9l\u00e9phone du pr\u00e9sident"
+    },
+    "entraineur": {
+      "type": "string",
+      "description": "Entra\u00eeneur principal"
+    },
+    "entraineur_email": {
+      "type": "string",
+      "description": "Email de l'entra\u00eeneur"
+    },
+    "directeur_sportif": {
+      "type": "string",
+      "description": "Directeur sportif"
+    },
+    "directeur_sportif_email": {
+      "type": "string",
+      "description": "Email du directeur sportif"
+    },
+    "directeur_sportif_telephone": {
+      "type": "string",
+      "description": "T\u00e9l\u00e9phone du directeur sportif"
+    },
+    "email_general": {
+      "type": "string",
+      "description": "Email g\u00e9n\u00e9ral du club"
+    },
+    "telephone_general": {
+      "type": "string",
+      "description": "T\u00e9l\u00e9phone g\u00e9n\u00e9ral du club"
+    },
+    "site_web": {
+      "type": "string",
+      "description": "Site web officiel"
+    },
+    "instagram": {
+      "type": "string",
+      "description": "Instagram officiel (@handle)"
+    },
+    "twitter": {
+      "type": "string",
+      "description": "Twitter/X officiel (@handle)"
+    },
+    "adresse": {
+      "type": "string",
+      "description": "Adresse du si\u00e8ge"
+    },
+    "budget_annuel": {
+      "type": "number",
+      "description": "Budget annuel en millions d'euros"
+    },
+    "budget_transfert": {
+      "type": "number",
+      "description": "Budget transfert disponible en millions"
+    },
+    "dette": {
+      "type": "number",
+      "description": "Dette du club en millions"
+    },
+    "valeur_effectif": {
+      "type": "number",
+      "description": "Valeur totale de l'effectif en millions"
+    },
+    "palmares": {
+      "type": "string",
+      "description": "Palmar\u00e8s (titres s\u00e9par\u00e9s par virgules)"
+    },
+    "historique": {
+      "type": "string",
+      "description": "Historique et description du club"
+    },
+    "logo_url": {
+      "type": "string",
+      "description": "URL du logo du club"
+    },
+    "categorie": {
+      "type": "string",
+      "enum": [
+        "Elite",
+        "Premier plan",
+        "Interm\u00e9diaire",
+        "En d\u00e9veloppement"
+      ],
+      "default": "Interm\u00e9diaire",
+      "description": "Cat\u00e9gorie du club"
+    }
+  },
+  "required": [
+    "nom",
+    "pays"
+  ]
+}

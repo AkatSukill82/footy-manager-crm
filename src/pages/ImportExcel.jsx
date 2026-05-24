@@ -1,0 +1,137 @@
+import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, RefreshCw, Download, Info } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import ImportDropzone from "@/components/import/ImportDropzone";
+import ImportPreview from "@/components/import/ImportPreview";
+import ImportResults from "@/components/import/ImportResults";
+import ImportHistory from "@/components/import/ImportHistory";
+
+export default function ImportExcel() {
+  const [step, setStep] = useState("upload"); // upload | preview | processing | results
+  const [extractedData, setExtractedData] = useState(null);
+  const [results, setResults] = useState(null);
+  const [processing, setProcessing] = useState(false);
+
+  const handleFileExtracted = (data) => {
+    setExtractedData(data);
+    setStep("preview");
+  };
+
+  const handleConfirmImport = async () => {
+    setStep("processing");
+    setProcessing(true);
+    const res = await base44.functions.invoke("importExcelData", { data: extractedData });
+    setResults(res.data);
+    setProcessing(false);
+    setStep("results");
+  };
+
+  const handleReset = () => {
+    setStep("upload");
+    setExtractedData(null);
+    setResults(null);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+      <div className="max-w-5xl mx-auto">
+
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+              <FileSpreadsheet className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">Import Excel / CSV</h1>
+              <p className="text-slate-500 text-sm">Importez vos joueurs et clubs depuis un fichier</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Steps indicator */}
+        <div className="flex items-center gap-2 mb-8">
+          {[
+            { key: "upload", label: "Fichier" },
+            { key: "preview", label: "Aperçu" },
+            { key: "processing", label: "Import" },
+            { key: "results", label: "Résultats" }
+          ].map((s, i, arr) => (
+            <React.Fragment key={s.key}>
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                step === s.key ? "bg-green-500 text-white shadow" :
+                arr.findIndex(x => x.key === step) > i ? "bg-green-100 text-green-700" :
+                "bg-slate-200 text-slate-500"
+              }`}>
+                {arr.findIndex(x => x.key === step) > i
+                  ? <CheckCircle className="w-4 h-4" />
+                  : <span className="w-4 h-4 text-center leading-4">{i + 1}</span>
+                }
+                {s.label}
+              </div>
+              {i < arr.length - 1 && <div className="flex-1 h-px bg-slate-300" />}
+            </React.Fragment>
+          ))}
+        </div>
+
+        {/* Info box */}
+        {step === "upload" && (
+          <Card className="mb-6 border-blue-200 bg-blue-50">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex gap-3">
+                <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-blue-800">
+                  <p className="font-semibold mb-1">Colonnes reconnues automatiquement :</p>
+                  <p className="text-blue-700">
+                    <strong>Joueurs :</strong> nom, prénom, poste, club, nationalité, date_naissance, âge, email, téléphone, agent, agent_email, agent_tel, valeur_marchande, contrat_fin, taille, poids, instagram, twitter, buts, passes, matchs, ligue…
+                  </p>
+                  <p className="text-blue-700 mt-1">
+                    <strong>Clubs :</strong> nom_club, pays, ville, président, directeur_sportif, email_club, téléphone_club, budget, stade…
+                  </p>
+                  <p className="text-blue-700 mt-1 italic">L'IA détecte automatiquement les colonnes même si les noms sont différents.</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Main content */}
+        {step === "upload" && (
+          <ImportDropzone onExtracted={handleFileExtracted} />
+        )}
+
+        {step === "preview" && extractedData && (
+          <ImportPreview
+            data={extractedData}
+            onConfirm={handleConfirmImport}
+            onBack={handleReset}
+          />
+        )}
+
+        {step === "processing" && (
+          <Card className="text-center py-16">
+            <CardContent>
+              <RefreshCw className="w-12 h-12 text-green-500 animate-spin mx-auto mb-4" />
+              <h2 className="text-xl font-bold text-slate-800 mb-2">Import en cours...</h2>
+              <p className="text-slate-500">Vérification, création et mise à jour des données</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {step === "results" && results && (
+          <ImportResults results={results} onReset={handleReset} />
+        )}
+
+        {/* History */}
+        {step === "upload" && (
+          <div className="mt-8">
+            <ImportHistory />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

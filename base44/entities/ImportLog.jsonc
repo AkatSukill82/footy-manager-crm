@@ -1,0 +1,54 @@
+{
+  "name": "ImportLog",
+  "type": "object",
+  "properties": {
+    "nom_fichier": {
+      "type": "string",
+      "description": "Nom du fichier import\u00e9"
+    },
+    "date_import": {
+      "type": "string",
+      "description": "Date et heure de l'import"
+    },
+    "total_lignes": {
+      "type": "number",
+      "description": "Total de lignes dans le fichier"
+    },
+    "joueurs_crees": {
+      "type": "number",
+      "description": "Nombre de joueurs cr\u00e9\u00e9s"
+    },
+    "joueurs_mis_a_jour": {
+      "type": "number",
+      "description": "Nombre de joueurs mis \u00e0 jour"
+    },
+    "clubs_crees": {
+      "type": "number",
+      "description": "Nombre de clubs cr\u00e9\u00e9s"
+    },
+    "clubs_mis_a_jour": {
+      "type": "number",
+      "description": "Nombre de clubs mis \u00e0 jour"
+    },
+    "erreurs": {
+      "type": "number",
+      "description": "Nombre d'erreurs"
+    },
+    "details": {
+      "type": "string",
+      "description": "D\u00e9tails JSON de l'import"
+    },
+    "statut": {
+      "type": "string",
+      "enum": [
+        "succ\u00e8s",
+        "partiel",
+        "erreur"
+      ],
+      "default": "succ\u00e8s"
+    }
+  },
+  "required": [
+    "nom_fichier"
+  ]
+}

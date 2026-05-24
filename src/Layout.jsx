@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "./utils";
 import {
   Users, Star, LogOut, BarChart3, Bell, Phone, Shield,
-  FileText, Network, ArrowRightLeft, Menu, X, Building2, SearchCheck, Sparkles, Newspaper
+  FileText, Network, ArrowRightLeft, Menu, X, Building2, SearchCheck, Sparkles, Newspaper, FileSpreadsheet
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Toaster } from "@/components/ui/sonner";
@@ -23,6 +23,7 @@ const navItems = [
   { name: "PredictiveDashboard", label: "Prédictif IA",        icon: Sparkles },
   { name: "News",               label: "Journal du jour",    icon: Newspaper },
   { name: "ScoutingIA",         label: "Scouting IA",        icon: Sparkles },
+  { name: "ImportExcel",        label: "Import Excel",        icon: FileSpreadsheet },
 ];
 
 // Bottom nav shows 5 key items; rest accessible via drawer

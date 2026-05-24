@@ -8,6 +8,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScoutingIA from './pages/ScoutingIA';
+import ImportExcel from './pages/ImportExcel';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -60,6 +61,7 @@ const AuthenticatedApp = () => {
         />
       ))}
       <Route path="/ScoutingIA" element={<LayoutWrapper currentPageName="ScoutingIA"><ScoutingIA /></LayoutWrapper>} />
+      <Route path="/ImportExcel" element={<LayoutWrapper currentPageName="ImportExcel"><ImportExcel /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

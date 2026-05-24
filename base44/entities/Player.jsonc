@@ -1,0 +1,494 @@
+{
+  "name": "Player",
+  "type": "object",
+  "properties": {
+    "nom": {
+      "type": "string",
+      "description": "Nom complet du joueur"
+    },
+    "age": {
+      "type": "number",
+      "description": "\u00c2ge du joueur"
+    },
+    "date_naissance": {
+      "type": "string",
+      "format": "date",
+      "description": "Date de naissance"
+    },
+    "lieu_naissance": {
+      "type": "string",
+      "description": "Ville / pays de naissance"
+    },
+    "poste": {
+      "type": "string",
+      "enum": [
+        "Gardien",
+        "D\u00e9fenseur central",
+        "Lat\u00e9ral droit",
+        "Lat\u00e9ral gauche",
+        "Milieu d\u00e9fensif",
+        "Milieu central",
+        "Milieu offensif",
+        "Ailier droit",
+        "Ailier gauche",
+        "Attaquant"
+      ],
+      "description": "Poste principal"
+    },
+    "poste_secondaire": {
+      "type": "string",
+      "enum": [
+        "Gardien",
+        "D\u00e9fenseur central",
+        "Lat\u00e9ral droit",
+        "Lat\u00e9ral gauche",
+        "Milieu d\u00e9fensif",
+        "Milieu central",
+        "Milieu offensif",
+        "Ailier droit",
+        "Ailier gauche",
+        "Attaquant"
+      ],
+      "description": "Poste secondaire"
+    },
+    "nationalite": {
+      "type": "string",
+      "description": "Nationalit\u00e9 principale"
+    },
+    "nationalite_secondaire": {
+      "type": "string",
+      "description": "Deuxi\u00e8me nationalit\u00e9"
+    },
+    "club_actuel": {
+      "type": "string",
+      "description": "Club actuel"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email du joueur"
+    },
+    "telephone": {
+      "type": "string",
+      "description": "Num\u00e9ro de t\u00e9l\u00e9phone du joueur"
+    },
+    "instagram": {
+      "type": "string",
+      "description": "Compte Instagram (@handle)"
+    },
+    "twitter": {
+      "type": "string",
+      "description": "Compte Twitter/X (@handle)"
+    },
+    "linkedin": {
+      "type": "string",
+      "description": "Profil LinkedIn"
+    },
+    "whatsapp": {
+      "type": "string",
+      "description": "Num\u00e9ro WhatsApp"
+    },
+    "adresse": {
+      "type": "string",
+      "description": "Adresse personnelle"
+    },
+    "ville_residence": {
+      "type": "string",
+      "description": "Ville de r\u00e9sidence"
+    },
+    "pays_residence": {
+      "type": "string",
+      "description": "Pays de r\u00e9sidence"
+    },
+    "valeur_marchande": {
+      "type": "number",
+      "description": "Valeur marchande en millions d'euros (Transfermarkt)"
+    },
+    "valeur_marchande_peak": {
+      "type": "number",
+      "description": "Valeur marchande maximale atteinte en carri\u00e8re (M\u20ac)"
+    },
+    "pied_fort": {
+      "type": "string",
+      "enum": [
+        "Droit",
+        "Gauche",
+        "Les deux"
+      ],
+      "description": "Pied fort"
+    },
+    "taille": {
+      "type": "number",
+      "description": "Taille en cm"
+    },
+    "poids": {
+      "type": "number",
+      "description": "Poids en kg"
+    },
+    "contrat_fin": {
+      "type": "string",
+      "format": "date",
+      "description": "Date de fin de contrat"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "URL de la photo du joueur"
+    },
+    "salaire": {
+      "type": "number",
+      "description": "Salaire annuel en millions d'euros"
+    },
+    "salaire_semaine": {
+      "type": "number",
+      "description": "Salaire hebdomadaire en milliers d'euros"
+    },
+    "agent": {
+      "type": "string",
+      "description": "Agent / repr\u00e9sentant"
+    },
+    "agent_email": {
+      "type": "string",
+      "description": "Email de l'agent"
+    },
+    "agent_telephone": {
+      "type": "string",
+      "description": "T\u00e9l\u00e9phone de l'agent"
+    },
+    "agence": {
+      "type": "string",
+      "description": "Agence / cabinet de repr\u00e9sentation"
+    },
+    "numero_maillot": {
+      "type": "number",
+      "description": "Num\u00e9ro de maillot"
+    },
+    "transfermarkt_id": {
+      "type": "string",
+      "description": "ID Transfermarkt"
+    },
+    "sofascore_id": {
+      "type": "string",
+      "description": "ID SofaScore"
+    },
+    "coach": {
+      "type": "string",
+      "description": "Entra\u00eeneur principal actuel"
+    },
+    "manager": {
+      "type": "string",
+      "description": "Manager / Directeur sportif du club"
+    },
+    "stade": {
+      "type": "string",
+      "description": "Stade du club actuel"
+    },
+    "ligue": {
+      "type": "string",
+      "description": "Ligue / championnat actuel"
+    },
+    "pays_ligue": {
+      "type": "string",
+      "description": "Pays de la ligue actuelle"
+    },
+    "matchs_joues": {
+      "type": "number",
+      "description": "Matchs jou\u00e9s (saison en cours)"
+    },
+    "titularisations": {
+      "type": "number",
+      "description": "Titularisations (saison en cours)"
+    },
+    "minutes_jouees": {
+      "type": "number",
+      "description": "Minutes jou\u00e9es (saison en cours)"
+    },
+    "buts": {
+      "type": "number",
+      "description": "Buts (saison en cours)"
+    },
+    "passes_decisives": {
+      "type": "number",
+      "description": "Passes d\u00e9cisives (saison en cours)"
+    },
+    "buts_passes": {
+      "type": "number",
+      "description": "Buts + Passes d\u00e9cisives (saison)"
+    },
+    "cartons_jaunes": {
+      "type": "number",
+      "description": "Cartons jaunes (saison en cours)"
+    },
+    "cartons_rouges": {
+      "type": "number",
+      "description": "Cartons rouges (saison en cours)"
+    },
+    "note_moyenne": {
+      "type": "number",
+      "description": "Note SofaScore moyenne (saison en cours)"
+    },
+    "xg": {
+      "type": "number",
+      "description": "Expected Goals \u2013 xG (saison)"
+    },
+    "xa": {
+      "type": "number",
+      "description": "Expected Assists \u2013 xA (saison)"
+    },
+    "xg_par_90": {
+      "type": "number",
+      "description": "xG par 90 minutes (saison)"
+    },
+    "tirs": {
+      "type": "number",
+      "description": "Tirs tent\u00e9s (saison)"
+    },
+    "tirs_cadres": {
+      "type": "number",
+      "description": "Tirs cadr\u00e9s (saison)"
+    },
+    "tirs_cadres_pct": {
+      "type": "number",
+      "description": "% tirs cadr\u00e9s (saison)"
+    },
+    "grandes_chances": {
+      "type": "number",
+      "description": "Grandes chances cr\u00e9\u00e9es (saison)"
+    },
+    "grandes_chances_manquees": {
+      "type": "number",
+      "description": "Grandes chances manqu\u00e9es (saison)"
+    },
+    "passes_reussies": {
+      "type": "number",
+      "description": "Passes r\u00e9ussies (saison)"
+    },
+    "passes_reussies_pct": {
+      "type": "number",
+      "description": "% passes r\u00e9ussies (saison)"
+    },
+    "passes_longues_pct": {
+      "type": "number",
+      "description": "% passes longues r\u00e9ussies (saison)"
+    },
+    "passes_cles": {
+      "type": "number",
+      "description": "Passes cl\u00e9s par match (saison)"
+    },
+    "dribbles_reussis": {
+      "type": "number",
+      "description": "Dribbles r\u00e9ussis (saison)"
+    },
+    "dribbles_tentes": {
+      "type": "number",
+      "description": "Dribbles tent\u00e9s (saison)"
+    },
+    "dribbles_pct": {
+      "type": "number",
+      "description": "% dribbles r\u00e9ussis (saison)"
+    },
+    "duels_gagnes_pct": {
+      "type": "number",
+      "description": "% duels gagn\u00e9s (saison)"
+    },
+    "duels_aeriens_pct": {
+      "type": "number",
+      "description": "% duels a\u00e9riens gagn\u00e9s (saison)"
+    },
+    "interceptions": {
+      "type": "number",
+      "description": "Interceptions (saison)"
+    },
+    "tacles": {
+      "type": "number",
+      "description": "Tacles r\u00e9ussis (saison)"
+    },
+    "tacles_reussis_pct": {
+      "type": "number",
+      "description": "% tacles r\u00e9ussis (saison)"
+    },
+    "degagements": {
+      "type": "number",
+      "description": "D\u00e9gagements (saison \u2013 d\u00e9fenseurs)"
+    },
+    "fautes_commises": {
+      "type": "number",
+      "description": "Fautes commises (saison)"
+    },
+    "fautes_subies": {
+      "type": "number",
+      "description": "Fautes subies (saison)"
+    },
+    "hors_jeu": {
+      "type": "number",
+      "description": "Fois hors-jeu (saison)"
+    },
+    "distance_course": {
+      "type": "number",
+      "description": "Distance de course km/match (saison)"
+    },
+    "sprints": {
+      "type": "number",
+      "description": "Nombre de sprints par match (saison)"
+    },
+    "vitesse_max": {
+      "type": "number",
+      "description": "Vitesse maximale enregistr\u00e9e (km/h)"
+    },
+    "touches_balle": {
+      "type": "number",
+      "description": "Touches de balle par match (saison)"
+    },
+    "pertes_balle": {
+      "type": "number",
+      "description": "Pertes de balle par match (saison)"
+    },
+    "recuperations": {
+      "type": "number",
+      "description": "R\u00e9cup\u00e9rations de balle (saison)"
+    },
+    "centres": {
+      "type": "number",
+      "description": "Centres tent\u00e9s (saison)"
+    },
+    "centres_reussis_pct": {
+      "type": "number",
+      "description": "% centres r\u00e9ussis (saison)"
+    },
+    "corners_provoquees": {
+      "type": "number",
+      "description": "Corners provoqu\u00e9s (saison)"
+    },
+    "penaltys_provoques": {
+      "type": "number",
+      "description": "Penaltys provoqu\u00e9s (saison)"
+    },
+    "penaltys_marques": {
+      "type": "number",
+      "description": "Penaltys marqu\u00e9s (saison)"
+    },
+    "penaltys_tires": {
+      "type": "number",
+      "description": "Penaltys tir\u00e9s (saison)"
+    },
+    "buts_tete": {
+      "type": "number",
+      "description": "Buts de la t\u00eate (saison)"
+    },
+    "buts_pied_gauche": {
+      "type": "number",
+      "description": "Buts du pied gauche (saison)"
+    },
+    "buts_pied_droit": {
+      "type": "number",
+      "description": "Buts du pied droit (saison)"
+    },
+    "arrets": {
+      "type": "number",
+      "description": "Arr\u00eats (gardien \u2013 saison)"
+    },
+    "arrets_pct": {
+      "type": "number",
+      "description": "% d'arr\u00eats (gardien \u2013 saison)"
+    },
+    "buts_encaisses": {
+      "type": "number",
+      "description": "Buts encaiss\u00e9s (gardien \u2013 saison)"
+    },
+    "clean_sheets": {
+      "type": "number",
+      "description": "Clean sheets (gardien \u2013 saison)"
+    },
+    "sorties_reussies": {
+      "type": "number",
+      "description": "Sorties a\u00e9riennes r\u00e9ussies (gardien \u2013 saison)"
+    },
+    "xg_contre": {
+      "type": "number",
+      "description": "xG encaiss\u00e9s (gardien \u2013 saison)"
+    },
+    "blessures": {
+      "type": "number",
+      "description": "Nombre de blessures (carri\u00e8re)"
+    },
+    "jours_blesses": {
+      "type": "number",
+      "description": "Jours manqu\u00e9s sur blessure (carri\u00e8re)"
+    },
+    "type_blessures": {
+      "type": "string",
+      "description": "Types de blessures principales (carri\u00e8re)"
+    },
+    "matchs_carriere": {
+      "type": "number",
+      "description": "Total matchs en carri\u00e8re (club)"
+    },
+    "buts_carriere": {
+      "type": "number",
+      "description": "Total buts en carri\u00e8re (club)"
+    },
+    "passes_carriere": {
+      "type": "number",
+      "description": "Total passes d\u00e9cisives en carri\u00e8re (club)"
+    },
+    "nb_clubs": {
+      "type": "number",
+      "description": "Nombre de clubs diff\u00e9rents"
+    },
+    "saisons_pro": {
+      "type": "number",
+      "description": "Nombre de saisons professionnelles"
+    },
+    "matchs_international": {
+      "type": "number",
+      "description": "Matchs en \u00e9quipe nationale"
+    },
+    "buts_international": {
+      "type": "number",
+      "description": "Buts en \u00e9quipe nationale"
+    },
+    "passes_international": {
+      "type": "number",
+      "description": "Passes d\u00e9cisives en \u00e9quipe nationale"
+    },
+    "premier_match_selection": {
+      "type": "string",
+      "format": "date",
+      "description": "Date du premier match en s\u00e9lection"
+    },
+    "selection_u21": {
+      "type": "boolean",
+      "description": "A jou\u00e9 en \u00e9quipe nationale U21"
+    },
+    "palmares": {
+      "type": "string",
+      "description": "Palmar\u00e8s (titres s\u00e9par\u00e9s par virgules)"
+    },
+    "distinctions": {
+      "type": "string",
+      "description": "Distinctions individuelles (Ballon d'or, TOTY, etc.)"
+    },
+    "stats_resume": {
+      "type": "string",
+      "description": "R\u00e9sum\u00e9 stats / carri\u00e8re"
+    },
+    "style_jeu": {
+      "type": "string",
+      "description": "Description du style de jeu"
+    },
+    "forces": {
+      "type": "string",
+      "description": "Points forts du joueur"
+    },
+    "faiblesses": {
+      "type": "string",
+      "description": "Points faibles du joueur"
+    },
+    "note_globale_scout": {
+      "type": "number",
+      "description": "Note globale scout (0-100)"
+    }
+  },
+  "required": [
+    "nom",
+    "poste"
+  ]
+}
