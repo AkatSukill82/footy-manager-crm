@@ -1,14 +1,13 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import TransfermarktAPI from "@/api/transfermarkt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  Search, Loader2, User, MapPin, Calendar, TrendingUp,
-  Ruler, Trophy, Target, BarChart2, Clock, Plus, ArrowRight,
-  Activity, Shield, Zap, Heart, Globe, Star, Building2
+  Search, Loader2, User, MapPin, TrendingUp,
+  Trophy, Plus, ArrowRight, BarChart2,
+  Activity, Heart, Globe, Star, Building2
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -50,6 +49,126 @@ function StatBox({ label, value, color = "bg-slate-50", textColor = "text-slate-
   );
 }
 
+const FULL_PROFILE_SCHEMA = {
+  type: "object",
+  properties: {
+    nom: { type: "string" },
+    nom_complet: { type: "string" },
+    age: { type: "number" },
+    date_naissance: { type: "string" },
+    lieu_naissance: { type: "string" },
+    nationalite: { type: "string" },
+    nationalite_secondaire: { type: "string" },
+    poste: { type: "string" },
+    poste_secondaire: { type: "string" },
+    pied_fort: { type: "string" },
+    taille: { type: "number" },
+    poids: { type: "number" },
+    photo_url: { type: "string" },
+    club_actuel: { type: "string" },
+    ligue: { type: "string" },
+    pays_ligue: { type: "string" },
+    numero_maillot: { type: "number" },
+    contrat_fin: { type: "string" },
+    salaire_annuel: { type: "number" },
+    salaire_semaine: { type: "number" },
+    agent: { type: "string" },
+    coach: { type: "string" },
+    transfermarkt_id: { type: "string" },
+    sofascore_id: { type: "string" },
+    valeur_marchande: { type: "number" },
+    valeur_marchande_peak: { type: "number" },
+    description: { type: "string" },
+    style_jeu: { type: "string" },
+    forces: { type: "string" },
+    faiblesses: { type: "string" },
+    note_globale_scout: { type: "number" },
+    distinctions: { type: "string" },
+    palmares: { type: "array", items: { type: "string" } },
+    blessures_total: { type: "number" },
+    jours_blesses: { type: "number" },
+    type_blessures: { type: "string" },
+    matchs_carriere: { type: "number" },
+    buts_carriere: { type: "number" },
+    passes_carriere: { type: "number" },
+    selection_nationale: {
+      type: "object",
+      properties: {
+        equipe: { type: "string" },
+        matchs: { type: "number" },
+        buts: { type: "number" },
+        passes: { type: "number" },
+        premiere_selection: { type: "string" },
+      },
+    },
+    stats_saison: {
+      type: "object",
+      properties: {
+        saison: { type: "string" },
+        matchs: { type: "number" },
+        titulaire: { type: "number" },
+        minutes: { type: "number" },
+        buts: { type: "number" },
+        passes_decisives: { type: "number" },
+        cartons_jaunes: { type: "number" },
+        cartons_rouges: { type: "number" },
+        note_sofascore: { type: "number" },
+        xg: { type: "number" },
+        xa: { type: "number" },
+        tirs: { type: "number" },
+        tirs_cadres: { type: "number" },
+        passes_cles: { type: "number" },
+        dribbles_reussis: { type: "number" },
+        interceptions: { type: "number" },
+        tacles: { type: "number" },
+        duels_gagnes_pct: { type: "number" },
+        distance_course: { type: "number" },
+        vitesse_max: { type: "number" },
+      },
+    },
+    valeur_historique: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          date: { type: "string" },
+          valeur: { type: "number" },
+        },
+      },
+    },
+    historique_clubs: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          club: { type: "string" },
+          debut: { type: "string" },
+          fin: { type: "string" },
+          montant_transfert: { type: "number" },
+          type_passage: { type: "string" },
+          ligue: { type: "string" },
+          pays: { type: "string" },
+        },
+      },
+    },
+    stats_par_saison: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          saison: { type: "string" },
+          club: { type: "string" },
+          ligue: { type: "string" },
+          matchs: { type: "number" },
+          buts: { type: "number" },
+          passes: { type: "number" },
+          minutes: { type: "number" },
+        },
+      },
+    },
+  },
+};
+
 export default function TransfermarktSearch() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -63,6 +182,7 @@ export default function TransfermarktSearch() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  // ── Étape 1 : recherche via LLM + internet ───────────────────────────────────
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -73,156 +193,98 @@ export default function TransfermarktSearch() {
     setError(null);
 
     try {
-      const data = await TransfermarktAPI.searchPlayers(query.trim());
-      const list = data?.results || [];
+      const data = await base44.integrations.Core.InvokeLLM({
+        prompt: `Recherche le joueur de football professionnel "${query.trim()}" sur Transfermarkt.com et les sources sportives.
 
+Retourne jusqu'à 5 joueurs correspondants avec leurs infos de base. Si le nom est très précis et unique, retourne 1 seul joueur. Inclus l'URL de la photo Transfermarkt si disponible.
+
+Joueurs à retourner : ceux qui sont des footballeurs professionnels actuels ou récents.`,
+        add_context_from_internet: true,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            candidats: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  nom: { type: "string" },
+                  club: { type: "string" },
+                  poste: { type: "string" },
+                  nationalite: { type: "string" },
+                  age: { type: "number" },
+                  valeur_marchande: { type: "number" },
+                  transfermarkt_id: { type: "string" },
+                  photo_url: { type: "string" },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const list = data?.candidats || [];
       if (list.length === 0) {
-        setError(`Aucun joueur trouvé pour "${query}" sur Transfermarkt.`);
+        setError(`Aucun joueur trouvé pour "${query}". Essayez un autre nom.`);
         setLoading(false);
         return;
       }
-
       if (list.length === 1) {
         setLoading(false);
-        await fetchFullProfile(list[0].id, list[0].name);
+        await fetchFullProfile(list[0]);
       } else {
         setCandidates(list);
         setLoading(false);
       }
     } catch (err) {
-      setError(`Erreur API Transfermarkt : ${err.message || "connexion impossible"}`);
+      setError(`Erreur de recherche : ${err.message}`);
       setLoading(false);
     }
   };
 
-  const fetchFullProfile = async (tmId, playerName) => {
+  // ── Étape 2 : profil complet via LLM + internet ──────────────────────────────
+  const fetchFullProfile = async (candidate) => {
     setLoadingFull(true);
     setResult(null);
     setCandidates(null);
     setError(null);
 
+    const playerName = candidate.nom;
+    const playerClub = candidate.club || "";
+
     try {
-      setLoadingStatus("Récupération des données Transfermarkt...");
-      const { profile, stats, marketValue, transfers } = await TransfermarktAPI.getFullPlayerData(tmId);
+      setLoadingStatus("Récupération du profil complet depuis Transfermarkt…");
+      const data = await base44.integrations.Core.InvokeLLM({
+        prompt: `Profil complet et détaillé du joueur de football professionnel : ${playerName}${playerClub ? ` (${playerClub})` : ""}.
 
-      if (!profile) throw new Error("Profil introuvable sur Transfermarkt.");
+Cherche sur Transfermarkt, SofaScore, WhoScored, L'Équipe, et toutes les sources sportives disponibles.
 
-      const crmData = TransfermarktAPI.buildCRMPlayer(profile, stats, marketValue, transfers);
-
-      setLoadingStatus("Enrichissement avec données SofaScore & profil scout...");
-      let llmEnrichment = {};
-      try {
-        const llm = await base44.integrations.Core.InvokeLLM({
-          prompt: `Données complémentaires pour ${profile.name} (joueur de football professionnel, club actuel: ${profile.club?.name || 'inconnu'}).
-
-Retourne uniquement les infos NON disponibles sur Transfermarkt :
-- Description biographique courte (2-3 phrases)
-- Style de jeu
-- Points forts (forces)
-- Points faibles (faiblesses)
-- Stats SofaScore saison en cours (xG, xA, note, tirs, passes clés, dribbles, duels, interceptions)
-- Sélection nationale (matchs, buts, passes)
-- Palmarès (liste des titres remportés)
+Données demandées :
+- Identité : date/lieu naissance, nationalités, taille, poids, pied fort, numéro maillot
+- Club : club actuel, ligue, pays, fin de contrat, salaire, agent, entraîneur
+- IDs : Transfermarkt ID, SofaScore ID, URL photo Transfermarkt
+- Valeur marchande actuelle (en millions €) et valeur peak
+- Historique valeur marchande (date YYYY-MM et valeur en millions €)
+- Stats saison 2024/2025 : matchs, buts, passes déc., minutes, note, xG, xA, tirs, dribbles, interceptions
+- Stats par saison (toute la carrière si possible)
+- Historique des transferts (clubs, dates, montants en millions €, type)
+- Sélection nationale : équipe, matchs, buts, passes
+- Palmarès : liste des titres remportés
 - Distinctions individuelles
-- Note globale scout (0-100)
+- Profil scout : description, style de jeu, forces, faiblesses, note /100
+- Blessures : nombre, jours manqués, types
+- Stats carrière complète : matchs, buts, passes
 
-Si une info est inconnue = null. NE PAS INVENTER.`,
-          add_context_from_internet: true,
-          response_json_schema: {
-            type: "object",
-            properties: {
-              description: { type: "string" },
-              style_jeu: { type: "string" },
-              forces: { type: "string" },
-              faiblesses: { type: "string" },
-              note_globale_scout: { type: "number" },
-              distinctions: { type: "string" },
-              palmares: { type: "array", items: { type: "string" } },
-              poids: { type: "number" },
-              salaire_annuel: { type: "number" },
-              salaire_semaine: { type: "number" },
-              coach: { type: "string" },
-              sofascore_id: { type: "string" },
-              blessures_total: { type: "number" },
-              jours_blesses: { type: "number" },
-              type_blessures: { type: "string" },
-              matchs_carriere: { type: "number" },
-              buts_carriere: { type: "number" },
-              passes_carriere: { type: "number" },
-              selection_nationale: {
-                type: "object",
-                properties: {
-                  equipe: { type: "string" },
-                  matchs: { type: "number" },
-                  buts: { type: "number" },
-                  passes: { type: "number" },
-                  premiere_selection: { type: "string" },
-                },
-              },
-              stats_sofascore: {
-                type: "object",
-                properties: {
-                  matchs: { type: "number" },
-                  titulaire: { type: "number" },
-                  minutes: { type: "number" },
-                  buts: { type: "number" },
-                  passes_decisives: { type: "number" },
-                  cartons_jaunes: { type: "number" },
-                  cartons_rouges: { type: "number" },
-                  note_sofascore: { type: "number" },
-                  xg: { type: "number" },
-                  xa: { type: "number" },
-                  tirs: { type: "number" },
-                  tirs_cadres: { type: "number" },
-                  passes_cles: { type: "number" },
-                  dribbles_reussis: { type: "number" },
-                  interceptions: { type: "number" },
-                  tacles: { type: "number" },
-                  duels_gagnes_pct: { type: "number" },
-                  distance_course: { type: "number" },
-                  vitesse_max: { type: "number" },
-                },
-              },
-            },
-          },
-        });
-        llmEnrichment = llm || {};
-      } catch (_) { /* enrichissement optionnel */ }
+Si une info est inconnue = null. Ne PAS inventer de chiffres.`,
+        add_context_from_internet: true,
+        response_json_schema: FULL_PROFILE_SCHEMA,
+      });
 
-      const merged = {
-        ...crmData,
-        nom_complet: profile.name,
-        description: llmEnrichment.description,
-        style_jeu: llmEnrichment.style_jeu,
-        forces: llmEnrichment.forces,
-        faiblesses: llmEnrichment.faiblesses,
-        note_globale_scout: llmEnrichment.note_globale_scout,
-        distinctions: llmEnrichment.distinctions,
-        palmares: llmEnrichment.palmares || [],
-        poids: llmEnrichment.poids || null,
-        salaire_annuel: llmEnrichment.salaire_annuel || null,
-        salaire_semaine: llmEnrichment.salaire_semaine || null,
-        coach: llmEnrichment.coach || null,
-        sofascore_id: llmEnrichment.sofascore_id || null,
-        blessures_total: llmEnrichment.blessures_total || null,
-        jours_blesses: llmEnrichment.jours_blesses || null,
-        type_blessures: llmEnrichment.type_blessures || null,
-        matchs_carriere: llmEnrichment.matchs_carriere || null,
-        buts_carriere: llmEnrichment.buts_carriere || null,
-        passes_carriere: llmEnrichment.passes_carriere || null,
-        selection_nationale: llmEnrichment.selection_nationale || null,
-        stats_saison: llmEnrichment.stats_sofascore
-          ? { ...llmEnrichment.stats_sofascore, saison: "2024/2025" }
-          : {
-              saison: "2024/2025",
-              matchs: crmData.matchs_joues,
-              buts: crmData.buts,
-              passes_decisives: crmData.passes_decisives,
-              minutes: crmData.minutes_jouees,
-            },
-      };
+      if (!data || !data.nom) {
+        throw new Error("Données introuvables pour ce joueur.");
+      }
 
-      setResult(merged);
+      setResult(data);
     } catch (err) {
       setError(err.message || "Erreur lors du chargement du profil.");
     } finally {
@@ -231,6 +293,7 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
     }
   };
 
+  // ── Étape 3 : sauvegarder joueur + club ──────────────────────────────────────
   const handleSaveToApp = async () => {
     if (!result) return;
     setSaving(true);
@@ -318,9 +381,7 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
 
       if (result.historique_clubs?.length > 0) {
         await base44.entities.PlayerCareerHistory.bulkCreate(
-          result.historique_clubs.filter(c => c.club).map(c => ({
-            player_id: created.id, ...c,
-          }))
+          result.historique_clubs.filter(c => c.club).map(c => ({ player_id: created.id, ...c }))
         );
       }
 
@@ -369,7 +430,7 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
   return (
     <div className="space-y-5">
       <p className="text-xs text-slate-500">
-        Données réelles Transfermarkt · Club créé automatiquement si absent
+        Données via IA + sources web (Transfermarkt, SofaScore…) · Club créé automatiquement si absent
       </p>
 
       {/* Search */}
@@ -380,7 +441,7 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
           placeholder="Ex: Kylian Mbappé, Erling Haaland, Pedri…"
           className="flex-1 h-12 text-base shadow-sm"
         />
-        <Button type="submit" disabled={loading} className="h-12 px-6 bg-green-600 hover:bg-green-700">
+        <Button type="submit" disabled={loading || loadingFull} className="h-12 px-6 bg-green-600 hover:bg-green-700">
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
         </Button>
       </form>
@@ -391,15 +452,18 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
         </div>
       )}
 
+      {/* Loading recherche */}
       {loading && (
         <div className="flex flex-col items-center justify-center py-16 gap-4">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
             <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
           </div>
-          <p className="text-slate-600 font-medium">Recherche sur Transfermarkt…</p>
+          <p className="text-slate-600 font-medium">Recherche en cours…</p>
+          <p className="text-xs text-slate-400">Consultation des sources sportives</p>
         </div>
       )}
 
+      {/* Sélection candidat */}
       {candidates && candidates.length > 0 && !result && !loadingFull && (
         <Card>
           <CardHeader className="pb-3">
@@ -411,26 +475,26 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
           <CardContent className="space-y-2">
             {candidates.map((c, i) => (
               <button
-                key={c.id || i}
-                onClick={() => fetchFullProfile(c.id, c.name)}
+                key={i}
+                onClick={() => fetchFullProfile(c)}
                 className="w-full flex items-center gap-4 p-3 rounded-xl border border-slate-200 hover:border-green-400 hover:bg-green-50 transition-all text-left group"
               >
                 <div className="w-14 h-14 rounded-xl bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-200">
-                  {c.image
-                    ? <img src={c.image} alt={c.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={e => e.target.style.display = 'none'} />
+                  {c.photo_url
+                    ? <img src={c.photo_url} alt={c.nom} className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={e => e.target.style.display = 'none'} />
                     : <User className="w-7 h-7 text-slate-400 m-auto mt-3.5" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-slate-900 group-hover:text-green-700">{c.name}</p>
+                  <p className="font-bold text-slate-900 group-hover:text-green-700">{c.nom}</p>
                   <div className="flex flex-wrap gap-1.5 mt-1">
-                    {c.position && <Badge className={`text-xs ${posteColors[TransfermarktAPI.mapPosition(c.position)] || "bg-slate-100 text-slate-700"}`}>{c.position}</Badge>}
-                    {c.nationality && <Badge variant="outline" className="text-xs">{c.nationality}</Badge>}
+                    {c.poste && <Badge className={`text-xs ${posteColors[c.poste] || "bg-slate-100 text-slate-700"}`}>{c.poste}</Badge>}
+                    {c.nationalite && <Badge variant="outline" className="text-xs">{c.nationalite}</Badge>}
                     {c.club && <Badge className="bg-slate-800 text-white text-xs">{c.club}</Badge>}
                     {c.age && <Badge variant="outline" className="text-xs">{c.age} ans</Badge>}
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  {c.marketValue && <p className="font-bold text-green-600 text-sm">{TransfermarktAPI.formatValue(c.marketValue)}</p>}
+                  {c.valeur_marchande && <p className="font-bold text-green-600 text-sm">{c.valeur_marchande} M€</p>}
                   <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-green-500 mt-1 ml-auto" />
                 </div>
               </button>
@@ -439,6 +503,7 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
         </Card>
       )}
 
+      {/* Loading profil complet */}
       {loadingFull && (
         <div className="flex flex-col items-center justify-center py-16 gap-4">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
@@ -446,13 +511,14 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
           </div>
           <p className="text-slate-600 font-medium">{loadingStatus || "Chargement du profil…"}</p>
           <div className="flex flex-col items-center gap-1">
-            {["Transfermarkt (profil, stats, valeur, transferts)…", "SofaScore & profil scout…"].map(t => (
+            {["Transfermarkt · SofaScore · WhoScored…", "Stats, valeur marchande, transferts…", "Profil scout & palmarès…"].map(t => (
               <p key={t} className="text-xs text-slate-400">{t}</p>
             ))}
           </div>
         </div>
       )}
 
+      {/* ── PROFIL COMPLET ── */}
       {result && (
         <div className="space-y-4">
           <Card className="overflow-hidden">
@@ -488,7 +554,7 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
                 <StatBox label="Taille" value={result.taille ? `${result.taille} cm` : null} />
                 <StatBox label="Poids" value={result.poids ? `${result.poids} kg` : null} />
                 <StatBox label="Pied fort" value={result.pied_fort} />
-                <StatBox label="Valeur marchande" value={result.valeur_marchande ? `${result.valeur_marchande} M€` : null} color="bg-green-50" textColor="text-green-700" />
+                <StatBox label="Valeur" value={result.valeur_marchande ? `${result.valeur_marchande} M€` : null} color="bg-green-50" textColor="text-green-700" />
                 <StatBox label="Valeur max" value={result.valeur_marchande_peak ? `${result.valeur_marchande_peak} M€` : null} color="bg-emerald-50" textColor="text-emerald-700" />
               </div>
             </CardContent>
@@ -528,7 +594,6 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
                 <InfoRow label="Agent" value={result.agent} />
                 <InfoRow label="Entraîneur" value={result.coach} />
                 <InfoRow label="ID Transfermarkt" value={result.transfermarkt_id} />
-                <InfoRow label="ID SofaScore" value={result.sofascore_id} />
               </CardContent>
             </Card>
           </div>
@@ -562,7 +627,7 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
                     <StatBox label="Interceptions" value={s.interceptions} />
                     <StatBox label="Tacles" value={s.tacles} />
                     <StatBox label="% duels" value={s.duels_gagnes_pct != null ? `${s.duels_gagnes_pct}%` : null} />
-                    <StatBox label="Distance km/m" value={s.distance_course} />
+                    <StatBox label="Distance" value={s.distance_course} />
                     <StatBox label="Vitesse max" value={s.vitesse_max ? `${s.vitesse_max} km/h` : null} />
                   </div>
                 )}
@@ -574,7 +639,7 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-green-500" /> Évolution valeur marchande — Transfermarkt
+                  <TrendingUp className="w-4 h-4 text-green-500" /> Évolution valeur marchande
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -601,7 +666,7 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <BarChart2 className="w-4 h-4 text-indigo-500" /> Stats par saison — Transfermarkt
+                  <BarChart2 className="w-4 h-4 text-indigo-500" /> Stats par saison
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -639,7 +704,7 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-red-500" /> Historique transferts — Transfermarkt
+                  <MapPin className="w-4 h-4 text-red-500" /> Historique transferts
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -712,7 +777,13 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
                 {result.style_jeu && <div><p className="text-xs font-semibold text-slate-400 uppercase mb-1">Style de jeu</p><p className="text-sm text-slate-700">{result.style_jeu}</p></div>}
                 {result.forces && <div><p className="text-xs font-semibold text-green-600 uppercase mb-1">Points forts</p><p className="text-sm text-slate-700">{result.forces}</p></div>}
                 {result.faiblesses && <div><p className="text-xs font-semibold text-red-500 uppercase mb-1">Points faibles</p><p className="text-sm text-slate-700">{result.faiblesses}</p></div>}
-                {result.note_globale_scout != null && <div className="flex items-center gap-2"><Star className="w-4 h-4 text-amber-400" /><span className="font-bold text-lg">{result.note_globale_scout}/100</span><span className="text-xs text-slate-500">Note scout</span></div>}
+                {result.note_globale_scout != null && (
+                  <div className="flex items-center gap-2">
+                    <Star className="w-4 h-4 text-amber-400" />
+                    <span className="font-bold text-lg">{result.note_globale_scout}/100</span>
+                    <span className="text-xs text-slate-500">Note scout</span>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -733,7 +804,9 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
           )}
 
           <div className="flex justify-end pb-6 gap-3">
-            <p className="text-xs text-slate-400 self-center">Le club "{result.club_actuel}" sera créé automatiquement si absent</p>
+            {result.club_actuel && (
+              <p className="text-xs text-slate-400 self-center">Le club "{result.club_actuel}" sera créé automatiquement si absent</p>
+            )}
             <Button onClick={handleSaveToApp} disabled={saving || saved}
               className={`${saved ? "bg-green-600" : "bg-slate-900 hover:bg-slate-700"} px-8`}>
               {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
