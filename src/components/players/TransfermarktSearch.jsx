@@ -303,11 +303,46 @@ Si une info est inconnue = null. Ne PAS inventer de chiffres.`,
       if (result.club_actuel) {
         const existingClubs = await base44.entities.Club.filter({ nom: result.club_actuel });
         if (!existingClubs || existingClubs.length === 0) {
-          await base44.entities.Club.create({
+          // Enrichissement LLM pour le club
+          let clubData = {
             nom: result.club_actuel,
             pays: result.pays_ligue || '',
             ligue: result.ligue || '',
-          });
+          };
+          try {
+            const clubInfo = await base44.integrations.Core.InvokeLLM({
+              prompt: `Données complètes du club de football "${result.club_actuel}" (${result.ligue || ''}, ${result.pays_ligue || ''}).
+
+Retourne toutes les infos disponibles : stade, capacité, président, entraîneur, directeur sportif, année fondation, logo URL, site web officiel, email de contact officiel, téléphone standard, valeur effectif, budget transfert, palmarès (liste des titres principaux). Si inconnu = null.`,
+              add_context_from_internet: true,
+              response_json_schema: {
+                type: "object",
+                properties: {
+                  ville: { type: "string" },
+                  stade: { type: "string" },
+                  capacite_stade: { type: "number" },
+                  annee_fondation: { type: "number" },
+                  president: { type: "string" },
+                  entraineur: { type: "string" },
+                  directeur_sportif: { type: "string" },
+                  logo_url: { type: "string" },
+                  site_web: { type: "string" },
+                  email: { type: "string" },
+                  telephone: { type: "string" },
+                  valeur_effectif: { type: "number" },
+                  budget_transfert: { type: "number" },
+                  palmares: { type: "string" },
+                  historique: { type: "string" },
+                },
+              },
+            });
+            if (clubInfo) {
+              Object.keys(clubInfo).forEach(k => {
+                if (clubInfo[k] != null && clubInfo[k] !== '') clubData[k] = clubInfo[k];
+              });
+            }
+          } catch (_) { /* enrichissement optionnel */ }
+          await base44.entities.Club.create(clubData);
           queryClient.invalidateQueries({ queryKey: ['clubs'] });
         }
       }
