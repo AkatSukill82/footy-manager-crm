@@ -3,190 +3,213 @@ import { base44 } from "@/api/base44Client";
 import { Upload, FileSpreadsheet, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import * as XLSX from "xlsx";
+
+// Normalise une clé de colonne : minuscules, sans accents, espaces → _
+const normalizeKey = (k) =>
+  String(k)
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "_");
+
+// Mappe les noms de colonnes courants vers nos champs internes
+const FIELD_MAP = {
+  name: "nom", last_name: "nom", lastname: "nom", surname: "nom", joueur: "nom", player: "nom",
+  full_name: "nom", fullname: "nom",
+  first_name: "prenom", firstname: "prenom",
+  team: "club", equipe: "club", club_name: "club",
+  country: "pays", nation: "pays",
+  position: "poste", role: "poste", title: "poste", titre: "poste",
+  mail: "email", email_club: "email", courriel: "email",
+  phone: "telephone", tel: "telephone", mobile: "telephone", gsm: "telephone",
+  birth: "date_naissance", dob: "date_naissance", birthdate: "date_naissance", naissance: "date_naissance",
+  height: "taille", weight: "poids",
+  goals: "buts", assists: "passes_decisives", games: "matchs_joues", appearances: "matchs_joues",
+  value: "valeur_marchande", market_value: "valeur_marchande",
+  contract: "contrat_fin", contract_end: "contrat_fin", expiry: "contrat_fin",
+  salary: "salaire", wage: "salaire",
+  rating: "note_moyenne", score: "note_moyenne",
+  league: "ligue", nationality: "nationalite",
+};
+
+const FOOTBALL_POSITIONS = [
+  "gardien", "defenseur", "lateral", "milieu", "ailier", "attaquant",
+  "goalkeeper", "defender", "midfielder", "forward", "winger", "striker",
+  "centre-back", "full-back", "buteur", "libero",
+  "cb", "rb", "lb", "dm", "cm", "am", "rw", "lw", "st", "gk", "fw",
+];
+
+// Parse le fichier Excel localement — 100% déterministe, sans IA
+const parseExcelFile = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: "array", cellDates: true });
+        const allRows = [];
+
+        for (const sheetName of wb.SheetNames) {
+          const ws = wb.Sheets[sheetName];
+          // Propager les cellules fusionnées (merges)
+          if (ws["!merges"]) {
+            for (const merge of ws["!merges"]) {
+              const firstCell = ws[XLSX.utils.encode_cell({ r: merge.s.r, c: merge.s.c })];
+              if (!firstCell) continue;
+              for (let r = merge.s.r; r <= merge.e.r; r++) {
+                for (let c = merge.s.c; c <= merge.e.c; c++) {
+                  if (r === merge.s.r && c === merge.s.c) continue;
+                  const addr = XLSX.utils.encode_cell({ r, c });
+                  if (!ws[addr]) ws[addr] = { ...firstCell };
+                }
+              }
+            }
+          }
+
+          const rawRows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+          allRows.push(...rawRows);
+        }
+
+        resolve(allRows);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
 
 export default function ImportDropzone({ onExtracted }) {
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [status, setStatus] = useState("");
   const inputRef = useRef();
 
   const processFile = async (file) => {
     setError(null);
     setLoading(true);
+    setStatus("Lecture du fichier...");
 
     try {
-      const uploadResult = await base44.integrations.Core.UploadFile({ file });
-      if (!uploadResult?.file_url) throw new Error("Échec du téléversement du fichier.");
-      const { file_url } = uploadResult;
+      // 1. Parser le fichier localement avec SheetJS
+      const rawRows = await parseExcelFile(file);
 
-      const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
-        file_url,
-        json_schema: {
-          type: "object",
-          properties: {
-            rows: {
-              type: "array",
-              description: `Extraire TOUTES les lignes de données du fichier.
-RÈGLE CELLULES FUSIONNÉES : Si une colonne comme PAYS, CLUB, TEAM, COUNTRY est vide sur une ligne, recopier la dernière valeur non-vide de cette colonne (les cellules fusionnées Excel apparaissent vides après la première ligne du groupe).
-Ignorer uniquement les lignes où NOM/NAME/LAST_NAME est complètement vide.
-Les noms de colonnes peuvent varier : NOM/NAME/LAST_NAME/PRÉNOM/FIRST_NAME, CLUB/TEAM/ÉQUIPE, PAYS/COUNTRY/NATION, POSTE/POSITION/ROLE/TITLE, EMAIL/MAIL/EMAIL_CLUB, TEL/PHONE/TELEPHONE/MOBILE, VALEUR/VALUE/MARKET_VALUE, CONTRAT/CONTRACT/CONTRACT_END/EXPIRY, NAISSANCE/BIRTH/DOB/DATE_NAISSANCE, TAILLE/HEIGHT, POIDS/WEIGHT, BUTS/GOALS, PASSES/ASSISTS, MATCHS/GAMES/APPEARANCES, AGENT/AGENT_NAME, INSTAGRAM, TWITTER, NATIONALITE/NATIONALITY, LIGUE/LEAGUE, SALAIRE/SALARY, NOTE/RATING/SCORE.`,
-              items: {
-                type: "object",
-                properties: {
-                  nom: { type: "string", description: "Nom de famille ou nom complet" },
-                  prenom: { type: "string", description: "Prénom si colonne séparée" },
-                  club: { type: "string", description: "Nom du club" },
-                  pays: { type: "string", description: "Pays du club ou nationalité" },
-                  poste: { type: "string", description: "Poste sportif ou titre professionnel" },
-                  nationalite: { type: "string" },
-                  date_naissance: { type: "string", description: "Format DD/MM/YYYY ou YYYY-MM-DD" },
-                  age: { type: "string" },
-                  email: { type: "string" },
-                  telephone: { type: "string" },
-                  valeur_marchande: { type: "string", description: "Valeur en euros ou millions" },
-                  contrat_fin: { type: "string", description: "Date fin de contrat" },
-                  taille: { type: "string", description: "Taille en cm" },
-                  poids: { type: "string", description: "Poids en kg" },
-                  agent: { type: "string" },
-                  agent_email: { type: "string" },
-                  agent_telephone: { type: "string" },
-                  buts: { type: "string" },
-                  passes_decisives: { type: "string" },
-                  matchs_joues: { type: "string" },
-                  ligue: { type: "string" },
-                  salaire: { type: "string" },
-                  note_moyenne: { type: "string" },
-                  instagram: { type: "string" },
-                  twitter: { type: "string" },
-                  pied_fort: { type: "string" }
-                }
-              }
-            }
-          }
-        }
-      });
-
-      if (result.status === "error") {
-        throw new Error(result.details || "Erreur lors de l'extraction");
+      if (rawRows.length === 0) {
+        throw new Error("Le fichier est vide ou ne contient pas de données.");
       }
 
-      // Log brut pour débug
-      console.log("ExtractDataFromUploadedFile raw output:", JSON.stringify(result, null, 2));
-
-      // Extraire toutes les lignes quelle que soit la clé retournée par l'IA
-      const extractRows = (output) => {
-        if (!output) return [];
-        if (Array.isArray(output)) {
-          // Tableau de feuilles ou tableau de lignes directement
-          const flat = [];
-          for (const item of output) {
-            if (typeof item === "object" && !Array.isArray(item) && item !== null) {
-              // C'est une feuille — chercher un tableau dedans
-              const arr = Object.values(item).find(v => Array.isArray(v));
-              if (arr) flat.push(...arr);
-              else flat.push(item); // la feuille elle-même est une ligne
-            } else if (Array.isArray(item)) {
-              flat.push(...item);
-            }
-          }
-          return flat;
-        }
-        if (typeof output === "object") {
-          // Essayer toutes les clés connues puis fallback sur le premier tableau trouvé
-          const knownKeys = ["rows","contacts","data","items","joueurs","players","clubs","results","records","entries","lignes"];
-          for (const k of knownKeys) {
-            if (Array.isArray(output[k]) && output[k].length > 0) return output[k];
-          }
-          // Fallback : premier tableau non-vide dans l'objet
-          const found = Object.values(output).find(v => Array.isArray(v) && v.length > 0);
-          if (found) return found;
-        }
-        return [];
-      };
-
-      let rows = extractRows(result.output ?? result);
-
-      // Supprimer les accents d'une chaîne
-      const deaccent = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
-
-      // Noms de champs alternatifs → clé normalisée
-      const FIELD_MAP = {
-        name: "nom", last_name: "nom", lastname: "nom", surname: "nom",
-        first_name: "prenom", firstname: "prenom",
-        full_name: "nom", fullname: "nom", player: "nom", joueur: "nom",
-        team: "club", equipe: "club", club_name: "club",
-        country: "pays", nation: "pays",
-        position: "poste", role: "poste", title: "poste",
-        mail: "email", email_club: "email", courriel: "email",
-        phone: "telephone", tel: "telephone", mobile: "telephone",
-        birth: "date_naissance", dob: "date_naissance", birthdate: "date_naissance",
-        height: "taille", weight: "poids",
-        goals: "buts", assists: "passes_decisives", games: "matchs_joues",
-        value: "valeur_marchande", market_value: "valeur_marchande",
-        contract: "contrat_fin", contract_end: "contrat_fin", expiry: "contrat_fin",
-        salary: "salaire", wage: "salaire",
-        rating: "note_moyenne", score: "note_moyenne",
-        league: "ligue", nationality: "nationalite",
-      };
-
-      rows = rows.map(r => {
-        // 1. Normaliser toutes les clés : minuscules + sans accents
+      // 2. Normaliser les clés de chaque ligne
+      const rows = rawRows.map((r) => {
         const lowered = {};
         for (const [k, v] of Object.entries(r)) {
-          const key = deaccent(k.toLowerCase().trim().replace(/\s+/g, "_"));
-          lowered[key] = v;
+          lowered[normalizeKey(k)] = v;
         }
-        // 2. Appliquer le mapping de champs alternatifs
         const normalized = { ...lowered };
-        for (const [raw, mapped] of Object.entries(FIELD_MAP)) {
-          if (lowered[raw] !== undefined && normalized[mapped] === undefined) {
-            normalized[mapped] = lowered[raw];
+        for (const [alias, canonical] of Object.entries(FIELD_MAP)) {
+          if (lowered[alias] !== undefined && normalized[canonical] === undefined) {
+            normalized[canonical] = lowered[alias];
           }
         }
         return normalized;
       });
 
-      // Filtre : garder toute ligne avec au moins un champ nom/prenom non-vide
-      rows = rows.filter(r => {
-        const nom = r.nom || r.prenom || r.full_name || r.name || r.first_name;
-        return nom && String(nom).trim().length > 0;
+      // 3. Filtrer les lignes sans nom
+      const validRows = rows.filter((r) => {
+        const n = r.nom || r.prenom;
+        return n && String(n).trim().length > 0;
       });
 
-      if (rows.length === 0) {
-        const rawKeys = Object.keys(result.output || result || {}).join(", ");
+      if (validRows.length === 0) {
+        const cols = Object.keys(rows[0] || {}).join(", ");
         throw new Error(
-          `Aucune donnée reconnue dans ce fichier.\n\nClés reçues de l'IA : ${rawKeys || "aucune"}\n\nAssurez-vous que le fichier contient une colonne de nom (NOM, NAME, PRÉNOM...).`
+          `Aucune ligne avec un nom trouvée.\n\nColonnes détectées : ${cols}\n\nVérifiez que le fichier contient une colonne NOM, NAME ou PRÉNOM.`
         );
       }
 
-      // Classification joueurs vs contacts staff
-      const footballPositions = [
-        "gardien","défenseur","latéral","milieu","ailier","attaquant",
-        "goalkeeper","defender","midfielder","forward","winger","striker",
-        "centre-back","full-back","buteur","libero","cb","rb","lb","dm","cm","am","rw","lw","st","gk","fw"
-      ];
+      // 4. Classifier : joueurs vs contacts staff
       const joueurs = [];
       const staffContacts = [];
 
-      for (const row of rows) {
+      // Propagation de PAYS et CLUB entre les lignes (cellules fusionnées non couvertes par merges)
+      let lastPays = "";
+      let lastClub = "";
+
+      for (const row of validRows) {
+        if (row.pays && String(row.pays).trim()) lastPays = String(row.pays).trim();
+        else if (lastPays) row.pays = lastPays;
+
+        if (row.club && String(row.club).trim()) lastClub = String(row.club).trim();
+        else if (lastClub) row.club = lastClub;
+
         const nomComplet = [row.prenom, row.nom]
-          .filter(Boolean).map(s => String(s).trim()).join(" ").trim()
-          || String(row.nom || row.name || row.full_name || "").trim();
-        const postelower = (row.poste || row.position || row.role || "").toLowerCase();
-        const isPlayer = footballPositions.some(k => postelower.includes(k));
+          .filter(Boolean)
+          .map((s) => String(s).trim())
+          .join(" ")
+          .trim();
+
+        const posteLower = normalizeKey(String(row.poste || ""));
+        const isPlayer = FOOTBALL_POSITIONS.some((k) => posteLower.includes(k));
+
         if (isPlayer) {
-          joueurs.push({ ...row, nom: nomComplet, club_actuel: row.club || row.team });
+          joueurs.push({ ...row, nom: nomComplet, club_actuel: row.club });
         } else {
           staffContacts.push({ ...row, nom: nomComplet });
         }
       }
 
+      // 5. Si des joueurs ont été trouvés, enrichir via l'IA Base44
+      if (joueurs.length > 0) {
+        setStatus(`Enrichissement IA pour ${joueurs.length} joueur(s)...`);
+        try {
+          const enriched = await base44.integrations.Core.InvokeLLM({
+            prompt: `Voici une liste de joueurs de football extraite d'un fichier Excel. Pour chaque joueur, complète les informations manquantes (nationalité, poste normalisé, valeur marchande, date de naissance, contrat, agent...) en te basant sur les données publiques disponibles. Retourne exactement le même nombre d'objets dans le même ordre.
+
+Joueurs: ${JSON.stringify(joueurs.map(j => ({ nom: j.nom, club: j.club_actuel || j.club, poste: j.poste })))}`,
+            add_context_from_internet: true,
+            response_json_schema: {
+              type: "object",
+              properties: {
+                joueurs: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      nom: { type: "string" },
+                      poste: { type: "string" },
+                      nationalite: { type: "string" },
+                      date_naissance: { type: "string" },
+                      club_actuel: { type: "string" },
+                      valeur_marchande: { type: "number" },
+                      contrat_fin: { type: "string" },
+                    },
+                  },
+                },
+              },
+            },
+          });
+
+          if (enriched?.joueurs?.length === joueurs.length) {
+            enriched.joueurs.forEach((enr, i) => {
+              if (enr.poste && !joueurs[i].poste) joueurs[i].poste = enr.poste;
+              if (enr.nationalite && !joueurs[i].nationalite) joueurs[i].nationalite = enr.nationalite;
+              if (enr.date_naissance && !joueurs[i].date_naissance) joueurs[i].date_naissance = enr.date_naissance;
+              if (enr.valeur_marchande && !joueurs[i].valeur_marchande) joueurs[i].valeur_marchande = enr.valeur_marchande;
+              if (enr.contrat_fin && !joueurs[i].contrat_fin) joueurs[i].contrat_fin = enr.contrat_fin;
+            });
+          }
+        } catch (_) { /* enrichissement optionnel */ }
+      }
+
+      setStatus("");
       onExtracted({ contacts: staffContacts, joueurs, clubs: [], nom_fichier: file.name });
     } catch (err) {
       console.error("Import error:", err);
       setError(err.message || "Une erreur est survenue lors de l'analyse du fichier.");
     } finally {
       setLoading(false);
+      setStatus("");
     }
   };
 
@@ -225,7 +248,7 @@ Les noms de colonnes peuvent varier : NOM/NAME/LAST_NAME/PRÉNOM/FIRST_NAME, CLU
           <>
             <Loader2 className="w-14 h-14 text-green-500 animate-spin mb-4" />
             <h3 className="text-lg font-semibold text-slate-700">Analyse du fichier en cours...</h3>
-            <p className="text-slate-400 mt-1">L'IA extrait toutes les données disponibles</p>
+            <p className="text-slate-400 mt-1">{status || "Lecture des données..."}</p>
           </>
         ) : (
           <>
@@ -242,7 +265,7 @@ Les noms de colonnes peuvent varier : NOM/NAME/LAST_NAME/PRÉNOM/FIRST_NAME, CLU
         )}
 
         {error && (
-          <div className="mt-4 text-red-600 bg-red-50 px-4 py-2 rounded-lg text-sm">
+          <div className="mt-4 text-red-600 bg-red-50 px-4 py-2 rounded-lg text-sm whitespace-pre-line text-left max-w-md">
             {error}
           </div>
         )}
