@@ -132,7 +132,7 @@ export default function PlayersPage() {
             }`}
           >
             <Search className="w-4 h-4" />
-            Ajouter via Transfermarkt
+            Rajoute des joueurs
           </button>
         </div>
 
