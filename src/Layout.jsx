@@ -42,8 +42,8 @@ export default function Layout({ children, currentPageName }) {
               <Users className="w-6 h-6 text-white" />
             </div>
             <div>
-              <div className="font-bold text-lg text-slate-900">Football CRM</div>
-              <div className="text-xs text-slate-500">Gestion de joueurs</div>
+              <div className="font-bold text-lg text-slate-900">FDM</div>
+              <div className="text-xs text-slate-500">Football Data Manager</div>
             </div>
           </Link>
         </div>
@@ -138,7 +138,7 @@ export default function Layout({ children, currentPageName }) {
                 <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
                   <Users className="w-4 h-4 text-white" />
                 </div>
-                <span className="font-bold text-slate-900">Football CRM</span>
+                <span className="font-bold text-slate-900">FDM</span>
               </div>
               <button onClick={() => setDrawerOpen(false)} className="text-slate-400 p-1">
                 <X className="w-5 h-5" />
