@@ -5,7 +5,7 @@
    ============================================ */
 
 const TransfermarktAPI = {
-  BASE: 'https://transfermarkt-api.fly.dev',
+  BASE: '/api/tm',
 
   formatValue(val) {
     if (!val) return '-';

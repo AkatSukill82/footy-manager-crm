@@ -90,7 +90,7 @@ export default function TransfermarktSearch() {
         setLoading(false);
       }
     } catch (err) {
-      setError("Erreur de connexion à l'API Transfermarkt. Vérifiez votre connexion.");
+      setError(`Erreur API Transfermarkt : ${err.message || "connexion impossible"}`);
       setLoading(false);
     }
   };
