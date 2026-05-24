@@ -255,6 +255,8 @@ export default function ImportExcelPage() {
         return [];
       };
 
+      const deaccent = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '');
+
       const FIELD_MAP = {
         name: 'nom', last_name: 'nom', lastname: 'nom', surname: 'nom',
         first_name: 'prenom', firstname: 'prenom',
@@ -273,9 +275,15 @@ export default function ImportExcelPage() {
 
       let rows = extractRows(rawResult?.output ?? rawResult);
       rows = rows.map(r => {
-        const normalized = { ...r };
+        // Normaliser les clés : minuscules + sans accents
+        const lowered = {};
+        for (const [k, v] of Object.entries(r)) {
+          const key = deaccent(k.toLowerCase().trim().replace(/\s+/g, '_'));
+          lowered[key] = v;
+        }
+        const normalized = { ...lowered };
         for (const [raw, mapped] of Object.entries(FIELD_MAP)) {
-          if (r[raw] !== undefined && r[mapped] === undefined) normalized[mapped] = r[raw];
+          if (lowered[raw] !== undefined && normalized[mapped] === undefined) normalized[mapped] = lowered[raw];
         }
         return normalized;
       });

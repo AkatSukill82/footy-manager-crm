@@ -106,7 +106,10 @@ Les noms de colonnes peuvent varier : NOM/NAME/LAST_NAME/PRÉNOM/FIRST_NAME, CLU
 
       let rows = extractRows(result.output ?? result);
 
-      // Normaliser chaque ligne : mapper les noms de champs alternatifs vers nos clés
+      // Supprimer les accents d'une chaîne
+      const deaccent = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
+
+      // Noms de champs alternatifs → clé normalisée
       const FIELD_MAP = {
         name: "nom", last_name: "nom", lastname: "nom", surname: "nom",
         first_name: "prenom", firstname: "prenom",
@@ -127,10 +130,17 @@ Les noms de colonnes peuvent varier : NOM/NAME/LAST_NAME/PRÉNOM/FIRST_NAME, CLU
       };
 
       rows = rows.map(r => {
-        const normalized = { ...r };
+        // 1. Normaliser toutes les clés : minuscules + sans accents
+        const lowered = {};
+        for (const [k, v] of Object.entries(r)) {
+          const key = deaccent(k.toLowerCase().trim().replace(/\s+/g, "_"));
+          lowered[key] = v;
+        }
+        // 2. Appliquer le mapping de champs alternatifs
+        const normalized = { ...lowered };
         for (const [raw, mapped] of Object.entries(FIELD_MAP)) {
-          if (r[raw] !== undefined && r[mapped] === undefined) {
-            normalized[mapped] = r[raw];
+          if (lowered[raw] !== undefined && normalized[mapped] === undefined) {
+            normalized[mapped] = lowered[raw];
           }
         }
         return normalized;
