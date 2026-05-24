@@ -8,6 +8,7 @@ Deno.serve(async (req) => {
   const { data } = await req.json();
   const joueurs = data?.joueurs || [];
   const clubs = data?.clubs || [];
+  const contacts = data?.contacts || [];
   const nomFichier = data?.nom_fichier || "import";
 
   const results = {
@@ -15,6 +16,8 @@ Deno.serve(async (req) => {
     joueurs_mis_a_jour: 0,
     clubs_crees: 0,
     clubs_mis_a_jour: 0,
+    contacts_crees: 0,
+    contacts_mis_a_jour: 0,
     erreurs: [],
     details: []
   };
@@ -68,12 +71,19 @@ Deno.serve(async (req) => {
   // Fetch existing data for dedup
   const existingPlayers = await base44.asServiceRole.entities.Player.list();
   const existingClubs = await base44.asServiceRole.entities.Club.list();
+  const existingContacts = await base44.asServiceRole.entities.ClubContact.list();
 
   const playerMap = {};
   existingPlayers.forEach(p => { playerMap[p.nom.toLowerCase().trim()] = p; });
 
   const clubMap = {};
   existingClubs.forEach(c => { clubMap[c.nom.toLowerCase().trim()] = c; });
+
+  const contactMap = {};
+  existingContacts.forEach(c => {
+    const key = `${c.nom?.toLowerCase().trim()}|${c.club?.toLowerCase().trim()}`;
+    contactMap[key] = c;
+  });
 
   // --- Process clubs ---
   for (const raw of clubs) {
@@ -151,11 +161,52 @@ Deno.serve(async (req) => {
     }
   }
 
+  // --- Process club contacts ---
+  for (const raw of contacts) {
+    const nom = raw.nom?.trim();
+    const club = raw.club?.trim();
+    if (!nom || !club) continue;
+
+    const payload = {};
+    if (raw.pays) payload.pays = String(raw.pays).trim();
+    if (raw.poste) payload.poste = String(raw.poste).trim();
+    if (raw.email) payload.email = String(raw.email).trim();
+    if (raw.telephone) payload.telephone = String(raw.telephone).trim();
+
+    // Try to link to existing club
+    const linkedClub = clubMap[club.toLowerCase()];
+    if (linkedClub) payload.club_id = linkedClub.id;
+
+    // Also auto-create the club if it doesn't exist yet
+    if (!linkedClub && club) {
+      const newClub = await base44.asServiceRole.entities.Club.create({
+        nom: club,
+        pays: raw.pays || "Inconnu"
+      });
+      clubMap[club.toLowerCase()] = newClub;
+      payload.club_id = newClub.id;
+      results.clubs_crees++;
+      results.details.push({ type: "Club", nom: club, action: "créé" });
+    }
+
+    const key = `${nom.toLowerCase()}|${club.toLowerCase()}`;
+    const existing = contactMap[key];
+    if (existing) {
+      await base44.asServiceRole.entities.ClubContact.update(existing.id, payload);
+      results.contacts_mis_a_jour++;
+      results.details.push({ type: "Contact", nom: `${nom} (${club})`, action: "mis à jour" });
+    } else {
+      await base44.asServiceRole.entities.ClubContact.create({ nom, club, ...payload });
+      results.contacts_crees++;
+      results.details.push({ type: "Contact", nom: `${nom} (${club})`, action: "créé" });
+    }
+  }
+
   // Save log
   await base44.asServiceRole.entities.ImportLog.create({
     nom_fichier: nomFichier,
     date_import: new Date().toISOString(),
-    total_lignes: joueurs.length + clubs.length,
+    total_lignes: joueurs.length + clubs.length + contacts.length,
     joueurs_crees: results.joueurs_crees,
     joueurs_mis_a_jour: results.joueurs_mis_a_jour,
     clubs_crees: results.clubs_crees,

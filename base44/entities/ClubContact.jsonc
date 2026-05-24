@@ -1,0 +1,38 @@
+{
+  "name": "ClubContact",
+  "type": "object",
+  "properties": {
+    "nom": {
+      "type": "string",
+      "description": "Nom complet de la personne"
+    },
+    "club": {
+      "type": "string",
+      "description": "Nom du club"
+    },
+    "pays": {
+      "type": "string",
+      "description": "Pays du club"
+    },
+    "poste": {
+      "type": "string",
+      "description": "Poste / titre (CEO, Head Coach, Director of Football...)"
+    },
+    "email": {
+      "type": "string",
+      "description": "Adresse email"
+    },
+    "telephone": {
+      "type": "string",
+      "description": "Num\u00e9ro de t\u00e9l\u00e9phone"
+    },
+    "club_id": {
+      "type": "string",
+      "description": "ID du club li\u00e9 (si trouv\u00e9 en base)"
+    }
+  },
+  "required": [
+    "nom",
+    "club"
+  ]
+}

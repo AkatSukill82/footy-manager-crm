@@ -92,6 +92,21 @@ export default function ImportDropzone({ onExtracted }) {
                 budget_annuel: { type: "number" }
               }
             }
+          },
+          contacts: {
+            type: "array",
+            description: "Liste des contacts de clubs extraits. Si le fichier contient des colonnes COUNTRY, CLUB, NAME, POSITION, EMAIL, TEL — chaque ligne est un contact de club à mettre ici (pas dans joueurs). Inclure tous les membres du staff : CEO, coach, directeur sportif, recruteur, etc.",
+            items: {
+              type: "object",
+              properties: {
+                nom: { type: "string", description: "Nom complet (colonne NAME)" },
+                club: { type: "string", description: "Nom du club (colonne CLUB)" },
+                pays: { type: "string", description: "Pays (colonne COUNTRY)" },
+                poste: { type: "string", description: "Poste/titre (colonne POSITION)" },
+                email: { type: "string", description: "Email (colonne EMAIL)" },
+                telephone: { type: "string", description: "Téléphone (colonne TEL)" }
+              }
+            }
           }
         }
       }

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Users, Building2, ChevronDown, ChevronUp, ArrowLeft, Play } from "lucide-react";
+import { Users, Building2, ChevronDown, ChevronUp, ArrowLeft, Play, UserCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +21,10 @@ const CLUB_LABELS = {
   directeur_sportif_telephone: "Tel DS", email_general: "Email général",
   telephone_general: "Tel général", site_web: "Site web",
   budget_transfert: "Budget transfert"
+};
+
+const CONTACT_LABELS = {
+  nom: "Nom", club: "Club", pays: "Pays", poste: "Poste", email: "Email", telephone: "Téléphone"
 };
 
 function DataTable({ items, labels, title, icon: Icon, color }) {
@@ -76,7 +80,8 @@ function DataTable({ items, labels, title, icon: Icon, color }) {
 export default function ImportPreview({ data, onConfirm, onBack }) {
   const joueurs = data?.joueurs || [];
   const clubs = data?.clubs || [];
-  const total = joueurs.length + clubs.length;
+  const contacts = data?.contacts || [];
+  const total = joueurs.length + clubs.length + contacts.length;
 
   return (
     <div>
@@ -108,6 +113,13 @@ export default function ImportPreview({ data, onConfirm, onBack }) {
         title="Clubs"
         icon={Building2}
         color="bg-purple-500"
+      />
+      <DataTable
+        items={contacts}
+        labels={CONTACT_LABELS}
+        title="Contacts de clubs"
+        icon={UserCheck}
+        color="bg-orange-500"
       />
 
       {total === 0 && (

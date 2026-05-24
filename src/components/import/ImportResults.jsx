@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export default function ImportResults({ results, onReset }) {
-  const { joueurs_crees = 0, joueurs_mis_a_jour = 0, clubs_crees = 0, clubs_mis_a_jour = 0, erreurs = [], details = [] } = results || {};
-  const totalSuccess = joueurs_crees + joueurs_mis_a_jour + clubs_crees + clubs_mis_a_jour;
+  const { joueurs_crees = 0, joueurs_mis_a_jour = 0, clubs_crees = 0, clubs_mis_a_jour = 0, contacts_crees = 0, contacts_mis_a_jour = 0, erreurs = [], details = [] } = results || {};
+  const totalSuccess = joueurs_crees + joueurs_mis_a_jour + clubs_crees + clubs_mis_a_jour + contacts_crees + contacts_mis_a_jour;
 
   return (
     <div>
@@ -31,6 +31,8 @@ export default function ImportResults({ results, onReset }) {
             { label: "Joueurs mis à jour", value: joueurs_mis_a_jour, icon: RefreshCw, color: "text-indigo-600", bg: "bg-indigo-100" },
             { label: "Clubs créés", value: clubs_crees, icon: Plus, color: "text-purple-600", bg: "bg-purple-100" },
             { label: "Clubs mis à jour", value: clubs_mis_a_jour, icon: RefreshCw, color: "text-violet-600", bg: "bg-violet-100" },
+            { label: "Contacts créés", value: contacts_crees, icon: Plus, color: "text-orange-600", bg: "bg-orange-100" },
+            { label: "Contacts mis à jour", value: contacts_mis_a_jour, icon: RefreshCw, color: "text-amber-600", bg: "bg-amber-100" },
           ].map(({ label, value, icon: Icon, color, bg }) => (
             <div key={label} className="bg-white rounded-xl p-3 text-center shadow-sm">
               <div className={`w-8 h-8 ${bg} rounded-lg flex items-center justify-center mx-auto mb-2`}>
