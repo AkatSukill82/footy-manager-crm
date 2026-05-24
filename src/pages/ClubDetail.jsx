@@ -8,6 +8,7 @@ import {
   ArrowLeft, Building2, MapPin, Users, TrendingUp, Trophy,
   Edit2, Trash2, Calendar, Phone, Mail, Globe, User, ExternalLink
 } from "lucide-react";
+import TransfermarktImage from "../components/ui/TransfermarktImage";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import ClubForm from "../components/clubs/ClubForm";
@@ -85,11 +86,12 @@ export default function ClubDetailPage() {
       <div className="flex items-start justify-between gap-4">
         <div className="flex gap-4 md:gap-6 items-center">
           <div className="w-20 h-20 md:w-24 md:h-24 bg-slate-100 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0">
-            {club.logo_url ? (
-              <img src={club.logo_url} alt={club.nom} className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" onError={e => e.target.style.display = 'none'} />
-            ) : (
-              <Building2 className="w-10 h-10 text-slate-400" />
-            )}
+            <TransfermarktImage
+              src={club.logo_url}
+              alt={club.nom}
+              className="w-full h-full object-contain p-1"
+              fallback={<Building2 className="w-10 h-10 text-slate-400" />}
+            />
           </div>
           <div>
             <h1 className="text-2xl md:text-4xl font-bold text-slate-900">{club.nom}</h1>

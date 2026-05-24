@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { User, Star, TrendingUp, Clock, Activity, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../../utils";
+import TransfermarktImage from "../ui/TransfermarktImage";
 
 const posteColors = {
   "Gardien": "bg-yellow-100 text-yellow-800",
@@ -44,12 +45,12 @@ export default function PlayerCard({ player, inWatchList }) {
         {/* ── Identité ── */}
         <div className="flex items-start gap-3">
           <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-            {player.photo_url ? (
-              <img src={player.photo_url} alt={player.nom} className="w-full h-full object-cover" referrerPolicy="no-referrer"
-                onError={e => e.target.style.display = 'none'} />
-            ) : (
-              <User className="w-7 h-7 text-slate-400" />
-            )}
+            <TransfermarktImage
+              src={player.photo_url}
+              alt={player.nom}
+              className="w-full h-full object-cover"
+              fallback={<User className="w-7 h-7 text-slate-400" />}
+            />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-1">

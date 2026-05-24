@@ -9,6 +9,7 @@ import {
   Trophy, Plus, ArrowRight, BarChart2,
   Activity, Heart, Globe, Star, Building2
 } from "lucide-react";
+import TransfermarktImage from "../ui/TransfermarktImage";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -515,9 +516,12 @@ Retourne toutes les infos disponibles : stade, capacité, président, entraîneu
                 className="w-full flex items-center gap-4 p-3 rounded-xl border border-slate-200 hover:border-green-400 hover:bg-green-50 transition-all text-left group"
               >
                 <div className="w-14 h-14 rounded-xl bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-200">
-                  {c.photo_url
-                    ? <img src={c.photo_url} alt={c.nom} className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={e => e.target.style.display = 'none'} />
-                    : <User className="w-7 h-7 text-slate-400 m-auto mt-3.5" />}
+                  <TransfermarktImage
+                    src={c.photo_url}
+                    alt={c.nom}
+                    className="w-full h-full object-cover"
+                    fallback={<User className="w-7 h-7 text-slate-400 m-auto mt-3.5" />}
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-slate-900 group-hover:text-green-700">{c.nom}</p>
@@ -561,9 +565,12 @@ Retourne toutes les infos disponibles : stade, capacité, président, entraîneu
             <CardContent className="pt-5">
               <div className="flex items-start gap-4">
                 <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-slate-200 to-slate-300 flex-shrink-0 overflow-hidden">
-                  {result.photo_url
-                    ? <img src={result.photo_url} alt={result.nom} className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={e => e.target.style.display = 'none'} />
-                    : <User className="w-10 h-10 text-slate-400 m-auto mt-7" />}
+                  <TransfermarktImage
+                    src={result.photo_url}
+                    alt={result.nom}
+                    className="w-full h-full object-cover"
+                    fallback={<User className="w-10 h-10 text-slate-400 m-auto mt-7" />}
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h2 className="text-xl md:text-2xl font-bold text-slate-900">{result.nom_complet || result.nom}</h2>

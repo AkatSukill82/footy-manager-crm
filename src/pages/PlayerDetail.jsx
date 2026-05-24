@@ -20,6 +20,7 @@ import ImportTransfermarktPhoto from "../components/players/ImportTransfermarktP
 import PlayerFullProfile from "../components/players/PlayerFullProfile";
 import PlayerChartsPanel from "../components/players/PlayerChartsPanel";
 import { format } from "date-fns";
+import TransfermarktImage from "../components/ui/TransfermarktImage";
 
 const posteColors = {
   "Gardien": "bg-yellow-100 text-yellow-800",
@@ -217,11 +218,12 @@ export default function PlayerDetailPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex gap-4">
                     <div className="w-24 h-24 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center overflow-hidden">
-                      {player.photo_url ? (
-                        <img src={player.photo_url} alt={player.nom} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                      ) : (
-                        <User className="w-12 h-12 text-slate-400" />
-                      )}
+                      <TransfermarktImage
+                        src={player.photo_url}
+                        alt={player.nom}
+                        className="w-full h-full object-cover"
+                        fallback={<User className="w-12 h-12 text-slate-400" />}
+                      />
                     </div>
                     <div>
                       <CardTitle className="text-3xl">{player.nom}</CardTitle>

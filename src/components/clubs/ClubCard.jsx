@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Building2, MapPin, Users, TrendingUp, Trophy, Phone, Mail, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../../utils";
+import TransfermarktImage from "../ui/TransfermarktImage";
 
 const categorieColors = {
   "Elite": "bg-purple-100 text-purple-800",
@@ -23,11 +24,12 @@ export default function ClubCard({ club }) {
       <CardContent className="p-5">
         <div className="flex items-start gap-4 mb-3">
           <div className="w-14 h-14 bg-slate-100 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
-            {club.logo_url ? (
-              <img src={club.logo_url} alt={club.nom} className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" onError={e => e.target.style.display = 'none'} />
-            ) : (
-              <Building2 className="w-7 h-7 text-slate-400" />
-            )}
+            <TransfermarktImage
+              src={club.logo_url}
+              alt={club.nom}
+              className="w-full h-full object-contain p-1"
+              fallback={<Building2 className="w-7 h-7 text-slate-400" />}
+            />
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-lg font-bold text-slate-900 truncate">{club.nom}</h3>

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Image, Loader2, CheckCircle2, RefreshCw, ExternalLink, Link2, AlertCircle } from "lucide-react";
+import TransfermarktImage from "../ui/TransfermarktImage";
 
 export default function ImportTransfermarktPhoto({ player, onApply }) {
   const [loading, setLoading] = useState(false);
@@ -85,11 +86,11 @@ IMPORTANT :
         {/* Photo actuelle */}
         {player.photo_url && (
           <div className="flex items-center gap-3 p-2 bg-white rounded-lg border border-slate-200">
-            <img
+            <TransfermarktImage
               src={player.photo_url}
               alt={player.nom}
-              className="w-12 h-12 rounded-full object-cover border border-slate-200" referrerPolicy="no-referrer"
-              onError={(e) => { e.target.style.display = 'none'; }}
+              className="w-12 h-12 rounded-full object-cover border border-slate-200"
+              fallback={<div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center"><Image className="w-5 h-5 text-slate-400" /></div>}
             />
             <div className="text-xs text-slate-500">Photo actuelle</div>
           </div>
@@ -194,11 +195,11 @@ IMPORTANT :
                             {imageErrors[i] ? (
                               <AlertCircle className="w-5 h-5 text-slate-400" />
                             ) : (
-                              <img
+                              <TransfermarktImage
                                 src={candidate.url}
                                 alt={`Photo ${i + 1}`}
-                                className="w-full h-full object-cover" referrerPolicy="no-referrer"
-                                onError={() => setImageErrors(prev => ({ ...prev, [i]: true }))}
+                                className="w-full h-full object-cover"
+                                fallback={<AlertCircle className="w-5 h-5 text-slate-400" />}
                               />
                             )}
                           </div>
