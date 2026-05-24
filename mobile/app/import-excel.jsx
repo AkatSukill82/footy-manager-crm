@@ -23,28 +23,52 @@ import LoadingSpinner from '../src/components/ui/LoadingSpinner';
 
 // ─── Mots-clés qui indiquent un joueur de football ────────────────────────────
 const FOOTBALL_POSITIONS = [
-  'gardien', 'défenseur', 'lateral', 'milieu', 'ailier', 'attaquant',
+  'gardien', 'défenseur', 'latéral', 'milieu', 'ailier', 'attaquant',
   'goalkeeper', 'defender', 'midfielder', 'forward', 'winger', 'striker',
-  'centre-back', 'full-back', 'droit', 'gauche', 'buteur', 'libero',
+  'centre-back', 'full-back', 'buteur', 'libero',
+  'cb', 'rb', 'lb', 'dm', 'cm', 'am', 'rw', 'lw', 'st', 'gk', 'fw',
 ];
 
-// ─── Schéma d'extraction identique à la version web ─────────────────────────
+// ─── Schéma d'extraction complet ─────────────────────────────────────────────
 const EXTRACT_SCHEMA = {
   type: 'object',
   properties: {
-    contacts: {
+    rows: {
       type: 'array',
       description:
-        'Extraire TOUTES les lignes de données. Les colonnes peuvent s\'appeler PAYS/COUNTRY, CLUB/TEAM, NOM/NAME, POSITION/POSTE (avec ou sans espaces), EMAIL/EMAIL_CLUB, TEL/TELEPHONE/téléphone_club. IMPORTANT: si PAYS ou CLUB est vide sur certaines lignes, propager la dernière valeur non-vide (les cellules fusionnées Excel sont souvent vides après la première ligne du groupe). Ignorer uniquement les lignes où NOM est vide.',
+        "Extraire TOUTES les lignes de données du fichier.\n" +
+        "RÈGLE CELLULES FUSIONNÉES : Si une colonne comme PAYS, CLUB, TEAM, COUNTRY est vide sur une ligne, recopier la dernière valeur non-vide de cette colonne (les cellules fusionnées Excel apparaissent vides après la première ligne du groupe).\n" +
+        "Ignorer uniquement les lignes où NOM/NAME/LAST_NAME est complètement vide.\n" +
+        "Les noms de colonnes peuvent varier : NOM/NAME/LAST_NAME/PRÉNOM/FIRST_NAME, CLUB/TEAM/ÉQUIPE, PAYS/COUNTRY/NATION, POSTE/POSITION/ROLE/TITLE, EMAIL/MAIL, TEL/PHONE/TELEPHONE/MOBILE, VALEUR/VALUE/MARKET_VALUE, CONTRAT/CONTRACT/CONTRACT_END/EXPIRY, NAISSANCE/BIRTH/DOB/DATE_NAISSANCE, TAILLE/HEIGHT, POIDS/WEIGHT, BUTS/GOALS, PASSES/ASSISTS, MATCHS/GAMES/APPEARANCES, AGENT, INSTAGRAM, TWITTER, NATIONALITE/NATIONALITY, LIGUE/LEAGUE, SALAIRE/SALARY.",
       items: {
         type: 'object',
         properties: {
-          nom: { type: 'string' },
+          nom: { type: 'string', description: 'Nom de famille ou nom complet' },
+          prenom: { type: 'string', description: 'Prénom si colonne séparée' },
           club: { type: 'string' },
           pays: { type: 'string' },
-          poste: { type: 'string' },
+          poste: { type: 'string', description: 'Poste sportif ou titre professionnel' },
+          nationalite: { type: 'string' },
+          date_naissance: { type: 'string' },
+          age: { type: 'string' },
           email: { type: 'string' },
           telephone: { type: 'string' },
+          valeur_marchande: { type: 'string' },
+          contrat_fin: { type: 'string' },
+          taille: { type: 'string' },
+          poids: { type: 'string' },
+          agent: { type: 'string' },
+          agent_email: { type: 'string' },
+          agent_telephone: { type: 'string' },
+          buts: { type: 'string' },
+          passes_decisives: { type: 'string' },
+          matchs_joues: { type: 'string' },
+          ligue: { type: 'string' },
+          salaire: { type: 'string' },
+          note_moyenne: { type: 'string' },
+          instagram: { type: 'string' },
+          twitter: { type: 'string' },
+          pied_fort: { type: 'string' },
         },
       },
     },
@@ -205,37 +229,80 @@ export default function ImportExcelPage() {
         throw new Error(rawResult.details || "Erreur lors de l'extraction du fichier.");
       }
 
-      // Étape 3 : normaliser le résultat (peut être un array de sheets ou un objet)
-      let contacts = [];
-      const output = rawResult?.output ?? rawResult;
-      if (Array.isArray(output)) {
-        for (const sheet of output) {
-          if (Array.isArray(sheet?.contacts)) contacts = contacts.concat(sheet.contacts);
-          else if (Array.isArray(sheet)) contacts = contacts.concat(sheet);
+      // Étape 3 : extraire les lignes quelle que soit la clé retournée par l'IA
+      const extractRows = (output) => {
+        if (!output) return [];
+        if (Array.isArray(output)) {
+          const flat = [];
+          for (const item of output) {
+            if (typeof item === 'object' && !Array.isArray(item) && item !== null) {
+              const arr = Object.values(item).find(v => Array.isArray(v));
+              if (arr) flat.push(...arr); else flat.push(item);
+            } else if (Array.isArray(item)) {
+              flat.push(...item);
+            }
+          }
+          return flat;
         }
-      } else {
-        contacts = output?.contacts || [];
-      }
+        if (typeof output === 'object') {
+          const knownKeys = ['rows','contacts','data','items','joueurs','players','clubs','results','records','entries'];
+          for (const k of knownKeys) {
+            if (Array.isArray(output[k]) && output[k].length > 0) return output[k];
+          }
+          const found = Object.values(output).find(v => Array.isArray(v) && v.length > 0);
+          if (found) return found;
+        }
+        return [];
+      };
 
-      // Filtrer les lignes vides
-      contacts = contacts.filter(r => r.nom && String(r.nom).trim() !== '');
+      const FIELD_MAP = {
+        name: 'nom', last_name: 'nom', lastname: 'nom', surname: 'nom',
+        first_name: 'prenom', firstname: 'prenom',
+        full_name: 'nom', fullname: 'nom',
+        team: 'club', equipe: 'club',
+        country: 'pays', nation: 'pays',
+        position: 'poste', role: 'poste', title: 'poste',
+        mail: 'email', email_club: 'email', courriel: 'email',
+        phone: 'telephone', tel: 'telephone', mobile: 'telephone',
+        birth: 'date_naissance', dob: 'date_naissance',
+        height: 'taille', weight: 'poids',
+        goals: 'buts', assists: 'passes_decisives', games: 'matchs_joues',
+        value: 'valeur_marchande', contract: 'contrat_fin', salary: 'salaire',
+        nationality: 'nationalite', league: 'ligue',
+      };
 
-      if (contacts.length === 0) {
+      let rows = extractRows(rawResult?.output ?? rawResult);
+      rows = rows.map(r => {
+        const normalized = { ...r };
+        for (const [raw, mapped] of Object.entries(FIELD_MAP)) {
+          if (r[raw] !== undefined && r[mapped] === undefined) normalized[mapped] = r[raw];
+        }
+        return normalized;
+      });
+      rows = rows.filter(r => {
+        const n = r.nom || r.prenom || r.full_name || r.name || r.first_name;
+        return n && String(n).trim().length > 0;
+      });
+
+      if (rows.length === 0) {
         throw new Error(
-          "Aucune donnée reconnue dans ce fichier.\n\nAssurez-vous que le fichier contient des colonnes NOM/NAME et CLUB."
+          'Aucune donnée reconnue dans ce fichier.\n\nAssurez-vous que le fichier contient une colonne de nom (NOM, NAME, PRÉNOM...).'
         );
       }
 
       // Étape 4 : séparer joueurs vs contacts staff
       const joueurs = [];
       const staffContacts = [];
-      for (const row of contacts) {
-        const posteLower = (row.poste || '').toLowerCase();
+      for (const row of rows) {
+        const nomComplet = [row.prenom, row.nom]
+          .filter(Boolean).map(s => String(s).trim()).join(' ').trim()
+          || String(row.nom || row.name || row.full_name || '').trim();
+        const posteLower = (row.poste || row.position || row.role || '').toLowerCase();
         const isPlayer = FOOTBALL_POSITIONS.some(k => posteLower.includes(k));
         if (isPlayer) {
-          joueurs.push({ ...row, club_actuel: row.club });
+          joueurs.push({ ...row, nom: nomComplet, club_actuel: row.club || row.team });
         } else {
-          staffContacts.push(row);
+          staffContacts.push({ ...row, nom: nomComplet });
         }
       }
 
