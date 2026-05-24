@@ -21,90 +21,23 @@ export default function ImportDropzone({ onExtracted }) {
       json_schema: {
         type: "object",
         properties: {
-          type_donnees: {
-            type: "string",
-            description: "Type principal de données détecté: 'joueurs', 'clubs', 'mixte'"
-          },
-          joueurs: {
+          rows: {
             type: "array",
-            description: "Liste des joueurs extraits",
+            description: "Extraire CHAQUE ligne du fichier (hors ligne d'en-tête) comme un objet. Ne pas filtrer, ne pas ignorer de lignes. Mapper les colonnes aux champs ci-dessous même si les noms de colonnes sont en anglais (NAME=nom, CLUB=club, COUNTRY=pays, POSITION=poste, TEL=telephone, EMAIL=email).",
             items: {
               type: "object",
               properties: {
-                nom: { type: "string" },
-                prenom: { type: "string" },
-                poste: { type: "string" },
-                club_actuel: { type: "string" },
-                nationalite: { type: "string" },
-                date_naissance: { type: "string" },
-                age: { type: "number" },
-                email: { type: "string" },
-                telephone: { type: "string" },
-                whatsapp: { type: "string" },
-                instagram: { type: "string" },
-                twitter: { type: "string" },
-                agent: { type: "string" },
-                agent_email: { type: "string" },
-                agent_telephone: { type: "string" },
-                agence: { type: "string" },
-                valeur_marchande: { type: "number" },
-                salaire: { type: "number" },
-                salaire_semaine: { type: "number" },
-                contrat_fin: { type: "string" },
-                taille: { type: "number" },
-                poids: { type: "number" },
-                pied_fort: { type: "string" },
-                ligue: { type: "string" },
-                pays_ligue: { type: "string" },
-                buts: { type: "number" },
-                passes_decisives: { type: "number" },
-                matchs_joues: { type: "number" },
-                minutes_jouees: { type: "number" },
-                note_moyenne: { type: "number" },
-                ville_residence: { type: "string" },
-                pays_residence: { type: "string" },
-                adresse: { type: "string" }
-              }
-            }
-          },
-          clubs: {
-            type: "array",
-            description: "Liste des clubs extraits",
-            items: {
-              type: "object",
-              properties: {
-                nom: { type: "string" },
-                pays: { type: "string" },
-                ville: { type: "string" },
-                stade: { type: "string" },
-                president: { type: "string" },
-                president_email: { type: "string" },
-                president_telephone: { type: "string" },
-                entraineur: { type: "string" },
-                entraineur_email: { type: "string" },
-                directeur_sportif: { type: "string" },
-                directeur_sportif_email: { type: "string" },
-                directeur_sportif_telephone: { type: "string" },
-                email_general: { type: "string" },
-                telephone_general: { type: "string" },
-                site_web: { type: "string" },
-                budget_transfert: { type: "number" },
-                budget_annuel: { type: "number" }
-              }
-            }
-          },
-          contacts: {
-            type: "array",
-            description: "Liste des contacts de clubs extraits. Si le fichier contient des colonnes COUNTRY, CLUB, NAME, POSITION, EMAIL, TEL — chaque ligne est un contact de club à mettre ici (pas dans joueurs). Inclure tous les membres du staff : CEO, coach, directeur sportif, recruteur, etc.",
-            items: {
-              type: "object",
-              properties: {
-                nom: { type: "string", description: "Nom complet (colonne NAME)" },
-                club: { type: "string", description: "Nom du club (colonne CLUB)" },
-                pays: { type: "string", description: "Pays (colonne COUNTRY)" },
-                poste: { type: "string", description: "Poste/titre (colonne POSITION)" },
-                email: { type: "string", description: "Email (colonne EMAIL)" },
-                telephone: { type: "string", description: "Téléphone (colonne TEL)" }
+                nom: { type: "string", description: "Nom complet. Colonnes: NOM, NAME, PLAYER, JOUEUR, PRÉNOM+NOM" },
+                club: { type: "string", description: "Club. Colonnes: CLUB, TEAM, ÉQUIPE, CLUB_ACTUEL" },
+                pays: { type: "string", description: "Pays. Colonnes: COUNTRY, PAYS, NATION" },
+                poste: { type: "string", description: "Poste ou rôle. Colonnes: POSITION, POSTE, ROLE, TITRE, JOB" },
+                email: { type: "string", description: "Email. Colonnes: EMAIL, MAIL, E-MAIL" },
+                telephone: { type: "string", description: "Téléphone. Colonnes: TEL, PHONE, TELEPHONE, MOBILE, TÉL" },
+                nationalite: { type: "string", description: "Nationalité. Colonnes: NATIONALITY, NATIONALITÉ, NAT" },
+                age: { type: "number", description: "Âge. Colonnes: AGE, ÂGE" },
+                date_naissance: { type: "string", description: "Date de naissance. Colonnes: DOB, DATE_NAISSANCE, BIRTH_DATE" },
+                valeur_marchande: { type: "number", description: "Valeur marchande en millions. Colonnes: VALUE, VALEUR, MARKET_VALUE" },
+                contrat_fin: { type: "string", description: "Fin de contrat. Colonnes: CONTRACT, CONTRAT, CONTRACT_END" }
               }
             }
           }
@@ -119,7 +52,37 @@ export default function ImportDropzone({ onExtracted }) {
       return;
     }
 
-    onExtracted({ ...result.output, nom_fichier: file.name });
+    console.log("Extraction brute:", JSON.stringify(result.output, null, 2));
+
+    const rows = result.output?.rows || [];
+
+    if (rows.length === 0) {
+      setError("Aucune donnée reconnue. Vérifiez que votre fichier a des colonnes : NOM (ou NAME), CLUB, POSTE (ou POSITION).");
+      return;
+    }
+
+    // Classify rows into contacts (staff) vs joueurs (players)
+    const staffKeywords = ["ceo","director","coach","manager","head","administrator","recruitment","communication","president","sport","assistant","staff","secretary","operations","relations","marketing","finance","medical","analyst","scout","agent","responsable","directeur","entraîneur","recruteur","chef"];
+    const footballPositions = ["gardien","défenseur","latéral","milieu","ailier","attaquant","goalkeeper","defender","midfielder","forward","winger","striker","centre-back","full-back"];
+
+    const contacts = [];
+    const joueurs = [];
+
+    for (const row of rows) {
+      if (!row.nom) continue;
+      const postelower = (row.poste || "").toLowerCase();
+      const isStaff = staffKeywords.some(k => postelower.includes(k));
+      const isPlayer = footballPositions.some(k => postelower.includes(k));
+
+      if (isStaff && !isPlayer) {
+        contacts.push(row);
+      } else {
+        // default to player if unclear
+        joueurs.push({ ...row, club_actuel: row.club_actuel || row.club });
+      }
+    }
+
+    onExtracted({ contacts, joueurs, clubs: [], nom_fichier: file.name });
   };
 
   const handleDrop = (e) => {
