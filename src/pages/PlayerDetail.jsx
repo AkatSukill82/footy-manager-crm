@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, User, MapPin, Calendar, TrendingUp, Ruler, Edit2, Star, Trash2 } from "lucide-react";
+import { ArrowLeft, User, MapPin, Calendar, TrendingUp, Ruler, Edit2, Star, Trash2, FileDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import PlayerForm from "../components/players/PlayerForm";
@@ -23,6 +23,7 @@ import PlayerChartsPanel from "../components/players/PlayerChartsPanel";
 import SyncPlayerButton from "../components/players/SyncPlayerButton";
 import { format } from "date-fns";
 import TransfermarktImage from "../components/ui/TransfermarktImage";
+import { exportPlayerPDF } from "../lib/exportPlayerPDF";
 
 const posteColors = {
   "Gardien": "bg-yellow-100 text-yellow-800",
@@ -253,6 +254,14 @@ export default function PlayerDetailPage() {
                     </div>
                   </div>
                   <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      title="Exporter en PDF"
+                      onClick={() => exportPlayerPDF(player, playerNote)}
+                    >
+                      <FileDown className="w-4 h-4 text-blue-600" />
+                    </Button>
                     <Button
                       variant="outline"
                       size="icon"
