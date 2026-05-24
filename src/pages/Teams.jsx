@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { useCurrentUser } from "../lib/useCurrentUser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Users, Search, Shield } from "lucide-react";
@@ -11,13 +12,13 @@ export default function TeamsPage() {
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState("");
   const queryClient = useQueryClient();
+  const currentUser = useCurrentUser();
+  const userEmail = currentUser?.email;
 
   const { data: teams = [], isLoading } = useQuery({
-    queryKey: ['teams'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.Team.filter({ created_by: user.email });
-    },
+    queryKey: ['teams', userEmail],
+    queryFn: () => base44.entities.Team.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
   const { data: teamPlayers = [] } = useQuery({

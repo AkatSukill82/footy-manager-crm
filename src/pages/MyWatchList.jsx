@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Star, Loader2, Trash2 } from "lucide-react";
 import PlayerCard from "../components/players/PlayerCard";
+import { useCurrentUser } from "../lib/useCurrentUser";
 
 const prioriteColors = {
   "Haute": "bg-red-100 text-red-800 border-red-300",
@@ -24,13 +25,13 @@ const statutColors = {
 export default function MyWatchListPage() {
   const queryClient = useQueryClient();
   const [filterStatut, setFilterStatut] = useState("all");
+  const user = useCurrentUser();
+  const userEmail = user?.email;
 
   const { data: watchList = [], isLoading } = useQuery({
-    queryKey: ['watchList'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.WatchList.filter({ created_by: user.email });
-    },
+    queryKey: ['watchList', userEmail],
+    queryFn: () => base44.entities.WatchList.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
   const { data: players = [] } = useQuery({
@@ -39,11 +40,9 @@ export default function MyWatchListPage() {
   });
 
   const { data: notes = [] } = useQuery({
-    queryKey: ['myNotes'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.PlayerNote.filter({ created_by: user.email });
-    },
+    queryKey: ['myNotes', userEmail],
+    queryFn: () => base44.entities.PlayerNote.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
   const updateWatchListMutation = useMutation({

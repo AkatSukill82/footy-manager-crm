@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCurrentUser } from "../lib/useCurrentUser";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2, List, Search } from "lucide-react";
 import PlayerCard from "../components/players/PlayerCard";
@@ -24,6 +25,8 @@ export default function PlayersPage() {
   });
 
   const queryClient = useQueryClient();
+  const currentUser = useCurrentUser();
+  const userEmail = currentUser?.email;
 
   const { data: players = [], isLoading } = useQuery({
     queryKey: ['players'],
@@ -31,11 +34,9 @@ export default function PlayersPage() {
   });
 
   const { data: watchList = [] } = useQuery({
-    queryKey: ['watchList'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.WatchList.filter({ created_by: user.email });
-    },
+    queryKey: ['watchList', userEmail],
+    queryFn: () => base44.entities.WatchList.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
   const createMutation = useMutation({

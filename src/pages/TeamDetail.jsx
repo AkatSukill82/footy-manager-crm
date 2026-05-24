@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { useCurrentUser } from "../lib/useCurrentUser";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -41,12 +42,12 @@ export default function TeamDetailPage() {
     queryFn: () => base44.entities.Player.list(),
   });
 
+  const currentUser = useCurrentUser();
+  const userEmail = currentUser?.email;
   const { data: teams = [] } = useQuery({
-    queryKey: ['teams'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.Team.filter({ created_by: user.email });
-    },
+    queryKey: ['teams', userEmail],
+    queryFn: () => base44.entities.Team.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
   const { data: matches = [] } = useQuery({

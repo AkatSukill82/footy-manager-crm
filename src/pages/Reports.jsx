@@ -7,6 +7,7 @@ import ReportFilters from "../components/reports/ReportFilters";
 import PlayerPerformanceReport from "../components/reports/PlayerPerformanceReport";
 import TransferTrendsReport from "../components/reports/TransferTrendsReport";
 import TeamEfficiencyReport from "../components/reports/TeamEfficiencyReport";
+import { useCurrentUser } from "../lib/useCurrentUser";
 
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState("players");
@@ -16,6 +17,8 @@ export default function ReportsPage() {
     periode: "tout"
   });
   const [isExporting, setIsExporting] = useState(false);
+  const user = useCurrentUser();
+  const userEmail = user?.email;
 
   const { data: players = [], isLoading: loadingPlayers } = useQuery({
     queryKey: ['players'],
@@ -28,27 +31,21 @@ export default function ReportsPage() {
   });
 
   const { data: teams = [], isLoading: loadingTeams } = useQuery({
-    queryKey: ['teams'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.Team.filter({ created_by: user.email });
-    },
+    queryKey: ['teams', userEmail],
+    queryFn: () => base44.entities.Team.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
   const { data: teamPlayers = [] } = useQuery({
-    queryKey: ['team-players'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.TeamPlayer.filter({ created_by: user.email });
-    },
+    queryKey: ['team-players', userEmail],
+    queryFn: () => base44.entities.TeamPlayer.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
   const { data: matches = [] } = useQuery({
-    queryKey: ['matches'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.Match.filter({ created_by: user.email });
-    },
+    queryKey: ['matches', userEmail],
+    queryFn: () => base44.entities.Match.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
   const handleExportPDF = async () => {

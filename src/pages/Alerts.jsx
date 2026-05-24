@@ -13,10 +13,13 @@ import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { format, differenceInDays, isPast } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useCurrentUser } from "../lib/useCurrentUser";
 
 export default function AlertsPage() {
   const navigate = useNavigate();
   const [contractPeriod, setContractPeriod] = useState("6months");
+  const user = useCurrentUser();
+  const userEmail = user?.email;
 
   const { data: players = [], isLoading: loadingPlayers } = useQuery({
     queryKey: ['players'],
@@ -24,11 +27,9 @@ export default function AlertsPage() {
   });
 
   const { data: watchList = [] } = useQuery({
-    queryKey: ['my-watchlist'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.WatchList.filter({ created_by: user.email });
-    },
+    queryKey: ['my-watchlist', userEmail],
+    queryFn: () => base44.entities.WatchList.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
   const { data: transfers = [] } = useQuery({
@@ -37,19 +38,15 @@ export default function AlertsPage() {
   });
 
   const { data: negociations = [] } = useQuery({
-    queryKey: ['negociations'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.TransferNegociation.filter({ created_by: user.email });
-    },
+    queryKey: ['negociations', userEmail],
+    queryFn: () => base44.entities.TransferNegociation.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
   const { data: reminders = [] } = useQuery({
-    queryKey: ['reminders-alerts'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.Reminder.filter({ created_by: user.email });
-    },
+    queryKey: ['reminders-alerts', userEmail],
+    queryFn: () => base44.entities.Reminder.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
   const { data: matches = [] } = useQuery({
@@ -58,11 +55,9 @@ export default function AlertsPage() {
   });
 
   const { data: teams = [] } = useQuery({
-    queryKey: ['my-teams'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.Team.filter({ created_by: user.email });
-    },
+    queryKey: ['my-teams', userEmail],
+    queryFn: () => base44.entities.Team.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
   const watchedPlayerIds = useMemo(() => new Set(watchList.map(w => w.player_id)), [watchList]);

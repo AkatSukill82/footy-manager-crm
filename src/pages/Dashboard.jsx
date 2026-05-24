@@ -12,14 +12,12 @@ import PersonalizedDashboard from "../components/dashboard/PersonalizedDashboard
 import EnhancedCharts from "../components/dashboard/EnhancedCharts";
 import NotificationSystem from "../components/notifications/NotificationSystem";
 import ContractTimeline from "../components/dashboard/ContractTimeline";
+import { useCurrentUser } from "../lib/useCurrentUser";
 
 export default function Dashboard() {
   const [activeView, setActiveView] = useState("personalized");
-
-  const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me()
-  });
+  const user = useCurrentUser();
+  const userEmail = user?.email;
 
   const { data: players = [], isLoading: loadingPlayers } = useQuery({
     queryKey: ['players'],
@@ -27,19 +25,15 @@ export default function Dashboard() {
   });
 
   const { data: watchList = [], isLoading: loadingWatchList } = useQuery({
-    queryKey: ['my-watchlist'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.WatchList.filter({ created_by: user.email });
-    }
+    queryKey: ['my-watchlist', userEmail],
+    queryFn: () => base44.entities.WatchList.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
   const { data: negociations = [] } = useQuery({
-    queryKey: ['dashboard-negociations'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.TransferNegociation.filter({ created_by: user.email });
-    }
+    queryKey: ['dashboard-negociations', userEmail],
+    queryFn: () => base44.entities.TransferNegociation.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
   const { data: insights = [] } = useQuery({
@@ -48,11 +42,9 @@ export default function Dashboard() {
   });
 
   const { data: reminders = [] } = useQuery({
-    queryKey: ['dashboard-reminders'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.Reminder.filter({ created_by: user.email });
-    }
+    queryKey: ['dashboard-reminders', userEmail],
+    queryFn: () => base44.entities.Reminder.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
   const { data: sharedContent = [] } = useQuery({
@@ -66,11 +58,9 @@ export default function Dashboard() {
   });
 
   const { data: teams = [] } = useQuery({
-    queryKey: ['dashboard-teams'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.Team.filter({ created_by: user.email });
-    }
+    queryKey: ['dashboard-teams', userEmail],
+    queryFn: () => base44.entities.Team.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
   if (loadingPlayers || loadingWatchList) {

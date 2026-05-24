@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { useCurrentUser } from "../lib/useCurrentUser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,10 +18,7 @@ export default function AgentNetworkPage() {
   const [filterType, setFilterType] = useState("all");
   const [activeTab, setActiveTab] = useState("shared");
 
-  const { data: user } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-  });
+  const user = useCurrentUser();
 
   const { data: sharedContents = [] } = useQuery({
     queryKey: ['sharedContents'],
@@ -37,12 +35,11 @@ export default function AgentNetworkPage() {
     queryFn: () => base44.entities.Player.list(),
   });
 
+  const userEmail = user?.email;
   const { data: teams = [] } = useQuery({
-    queryKey: ['teams'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.Team.filter({ created_by: user.email });
-    },
+    queryKey: ['teams', userEmail],
+    queryFn: () => base44.entities.Team.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
   const createContentMutation = useMutation({

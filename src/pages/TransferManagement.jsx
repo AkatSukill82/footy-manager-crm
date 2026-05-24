@@ -11,6 +11,7 @@ import { TrendingUp, Plus, Calculator, History } from "lucide-react";
 import NegociationCard from "../components/transfers/NegociationCard";
 import BudgetSimulator from "../components/transfers/BudgetSimulator";
 import PlayerTransferHistory from "../components/transfers/PlayerTransferHistory";
+import { useCurrentUser } from "../lib/useCurrentUser";
 
 export default function TransferManagementPage() {
   const queryClient = useQueryClient();
@@ -28,13 +29,13 @@ export default function TransferManagementPage() {
     notes_negociation: "",
     priorite: "moyenne"
   });
+  const user = useCurrentUser();
+  const userEmail = user?.email;
 
   const { data: negociations = [] } = useQuery({
-    queryKey: ['negociations'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.TransferNegociation.filter({ created_by: user.email });
-    },
+    queryKey: ['negociations', userEmail],
+    queryFn: () => base44.entities.TransferNegociation.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
   const { data: players = [] } = useQuery({
@@ -48,19 +49,15 @@ export default function TransferManagementPage() {
   });
 
   const { data: teams = [] } = useQuery({
-    queryKey: ['teams'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.Team.filter({ created_by: user.email });
-    },
+    queryKey: ['teams', userEmail],
+    queryFn: () => base44.entities.Team.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
   const { data: teamPlayers = [] } = useQuery({
-    queryKey: ['team-players'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.TeamPlayer.filter({ created_by: user.email });
-    },
+    queryKey: ['team-players', userEmail],
+    queryFn: () => base44.entities.TeamPlayer.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
   const createNegociationMutation = useMutation({

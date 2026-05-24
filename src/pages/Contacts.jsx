@@ -9,11 +9,14 @@ import ContactForm from "../components/contacts/ContactForm";
 import RemindersList from "../components/contacts/RemindersList";
 import ReminderForm from "../components/contacts/ReminderForm";
 import ContractCalendar from "../components/contacts/ContractCalendar";
+import { useCurrentUser } from "../lib/useCurrentUser";
 
 export default function ContactsPage() {
   const [selectedPlayerId, setSelectedPlayerId] = useState("");
   const [activeTab, setActiveTab] = useState("contacts");
   const queryClient = useQueryClient();
+  const user = useCurrentUser();
+  const userEmail = user?.email;
 
   const { data: players = [] } = useQuery({
     queryKey: ['players'],
@@ -21,37 +24,27 @@ export default function ContactsPage() {
   });
 
   const { data: contacts = [] } = useQuery({
-    queryKey: ['contacts', selectedPlayerId],
-    queryFn: async () => {
-      if (!selectedPlayerId) return [];
-      const user = await base44.auth.me();
-      return base44.entities.Contact.filter({ 
-        player_id: selectedPlayerId,
-        created_by: user.email
-      });
-    },
-    enabled: !!selectedPlayerId,
+    queryKey: ['contacts', selectedPlayerId, userEmail],
+    queryFn: () => base44.entities.Contact.filter({
+      player_id: selectedPlayerId,
+      created_by: userEmail
+    }),
+    enabled: !!selectedPlayerId && !!userEmail,
   });
 
   const { data: reminders = [] } = useQuery({
-    queryKey: ['reminders', selectedPlayerId],
-    queryFn: async () => {
-      if (!selectedPlayerId) return [];
-      const user = await base44.auth.me();
-      return base44.entities.Reminder.filter({ 
-        player_id: selectedPlayerId,
-        created_by: user.email
-      });
-    },
-    enabled: !!selectedPlayerId,
+    queryKey: ['reminders', selectedPlayerId, userEmail],
+    queryFn: () => base44.entities.Reminder.filter({
+      player_id: selectedPlayerId,
+      created_by: userEmail
+    }),
+    enabled: !!selectedPlayerId && !!userEmail,
   });
 
   const { data: allReminders = [] } = useQuery({
-    queryKey: ['all-reminders'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.Reminder.filter({ created_by: user.email });
-    },
+    queryKey: ['all-reminders', userEmail],
+    queryFn: () => base44.entities.Reminder.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
   const createContactMutation = useMutation({
