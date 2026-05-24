@@ -54,7 +54,19 @@ export default function ImportDropzone({ onExtracted }) {
 
     console.log("Extraction brute:", JSON.stringify(result.output, null, 2));
 
-    const rows = result.output?.rows || [];
+    // result.output can be an array (one entry per sheet) or a single object
+    let rawRows = [];
+    if (Array.isArray(result.output)) {
+      // Flatten all sheets
+      for (const sheet of result.output) {
+        if (Array.isArray(sheet?.rows)) rawRows = rawRows.concat(sheet.rows);
+        else if (Array.isArray(sheet)) rawRows = rawRows.concat(sheet);
+      }
+    } else {
+      rawRows = result.output?.rows || [];
+    }
+
+    const rows = rawRows;
 
     if (rows.length === 0) {
       setError("Aucune donnée reconnue. Vérifiez que votre fichier a des colonnes : NOM (ou NAME), CLUB, POSTE (ou POSITION).");
