@@ -63,6 +63,7 @@ import TeamDetail from './pages/TeamDetail';
 import Teams from './pages/Teams';
 import TransferManagement from './pages/TransferManagement';
 import News from './pages/News';
+import Calendar from './pages/Calendar';
 import __Layout from './Layout.jsx';
 
 
@@ -83,6 +84,7 @@ export const PAGES = {
     "Teams": Teams,
     "TransferManagement": TransferManagement,
     "News": News,
+    "Calendar": Calendar,
 }
 
 export const pagesConfig = {
