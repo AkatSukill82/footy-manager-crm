@@ -8,6 +8,7 @@ import { ArrowLeft, User, MapPin, Calendar, TrendingUp, Ruler, Edit2, Star, Tras
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import PlayerForm from "../components/players/PlayerForm";
+import PlayerStatusModal from "../components/players/PlayerStatusModal";
 import TransferHistory from "../components/transfers/TransferHistory";
 import TransferForm from "../components/transfers/TransferForm";
 import PlayerNoteCard from "../components/notes/PlayerNoteCard";
@@ -44,6 +45,7 @@ export default function PlayerDetailPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const playerId = urlParams.get('id');
   const [isEditing, setIsEditing] = useState(false);
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
 
   const { data: player } = useQuery({
     queryKey: ['player', playerId],
@@ -132,11 +134,19 @@ export default function PlayerDetailPage() {
   });
 
   const addToWatchListMutation = useMutation({
-    mutationFn: () => base44.entities.WatchList.create({ 
+    mutationFn: (statut) => base44.entities.WatchList.create({
       player_id: playerId,
       priorite: "Moyenne",
-      statut: "En observation"
+      statut: statut || "Prospect",
     }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['watchListItem', playerId] });
+      queryClient.invalidateQueries({ queryKey: ['watchList'] });
+    },
+  });
+
+  const updateWatchListStatusMutation = useMutation({
+    mutationFn: (statut) => base44.entities.WatchList.update(watchListItem.id, { statut }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchListItem', playerId] });
       queryClient.invalidateQueries({ queryKey: ['watchList'] });
@@ -272,13 +282,8 @@ export default function PlayerDetailPage() {
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => {
-                        if (watchListItem) {
-                          removeFromWatchListMutation.mutate();
-                        } else {
-                          addToWatchListMutation.mutate();
-                        }
-                      }}
+                      title={watchListItem ? `Statut : ${watchListItem.statut}` : "Ajouter au suivi"}
+                      onClick={() => setStatusModalOpen(true)}
                     >
                       <Star className={watchListItem ? "w-4 h-4 fill-yellow-400 text-yellow-400" : "w-4 h-4"} />
                     </Button>
@@ -418,6 +423,21 @@ export default function PlayerDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Player status modal */}
+      <PlayerStatusModal
+        player={player}
+        existingItem={watchListItem}
+        open={statusModalOpen}
+        onClose={() => setStatusModalOpen(false)}
+        onConfirm={async (statut) => {
+          if (watchListItem) {
+            await updateWatchListStatusMutation.mutateAsync(statut);
+          } else {
+            await addToWatchListMutation.mutateAsync(statut);
+          }
+        }}
+      />
     </div>
   );
 }

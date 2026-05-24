@@ -8,6 +8,7 @@ import PlayerCard from "../components/players/PlayerCard";
 import AdvancedFilters from "../components/players/AdvancedFilters";
 import PlayerForm from "../components/players/PlayerForm";
 import TransfermarktSearch from "../components/players/TransfermarktSearch";
+import PlayerStatusModal from "../components/players/PlayerStatusModal";
 
 export default function PlayersPage() {
   const [activeTab, setActiveTab] = useState("liste");
@@ -27,6 +28,7 @@ export default function PlayersPage() {
   const queryClient = useQueryClient();
   const currentUser = useCurrentUser();
   const userEmail = currentUser?.email;
+  const [modalPlayer, setModalPlayer] = useState(null);
 
   const { data: players = [], isLoading } = useQuery({
     queryKey: ['players'],
@@ -47,7 +49,16 @@ export default function PlayersPage() {
     },
   });
 
-  const watchListPlayerIds = watchList.map(w => w.player_id);
+  const addToWatchListMutation = useMutation({
+    mutationFn: ({ playerId, statut }) =>
+      base44.entities.WatchList.create({ player_id: playerId, statut, priorite: "Moyenne" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['watchList'] });
+      queryClient.invalidateQueries({ queryKey: ['watchListItem'] });
+    },
+  });
+
+  const watchListMap = Object.fromEntries(watchList.map(w => [w.player_id, w]));
 
   const filteredPlayers = players.filter(player => {
     const matchesSearch = !filters.search ||
@@ -163,7 +174,9 @@ export default function PlayersPage() {
                   <PlayerCard
                     key={player.id}
                     player={player}
-                    inWatchList={watchListPlayerIds.includes(player.id)}
+                    inWatchList={!!watchListMap[player.id]}
+                    watchlistItem={watchListMap[player.id]}
+                    onAddToWatchlist={watchListMap[player.id] ? undefined : (p) => setModalPlayer(p)}
                   />
                 ))}
               </div>
@@ -183,6 +196,16 @@ export default function PlayersPage() {
         )}
 
       </div>
+
+      {/* Player status modal */}
+      {modalPlayer && (
+        <PlayerStatusModal
+          player={modalPlayer}
+          open={!!modalPlayer}
+          onClose={() => setModalPlayer(null)}
+          onConfirm={(statut) => addToWatchListMutation.mutateAsync({ playerId: modalPlayer.id, statut })}
+        />
+      )}
     </div>
   );
 }

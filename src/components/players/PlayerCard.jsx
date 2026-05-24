@@ -1,10 +1,11 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, Star, TrendingUp, Clock, Activity, Target } from "lucide-react";
+import { User, Star, StarOff, TrendingUp, Clock, Activity, Target, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../../utils";
 import TransfermarktImage from "../ui/TransfermarktImage";
+import { statutConfig } from "./PlayerStatusModal";
 
 const posteColors = {
   "Gardien": "bg-yellow-100 text-yellow-800",
@@ -29,16 +30,17 @@ function StatBox({ label, value, color = "bg-slate-50", textColor = "text-slate-
   );
 }
 
-export default function PlayerCard({ player, inWatchList }) {
+export default function PlayerCard({ player, inWatchList, watchlistItem, onAddToWatchlist }) {
   const navigate = useNavigate();
+  const sc = watchlistItem ? statutConfig(watchlistItem.statut) : null;
 
   return (
     <Card
       className="hover:shadow-lg transition-all cursor-pointer overflow-hidden"
       onClick={() => navigate(createPageUrl("PlayerDetail") + "?id=" + player.id)}
     >
-      {/* Barre couleur top */}
-      <div className="h-1.5 bg-gradient-to-r from-green-500 to-emerald-400" />
+      {/* Top bar: green base, colored by status if tracked */}
+      <div className={`h-1.5 ${sc ? sc.bg.replace('bg-', 'bg-').split(' ')[0] : 'bg-gradient-to-r from-green-500 to-emerald-400'}`} />
 
       <CardContent className="pt-4 pb-4 px-4 space-y-3">
 
@@ -55,7 +57,23 @@ export default function PlayerCard({ player, inWatchList }) {
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-1">
               <h3 className="font-bold text-base text-slate-900 leading-tight truncate">{player.nom}</h3>
-              {inWatchList && <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 flex-shrink-0 mt-0.5" />}
+              {/* Status badge or add button */}
+              {sc ? (
+                <Badge className={`text-[10px] flex-shrink-0 border ${sc.badge}`}>
+                  {watchlistItem.statut}
+                </Badge>
+              ) : onAddToWatchlist ? (
+                <button
+                  type="button"
+                  onClick={e => { e.stopPropagation(); onAddToWatchlist(player); }}
+                  className="flex-shrink-0 p-1 rounded-lg text-slate-300 hover:text-green-600 hover:bg-green-50 transition-colors"
+                  title="Ajouter au suivi"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              ) : inWatchList ? (
+                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 flex-shrink-0 mt-0.5" />
+              ) : null}
             </div>
             <div className="flex flex-wrap gap-1 mt-1">
               {player.poste && (

@@ -4,27 +4,145 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Star, Loader2, Trash2 } from "lucide-react";
-import PlayerCard from "../components/players/PlayerCard";
+import { Star, Loader2, Trash2, UserCheck, Zap, FileText, Eye, Edit2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "../utils";
+import TransfermarktImage from "../components/ui/TransfermarktImage";
 import { useCurrentUser } from "../lib/useCurrentUser";
+import PlayerStatusModal, { STATUTS, statutConfig } from "../components/players/PlayerStatusModal";
+import { format } from "date-fns";
 
-const prioriteColors = {
-  "Haute": "bg-red-100 text-red-800 border-red-300",
-  "Moyenne": "bg-yellow-100 text-yellow-800 border-yellow-300",
-  "Basse": "bg-green-100 text-green-800 border-green-300"
-};
+const TABS = [
+  { value: "all", label: "Tous", Icon: Star },
+  { value: "Client", label: "Clients", Icon: UserCheck },
+  { value: "Prospect", label: "Prospects", Icon: Zap },
+  { value: "Mandaté", label: "Mandatés", Icon: FileText },
+  { value: "En observation", label: "En observation", Icon: Eye },
+];
 
-const statutColors = {
-  "En observation": "bg-blue-100 text-blue-800",
-  "À contacter": "bg-purple-100 text-purple-800",
-  "Négociation": "bg-orange-100 text-orange-800",
-  "Abandonné": "bg-slate-100 text-slate-800"
-};
+function PlayerRow({ item, player, note, onEditStatus, onRemove }) {
+  const navigate = useNavigate();
+  const sc = statutConfig(item.statut);
+  const Icon = sc.Icon || Eye;
+
+  return (
+    <Card className="overflow-hidden hover:shadow-md transition-shadow">
+      <div className={`h-1 ${sc.bg.split(' ')[0]}`} />
+      <CardContent className="p-4">
+        <div className="flex items-center gap-4">
+          {/* Photo */}
+          <div
+            className="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center flex-shrink-0 cursor-pointer border border-slate-200"
+            onClick={() => navigate(createPageUrl("PlayerDetail") + "?id=" + player.id)}
+          >
+            <TransfermarktImage
+              src={player.photo_url}
+              alt={player.nom}
+              className="w-full h-full object-cover"
+              fallback={<Star className="w-7 h-7 text-slate-400" />}
+            />
+          </div>
+
+          {/* Info */}
+          <div
+            className="flex-1 min-w-0 cursor-pointer"
+            onClick={() => navigate(createPageUrl("PlayerDetail") + "?id=" + player.id)}
+          >
+            <div className="flex items-start gap-2 flex-wrap">
+              <h3 className="font-bold text-slate-900 text-base leading-tight">{player.nom}</h3>
+              <Badge className={`text-xs border flex items-center gap-1 ${sc.badge}`}>
+                <Icon className="w-3 h-3" />
+                {item.statut}
+              </Badge>
+            </div>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {player.poste && (
+                <span className="text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                  {player.poste}
+                </span>
+              )}
+              {player.club_actuel && (
+                <span className="text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                  {player.club_actuel}
+                </span>
+              )}
+              {player.age && (
+                <span className="text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                  {player.age} ans
+                </span>
+              )}
+              {player.valeur_marchande && (
+                <span className="text-xs text-green-700 bg-green-50 px-1.5 py-0.5 rounded font-medium">
+                  {player.valeur_marchande} M€
+                </span>
+              )}
+            </div>
+            {/* Scout note if exists */}
+            {note && (
+              <div className="flex items-center gap-2 mt-1.5">
+                {note.evaluation != null && (
+                  <span className="text-sm font-bold text-blue-600">{note.evaluation}/10</span>
+                )}
+                {note.interet && (
+                  <Badge className="text-[10px] bg-blue-50 text-blue-700 border-blue-200">
+                    Intérêt : {note.interet}
+                  </Badge>
+                )}
+                {note.note && (
+                  <span className="text-xs text-slate-400 italic line-clamp-1">"{note.note}"</span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex flex-col gap-1.5 flex-shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => onEditStatus(item, player)}
+            >
+              <Edit2 className="w-3 h-3 mr-1" />
+              Statut
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-red-400 hover:text-red-600 hover:bg-red-50"
+              onClick={() => onRemove(item.id)}
+            >
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Contract alert */}
+        {player.contrat_fin && (() => {
+          const end = new Date(player.contrat_fin);
+          const now = new Date();
+          const months = Math.round((end - now) / (1000 * 60 * 60 * 24 * 30));
+          if (months < 0) return (
+            <div className="mt-2 text-xs bg-red-50 text-red-700 border border-red-200 rounded-lg px-3 py-1.5">
+              ⚠️ Contrat expiré depuis {format(end, "MM/yyyy")}
+            </div>
+          );
+          if (months <= 6) return (
+            <div className="mt-2 text-xs bg-orange-50 text-orange-700 border border-orange-200 rounded-lg px-3 py-1.5">
+              ⏰ Contrat expire dans {months} mois ({format(end, "MM/yyyy")})
+            </div>
+          );
+          return null;
+        })()}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function MyWatchListPage() {
   const queryClient = useQueryClient();
-  const [filterStatut, setFilterStatut] = useState("all");
+  const [activeTab, setActiveTab] = useState("all");
+  const [modalData, setModalData] = useState(null); // { item, player }
   const user = useCurrentUser();
   const userEmail = user?.email;
 
@@ -47,152 +165,140 @@ export default function MyWatchListPage() {
 
   const updateWatchListMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.WatchList.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['watchList'] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['watchList'] }),
   });
 
   const removeFromWatchListMutation = useMutation({
     mutationFn: (id) => base44.entities.WatchList.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchList'] });
+      queryClient.invalidateQueries({ queryKey: ['watchListItem'] });
     },
   });
 
   const playersMap = Object.fromEntries(players.map(p => [p.id, p]));
-  const notesMap = Object.fromEntries(notes.map(n => [n.player_id, n]));
+  const notesMap   = Object.fromEntries(notes.map(n => [n.player_id, n]));
 
-  const filteredWatchList = filterStatut === "all" 
-    ? watchList 
-    : watchList.filter(w => w.statut === filterStatut);
-
-  const watchedPlayers = filteredWatchList
+  const enriched = watchList
     .map(w => ({ ...w, player: playersMap[w.player_id], note: notesMap[w.player_id] }))
     .filter(w => w.player);
 
+  const filtered = activeTab === "all"
+    ? enriched
+    : enriched.filter(w => w.statut === activeTab);
+
+  // Counts per tab
+  const counts = Object.fromEntries(
+    STATUTS.map(s => [s.value, enriched.filter(w => w.statut === s.value).length])
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center gap-3 mb-6">
-          <Star className="w-8 h-8 fill-yellow-400 text-yellow-400" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-6">
+
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <Star className="w-8 h-8 fill-yellow-400 text-yellow-400 flex-shrink-0" />
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Ma liste de suivi</h1>
-            <p className="text-slate-600 mt-1">{watchList.length} joueur{watchList.length > 1 ? 's' : ''} suivi{watchList.length > 1 ? 's' : ''}</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Ma liste de suivi</h1>
+            <p className="text-slate-500 text-sm">
+              {watchList.length} joueur{watchList.length !== 1 ? 's' : ''} suivis
+            </p>
           </div>
         </div>
 
-        <div className="mb-6 flex gap-4">
-          <Select value={filterStatut} onValueChange={setFilterStatut}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Tous les statuts" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les statuts</SelectItem>
-              <SelectItem value="En observation">En observation</SelectItem>
-              <SelectItem value="À contacter">À contacter</SelectItem>
-              <SelectItem value="Négociation">Négociation</SelectItem>
-              <SelectItem value="Abandonné">Abandonné</SelectItem>
-            </SelectContent>
-          </Select>
+        {/* Status tabs */}
+        <div className="flex flex-wrap gap-2">
+          {TABS.map(({ value, label, Icon }) => {
+            const count = value === "all" ? enriched.length : (counts[value] || 0);
+            const active = activeTab === value;
+            const sc = value !== "all" ? statutConfig(value) : null;
+            return (
+              <button
+                key={value}
+                onClick={() => setActiveTab(value)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all border ${
+                  active
+                    ? sc ? `${sc.bg} ${sc.text} border-current` : "bg-slate-800 text-white border-slate-800"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {label}
+                {count > 0 && (
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
+                    active ? "bg-white/30" : "bg-slate-100"
+                  }`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
+        {/* Summary cards by status */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {STATUTS.map(({ value, label, Icon, bg, text }) => (
+            <button
+              key={value}
+              onClick={() => setActiveTab(value)}
+              className={`${bg} rounded-2xl p-4 text-left transition-all hover:opacity-80 border border-transparent ${activeTab === value ? "ring-2 ring-current" : ""}`}
+            >
+              <Icon className={`w-5 h-5 ${text} mb-2`} />
+              <div className={`text-2xl font-bold ${text}`}>{counts[value] || 0}</div>
+              <div className={`text-xs font-medium ${text} opacity-70 mt-0.5`}>{label}</div>
+            </button>
+          ))}
+        </div>
+
+        {/* List */}
         {isLoading ? (
-          <div className="flex justify-center items-center py-20">
+          <div className="flex justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
           </div>
-        ) : watchedPlayers.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <Card>
             <CardContent className="py-20 text-center">
               <Star className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-              <p className="text-slate-500 text-lg">Aucun joueur dans votre liste de suivi</p>
-              <p className="text-slate-400 mt-2">Ajoutez des joueurs depuis la base commune</p>
+              <p className="text-slate-500 text-lg font-medium">
+                {activeTab === "all"
+                  ? "Aucun joueur dans votre liste de suivi"
+                  : `Aucun joueur avec le statut "${activeTab}"`}
+              </p>
+              <p className="text-slate-400 mt-2 text-sm">
+                Ajoutez des joueurs depuis la liste des joueurs
+              </p>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {watchedPlayers.map((item) => (
-              <Card key={item.id} className="relative">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <PlayerCard player={item.player} inWatchList={true} />
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex flex-wrap gap-2">
-                    <Badge className={prioriteColors[item.priorite]}>
-                      Priorité: {item.priorite}
-                    </Badge>
-                    <Badge className={statutColors[item.statut]}>
-                      {item.statut}
-                    </Badge>
-                  </div>
-
-                  {item.note && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <p className="text-sm font-semibold text-blue-900 mb-1">Ma note:</p>
-                      {item.note.evaluation && (
-                        <p className="text-2xl font-bold text-blue-600">{item.note.evaluation}/10</p>
-                      )}
-                      {item.note.interet && (
-                        <Badge className="mt-2 bg-blue-100 text-blue-800">
-                          Intérêt: {item.note.interet}
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="flex gap-2 pt-2">
-                    <Select
-                      value={item.priorite}
-                      onValueChange={(value) => updateWatchListMutation.mutate({ 
-                        id: item.id, 
-                        data: { priorite: value } 
-                      })}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Haute">Priorité haute</SelectItem>
-                        <SelectItem value="Moyenne">Priorité moyenne</SelectItem>
-                        <SelectItem value="Basse">Priorité basse</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    <Select
-                      value={item.statut}
-                      onValueChange={(value) => updateWatchListMutation.mutate({ 
-                        id: item.id, 
-                        data: { statut: value } 
-                      })}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="En observation">En observation</SelectItem>
-                        <SelectItem value="À contacter">À contacter</SelectItem>
-                        <SelectItem value="Négociation">Négociation</SelectItem>
-                        <SelectItem value="Abandonné">Abandonné</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => removeFromWatchListMutation.mutate(item.id)}
-                    >
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+          <div className="space-y-3">
+            {filtered.map((item) => (
+              <PlayerRow
+                key={item.id}
+                item={item}
+                player={item.player}
+                note={item.note}
+                onEditStatus={(i, p) => setModalData({ item: i, player: p })}
+                onRemove={(id) => removeFromWatchListMutation.mutate(id)}
+              />
             ))}
           </div>
         )}
       </div>
+
+      {/* Status edit modal */}
+      {modalData && (
+        <PlayerStatusModal
+          player={modalData.player}
+          existingItem={modalData.item}
+          open={!!modalData}
+          onClose={() => setModalData(null)}
+          onConfirm={(statut) =>
+            updateWatchListMutation.mutateAsync({ id: modalData.item.id, data: { statut } })
+          }
+        />
+      )}
     </div>
   );
 }
