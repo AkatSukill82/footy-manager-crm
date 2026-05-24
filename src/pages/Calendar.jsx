@@ -220,6 +220,12 @@ export default function CalendarPage() {
     setError('');
     try {
       const url = await base44.connectors.connectAppUser(CONNECTOR_ID);
+      // Extrait le redirect_uri pour aider au débogage
+      try {
+        const u = new URL(url);
+        const redir = u.searchParams.get('redirect_uri');
+        if (redir) console.info('[FDM Calendar] redirect_uri utilisé par Base44 :', redir);
+      } catch {}
       const popup = window.open(url, '_blank', 'width=520,height=620');
       const timer = setInterval(() => {
         if (!popup || popup.closed) {
