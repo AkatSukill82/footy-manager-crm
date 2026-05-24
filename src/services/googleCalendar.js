@@ -17,7 +17,10 @@ const GoogleCalendarService = {
   // ── Config ────────────────────────────────────────────────
 
   getClientId() {
-    return localStorage.getItem(CLIENT_ID_KEY) || '';
+    const stored = localStorage.getItem(CLIENT_ID_KEY);
+    if (stored && stored.trim()) return stored.trim();
+    // Client ID de l'app FDM (Google Cloud Console → FDM OAuth)
+    return '1022745870815-anpp0ufhj85flr6t7r2rqc46difrudc1.apps.googleusercontent.com';
   },
 
   setClientId(id) {
@@ -25,7 +28,7 @@ const GoogleCalendarService = {
   },
 
   hasClientId() {
-    return !!this.getClientId();
+    return true; // toujours configuré (Client ID hardcodé)
   },
 
   getSelectedCalendar() {
