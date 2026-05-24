@@ -8,6 +8,8 @@ const SCOPES = 'https://www.googleapis.com/auth/calendar';
 const TOKEN_KEY = 'gcal_token';
 const TOKEN_EXPIRY_KEY = 'gcal_token_expiry';
 const CLIENT_ID_KEY = 'gcal_client_id';
+const SELECTED_CAL_KEY = 'gcal_selected_calendar';
+const USER_INFO_KEY = 'gcal_user_info';
 const API_BASE = 'https://www.googleapis.com/calendar/v3';
 
 const GoogleCalendarService = {
@@ -20,6 +22,34 @@ const GoogleCalendarService = {
 
   setClientId(id) {
     localStorage.setItem(CLIENT_ID_KEY, id.trim());
+  },
+
+  hasClientId() {
+    return !!this.getClientId();
+  },
+
+  getSelectedCalendar() {
+    try { return JSON.parse(localStorage.getItem(SELECTED_CAL_KEY)); } catch { return null; }
+  },
+
+  setSelectedCalendar(cal) {
+    localStorage.setItem(SELECTED_CAL_KEY, JSON.stringify(cal));
+  },
+
+  getUserInfoCache() {
+    try { return JSON.parse(localStorage.getItem(USER_INFO_KEY)); } catch { return null; }
+  },
+
+  async getUserInfo() {
+    const token = this.getToken();
+    if (!token) return null;
+    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) return null;
+    const info = await res.json();
+    localStorage.setItem(USER_INFO_KEY, JSON.stringify({ name: info.name, email: info.email, picture: info.picture }));
+    return info;
   },
 
   getToken() {
@@ -38,10 +68,13 @@ const GoogleCalendarService = {
   },
 
   disconnect() {
+    const token = this.getToken();
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(TOKEN_EXPIRY_KEY);
-    if (window.google?.accounts?.oauth2) {
-      window.google.accounts.oauth2.revoke(this.getToken() || '', () => {});
+    localStorage.removeItem(SELECTED_CAL_KEY);
+    localStorage.removeItem(USER_INFO_KEY);
+    if (window.google?.accounts?.oauth2 && token) {
+      window.google.accounts.oauth2.revoke(token, () => {});
     }
   },
 
