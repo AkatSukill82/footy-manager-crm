@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "./utils";
 import {
   Users, Star, LogOut, BarChart3, Bell, Phone, Shield,
-  FileText, Network, ArrowRightLeft, Menu, X, Building2, SearchCheck, Sparkles, Newspaper, FileSpreadsheet
+  FileText, Network, ArrowRightLeft, Menu, X, Building2, Sparkles, Newspaper, FileSpreadsheet
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Toaster } from "@/components/ui/sonner";
@@ -19,8 +19,7 @@ const navItems = [
   { name: "TransferManagement", label: "Transferts",         icon: ArrowRightLeft },
   { name: "Reports",            label: "Rapports",           icon: FileText },
   { name: "AgentNetwork",       label: "Réseau Agents",      icon: Network },
-  { name: "PlayerSearch",       label: "Recherche Joueurs",   icon: SearchCheck },
-  { name: "PredictiveDashboard", label: "Prédictif IA",        icon: Sparkles },
+{ name: "PredictiveDashboard", label: "Prédictif IA",        icon: Sparkles },
   { name: "News",               label: "Journal du jour",    icon: Newspaper },
   { name: "ScoutingIA",         label: "Scouting IA",        icon: Sparkles },
   { name: "ImportExcel",        label: "Import Excel",        icon: FileSpreadsheet },
