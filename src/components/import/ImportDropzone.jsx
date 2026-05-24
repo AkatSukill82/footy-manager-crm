@@ -16,28 +16,26 @@ export default function ImportDropzone({ onExtracted }) {
 
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
+    // Parse the Excel file directly using the raw data approach
+    // We use ExtractDataFromUploadedFile but with a very simple schema
+    // to just get all raw cell values
     const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
       file_url,
       json_schema: {
         type: "object",
         properties: {
-          rows: {
+          contacts: {
             type: "array",
-            description: "Extraire CHAQUE ligne du fichier (hors ligne d'en-tête) comme un objet. Ne pas filtrer, ne pas ignorer de lignes. Mapper les colonnes aux champs ci-dessous même si les noms de colonnes sont en anglais (NAME=nom, CLUB=club, COUNTRY=pays, POSITION=poste, TEL=telephone, EMAIL=email).",
+            description: "Extraire TOUTES les lignes de données. Les colonnes peuvent s'appeler PAYS/COUNTRY, CLUB/TEAM, NOM/NAME, POSITION/POSTE (avec ou sans espaces), EMAIL/EMAIL_CLUB, TEL/TELEPHONE/téléphone_club. IMPORTANT: si PAYS ou CLUB est vide sur certaines lignes, propager la dernière valeur non-vide (les cellules fusionnées Excel sont souvent vides après la première ligne du groupe). Ignorer uniquement les lignes où NOM est vide.",
             items: {
               type: "object",
               properties: {
-                nom: { type: "string", description: "Nom complet. Colonnes: NOM, NAME, PLAYER, JOUEUR, PRÉNOM+NOM" },
-                club: { type: "string", description: "Club. Colonnes: CLUB, TEAM, ÉQUIPE, CLUB_ACTUEL" },
-                pays: { type: "string", description: "Pays. Colonnes: COUNTRY, PAYS, NATION" },
-                poste: { type: "string", description: "Poste ou rôle. Colonnes: POSITION, POSTE, ROLE, TITRE, JOB" },
-                email: { type: "string", description: "Email. Colonnes: EMAIL, MAIL, E-MAIL" },
-                telephone: { type: "string", description: "Téléphone. Colonnes: TEL, PHONE, TELEPHONE, MOBILE, TÉL" },
-                nationalite: { type: "string", description: "Nationalité. Colonnes: NATIONALITY, NATIONALITÉ, NAT" },
-                age: { type: "number", description: "Âge. Colonnes: AGE, ÂGE" },
-                date_naissance: { type: "string", description: "Date de naissance. Colonnes: DOB, DATE_NAISSANCE, BIRTH_DATE" },
-                valeur_marchande: { type: "number", description: "Valeur marchande en millions. Colonnes: VALUE, VALEUR, MARKET_VALUE" },
-                contrat_fin: { type: "string", description: "Fin de contrat. Colonnes: CONTRACT, CONTRAT, CONTRACT_END" }
+                nom: { type: "string" },
+                club: { type: "string" },
+                pays: { type: "string" },
+                poste: { type: "string" },
+                email: { type: "string" },
+                telephone: { type: "string" }
               }
             }
           }
@@ -55,46 +53,40 @@ export default function ImportDropzone({ onExtracted }) {
     console.log("Extraction brute:", JSON.stringify(result.output, null, 2));
 
     // result.output can be an array (one entry per sheet) or a single object
-    let rawRows = [];
+    let contacts = [];
     if (Array.isArray(result.output)) {
-      // Flatten all sheets
       for (const sheet of result.output) {
-        if (Array.isArray(sheet?.rows)) rawRows = rawRows.concat(sheet.rows);
-        else if (Array.isArray(sheet)) rawRows = rawRows.concat(sheet);
+        if (Array.isArray(sheet?.contacts)) contacts = contacts.concat(sheet.contacts);
+        else if (Array.isArray(sheet)) contacts = contacts.concat(sheet);
       }
     } else {
-      rawRows = result.output?.rows || [];
+      contacts = result.output?.contacts || [];
     }
 
-    const rows = rawRows;
+    // Filter out empty rows
+    contacts = contacts.filter(r => r.nom && r.nom.trim());
 
-    if (rows.length === 0) {
-      setError("Aucune donnée reconnue. Vérifiez que votre fichier a des colonnes : NOM (ou NAME), CLUB, POSTE (ou POSITION).");
+    if (contacts.length === 0) {
+      setError("Aucune donnée reconnue dans ce fichier. Assurez-vous que le fichier contient des colonnes NOM/NAME et CLUB.");
       return;
     }
 
-    // Classify rows into contacts (staff) vs joueurs (players)
-    const staffKeywords = ["ceo","director","coach","manager","head","administrator","recruitment","communication","president","sport","assistant","staff","secretary","operations","relations","marketing","finance","medical","analyst","scout","agent","responsable","directeur","entraîneur","recruteur","chef"];
-    const footballPositions = ["gardien","défenseur","latéral","milieu","ailier","attaquant","goalkeeper","defender","midfielder","forward","winger","striker","centre-back","full-back"];
-
-    const contacts = [];
+    // Separate players from staff based on position keywords
+    const footballPositions = ["gardien","défenseur","latéral","milieu","ailier","attaquant","goalkeeper","defender","midfielder","forward","winger","striker","centre-back","full-back","droit","gauche","buteur","libero"];
     const joueurs = [];
+    const staffContacts = [];
 
-    for (const row of rows) {
-      if (!row.nom) continue;
+    for (const row of contacts) {
       const postelower = (row.poste || "").toLowerCase();
-      const isStaff = staffKeywords.some(k => postelower.includes(k));
       const isPlayer = footballPositions.some(k => postelower.includes(k));
-
-      if (isStaff && !isPlayer) {
-        contacts.push(row);
+      if (isPlayer) {
+        joueurs.push({ ...row, club_actuel: row.club });
       } else {
-        // default to player if unclear
-        joueurs.push({ ...row, club_actuel: row.club_actuel || row.club });
+        staffContacts.push(row);
       }
     }
 
-    onExtracted({ contacts, joueurs, clubs: [], nom_fichier: file.name });
+    onExtracted({ contacts: staffContacts, joueurs, clubs: [], nom_fichier: file.name });
   };
 
   const handleDrop = (e) => {
