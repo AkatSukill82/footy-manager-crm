@@ -18,6 +18,7 @@ import EnrichPlayerAI from "../components/players/EnrichPlayerAI";
 import PlayerComparison from "../components/players/PlayerComparison";
 import ImportTransfermarktPhoto from "../components/players/ImportTransfermarktPhoto";
 import PlayerFullProfile from "../components/players/PlayerFullProfile";
+import PlayerScoutingRatings from "../components/players/PlayerScoutingRatings";
 import PlayerChartsPanel from "../components/players/PlayerChartsPanel";
 import { format } from "date-fns";
 import TransfermarktImage from "../components/ui/TransfermarktImage";
@@ -358,8 +359,13 @@ export default function PlayerDetailPage() {
               note={playerNote}
               onUpdate={(data) => updateNoteMutation.mutate(data)}
             />
-            
-            <SimilarPlayers 
+
+            <PlayerScoutingRatings
+              player={player}
+              onSave={(data) => updatePlayerMutation.mutateAsync(data)}
+            />
+
+            <SimilarPlayers
               currentPlayer={player}
               allPlayers={allPlayers}
             />
