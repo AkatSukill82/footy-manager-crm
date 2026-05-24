@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Upload, FileSpreadsheet, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import * as XLSX from "xlsx";
+import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs";
 
 // Normalise une clé de colonne : minuscules, sans accents, espaces → _
 const normalizeKey = (k) =>
