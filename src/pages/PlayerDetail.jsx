@@ -59,30 +59,36 @@ export default function PlayerDetailPage() {
     enabled: !!playerId,
   });
 
+  // Single auth call shared by all user-scoped queries
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const userEmail = currentUser?.email;
+
   const { data: watchListItem } = useQuery({
-    queryKey: ['watchListItem', playerId],
+    queryKey: ['watchListItem', playerId, userEmail],
     queryFn: async () => {
-      const user = await base44.auth.me();
-      const items = await base44.entities.WatchList.filter({ 
+      const items = await base44.entities.WatchList.filter({
         player_id: playerId,
-        created_by: user.email
+        created_by: userEmail
       });
       return items[0];
     },
-    enabled: !!playerId,
+    enabled: !!playerId && !!userEmail,
   });
 
   const { data: playerNote } = useQuery({
-    queryKey: ['playerNote', playerId],
+    queryKey: ['playerNote', playerId, userEmail],
     queryFn: async () => {
-      const user = await base44.auth.me();
-      const notes = await base44.entities.PlayerNote.filter({ 
+      const notes = await base44.entities.PlayerNote.filter({
         player_id: playerId,
-        created_by: user.email
+        created_by: userEmail
       });
       return notes[0];
     },
-    enabled: !!playerId,
+    enabled: !!playerId && !!userEmail,
   });
 
   const { data: allPlayers = [] } = useQuery({
@@ -91,27 +97,21 @@ export default function PlayerDetailPage() {
   });
 
   const { data: contacts = [] } = useQuery({
-    queryKey: ['contacts', playerId],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.Contact.filter({ 
-        player_id: playerId,
-        created_by: user.email
-      });
-    },
-    enabled: !!playerId,
+    queryKey: ['contacts', playerId, userEmail],
+    queryFn: () => base44.entities.Contact.filter({
+      player_id: playerId,
+      created_by: userEmail
+    }),
+    enabled: !!playerId && !!userEmail,
   });
 
   const { data: reminders = [] } = useQuery({
-    queryKey: ['reminders', playerId],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.Reminder.filter({ 
-        player_id: playerId,
-        created_by: user.email
-      });
-    },
-    enabled: !!playerId,
+    queryKey: ['reminders', playerId, userEmail],
+    queryFn: () => base44.entities.Reminder.filter({
+      player_id: playerId,
+      created_by: userEmail
+    }),
+    enabled: !!playerId && !!userEmail,
   });
 
   const updatePlayerMutation = useMutation({
