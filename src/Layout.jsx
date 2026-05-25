@@ -3,86 +3,117 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "./utils";
 import {
   Users, Star, LogOut, BarChart3, Bell, Phone, Shield,
-  FileText, Network, ArrowRightLeft, Menu, X, Building2, Sparkles, Newspaper, FileSpreadsheet, CalendarDays
+  FileText, Network, ArrowRightLeft, Menu, X, Building2,
+  Sparkles, Newspaper, FileSpreadsheet, CalendarDays, UserCircle,
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Toaster } from "@/components/ui/sonner";
+import { useLanguage } from "./lib/LanguageContext";
+import { t } from "./i18n/translations";
+import { useQuery } from "@tanstack/react-query";
 
-const navItems = [
-  { name: "Dashboard",          label: "Tableau de bord",   icon: BarChart3 },
-  { name: "Players",            label: "Joueurs",            icon: Users },
-  { name: "Clubs",              label: "Clubs",              icon: Building2 },
-  { name: "MyWatchList",        label: "Ma liste",           icon: Star },
-  { name: "Alerts",             label: "Alertes",            icon: Bell },
-  { name: "Contacts",           label: "Contacts",           icon: Phone },
-  { name: "Teams",              label: "Équipes",            icon: Shield },
-  { name: "TransferManagement", label: "Transferts",         icon: ArrowRightLeft },
-  { name: "Reports",            label: "Rapports",           icon: FileText },
-  { name: "AgentNetwork",       label: "Réseau Agents",      icon: Network },
-  { name: "Calendar",            label: "Calendrier",          icon: CalendarDays },
-  { name: "PredictiveDashboard", label: "Prédictif IA",        icon: Sparkles },
-  { name: "News",               label: "Journal du jour",    icon: Newspaper },
-  { name: "ScoutingIA",         label: "Scouting IA",        icon: Sparkles },
-  { name: "ImportExcel",        label: "Import Excel",        icon: FileSpreadsheet },
-];
+const navItems = (lang) => [
+  { name: "Dashboard",           key: "dashboard",  icon: BarChart3 },
+  { name: "Players",             key: "players",    icon: Users },
+  { name: "Clubs",               key: "clubs",      icon: Building2 },
+  { name: "MyWatchList",         key: "watchlist",  icon: Star },
+  { name: "Alerts",              key: "alerts",     icon: Bell },
+  { name: "Contacts",            key: "contacts",   icon: Phone },
+  { name: "Teams",               key: "teams",      icon: Shield },
+  { name: "TransferManagement",  key: "transfers",  icon: ArrowRightLeft },
+  { name: "Reports",             key: "reports",    icon: FileText },
+  { name: "AgentNetwork",        key: "network",    icon: Network },
+  { name: "Calendar",            key: "calendar",   icon: CalendarDays },
+  { name: "PredictiveDashboard", key: "predictive", icon: Sparkles },
+  { name: "News",                key: "news",       icon: Newspaper },
+  { name: "ScoutingIA",          key: "scouting",   icon: Sparkles },
+  { name: "ImportExcel",         key: "import",     icon: FileSpreadsheet },
+].map(item => ({ ...item, label: t(lang, `nav.${item.key}`) }));
 
-// Bottom nav shows 5 key items; rest accessible via drawer
 const bottomPrimary = ["Dashboard", "Players", "Teams", "TransferManagement", "Clubs"];
 
 export default function Layout({ children, currentPageName }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { lang } = useLanguage();
+  const items = navItems(lang);
+
+  const { data: user } = useQuery({
+    queryKey: ["currentUser"],
+    queryFn: () => base44.auth.me(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const initials = user?.email ? user.email.slice(0, 2).toUpperCase() : "??";
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
 
-      {/* ── DESKTOP SIDEBAR ── */}
-      <aside className="hidden md:flex w-64 bg-white border-r border-slate-200 flex-col flex-shrink-0">
-        <div className="p-6 border-b border-slate-200">
+      {/* ── DESKTOP SIDEBAR (fixed) ── */}
+      <aside className="hidden md:flex fixed top-0 left-0 h-screen w-64 bg-white shadow-[2px_0_20px_rgba(0,0,0,0.06)] flex-col z-30">
+
+        {/* Logo */}
+        <div className="p-5 border-b border-slate-100 flex-shrink-0">
           <Link to={createPageUrl("Dashboard")} className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/30">
               <Users className="w-6 h-6 text-white" />
             </div>
             <div>
               <div className="font-bold text-lg text-slate-900">FDM</div>
-              <div className="text-xs text-slate-500">Football Data Manager</div>
+              <div className="text-xs text-slate-400">Football Data Manager</div>
             </div>
           </Link>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
+        {/* Nav items */}
+        <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
+          {items.map((item) => {
             const Icon = item.icon;
             const isActive = currentPageName === item.name;
             return (
               <Link
                 key={item.name}
                 to={createPageUrl(item.name)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
                   isActive
-                    ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/30"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md shadow-green-500/25"
+                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
                 }`}
               >
-                <Icon className="w-5 h-5 flex-shrink-0" />
-                <span className="font-medium truncate">{item.label}</span>
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                <span className="font-medium text-sm truncate">{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        <div className="p-4 border-t border-slate-200">
+        {/* Bottom: Profile + Logout */}
+        <div className="p-3 border-t border-slate-100 space-y-0.5 flex-shrink-0">
+          <Link
+            to={createPageUrl("Profile")}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+              currentPageName === "Profile"
+                ? "bg-slate-100 text-slate-900"
+                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+            }`}
+          >
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center flex-shrink-0">
+              <span className="text-white text-xs font-bold">{initials}</span>
+            </div>
+            <span className="font-medium text-sm truncate">{t(lang, "nav.profile")}</span>
+          </Link>
+
           <button
             onClick={() => base44.auth.logout()}
-            className="w-full flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-slate-500 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
           >
-            <LogOut className="w-5 h-5" />
-            <span className="font-medium">Déconnexion</span>
+            <LogOut className="w-4 h-4 flex-shrink-0" />
+            <span className="font-medium text-sm">{t(lang, "nav.logout")}</span>
           </button>
         </div>
       </aside>
 
-      {/* ── MAIN CONTENT ── */}
-      <main className="flex-1 overflow-auto min-w-0 pb-20 md:pb-0">
+      {/* ── MAIN CONTENT (offset for fixed sidebar) ── */}
+      <main className="flex-1 min-w-0 pb-20 md:pb-0 md:ml-64">
         {children}
       </main>
 
@@ -90,7 +121,7 @@ export default function Layout({ children, currentPageName }) {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-xl">
         <div className="flex items-center h-16">
           {bottomPrimary.map((pageName) => {
-            const item = navItems.find(n => n.name === pageName);
+            const item = items.find(n => n.name === pageName);
             if (!item) return null;
             const Icon = item.icon;
             const isActive = currentPageName === item.name;
@@ -121,12 +152,12 @@ export default function Layout({ children, currentPageName }) {
             }`}
           >
             <Menu className="w-5 h-5" />
-            <span className="text-[10px] font-medium leading-none">Plus</span>
+            <span className="text-[10px] font-medium leading-none">{t(lang, "nav.more")}</span>
           </button>
         </div>
       </nav>
 
-      {/* ── MOBILE DRAWER (more pages) ── */}
+      {/* ── MOBILE DRAWER ── */}
       {drawerOpen && (
         <>
           <div
@@ -147,7 +178,7 @@ export default function Layout({ children, currentPageName }) {
             </div>
 
             <div className="grid grid-cols-3 gap-2 p-4">
-              {navItems.filter(i => !bottomPrimary.includes(i.name)).map((item) => {
+              {items.filter(i => !bottomPrimary.includes(i.name)).map((item) => {
                 const Icon = item.icon;
                 const isActive = currentPageName === item.name;
                 return (
@@ -166,6 +197,20 @@ export default function Layout({ children, currentPageName }) {
                   </Link>
                 );
               })}
+
+              {/* Profile in drawer */}
+              <Link
+                to={createPageUrl("Profile")}
+                onClick={() => setDrawerOpen(false)}
+                className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${
+                  currentPageName === "Profile"
+                    ? "bg-green-50 text-green-700"
+                    : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                <UserCircle className="w-6 h-6" />
+                <span className="text-xs font-medium text-center leading-tight">{t(lang, "nav.profile")}</span>
+              </Link>
             </div>
 
             <div className="px-4 pb-6">
@@ -174,7 +219,7 @@ export default function Layout({ children, currentPageName }) {
                 className="w-full flex items-center justify-center gap-2 py-3 text-red-500 bg-red-50 rounded-xl font-medium"
               >
                 <LogOut className="w-5 h-5" />
-                Déconnexion
+                {t(lang, "nav.logout")}
               </button>
             </div>
           </div>
