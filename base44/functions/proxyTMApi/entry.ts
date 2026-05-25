@@ -1,45 +1,49 @@
 /**
  * Proxy server-side pour l'API Transfermarkt (https://transfermarkt-api.fly.dev)
- * Nécessaire car l'API ne supporte pas le CORS depuis un navigateur.
- * Usage : base44.functions.invoke("proxyTMApi", { path: "/players/search/Messi" })
+ * Toujours retourner HTTP 200 — base44.functions.invoke throw sur tout autre status.
+ * Les erreurs sont dans le corps : { error: "..." }
  */
 Deno.serve(async (req) => {
+  let path = "";
   try {
     const body = await req.json();
-    const path = body?.path;
+    path = body?.path || "";
 
-    if (!path || typeof path !== "string") {
-      return Response.json({ error: "path requis" }, { status: 400 });
+    if (!path) {
+      return Response.json({ error: "path manquant" });
     }
 
+    // Reconstruct clean URL (path already contains encoded query string)
     const url = `https://transfermarkt-api.fly.dev${path}`;
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 15000);
+    const timer = setTimeout(() => controller.abort(), 12000);
 
-    let response;
+    let tmRes;
     try {
-      response = await fetch(url, {
+      tmRes = await fetch(url, {
         signal: controller.signal,
         headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
           "Accept": "application/json",
+          "User-Agent": "Mozilla/5.0",
         },
       });
     } finally {
       clearTimeout(timer);
     }
 
-    if (!response.ok) {
-      return Response.json(
-        { error: `Transfermarkt API: HTTP ${response.status}` },
-        { status: 502 }
-      );
+    if (!tmRes.ok) {
+      const body = await tmRes.text().catch(() => "");
+      return Response.json({ error: `TM API ${tmRes.status}: ${body.slice(0, 200)}` });
     }
 
-    const data = await response.json();
+    const data = await tmRes.json();
     return Response.json(data);
-  } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+
+  } catch (err) {
+    const msg = err?.name === "AbortError"
+      ? "Timeout: l'API Transfermarkt n'a pas répondu à temps"
+      : (err?.message || "Erreur inconnue");
+    return Response.json({ error: msg });
   }
 });
