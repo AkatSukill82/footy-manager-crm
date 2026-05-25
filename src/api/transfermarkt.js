@@ -1,20 +1,18 @@
 /* ============================================
    TRANSFERMARKT API SERVICE
-   Direct calls to https://transfermarkt-api.fly.dev
-   The API has CORS enabled (allow_origins=["*"]) so no proxy is needed.
+   Calls https://transfermarkt-api.fly.dev via the "proxyTMApi" Deno function
+   (the API blocks direct browser requests — CORS not enabled).
    ============================================ */
 
-const TM_BASE = "https://transfermarkt-api.fly.dev";
+import { base44 } from "@/api/base44Client";
 
 const TransfermarktAPI = {
 
-  // ── Direct fetch — works in browser (CORS enabled on TM API) ────────────
+  // ── All requests go through the Deno server-side proxy ──────────────────
   async _call(path) {
-    const res = await fetch(`${TM_BASE}${path}`, {
-      headers: { Accept: "application/json" },
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    const res = await base44.functions.invoke("proxyTMApi", { path });
+    if (res?.error) throw new Error(res.error);
+    return res;
   },
 
   // ── Formatters ───────────────────────────────────────────────────────────

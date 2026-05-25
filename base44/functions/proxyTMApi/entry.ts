@@ -1,28 +1,39 @@
 /**
  * Proxy server-side pour l'API Transfermarkt (https://transfermarkt-api.fly.dev)
- * Évite les problèmes CORS et le proxy Vite (dev-only).
+ * Nécessaire car l'API ne supporte pas le CORS depuis un navigateur.
  * Usage : base44.functions.invoke("proxyTMApi", { path: "/players/search/Messi" })
  */
 Deno.serve(async (req) => {
   try {
-    const { path } = await req.json();
+    const body = await req.json();
+    const path = body?.path;
+
     if (!path || typeof path !== "string") {
       return Response.json({ error: "path requis" }, { status: 400 });
     }
 
     const url = `https://transfermarkt-api.fly.dev${path}`;
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; FDM-Scout/1.0)",
-        "Accept": "application/json",
-      },
-      signal: AbortSignal.timeout(15000),
-    });
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+
+    let response;
+    try {
+      response = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "Accept": "application/json",
+        },
+      });
+    } finally {
+      clearTimeout(timer);
+    }
 
     if (!response.ok) {
       return Response.json(
-        { error: `Transfermarkt API error: HTTP ${response.status}` },
-        { status: response.status }
+        { error: `Transfermarkt API: HTTP ${response.status}` },
+        { status: 502 }
       );
     }
 
