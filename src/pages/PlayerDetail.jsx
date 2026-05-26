@@ -22,6 +22,7 @@ import PlayerFullProfile from "../components/players/PlayerFullProfile";
 import PlayerScoutingRatings from "../components/players/PlayerScoutingRatings";
 import PlayerChartsPanel from "../components/players/PlayerChartsPanel";
 import SyncPlayerButton from "../components/players/SyncPlayerButton";
+import UpcomingMatches from "../components/players/UpcomingMatches";
 import { format } from "date-fns";
 import TransfermarktImage from "../components/ui/TransfermarktImage";
 import { exportPlayerPDF } from "../lib/exportPlayerPDF";
@@ -425,6 +426,8 @@ export default function PlayerDetailPage() {
               player={player}
               onApply={(data) => updatePlayerMutation.mutate(data)}
             />
+
+            <UpcomingMatches playerClub={player.club_actuel} />
 
             <EnrichPlayerAI
               player={player}

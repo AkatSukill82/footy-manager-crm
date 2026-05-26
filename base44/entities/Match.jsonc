@@ -1,0 +1,61 @@
+{
+  "name": "Match",
+  "type": "object",
+  "properties": {
+    "team1_id": {
+      "type": "string",
+      "description": "ID de l'\u00e9quipe 1"
+    },
+    "team2_id": {
+      "type": "string",
+      "description": "ID de l'\u00e9quipe 2"
+    },
+    "club1": {
+      "type": "string",
+      "description": "Nom du club 1"
+    },
+    "club2": {
+      "type": "string",
+      "description": "Nom du club 2"
+    },
+    "competition": {
+      "type": "string",
+      "description": "Comp\u00e9tition (Ligue 1, Premier League, etc.)"
+    },
+    "lieu": {
+      "type": "string",
+      "description": "Lieu du match"
+    },
+    "score_team1": {
+      "type": "number",
+      "description": "Score de l'\u00e9quipe 1"
+    },
+    "score_team2": {
+      "type": "number",
+      "description": "Score de l'\u00e9quipe 2"
+    },
+    "date_match": {
+      "type": "string",
+      "format": "date",
+      "description": "Date du match"
+    },
+    "type_match": {
+      "type": "string",
+      "enum": [
+        "Amical",
+        "Championnat",
+        "Coupe",
+        "Simulation"
+      ],
+      "default": "Simulation",
+      "description": "Type de match"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Notes sur le match"
+    }
+  },
+  "required": [
+    "date_match"
+  ]
+}
