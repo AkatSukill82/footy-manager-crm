@@ -298,7 +298,7 @@ export default function ClubContactsPage() {
             <div className="w-9 h-9 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center shadow-md">
               <Users className="w-5 h-5 text-white" />
             </div>
-            Contacts clubs & agents
+            Contacts clubs
           </h1>
           <p className="text-slate-500 text-sm mt-1">
             Dirigeants, entraîneurs, directeurs sportifs, agents importés
