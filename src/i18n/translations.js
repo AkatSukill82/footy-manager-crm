@@ -288,7 +288,7 @@ export const translations = {
     scoutingRatings: {
       technique: "Technique", physical: "Physique",
       gameIQ: "Intelligence de jeu", mental: "Mental / Caractère",
-      attitude: "Attitude & Esprit d'équipe",
+      attitude: "Personalité",
       title: "Notes Scout", avg: "Moy. {avg}/10", saving: "Enregistrement…",
     },
     watchlist: {
@@ -1220,7 +1220,7 @@ export const translations = {
     scoutingRatings: {
       technique: "Técnica", physical: "Físico",
       gameIQ: "Inteligencia de juego", mental: "Mental / Carácter",
-      attitude: "Actitud & Espíritu de equipo",
+      attitude: "Personalidad",
       title: "Notas Scout", avg: "Med. {avg}/10", saving: "Guardando…",
     },
     watchlist: {
@@ -2146,7 +2146,7 @@ export const translations = {
     scoutingRatings: {
       technique: "Technique", physical: "Physical",
       gameIQ: "Game intelligence", mental: "Mental / Character",
-      attitude: "Attitude & Team spirit",
+      attitude: "Personality",
       title: "Scout Ratings", avg: "Avg {avg}/10", saving: "Saving…",
     },
     watchlist: {
