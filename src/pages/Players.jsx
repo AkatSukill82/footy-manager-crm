@@ -172,7 +172,7 @@ export default function PlayersPage() {
                 <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="bg-white border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-50 shadow-sm">
                 {filteredPlayers.map((player) => (
                   <PlayerCard
                     key={player.id}
