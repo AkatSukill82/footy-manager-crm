@@ -162,6 +162,7 @@ export default function ImportExcel() {
               <RefreshCw className="w-12 h-12 text-green-500 animate-spin mx-auto mb-4" />
               <h2 className="text-xl font-bold text-slate-800 mb-2">{t(lang, 'import.processingTitle')}</h2>
               <p className="text-slate-500">{t(lang, 'import.processingDesc')}</p>
+              <p className="text-slate-400 text-xs mt-3">⏳ L'enrichissement IA peut prendre 1–2 minutes selon la taille du fichier</p>
             </CardContent>
           </Card>
         )}
