@@ -184,13 +184,18 @@ export default function ImportDropzone({ onExtracted }) {
           .trim();
 
         const posteLower = normalizeKey(String(row.poste || ""));
-        const isPlayer = FOOTBALL_POSITIONS.some((k) => posteLower.includes(k));
+        const hasFootballPosition = FOOTBALL_POSITIONS.some((k) => posteLower.includes(k));
+        const hasNoPoste = !row.poste || String(row.poste).trim() === "";
 
-        // Toute ligne avec un poste non-footballistique (ou sans poste mais avec un club) va en contact
+        // Si le poste est vide, on regarde des indices footballistiques (taille, buts, date_naissance)
+        const hasPlayerStats = row.taille || row.buts !== undefined || row.date_naissance || row.valeur_marchande;
+        const isPlayer = hasFootballPosition || (hasNoPoste && hasPlayerStats);
+
+        // Toute ligne avec un poste NON-footballistique (CEO, Coach, Agent, Scout...) → contact
         if (isPlayer) {
           joueurs.push({ ...row, nom: nomComplet, club_actuel: row.club });
         } else {
-          // Contact : nom + club suffisent. Poste libre (CEO, Agent, Directeur sportif…)
+          // Contact : poste libre (CEO, Agent, Directeur sportif, Head Coach, Scout…)
           staffContacts.push({ ...row, nom: nomComplet, club: row.club || lastClub });
         }
       }
