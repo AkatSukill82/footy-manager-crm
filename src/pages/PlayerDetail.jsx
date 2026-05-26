@@ -85,16 +85,10 @@ export default function PlayerDetailPage() {
     enabled: !!playerId && !!userEmail,
   });
 
-  const { data: playerNote } = useQuery({
-    queryKey: ['playerNote', playerId, userEmail],
-    queryFn: async () => {
-      const notes = await base44.entities.PlayerNote.filter({
-        player_id: playerId,
-        created_by: userEmail
-      });
-      return notes[0] ?? null;
-    },
-    enabled: !!playerId && !!userEmail,
+  const { data: playerNotes = [] } = useQuery({
+    queryKey: ['playerNotes', playerId],
+    queryFn: () => base44.entities.PlayerNote.filter({ player_id: playerId }),
+    enabled: !!playerId,
   });
 
   const { data: allPlayers = [] } = useQuery({
@@ -171,17 +165,19 @@ export default function PlayerDetailPage() {
     },
   });
 
+  const createNoteMutation = useMutation({
+    mutationFn: (data) => base44.entities.PlayerNote.create({ ...data, player_id: playerId }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['playerNotes', playerId] }),
+  });
+
   const updateNoteMutation = useMutation({
-    mutationFn: (data) => {
-      if (playerNote) {
-        return base44.entities.PlayerNote.update(playerNote.id, data);
-      } else {
-        return base44.entities.PlayerNote.create({ ...data, player_id: playerId });
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['playerNote', playerId] });
-    },
+    mutationFn: ({ id, data }) => base44.entities.PlayerNote.update(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['playerNotes', playerId] }),
+  });
+
+  const deleteNoteMutation = useMutation({
+    mutationFn: (id) => base44.entities.PlayerNote.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['playerNotes', playerId] }),
   });
 
   const updateReminderMutation = useMutation({
@@ -271,7 +267,7 @@ export default function PlayerDetailPage() {
                       variant="outline"
                       size="icon"
                       title={t(lang, 'players.exportPDF')}
-                      onClick={() => exportPlayerPDF(player, playerNote)}
+                      onClick={() => exportPlayerPDF(player, playerNotes[0])}
                     >
                       <FileDown className="w-4 h-4 text-blue-600" />
                     </Button>
@@ -387,8 +383,10 @@ export default function PlayerDetailPage() {
 
           <div className="space-y-6">
             <PlayerNoteCard
-              note={playerNote}
-              onUpdate={(data) => updateNoteMutation.mutate(data)}
+              notes={playerNotes}
+              onCreate={(data) => createNoteMutation.mutate(data)}
+              onUpdate={(id, data) => updateNoteMutation.mutate({ id, data })}
+              onDelete={(id) => deleteNoteMutation.mutate(id)}
             />
 
             <PlayerScoutingRatings
