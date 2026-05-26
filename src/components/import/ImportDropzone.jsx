@@ -1,5 +1,4 @@
 import React, { useState, useRef } from "react";
-import { base44 } from "@/api/base44Client";
 import { Upload, FileSpreadsheet, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,84 +13,195 @@ const normalizeKey = (k) =>
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
     .trim()
-    .replace(/\s+/g, "_");
+    .replace(/[\s\-\/]+/g, "_");
 
-// Mappe les noms de colonnes courants vers nos champs internes
+// Normalise une valeur brute : convertit Date XLSX → string ISO YYYY-MM-DD
+const normalizeValue = (v) => {
+  if (v instanceof Date && !isNaN(v)) {
+    return v.toISOString().split("T")[0];
+  }
+  return v;
+};
+
+// Mapping exhaustif alias → champ interne
 const FIELD_MAP = {
-  // Noms
-  name: "nom", last_name: "nom", lastname: "nom", surname: "nom", joueur: "nom", player: "nom",
-  full_name: "nom", fullname: "nom", nom_complet: "nom", contact: "nom",
-  first_name: "prenom", firstname: "prenom",
-  // Club / Équipe (incl. pluriel et variantes sans accent)
+  // ── Nom ──────────────────────────────────────────────────────────────────────
+  name: "nom", last_name: "nom", lastname: "nom", surname: "nom",
+  joueur: "nom", player: "nom", full_name: "nom", fullname: "nom",
+  nom_complet: "nom", player_name: "nom", jugador: "nom", giocatore: "nom",
+  player_fullname: "nom",
+  // ── Prénom ───────────────────────────────────────────────────────────────────
+  first_name: "prenom", firstname: "prenom", given_name: "prenom",
+  // ── Poste ────────────────────────────────────────────────────────────────────
+  position: "poste", role: "poste", pos: "poste",
+  position_principale: "poste", main_position: "poste",
+  // ── Poste secondaire ─────────────────────────────────────────────────────────
+  position_2: "poste_secondaire", second_position: "poste_secondaire",
+  position_secondaire: "poste_secondaire", poste2: "poste_secondaire",
+  alt_position: "poste_secondaire",
+  // ── Club ─────────────────────────────────────────────────────────────────────
   team: "club", equipe: "club", club_name: "club", club_actuel: "club",
-  clubs: "club",
-  // Pays
-  country: "pays", nation: "pays",
-  // Nationalité (variantes sans accent)
-  nationalite: "nationalite", nationalit: "nationalite", nationality: "nationalite",
-  // Poste / Fonction (variantes sans accent)
-  position: "poste", role: "poste", title: "poste", titre: "poste", fonction: "poste", job: "poste",
-  // Contact (variantes sans accent)
-  mail: "email", email_club: "email", courriel: "email", email_contact: "email",
-  phone: "telephone", tel: "telephone", mobile: "telephone", gsm: "telephone", phone_number: "telephone",
-  tlphone: "telephone", tlephone: "telephone", tel_phone: "telephone",
-  // Liens / profils
-  lien: "lien", liens: "lien", link: "lien", links: "lien", url: "lien",
-  profil: "lien", profile: "lien", website: "lien", site: "lien",
-  lien_profil: "lien", profil_lien: "lien", transfermarkt: "lien", tm_link: "lien",
-  // LinkedIn (champ dédié)
-  linkedin: "linkedin", lien_linkedin: "linkedin", profil_linkedin: "linkedin",
-  // WhatsApp / tél contact
-  tel_contact: "telephone", telephone_contact: "telephone", whatsapp: "telephone",
-  numero_whatsapp: "telephone",
-  // Football
-  birth: "date_naissance", dob: "date_naissance", birthdate: "date_naissance", naissance: "date_naissance",
-  height: "taille", weight: "poids",
-  goals: "buts", assists: "passes_decisives", games: "matchs_joues", appearances: "matchs_joues",
-  value: "valeur_marchande", market_value: "valeur_marchande",
+  current_club: "club", club_nom: "club", squad: "club", clube: "club",
+  // ── Nationalité ──────────────────────────────────────────────────────────────
+  country: "nationalite", nation: "nationalite", nationality: "nationalite",
+  nat: "nationalite", citizenship: "nationalite", pays_origine: "nationalite",
+  pays_naissance: "nationalite",
+  // ── Nationalité secondaire ───────────────────────────────────────────────────
+  nationalite2: "nationalite_secondaire", second_nationality: "nationalite_secondaire",
+  dual_nationality: "nationalite_secondaire", nationality_2: "nationalite_secondaire",
+  // ── Email ─────────────────────────────────────────────────────────────────────
+  mail: "email", courriel: "email", e_mail: "email", email_joueur: "email",
+  // ── Téléphone ────────────────────────────────────────────────────────────────
+  phone: "telephone", tel: "telephone", mobile: "telephone",
+  gsm: "telephone", cell: "telephone", phone_number: "telephone",
+  contact_number: "telephone",
+  // ── WhatsApp ─────────────────────────────────────────────────────────────────
+  wapp: "whatsapp", whats: "whatsapp", wa: "whatsapp",
+  // ── Date de naissance ────────────────────────────────────────────────────────
+  birth: "date_naissance", dob: "date_naissance", birthdate: "date_naissance",
+  naissance: "date_naissance", birth_date: "date_naissance",
+  date_de_naissance: "date_naissance", born: "date_naissance",
+  annee_naissance: "date_naissance", born_date: "date_naissance",
+  // ── Lieu de naissance ────────────────────────────────────────────────────────
+  birthplace: "lieu_naissance", birth_place: "lieu_naissance",
+  lieu_de_naissance: "lieu_naissance", born_in: "lieu_naissance",
+  birth_city: "lieu_naissance",
+  // ── Taille ───────────────────────────────────────────────────────────────────
+  height: "taille", height_cm: "taille", taille_cm: "taille", size: "taille",
+  // ── Poids ────────────────────────────────────────────────────────────────────
+  weight: "poids", weight_kg: "poids", poids_kg: "poids",
+  // ── Pied fort ────────────────────────────────────────────────────────────────
+  foot: "pied_fort", pied: "pied_fort", preferred_foot: "pied_fort",
+  pied_dominant: "pied_fort", stronger_foot: "pied_fort", best_foot: "pied_fort",
+  // ── Buts ─────────────────────────────────────────────────────────────────────
+  goals: "buts", goals_scored: "buts", g: "buts", gls: "buts",
+  // ── Passes décisives ─────────────────────────────────────────────────────────
+  assists: "passes_decisives", ast: "passes_decisives", a: "passes_decisives",
+  // ── Matchs joués ─────────────────────────────────────────────────────────────
+  games: "matchs_joues", appearances: "matchs_joues", played: "matchs_joues",
+  matches: "matchs_joues", apps: "matchs_joues", games_played: "matchs_joues",
+  mp: "matchs_joues", gp: "matchs_joues",
+  // ── Minutes ──────────────────────────────────────────────────────────────────
+  minutes: "minutes_jouees", mins: "minutes_jouees", minutes_played: "minutes_jouees",
+  min: "minutes_jouees",
+  // ── Cartons ──────────────────────────────────────────────────────────────────
+  yellow: "cartons_jaunes", yellow_cards: "cartons_jaunes", yc: "cartons_jaunes",
+  red: "cartons_rouges", red_cards: "cartons_rouges", rc: "cartons_rouges",
+  // ── Note ─────────────────────────────────────────────────────────────────────
+  rating: "note_moyenne", score: "note_moyenne", note: "note_moyenne",
+  avg_rating: "note_moyenne", note_moy: "note_moyenne", sofascore: "note_moyenne",
+  average: "note_moyenne", avg: "note_moyenne",
+  // ── xG ───────────────────────────────────────────────────────────────────────
+  xg: "xg", expected_goals: "xg",
+  // ── Valeur marchande ─────────────────────────────────────────────────────────
+  value: "valeur_marchande", market_value: "valeur_marchande", mv: "valeur_marchande",
+  vm: "valeur_marchande", valeur: "valeur_marchande", worth: "valeur_marchande",
+  market_val: "valeur_marchande",
+  // ── Salaire ──────────────────────────────────────────────────────────────────
+  salary: "salaire", wage: "salaire", salaire_annuel: "salaire",
+  wages: "salaire", annual_salary: "salaire",
+  // ── Contrat ──────────────────────────────────────────────────────────────────
   contract: "contrat_fin", contract_end: "contrat_fin", expiry: "contrat_fin",
-  salary: "salaire", wage: "salaire",
-  rating: "note_moyenne", score: "note_moyenne",
-  league: "ligue", nationality: "nationalite",
+  fin_contrat: "contrat_fin", contract_expires: "contrat_fin",
+  end_contract: "contrat_fin", contrat: "contrat_fin", expiration: "contrat_fin",
+  contract_expiry: "contrat_fin",
+  // ── Agent ────────────────────────────────────────────────────────────────────
+  agent_name: "agent", player_agent: "agent", representant: "agent",
+  agent_mail: "agent_email", agent_phone: "agent_telephone", agent_tel: "agent_telephone",
+  agence: "agence", agency: "agence", management: "agence",
+  // ── Réseaux sociaux ──────────────────────────────────────────────────────────
+  insta: "instagram", instagram_handle: "instagram",
+  twitter_handle: "twitter", x: "twitter",
+  // ── Photo ────────────────────────────────────────────────────────────────────
+  photo: "photo_url", image: "photo_url", img: "photo_url",
+  avatar: "photo_url", picture: "photo_url", photo_link: "photo_url",
+  // ── Ligue ────────────────────────────────────────────────────────────────────
+  league: "ligue", competition: "ligue", division: "ligue",
+  championship: "ligue", ligue_nom: "ligue", tournament: "ligue",
+  // ── Numéro de maillot ────────────────────────────────────────────────────────
+  shirt: "numero_maillot", jersey: "numero_maillot", shirt_number: "numero_maillot",
+  jersey_number: "numero_maillot", number: "numero_maillot", numero: "numero_maillot",
+  // ── Champs clubs ─────────────────────────────────────────────────────────────
+  nom_club: "nom", club_full_name: "nom",
+  stadium: "stade", ground: "stade", arena: "stade",
+  city: "ville", town: "ville",
+  president_name: "president",
+  coach: "entraineur", manager: "entraineur", head_coach: "entraineur",
+  sporting_director: "directeur_sportif", dir_sportif: "directeur_sportif",
+  website: "site_web", url: "site_web",
+  budget: "budget_transfert", transfer_budget: "budget_transfert",
+  capacity: "capacite_stade",
+  email_club: "email_general", club_email: "email_general",
+  phone_club: "telephone_general", club_phone: "telephone_general",
 };
 
 const FOOTBALL_POSITIONS = [
-  "gardien", "defenseur", "lateral", "milieu", "ailier", "attaquant",
+  // French
+  "gardien", "defenseur", "lateral", "milieu", "ailier", "attaquant", "buteur", "libero",
+  // English
   "goalkeeper", "defender", "midfielder", "forward", "winger", "striker",
-  "centre-back", "full-back", "buteur", "libero",
-  "cb", "rb", "lb", "dm", "cm", "am", "rw", "lw", "st", "gk", "fw",
+  "centre-back", "centerback", "centreforward", "full-back", "fullback",
+  "sweeper", "playmaker",
+  // Abbreviations
+  "gk", "cb", "rb", "lb", "dm", "cm", "am", "rw", "lw", "st", "cf", "fw",
+  "dc", "md", "att", "def", "gar", "lat", "cdm", "cam",
+  // Spanish / Italian
+  "portero", "portiere", "delantero", "centrocampista", "defensa",
 ];
 
-// Parse le fichier Excel localement — 100% déterministe, sans IA
+const STAFF_ROLES = [
+  "president", "directeur", "dg", "ceo", "entraineur", "coach", "assistant",
+  "scout", "recruteur", "analyste", "medecin", "physiotherapeute", "kine",
+  "secretaire", "administrateur",
+];
+
+// Champs qui indiquent une ligne "club" (pas un joueur)
+const CLUB_INDICATOR_FIELDS = [
+  "nom_club", "club_name", "president", "president_email", "directeur_sportif",
+  "email_general", "telephone_general", "stade", "stadium", "budget_transfert",
+  "capacite_stade",
+];
+
+// Champs qui indiquent une ligne "joueur" (stats)
+const PLAYER_STAT_FIELDS = ["buts", "matchs_joues", "passes_decisives", "minutes_jouees", "xg", "note_moyenne"];
+
+const isClubRow = (row) =>
+  CLUB_INDICATOR_FIELDS.some((f) => row[f] != null && String(row[f]).trim() !== "");
+
+const isPlayerRow = (row) => {
+  const pos = normalizeKey(String(row.poste || ""));
+  if (FOOTBALL_POSITIONS.some((k) => pos.includes(k))) return true;
+  if (PLAYER_STAT_FIELDS.some((f) => row[f] != null && row[f] !== "")) return true;
+  const isStaff = STAFF_ROLES.some((r) => pos.includes(r));
+  return !isStaff && !!row.club; // has club but no staff indicator → assume player
+};
+
+// Détecte le type d'une feuille à partir de son nom
+const SHEET_PATTERNS = {
+  joueurs: /^(joueurs?|players?|jugadores?|footballers?|footballeurs?|efectivo|squad|roster)$/i,
+  clubs:   /^(clubs?|équipes?|teams?|equipos?|squadre?)$/i,
+  contacts:/^(contacts?|staff|personnel|dirigeants?|management|coaches?)$/i,
+};
+
+const detectSheetType = (name) => {
+  for (const [type, re] of Object.entries(SHEET_PATTERNS)) {
+    if (re.test(name.trim())) return type;
+  }
+  return null;
+};
+
 const parseExcelFile = (file) =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        // Détecter si c'est un CSV avec séparateur `;`
-        const isCSV = file.name.toLowerCase().endsWith(".csv");
-        let readOptions = { type: "array", cellDates: true };
-        if (isCSV) {
-          // Lire comme texte pour détecter le séparateur
-          const text = new TextDecoder("utf-8").decode(new Uint8Array(e.target.result));
-          const firstLine = text.split("\n")[0] || "";
-          const sep = firstLine.includes(";") ? ";" : ",";
-          readOptions = { type: "string", cellDates: true, FS: sep };
-          const wb2 = XLSX.read(text, readOptions);
-          const allRows2 = [];
-          for (const sheetName of wb2.SheetNames) {
-            const ws2 = wb2.Sheets[sheetName];
-            allRows2.push(...XLSX.utils.sheet_to_json(ws2, { defval: "" }));
-          }
-          resolve(allRows2);
-          return;
-        }
         const wb = XLSX.read(e.target.result, { type: "array", cellDates: true });
-        const allRows = [];
+        const sheets = {};
 
         for (const sheetName of wb.SheetNames) {
           const ws = wb.Sheets[sheetName];
-          // Propager les cellules fusionnées (merges)
+
+          // Propager les cellules fusionnées
           if (ws["!merges"]) {
             for (const merge of ws["!merges"]) {
               const firstCell = ws[XLSX.utils.encode_cell({ r: merge.s.r, c: merge.s.c })];
@@ -99,18 +209,16 @@ const parseExcelFile = (file) =>
               for (let r = merge.s.r; r <= merge.e.r; r++) {
                 for (let c = merge.s.c; c <= merge.e.c; c++) {
                   if (r === merge.s.r && c === merge.s.c) continue;
-                  const addr = XLSX.utils.encode_cell({ r, c });
-                  if (!ws[addr]) ws[addr] = { ...firstCell };
+                  ws[XLSX.utils.encode_cell({ r, c })] = { ...firstCell };
                 }
               }
             }
           }
 
-          const rawRows = XLSX.utils.sheet_to_json(ws, { defval: "" });
-          allRows.push(...rawRows);
+          sheets[sheetName] = XLSX.utils.sheet_to_json(ws, { defval: "" });
         }
 
-        resolve(allRows);
+        resolve(sheets);
       } catch (err) {
         reject(err);
       }
@@ -118,6 +226,21 @@ const parseExcelFile = (file) =>
     reader.onerror = reject;
     reader.readAsArrayBuffer(file);
   });
+
+// Normalise une ligne brute : clés + FIELD_MAP aliases + conversion de valeurs
+const normalizeRow = (rawRow) => {
+  const lowered = {};
+  for (const [k, v] of Object.entries(rawRow)) {
+    lowered[normalizeKey(k)] = normalizeValue(v);
+  }
+  const normalized = { ...lowered };
+  for (const [alias, canonical] of Object.entries(FIELD_MAP)) {
+    if (lowered[alias] !== undefined && normalized[canonical] === undefined) {
+      normalized[canonical] = lowered[alias];
+    }
+  }
+  return normalized;
+};
 
 export default function ImportDropzone({ onExtracted }) {
   const { lang } = useLanguage();
@@ -130,127 +253,82 @@ export default function ImportDropzone({ onExtracted }) {
   const processFile = async (file) => {
     setError(null);
     setLoading(true);
-    setStatus(t(lang, 'import.reading'));
+    setStatus(t(lang, "import.reading"));
 
     try {
-      // 1. Parser le fichier localement avec SheetJS
-      const rawRows = await parseExcelFile(file);
+      const sheets = await parseExcelFile(file);
+      const sheetNames = Object.keys(sheets);
 
-      if (rawRows.length === 0) {
+      if (sheetNames.length === 0 || sheetNames.every((n) => sheets[n].length === 0)) {
         throw new Error("Le fichier est vide ou ne contient pas de données.");
       }
 
-      // 2. Normaliser les clés de chaque ligne
-      const rows = rawRows.map((r) => {
-        const lowered = {};
-        for (const [k, v] of Object.entries(r)) {
-          lowered[normalizeKey(k)] = v;
-        }
-        const normalized = { ...lowered };
-        for (const [alias, canonical] of Object.entries(FIELD_MAP)) {
-          if (lowered[alias] !== undefined && normalized[canonical] === undefined) {
-            normalized[canonical] = lowered[alias];
-          }
-        }
-        return normalized;
-      });
-
-      // 3. Filtrer les lignes sans nom
-      const validRows = rows.filter((r) => {
-        const n = r.nom || r.prenom;
-        return n && String(n).trim().length > 0;
-      });
-
-      if (validRows.length === 0) {
-        const cols = Object.keys(rows[0] || {}).join(", ");
-        throw new Error(
-          `Aucune ligne avec un nom trouvée.\n\nColonnes détectées : ${cols}\n\nVérifiez que le fichier contient une colonne NOM, NAME ou PRÉNOM.`
-        );
-      }
-
-      // 4. Classifier : joueurs vs contacts (staff, agents, dirigeants…)
       const joueurs = [];
+      const clubs = [];
       const staffContacts = [];
 
-      // Propagation de PAYS et CLUB entre les lignes (cellules fusionnées non couvertes par merges)
       let lastPays = "";
       let lastClub = "";
 
-      for (const row of validRows) {
-        if (row.pays && String(row.pays).trim()) lastPays = String(row.pays).trim();
-        else if (lastPays) row.pays = lastPays;
+      for (const sheetName of sheetNames) {
+        const rawRows = sheets[sheetName];
+        if (rawRows.length === 0) continue;
 
-        if (row.club && String(row.club).trim()) lastClub = String(row.club).trim();
-        else if (lastClub) row.club = lastClub;
+        const sheetType = detectSheetType(sheetName);
 
-        const nomComplet = [row.prenom, row.nom]
-          .filter(Boolean)
-          .map((s) => String(s).trim())
-          .join(" ")
-          .trim();
+        // Filtrer lignes sans nom
+        const rows = rawRows
+          .map(normalizeRow)
+          .filter((r) => {
+            const n = r.nom || r.prenom;
+            return n && String(n).trim().length > 0;
+          });
 
-        const posteLower = normalizeKey(String(row.poste || ""));
-        const hasFootballPosition = FOOTBALL_POSITIONS.some((k) => posteLower.includes(k));
-        const hasNoPoste = !row.poste || String(row.poste).trim() === "";
+        for (const row of rows) {
+          // Propagation de PAYS/CLUB depuis les lignes précédentes (fusionné sans merge)
+          if (row.pays && String(row.pays).trim()) lastPays = String(row.pays).trim();
+          else if (lastPays && !row.pays) row.pays = lastPays;
 
-        // Si le poste est vide, on regarde des indices footballistiques (taille, buts, date_naissance)
-        const hasPlayerStats = row.taille || row.buts !== undefined || row.date_naissance || row.valeur_marchande;
-        const isPlayer = hasFootballPosition || (hasNoPoste && hasPlayerStats);
+          if (row.club && String(row.club).trim()) lastClub = String(row.club).trim();
+          else if (lastClub && !row.club) row.club = lastClub;
 
-        // Toute ligne avec un poste NON-footballistique (CEO, Coach, Agent, Scout...) → contact
-        if (isPlayer) {
-          joueurs.push({ ...row, nom: nomComplet, club_actuel: row.club });
-        } else {
-          // Contact : poste libre (CEO, Agent, Directeur sportif, Head Coach, Scout…)
-          staffContacts.push({ ...row, nom: nomComplet, club: row.club || lastClub });
+          const nomComplet = [row.prenom, row.nom]
+            .filter(Boolean)
+            .map((s) => String(s).trim())
+            .join(" ")
+            .trim() || String(row.nom || row.prenom || "").trim();
+
+          if (sheetType === "clubs" || (!sheetType && isClubRow(row))) {
+            clubs.push({ ...row, nom: row.nom || row.club || nomComplet });
+          } else if (sheetType === "contacts") {
+            staffContacts.push({ ...row, nom: nomComplet });
+          } else if (sheetType === "joueurs" || (!sheetType && isPlayerRow(row))) {
+            joueurs.push({ ...row, nom: nomComplet, club_actuel: row.club_actuel || row.club });
+          } else {
+            // Fallback : staff si poste reconnu, sinon joueur
+            const pos = normalizeKey(String(row.poste || ""));
+            const isStaff = STAFF_ROLES.some((r) => pos.includes(r));
+            if (isStaff) {
+              staffContacts.push({ ...row, nom: nomComplet });
+            } else {
+              joueurs.push({ ...row, nom: nomComplet, club_actuel: row.club_actuel || row.club });
+            }
+          }
         }
       }
 
-      // 5. Si des joueurs ont été trouvés, enrichir via l'IA Base44
-      if (joueurs.length > 0) {
-        setStatus(t(lang, 'import.processing', { count: joueurs.length }));
-        try {
-          const enriched = await base44.integrations.Core.InvokeLLM({
-            prompt: `Voici une liste de joueurs de football extraite d'un fichier Excel. Pour chaque joueur, complète les informations manquantes (nationalité, poste normalisé, valeur marchande, date de naissance, contrat, agent...) en te basant sur les données publiques disponibles. Retourne exactement le même nombre d'objets dans le même ordre.
+      const total = joueurs.length + clubs.length + staffContacts.length;
 
-Joueurs: ${JSON.stringify(joueurs.map(j => ({ nom: j.nom, club: j.club_actuel || j.club, poste: j.poste })))}`,
-            add_context_from_internet: true,
-            response_json_schema: {
-              type: "object",
-              properties: {
-                joueurs: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      nom: { type: "string" },
-                      poste: { type: "string" },
-                      nationalite: { type: "string" },
-                      date_naissance: { type: "string" },
-                      club_actuel: { type: "string" },
-                      valeur_marchande: { type: "number" },
-                      contrat_fin: { type: "string" },
-                    },
-                  },
-                },
-              },
-            },
-          });
-
-          if (enriched?.joueurs?.length === joueurs.length) {
-            enriched.joueurs.forEach((enr, i) => {
-              if (enr.poste && !joueurs[i].poste) joueurs[i].poste = enr.poste;
-              if (enr.nationalite && !joueurs[i].nationalite) joueurs[i].nationalite = enr.nationalite;
-              if (enr.date_naissance && !joueurs[i].date_naissance) joueurs[i].date_naissance = enr.date_naissance;
-              if (enr.valeur_marchande && !joueurs[i].valeur_marchande) joueurs[i].valeur_marchande = enr.valeur_marchande;
-              if (enr.contrat_fin && !joueurs[i].contrat_fin) joueurs[i].contrat_fin = enr.contrat_fin;
-            });
-          }
-        } catch (_) { /* enrichissement optionnel */ }
+      if (total === 0) {
+        const sampleRow = Object.values(sheets).flat()[0] || {};
+        const cols = Object.keys(sampleRow).join(", ");
+        throw new Error(
+          `Aucune ligne valide trouvée.\n\nColonnes détectées : ${cols}\n\nVérifiez que le fichier contient une colonne NOM, NAME ou PRÉNOM.`
+        );
       }
 
       setStatus("");
-      onExtracted({ contacts: staffContacts, joueurs, clubs: [], nom_fichier: file.name });
+      onExtracted({ contacts: staffContacts, joueurs, clubs, nom_fichier: file.name });
     } catch (err) {
       console.error("Import error:", err);
       setError(err.message || "Une erreur est survenue lors de l'analyse du fichier.");
@@ -294,19 +372,19 @@ Joueurs: ${JSON.stringify(joueurs.map(j => ({ nom: j.nom, club: j.club_actuel ||
         {loading ? (
           <>
             <Loader2 className="w-14 h-14 text-green-500 animate-spin mb-4" />
-            <h3 className="text-lg font-semibold text-slate-700">{t(lang, 'import.analyzing')}</h3>
-            <p className="text-slate-400 mt-1">{status || t(lang, 'import.reading')}</p>
+            <h3 className="text-lg font-semibold text-slate-700">{t(lang, "import.analyzing")}</h3>
+            <p className="text-slate-400 mt-1">{status || t(lang, "import.reading")}</p>
           </>
         ) : (
           <>
             <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mb-4">
               <FileSpreadsheet className="w-8 h-8 text-green-600" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-700">{t(lang, 'import.dropzoneTitle')}</h3>
-            <p className="text-slate-400 mt-1 mb-4">{t(lang, 'import.dropzoneHint')}</p>
+            <h3 className="text-lg font-semibold text-slate-700">{t(lang, "import.dropzoneTitle")}</h3>
+            <p className="text-slate-400 mt-1 mb-4">{t(lang, "import.dropzoneHint")}</p>
             <Button variant="outline" className="gap-2">
               <Upload className="w-4 h-4" />
-              {t(lang, 'import.chooseFile')}
+              {t(lang, "import.chooseFile")}
             </Button>
           </>
         )}
