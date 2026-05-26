@@ -124,118 +124,136 @@ export default function EnrichPlayerAI({ player, onApply }) {
     setResult(null);
     setApplied(false);
 
-    const knownInfo = [
-      player.nom,
-      player.club_actuel && `club: ${player.club_actuel}`,
-      player.nationalite && `nationalité: ${player.nationalite}`,
-      player.date_naissance && `né le: ${player.date_naissance}`,
-      player.age && `âge: ${player.age} ans`,
-      player.poste && `poste: ${player.poste}`,
+    const playerCtx = [
+      `Nom: ${player.nom}`,
+      player.club_actuel && `Club actuel: ${player.club_actuel}`,
+      player.nationalite && `Nationalité: ${player.nationalite}`,
+      player.date_naissance && `Date de naissance: ${player.date_naissance}`,
+      player.age && `Âge: ${player.age} ans`,
+      player.poste && `Poste: ${player.poste}`,
       player.transfermarkt_id && `Transfermarkt ID: ${player.transfermarkt_id}`,
-      player.ligue && `ligue: ${player.ligue}`,
-    ].filter(Boolean).join(", ");
+      player.ligue && `Ligue: ${player.ligue}`,
+      player.lieu_naissance && `Lieu de naissance: ${player.lieu_naissance}`,
+    ].filter(Boolean).join("\n");
 
-    const data = await base44.integrations.Core.InvokeLLM({
-      prompt: `Tu es un expert en données football. Recherche TOUTES les informations disponibles sur ce joueur de football.
-
-INFORMATIONS CONNUES : ${knownInfo}
-
-INSTRUCTIONS DE RECHERCHE :
-1. Cherche d'abord sur Transfermarkt (transfermarkt.com / transfermarkt.fr) avec le nom exact ET des variantes orthographiques possibles (accents manquants, noms composés, etc.)
-2. Si le joueur est en prêt, renseigne OBLIGATOIREMENT : club_actuel = club d'accueil du prêt, et note le club propriétaire dans les notes
-3. Cherche sur SofaScore les stats de la saison en cours (notes, xG, xA, duels, etc.)
-4. Cherche une photo publique sur Transfermarkt, Wikipedia ou site officiel du club
-5. Si le joueur est peu connu ou joue dans une division inférieure, fais quand même de ton mieux
-
-DONNÉES À RENSEIGNER OBLIGATOIREMENT si disponibles :
-- date_naissance, lieu_naissance, nationalite, nationalite_secondaire
-- taille, poids, pied_fort
-- club_actuel, ligue, pays_ligue, contrat_fin
-- valeur_marchande (en millions €, ex: 0.45 pour 450K€)
-- agent, agence
-- transfermarkt_id (numéro uniquement)
-- photo_url
-
-Retourne UN JSON COMPLET avec TOUTES les données disponibles. Si une donnée est inconnue, mets null.
-
+    const FORMAT_RULES = `
 RÈGLES DE FORMAT STRICTES :
-- valeur_marchande, valeur_marchande_peak, salaire : en millions € (ex: 85.0)
-- salaire_semaine : en milliers € par semaine (ex: 250.0)
-- taille : cm entier (ex: 181), poids : kg entier (ex: 73)
+- valeur_marchande, valeur_marchande_peak, salaire : en millions € (ex: 0.45 pour 450K€, 85.0 pour 85M€)
+- salaire_semaine : en milliers € par semaine
+- taille : cm entier, poids : kg entier
 - age : entier, toutes les dates : YYYY-MM-DD
 - pied_fort : exactement "Droit", "Gauche" ou "Les deux"
 - poste / poste_secondaire : parmi exactement : Gardien, Défenseur central, Latéral droit, Latéral gauche, Milieu défensif, Milieu central, Milieu offensif, Ailier droit, Ailier gauche, Attaquant
-- note_moyenne : note SofaScore décimale (ex: 7.42)
-- xg, xa, xg_par_90 : décimaux (ex: 14.3)
-- tous les pourcentages (pct) : nombre entre 0 et 100 (ex: 87.5)
-- tirs_cadres_pct, passes_reussies_pct, etc. : entre 0 et 100
-- photo_url : URL directe et publique vers une photo du joueur (Transfermarkt, site officiel, TheSportsDB, Wikipedia…)
+- tous les pourcentages (pct) : nombre entre 0 et 100
 - transfermarkt_id : uniquement le numéro (ex: 342229)
-- palmares : tous titres séparés par des virgules
-- distinctions : récompenses individuelles séparées par virgules (Ballon d'or, TOTY, meilleur joueur, etc.)
-- style_jeu, forces, faiblesses, stats_resume : texte en français
-- selection_u21 : true ou false
-- saisons_pro : nombre de saisons professionnelles
-- vitesse_max : en km/h (ex: 36.5)
-- distance_course : km par match (ex: 11.2)`,
-      add_context_from_internet: true,
-      model: "gemini_3_1_pro",
-      response_json_schema: {
-        type: "object",
-        properties: {
-          nom: { type: "string" }, age: { type: "number" }, date_naissance: { type: "string" },
-          lieu_naissance: { type: "string" }, nationalite: { type: "string" },
-          nationalite_secondaire: { type: "string" }, poste: { type: "string" },
-          poste_secondaire: { type: "string" }, pied_fort: { type: "string" },
-          taille: { type: "number" }, poids: { type: "number" }, club_actuel: { type: "string" },
-          ligue: { type: "string" }, pays_ligue: { type: "string" }, stade: { type: "string" },
-          numero_maillot: { type: "number" }, contrat_fin: { type: "string" },
-          salaire: { type: "number" }, salaire_semaine: { type: "number" },
-          coach: { type: "string" }, manager: { type: "string" }, agent: { type: "string" },
-          agence: { type: "string" }, valeur_marchande: { type: "number" },
-          valeur_marchande_peak: { type: "number" }, transfermarkt_id: { type: "string" },
-          sofascore_id: { type: "string" }, photo_url: { type: "string" },
-          matchs_joues: { type: "number" }, titularisations: { type: "number" },
-          minutes_jouees: { type: "number" }, buts: { type: "number" },
-          passes_decisives: { type: "number" }, buts_passes: { type: "number" },
-          cartons_jaunes: { type: "number" }, cartons_rouges: { type: "number" },
-          note_moyenne: { type: "number" }, xg: { type: "number" }, xa: { type: "number" },
-          xg_par_90: { type: "number" }, tirs: { type: "number" }, tirs_cadres: { type: "number" },
-          tirs_cadres_pct: { type: "number" }, grandes_chances: { type: "number" },
-          grandes_chances_manquees: { type: "number" }, penaltys_marques: { type: "number" },
-          penaltys_tires: { type: "number" }, penaltys_provoques: { type: "number" },
-          buts_tete: { type: "number" }, buts_pied_gauche: { type: "number" },
-          buts_pied_droit: { type: "number" }, passes_reussies: { type: "number" },
-          passes_reussies_pct: { type: "number" }, passes_longues_pct: { type: "number" },
-          passes_cles: { type: "number" }, centres: { type: "number" },
-          centres_reussis_pct: { type: "number" }, dribbles_reussis: { type: "number" },
-          dribbles_tentes: { type: "number" }, dribbles_pct: { type: "number" },
-          touches_balle: { type: "number" }, pertes_balle: { type: "number" },
-          distance_course: { type: "number" }, sprints: { type: "number" },
-          vitesse_max: { type: "number" }, interceptions: { type: "number" },
-          tacles: { type: "number" }, tacles_reussis_pct: { type: "number" },
-          degagements: { type: "number" }, duels_gagnes_pct: { type: "number" },
-          duels_aeriens_pct: { type: "number" }, recuperations: { type: "number" },
-          fautes_commises: { type: "number" }, fautes_subies: { type: "number" },
-          hors_jeu: { type: "number" }, corners_provoquees: { type: "number" },
-          arrets: { type: "number" }, arrets_pct: { type: "number" },
-          buts_encaisses: { type: "number" }, clean_sheets: { type: "number" },
-          sorties_reussies: { type: "number" }, xg_contre: { type: "number" },
-          blessures: { type: "number" }, jours_blesses: { type: "number" },
-          type_blessures: { type: "string" }, matchs_carriere: { type: "number" },
-          buts_carriere: { type: "number" }, passes_carriere: { type: "number" },
-          nb_clubs: { type: "number" }, saisons_pro: { type: "number" },
-          matchs_international: { type: "number" }, buts_international: { type: "number" },
-          passes_international: { type: "number" }, premier_match_selection: { type: "string" },
-          selection_u21: { type: "boolean" }, palmares: { type: "string" },
-          distinctions: { type: "string" }, style_jeu: { type: "string" },
-          forces: { type: "string" }, faiblesses: { type: "string" },
-          note_globale_scout: { type: "number" }, stats_resume: { type: "string" },
+- Si une donnée est inconnue, mets null`;
+
+    const jsonSchema = {
+      type: "object",
+      properties: {
+        nom: { type: "string" }, age: { type: "number" }, date_naissance: { type: "string" },
+        lieu_naissance: { type: "string" }, nationalite: { type: "string" },
+        nationalite_secondaire: { type: "string" }, poste: { type: "string" },
+        poste_secondaire: { type: "string" }, pied_fort: { type: "string" },
+        taille: { type: "number" }, poids: { type: "number" }, club_actuel: { type: "string" },
+        ligue: { type: "string" }, pays_ligue: { type: "string" }, stade: { type: "string" },
+        numero_maillot: { type: "number" }, contrat_fin: { type: "string" },
+        salaire: { type: "number" }, salaire_semaine: { type: "number" },
+        coach: { type: "string" }, manager: { type: "string" }, agent: { type: "string" },
+        agence: { type: "string" }, valeur_marchande: { type: "number" },
+        valeur_marchande_peak: { type: "number" }, transfermarkt_id: { type: "string" },
+        sofascore_id: { type: "string" }, photo_url: { type: "string" },
+        matchs_joues: { type: "number" }, titularisations: { type: "number" },
+        minutes_jouees: { type: "number" }, buts: { type: "number" },
+        passes_decisives: { type: "number" }, buts_passes: { type: "number" },
+        cartons_jaunes: { type: "number" }, cartons_rouges: { type: "number" },
+        note_moyenne: { type: "number" }, xg: { type: "number" }, xa: { type: "number" },
+        xg_par_90: { type: "number" }, tirs: { type: "number" }, tirs_cadres: { type: "number" },
+        tirs_cadres_pct: { type: "number" }, grandes_chances: { type: "number" },
+        grandes_chances_manquees: { type: "number" }, penaltys_marques: { type: "number" },
+        penaltys_tires: { type: "number" }, penaltys_provoques: { type: "number" },
+        buts_tete: { type: "number" }, buts_pied_gauche: { type: "number" },
+        buts_pied_droit: { type: "number" }, passes_reussies: { type: "number" },
+        passes_reussies_pct: { type: "number" }, passes_longues_pct: { type: "number" },
+        passes_cles: { type: "number" }, centres: { type: "number" },
+        centres_reussis_pct: { type: "number" }, dribbles_reussis: { type: "number" },
+        dribbles_tentes: { type: "number" }, dribbles_pct: { type: "number" },
+        touches_balle: { type: "number" }, pertes_balle: { type: "number" },
+        distance_course: { type: "number" }, sprints: { type: "number" },
+        vitesse_max: { type: "number" }, interceptions: { type: "number" },
+        tacles: { type: "number" }, tacles_reussis_pct: { type: "number" },
+        degagements: { type: "number" }, duels_gagnes_pct: { type: "number" },
+        duels_aeriens_pct: { type: "number" }, recuperations: { type: "number" },
+        fautes_commises: { type: "number" }, fautes_subies: { type: "number" },
+        hors_jeu: { type: "number" }, corners_provoquees: { type: "number" },
+        arrets: { type: "number" }, arrets_pct: { type: "number" },
+        buts_encaisses: { type: "number" }, clean_sheets: { type: "number" },
+        sorties_reussies: { type: "number" }, xg_contre: { type: "number" },
+        blessures: { type: "number" }, jours_blesses: { type: "number" },
+        type_blessures: { type: "string" }, matchs_carriere: { type: "number" },
+        buts_carriere: { type: "number" }, passes_carriere: { type: "number" },
+        nb_clubs: { type: "number" }, saisons_pro: { type: "number" },
+        matchs_international: { type: "number" }, buts_international: { type: "number" },
+        passes_international: { type: "number" }, premier_match_selection: { type: "string" },
+        selection_u21: { type: "boolean" }, palmares: { type: "string" },
+        distinctions: { type: "string" }, style_jeu: { type: "string" },
+        forces: { type: "string" }, faiblesses: { type: "string" },
+        note_globale_scout: { type: "number" }, stats_resume: { type: "string" },
+      }
+    };
+
+    // Lancer 2 requêtes en parallèle : une pour l'identité/carrière, une pour les stats/matchs
+    const [data1, data2] = await Promise.all([
+      base44.integrations.Core.InvokeLLM({
+        prompt: `Tu es un scout football expert. Recherche TOUTES les infos disponibles sur ce joueur en consultant OBLIGATOIREMENT dans cet ordre :
+
+1. **Transfermarkt** (transfermarkt.com et transfermarkt.fr) : profil complet, valeur marchande actuelle et historique, contrat, agent, club actuel, situation de prêt, historique de tous les clubs, blessures passées, matchs et buts en carrière, transfermarkt_id
+2. **Wikipedia** (en français, anglais et dans la langue du pays du joueur) : biographie, lieu de naissance exact, palmarès, distinctions, anecdotes carrière
+3. **Site officiel du club** actuel : numéro de maillot, entraîneur, stade
+4. **Google Images / Transfermarkt** : trouver une URL de photo publique directement accessible
+
+INFORMATIONS CONNUES SUR LE JOUEUR :
+${playerCtx}
+
+FOCUS DE CETTE REQUÊTE : identité, biographie, contrat, valeur marchande, agent, historique clubs, blessures, carrière complète, palmarès, photo.
+${FORMAT_RULES}`,
+        add_context_from_internet: true,
+        model: "gemini_3_1_pro",
+        response_json_schema: jsonSchema,
+      }),
+
+      base44.integrations.Core.InvokeLLM({
+        prompt: `Tu es un analyste football expert. Recherche TOUTES les statistiques disponibles sur ce joueur en consultant OBLIGATOIREMENT :
+
+1. **SofaScore** (sofascore.com) : stats saison en cours (buts, passes déc., note moyenne, xG, xA, tirs, dribbles, duels, interceptions, passes %, distance course, sprints, vitesse max, touches balle), sofascore_id
+2. **FBref** (fbref.com) : stats avancées, xG, xA, passes progressives, pressings
+3. **WhoScored** (whoscored.com) : stats et note de la saison
+4. **FlashScore / LiveScore** : matchs récents joués, performances récentes
+5. **Soccerway** : historique complet matchs et buts saison par saison
+6. **Sélection nationale** : caps, buts, derniers matchs en équipe nationale
+
+INFORMATIONS CONNUES SUR LE JOUEUR :
+${playerCtx}
+
+FOCUS DE CETTE REQUÊTE : statistiques saison en cours, stats avancées (xG/xA/duels/physique), sélection nationale, style de jeu détaillé, points forts et faibles basés sur les stats.
+${FORMAT_RULES}`,
+        add_context_from_internet: true,
+        model: "gemini_3_1_pro",
+        response_json_schema: jsonSchema,
+      }),
+    ]);
+
+    // Fusionner les deux résultats : data1 prioritaire sauf si null/undefined
+    const merged = { ...data2 };
+    if (data1) {
+      for (const key of Object.keys(data1)) {
+        if (data1[key] !== null && data1[key] !== undefined && data1[key] !== "") {
+          merged[key] = data1[key];
         }
       }
-    });
+    }
 
-    setResult(data);
+    setResult(merged);
     setLoading(false);
   };
 
@@ -321,12 +339,19 @@ RÈGLES DE FORMAT STRICTES :
         )}
 
         {loading && (
-          <div className="space-y-2">
-            {[t(lang, 'playerDetail.searchingTM'), t(lang, 'playerDetail.searchingSS'), t(lang, 'playerDetail.searchingPress')].map(s => (
+          <div className="space-y-2 pt-1">
+            {[
+              "🔍 Transfermarkt — valeur, contrat, agent, historique clubs...",
+              "📖 Wikipedia — biographie, palmarès, distinctions...",
+              "📊 SofaScore / FBref — stats saison, xG, xA, duels...",
+              "⚡ WhoScored / FlashScore — matchs récents, forme actuelle...",
+              "🌍 Sélection nationale — caps, buts internationaux...",
+            ].map(s => (
               <div key={s} className="flex items-center gap-2 text-xs text-slate-500">
                 <Loader2 className="w-3 h-3 animate-spin text-purple-500" />{s}
               </div>
             ))}
+            <p className="text-[11px] text-purple-400 text-center pt-1">2 recherches parallèles en cours...</p>
           </div>
         )}
 
