@@ -273,6 +273,7 @@ Retourne toutes les informations disponibles. Si tu ne trouves pas ce joueur, re
       if (raw.email)     payload.email     = String(raw.email).trim();
       if (raw.telephone) payload.telephone = String(raw.telephone).trim();
       if (raw.lien)      payload.lien      = String(raw.lien).trim();
+      if (raw.linkedin)  payload.linkedin  = String(raw.linkedin).trim();
 
       // Upsert club only if name is provided
       if (club) {

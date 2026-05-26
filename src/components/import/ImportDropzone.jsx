@@ -37,8 +37,10 @@ const FIELD_MAP = {
   tlphone: "telephone", tlephone: "telephone", tel_phone: "telephone",
   // Liens / profils
   lien: "lien", liens: "lien", link: "lien", links: "lien", url: "lien",
-  linkedin: "lien", profil: "lien", profile: "lien", website: "lien", site: "lien",
+  profil: "lien", profile: "lien", website: "lien", site: "lien",
   lien_profil: "lien", profil_lien: "lien", transfermarkt: "lien", tm_link: "lien",
+  // LinkedIn (champ dédié)
+  linkedin: "linkedin", lien_linkedin: "linkedin", profil_linkedin: "linkedin",
   // WhatsApp / tél contact
   tel_contact: "telephone", telephone_contact: "telephone", whatsapp: "telephone",
   numero_whatsapp: "telephone",

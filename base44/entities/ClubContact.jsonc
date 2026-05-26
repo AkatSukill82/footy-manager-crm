@@ -24,11 +24,15 @@
     },
     "telephone": {
       "type": "string",
-      "description": "Num\u00e9ro de t\u00e9l\u00e9phone"
+      "description": "Num\u00e9ro de t\u00e9l\u00e9phone / WhatsApp"
+    },
+    "linkedin": {
+      "type": "string",
+      "description": "Lien profil LinkedIn"
     },
     "lien": {
       "type": "string",
-      "description": "Lien externe (LinkedIn, site web, profil...)"
+      "description": "Lien externe g\u00e9n\u00e9rique (Transfermarkt, site web, profil...)"
     },
     "club_id": {
       "type": "string",
