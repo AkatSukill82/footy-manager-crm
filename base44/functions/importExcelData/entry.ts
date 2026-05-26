@@ -267,6 +267,7 @@ Retourne toutes les informations disponibles. Si tu ne trouves pas ce joueur, re
       if (raw.poste)     payload.poste     = String(raw.poste).trim();
       if (raw.email)     payload.email     = String(raw.email).trim();
       if (raw.telephone) payload.telephone = String(raw.telephone).trim();
+      if (raw.lien)      payload.lien      = String(raw.lien).trim();
 
       // Always upsert the club
       const linkedClub = await upsertClub(club, raw.pays ? String(raw.pays) : undefined);

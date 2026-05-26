@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, Building2, MapPin, Users, TrendingUp, Trophy,
   Edit2, Trash2, Calendar, Phone, Mail, Globe, User, ExternalLink,
-  Instagram, Twitter, Palette
+  Instagram, Twitter, Palette, Link
 } from "lucide-react";
 import TransfermarktImage from "../components/ui/TransfermarktImage";
 import { useNavigate } from "react-router-dom";
@@ -83,6 +83,12 @@ export default function ClubDetailPage() {
     queryKey: ['players-by-club', club?.nom],
     queryFn: () => base44.entities.Player.filter({ club_actuel: club.nom }),
     enabled: !!club?.nom,
+  });
+
+  const { data: clubContacts = [] } = useQuery({
+    queryKey: ['club-contacts', clubId],
+    queryFn: () => base44.entities.ClubContact.filter({ club_id: clubId }),
+    enabled: !!clubId,
   });
 
   const { data: transfers = [] } = useQuery({
@@ -348,6 +354,50 @@ export default function ClubDetailPage() {
                   )}
                 </div>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Contacts importés (ClubContact) */}
+      {clubContacts.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users className="w-4 h-4 text-orange-500" /> Contacts ({clubContacts.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {clubContacts.map(c => (
+                <div key={c.id} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                    <User className="w-4 h-4 text-orange-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-slate-900 text-sm truncate">{c.nom}</p>
+                    {c.poste && <p className="text-xs text-slate-500">{c.poste}</p>}
+                    <div className="flex flex-wrap gap-2 mt-1.5">
+                      {c.email && (
+                        <a href={`mailto:${c.email}`} className="flex items-center gap-1 text-xs text-blue-600 hover:underline">
+                          <Mail className="w-3 h-3" />{c.email}
+                        </a>
+                      )}
+                      {c.telephone && (
+                        <a href={`tel:${c.telephone}`} className="flex items-center gap-1 text-xs text-green-600 hover:underline">
+                          <Phone className="w-3 h-3" />{c.telephone}
+                        </a>
+                      )}
+                      {c.lien && (
+                        <a href={c.lien.startsWith('http') ? c.lien : `https://${c.lien}`} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-xs text-purple-600 hover:underline">
+                          <Link className="w-3 h-3" />Lien
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

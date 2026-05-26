@@ -31,6 +31,9 @@ const FIELD_MAP = {
   // Contact
   mail: "email", email_club: "email", courriel: "email", email_contact: "email",
   phone: "telephone", tel: "telephone", mobile: "telephone", gsm: "telephone", phone_number: "telephone",
+  // Liens
+  lien: "lien", liens: "lien", link: "lien", links: "lien", url: "lien",
+  linkedin: "lien", profil: "lien", profile: "lien", website: "lien", site: "lien",
   // Football
   birth: "date_naissance", dob: "date_naissance", birthdate: "date_naissance", naissance: "date_naissance",
   height: "taille", weight: "poids",

@@ -26,6 +26,10 @@
       "type": "string",
       "description": "Num\u00e9ro de t\u00e9l\u00e9phone"
     },
+    "lien": {
+      "type": "string",
+      "description": "Lien externe (LinkedIn, site web, profil...)"
+    },
     "club_id": {
       "type": "string",
       "description": "ID du club li\u00e9 (si trouv\u00e9 en base)"

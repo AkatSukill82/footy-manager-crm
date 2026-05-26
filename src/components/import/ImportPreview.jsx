@@ -26,7 +26,7 @@ const CLUB_LABELS = {
 };
 
 const CONTACT_LABELS = {
-  nom: "Nom", club: "Club", pays: "Pays", poste: "Poste", email: "Email", telephone: "Téléphone"
+  nom: "Nom", club: "Club", pays: "Pays", poste: "Poste", email: "Email", telephone: "Téléphone", lien: "Lien"
 };
 
 function DataTable({ items, labels, title, icon: Icon, color }) {
