@@ -22,15 +22,19 @@ const FIELD_MAP = {
   name: "nom", last_name: "nom", lastname: "nom", surname: "nom", joueur: "nom", player: "nom",
   full_name: "nom", fullname: "nom", nom_complet: "nom", contact: "nom",
   first_name: "prenom", firstname: "prenom",
-  // Club / Équipe
+  // Club / Équipe (incl. pluriel et variantes sans accent)
   team: "club", equipe: "club", club_name: "club", club_actuel: "club",
+  clubs: "club",
   // Pays
   country: "pays", nation: "pays",
-  // Poste
+  // Nationalité (variantes sans accent)
+  nationalite: "nationalite", nationalit: "nationalite", nationality: "nationalite",
+  // Poste / Fonction (variantes sans accent)
   position: "poste", role: "poste", title: "poste", titre: "poste", fonction: "poste", job: "poste",
-  // Contact
+  // Contact (variantes sans accent)
   mail: "email", email_club: "email", courriel: "email", email_contact: "email",
   phone: "telephone", tel: "telephone", mobile: "telephone", gsm: "telephone", phone_number: "telephone",
+  tlphone: "telephone", tlephone: "telephone", tel_phone: "telephone",
   // Liens
   lien: "lien", liens: "lien", link: "lien", links: "lien", url: "lien",
   linkedin: "lien", profil: "lien", profile: "lien", website: "lien", site: "lien",
@@ -58,6 +62,24 @@ const parseExcelFile = (file) =>
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
+        // Détecter si c'est un CSV avec séparateur `;`
+        const isCSV = file.name.toLowerCase().endsWith(".csv");
+        let readOptions = { type: "array", cellDates: true };
+        if (isCSV) {
+          // Lire comme texte pour détecter le séparateur
+          const text = new TextDecoder("utf-8").decode(new Uint8Array(e.target.result));
+          const firstLine = text.split("\n")[0] || "";
+          const sep = firstLine.includes(";") ? ";" : ",";
+          readOptions = { type: "string", cellDates: true, FS: sep };
+          const wb2 = XLSX.read(text, readOptions);
+          const allRows2 = [];
+          for (const sheetName of wb2.SheetNames) {
+            const ws2 = wb2.Sheets[sheetName];
+            allRows2.push(...XLSX.utils.sheet_to_json(ws2, { defval: "" }));
+          }
+          resolve(allRows2);
+          return;
+        }
         const wb = XLSX.read(e.target.result, { type: "array", cellDates: true });
         const allRows = [];
 
