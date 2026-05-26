@@ -23,8 +23,9 @@ export default function Dashboard() {
   const userEmail = user?.email;
 
   const { data: players = [], isLoading: loadingPlayers } = useQuery({
-    queryKey: ['players'],
-    queryFn: () => base44.entities.Player.list()
+    queryKey: ['players', user?.id],
+    queryFn: () => base44.entities.Player.filter({ created_by_id: user.id }),
+    enabled: !!user?.id,
   });
 
   const { data: watchList = [], isLoading: loadingWatchList } = useQuery({

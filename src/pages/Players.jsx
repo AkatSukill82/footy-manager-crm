@@ -34,8 +34,9 @@ export default function PlayersPage() {
   const [modalPlayer, setModalPlayer] = useState(null);
 
   const { data: players = [], isLoading } = useQuery({
-    queryKey: ['players'],
-    queryFn: () => base44.entities.Player.list('-created_date'),
+    queryKey: ['players', currentUser?.id],
+    queryFn: () => base44.entities.Player.filter({ created_by_id: currentUser.id }, '-created_date'),
+    enabled: !!currentUser?.id,
   });
 
   const { data: watchList = [] } = useQuery({

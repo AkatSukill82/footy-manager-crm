@@ -10,18 +10,21 @@ import ClubForm from "../components/clubs/ClubForm";
 import ClubSearch from "../components/clubs/ClubSearch";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
+import { useCurrentUser } from "../lib/useCurrentUser";
 
 export default function ClubsPage() {
   const { lang } = useLanguage();
   const queryClient = useQueryClient();
+  const currentUser = useCurrentUser();
   const [showForm, setShowForm] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategorie, setFilterCategorie] = useState("all");
 
   const { data: clubs = [], isLoading } = useQuery({
-    queryKey: ['clubs'],
-    queryFn: () => base44.entities.Club.list('-created_date'),
+    queryKey: ['clubs', currentUser?.id],
+    queryFn: () => base44.entities.Club.filter({ created_by_id: currentUser.id }, '-created_date'),
+    enabled: !!currentUser?.id,
   });
 
   const createClubMutation = useMutation({

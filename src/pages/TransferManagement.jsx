@@ -42,13 +42,15 @@ export default function TransferManagementPage() {
   });
 
   const { data: players = [] } = useQuery({
-    queryKey: ['players'],
-    queryFn: () => base44.entities.Player.list(),
+    queryKey: ['players', user?.id],
+    queryFn: () => base44.entities.Player.filter({ created_by_id: user.id }),
+    enabled: !!user?.id,
   });
 
   const { data: transfers = [] } = useQuery({
-    queryKey: ['transfers'],
-    queryFn: () => base44.entities.Transfer.list(),
+    queryKey: ['transfers', user?.id],
+    queryFn: () => base44.entities.Transfer.filter({ created_by_id: user.id }),
+    enabled: !!user?.id,
   });
 
   const { data: teams = [] } = useQuery({

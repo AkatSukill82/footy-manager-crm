@@ -156,8 +156,9 @@ export default function MyWatchListPage() {
   });
 
   const { data: players = [] } = useQuery({
-    queryKey: ['players'],
-    queryFn: () => base44.entities.Player.list(),
+    queryKey: ['players', user?.id],
+    queryFn: () => base44.entities.Player.filter({ created_by_id: user.id }),
+    enabled: !!user?.id,
   });
 
   const { data: notes = [] } = useQuery({
