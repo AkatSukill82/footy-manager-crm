@@ -7,8 +7,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Camera, Loader2 } from "lucide-react";
-import TransfermarktImage from "./TransfermarktImage";
-
 const COLORS = [
   "from-green-400 to-green-600",
   "from-blue-400 to-blue-600",
@@ -84,16 +82,20 @@ export default function PlayerAvatar({
     <div className={`relative ${className} flex-shrink-0 group/avatar`}>
       {hasPhoto ? (
         <div className={`${className} rounded-full overflow-hidden border-2 border-white shadow-sm`}>
-          <TransfermarktImage
+          <img
             src={localSrc}
             alt={name}
             className="w-full h-full object-cover"
-            fallback={
-              <div className={`w-full h-full bg-gradient-to-br ${color} flex items-center justify-center`}>
-                <span className={`text-white font-bold ${textClassName}`}>{initials}</span>
-              </div>
-            }
+            onError={(e) => {
+              e.target.style.display = "none";
+              e.target.nextSibling && (e.target.nextSibling.style.display = "flex");
+            }}
           />
+          <div
+            className={`w-full h-full bg-gradient-to-br ${color} items-center justify-center hidden`}
+          >
+            <span className={`text-white font-bold ${textClassName}`}>{initials}</span>
+          </div>
         </div>
       ) : (
         <div className={`${className} rounded-full bg-gradient-to-br ${color} flex items-center justify-center border-2 border-white shadow-sm`}>
