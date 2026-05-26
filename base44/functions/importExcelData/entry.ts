@@ -132,6 +132,9 @@ Deno.serve(async (req) => {
     }
   }
 
+  // ── Helper: sleep ─────────────────────────────────────────────────────────────
+  const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
   // ── Process players ───────────────────────────────────────────────────────────
   // For each player: try to enrich via LLM internet search (max 10 to avoid timeout)
   const PLAYER_ENRICH_LIMIT = 10;
@@ -147,6 +150,8 @@ Deno.serve(async (req) => {
       // Enrich via internet search if we have a name and haven't hit the limit
       if (enrichCount < PLAYER_ENRICH_LIMIT) {
         enrichCount++;
+        // Add delay to avoid rate limiting (every 3 players, wait 2s)
+        if (enrichCount > 1 && enrichCount % 3 === 1) await sleep(2000);
         try {
           const llmResult = await base44.integrations.Core.InvokeLLM({
             prompt: `Fiche complète du joueur de football professionnel "${nomComplet}"${raw.club_actuel ? ` (club: ${raw.club_actuel})` : ''}.
@@ -269,9 +274,11 @@ Retourne toutes les informations disponibles. Si tu ne trouves pas ce joueur, re
       if (raw.telephone) payload.telephone = String(raw.telephone).trim();
       if (raw.lien)      payload.lien      = String(raw.lien).trim();
 
-      // Always upsert the club
-      const linkedClub = await upsertClub(club, raw.pays ? String(raw.pays) : undefined);
-      payload.club_id = linkedClub.id;
+      // Upsert club only if name is provided
+      if (club) {
+        const linkedClub = await upsertClub(club, raw.pays ? String(raw.pays) : undefined);
+        payload.club_id = linkedClub.id;
+      }
 
       const key = `${nom.toLowerCase()}|${club.toLowerCase()}`;
       if (contactMap[key]) {
@@ -298,7 +305,7 @@ Retourne toutes les informations disponibles. Si tu ne trouves pas ce joueur, re
     clubs_crees: results.clubs_crees,
     clubs_mis_a_jour: results.clubs_mis_a_jour,
     erreurs: results.erreurs.length,
-    details: JSON.stringify(results.details),
+    details: JSON.stringify(results.details.slice(0, 50)),
     statut: results.erreurs.length === 0 ? 'succès' : 'partiel',
     created_by: user?.email || 'system',
   }).catch(() => {});
