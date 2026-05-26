@@ -18,14 +18,20 @@ const normalizeKey = (k) =>
 
 // Mappe les noms de colonnes courants vers nos champs internes
 const FIELD_MAP = {
+  // Noms
   name: "nom", last_name: "nom", lastname: "nom", surname: "nom", joueur: "nom", player: "nom",
-  full_name: "nom", fullname: "nom",
+  full_name: "nom", fullname: "nom", nom_complet: "nom", contact: "nom",
   first_name: "prenom", firstname: "prenom",
-  team: "club", equipe: "club", club_name: "club",
+  // Club / Équipe
+  team: "club", equipe: "club", club_name: "club", club_actuel: "club",
+  // Pays
   country: "pays", nation: "pays",
-  position: "poste", role: "poste", title: "poste", titre: "poste",
-  mail: "email", email_club: "email", courriel: "email",
-  phone: "telephone", tel: "telephone", mobile: "telephone", gsm: "telephone",
+  // Poste
+  position: "poste", role: "poste", title: "poste", titre: "poste", fonction: "poste", job: "poste",
+  // Contact
+  mail: "email", email_club: "email", courriel: "email", email_contact: "email",
+  phone: "telephone", tel: "telephone", mobile: "telephone", gsm: "telephone", phone_number: "telephone",
+  // Football
   birth: "date_naissance", dob: "date_naissance", birthdate: "date_naissance", naissance: "date_naissance",
   height: "taille", weight: "poids",
   goals: "buts", assists: "passes_decisives", games: "matchs_joues", appearances: "matchs_joues",
@@ -131,7 +137,7 @@ export default function ImportDropzone({ onExtracted }) {
         );
       }
 
-      // 4. Classifier : joueurs vs contacts staff
+      // 4. Classifier : joueurs vs contacts (staff, agents, dirigeants…)
       const joueurs = [];
       const staffContacts = [];
 
@@ -155,10 +161,12 @@ export default function ImportDropzone({ onExtracted }) {
         const posteLower = normalizeKey(String(row.poste || ""));
         const isPlayer = FOOTBALL_POSITIONS.some((k) => posteLower.includes(k));
 
+        // Toute ligne avec un poste non-footballistique (ou sans poste mais avec un club) va en contact
         if (isPlayer) {
           joueurs.push({ ...row, nom: nomComplet, club_actuel: row.club });
         } else {
-          staffContacts.push({ ...row, nom: nomComplet });
+          // Contact : nom + club suffisent. Poste libre (CEO, Agent, Directeur sportif…)
+          staffContacts.push({ ...row, nom: nomComplet, club: row.club || lastClub });
         }
       }
 

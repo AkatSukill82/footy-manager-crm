@@ -100,10 +100,13 @@ export default function ImportExcel() {
                 <div className="text-sm text-blue-800">
                   <p className="font-semibold mb-1">{t(lang, 'import.infoTitle')}</p>
                   <p className="text-blue-700">
-                    <strong>{t(lang, 'import.infoPlayers')}</strong> nom, prénom, poste, club, nationalité, date_naissance, âge, email, téléphone, agent, agent_email, agent_tel, valeur_marchande, contrat_fin, taille, poids, instagram, twitter, buts, passes, matchs, ligue…
+                    <strong>{t(lang, 'import.infoPlayers')}</strong> nom, prénom, poste (ex: Attaquant, Gardien…), club, nationalité, date_naissance, valeur_marchande, contrat_fin, email, téléphone, agent, buts, passes, matchs, ligue…
                   </p>
                   <p className="text-blue-700 mt-1">
                     <strong>{t(lang, 'import.infoClubs')}</strong> nom_club, pays, ville, président, directeur_sportif, email_club, téléphone_club, budget, stade…
+                  </p>
+                  <p className="text-blue-700 mt-1">
+                    <strong>Contacts (staff / agents / dirigeants) :</strong> nom (ou prénom + nom), club, poste (CEO, Agent, Directeur sportif…), email, téléphone, pays. Toute ligne sans poste footballistique est importée comme contact.
                   </p>
                   <p className="text-blue-700 mt-1 italic">{t(lang, 'import.infoAI')}</p>
                 </div>
