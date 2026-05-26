@@ -35,9 +35,13 @@ const FIELD_MAP = {
   mail: "email", email_club: "email", courriel: "email", email_contact: "email",
   phone: "telephone", tel: "telephone", mobile: "telephone", gsm: "telephone", phone_number: "telephone",
   tlphone: "telephone", tlephone: "telephone", tel_phone: "telephone",
-  // Liens
+  // Liens / profils
   lien: "lien", liens: "lien", link: "lien", links: "lien", url: "lien",
   linkedin: "lien", profil: "lien", profile: "lien", website: "lien", site: "lien",
+  lien_profil: "lien", profil_lien: "lien", transfermarkt: "lien", tm_link: "lien",
+  // WhatsApp / tél contact
+  tel_contact: "telephone", telephone_contact: "telephone", whatsapp: "telephone",
+  numero_whatsapp: "telephone",
   // Football
   birth: "date_naissance", dob: "date_naissance", birthdate: "date_naissance", naissance: "date_naissance",
   height: "taille", weight: "poids",
