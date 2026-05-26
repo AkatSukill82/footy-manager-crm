@@ -51,7 +51,7 @@ import AgentNetwork from './pages/AgentNetwork';
 import Alerts from './pages/Alerts';
 import ClubDetail from './pages/ClubDetail';
 import Clubs from './pages/Clubs';
-import Contacts from './pages/Contacts';
+import ClubContacts from './pages/ClubContacts';
 import Dashboard from './pages/Dashboard';
 import MyWatchList from './pages/MyWatchList';
 import PlayerDetail from './pages/PlayerDetail';
@@ -73,7 +73,7 @@ export const PAGES = {
     "Alerts": Alerts,
     "ClubDetail": ClubDetail,
     "Clubs": Clubs,
-    "Contacts": Contacts,
+    "ClubContacts": ClubContacts,
     "Dashboard": Dashboard,
     "MyWatchList": MyWatchList,
     "PlayerDetail": PlayerDetail,
