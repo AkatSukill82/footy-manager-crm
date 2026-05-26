@@ -10,15 +10,19 @@ import {
   Calendar, Zap, Trophy, Users, DollarSign, X, UserSearch, ChevronDown
 } from "lucide-react";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr, es, enUS } from "date-fns/locale";
+import { useLanguage } from "../lib/LanguageContext";
+import { t } from "../i18n/translations";
+
+const DATE_LOCALES = { fr, es, en: enUS };
 
 const CATEGORIES = [
-  { key: "all",         label: "Tout",          icon: Newspaper,      color: "bg-slate-700 text-white" },
-  { key: "transfert",   label: "Transferts",     icon: ArrowRightLeft, color: "bg-blue-600 text-white" },
-  { key: "contrat",     label: "Contrats",       icon: FileText,       color: "bg-orange-500 text-white" },
-  { key: "performance", label: "Performances",   icon: TrendingUp,     color: "bg-green-600 text-white" },
-  { key: "alerte",      label: "À surveiller",   icon: Eye,            color: "bg-purple-600 text-white" },
-  { key: "palmares",    label: "Résultats",      icon: Trophy,         color: "bg-amber-500 text-white" },
+  { key: "all",         labelKey: "news.catAll",          icon: Newspaper,      color: "bg-slate-700 text-white" },
+  { key: "transfert",   labelKey: "news.catTransfers",    icon: ArrowRightLeft, color: "bg-blue-600 text-white" },
+  { key: "contrat",     labelKey: "news.catContracts",    icon: FileText,       color: "bg-orange-500 text-white" },
+  { key: "performance", labelKey: "news.catPerformance",  icon: TrendingUp,     color: "bg-green-600 text-white" },
+  { key: "alerte",      labelKey: "news.catWatch",        icon: Eye,            color: "bg-purple-600 text-white" },
+  { key: "palmares",    labelKey: "news.catResults",      icon: Trophy,         color: "bg-amber-500 text-white" },
 ];
 
 const CATEGORY_STYLES = {
@@ -31,19 +35,74 @@ const CATEGORY_STYLES = {
 };
 
 const URGENCY_CONFIG = {
-  haute:   { label: "Urgent",    color: "bg-red-500 text-white" },
-  moyenne: { label: "Important", color: "bg-orange-400 text-white" },
-  basse:   { label: "Info",      color: "bg-slate-400 text-white" },
+  haute:   { labelKey: "news.urgencyHigh",   color: "bg-red-500 text-white" },
+  moyenne: { labelKey: "news.urgencyMedium", color: "bg-orange-400 text-white" },
+  basse:   { labelKey: "news.urgencyLow",    color: "bg-slate-400 text-white" },
 };
 
 const PERIODS = [
-  { key: "1m",  label: "1 mois",  months: 1 },
-  { key: "3m",  label: "3 mois",  months: 3 },
-  { key: "6m",  label: "6 mois",  months: 6 },
-  { key: "1y",  label: "1 an",    months: 12 },
+  { key: "1m",  label: "1 mois",  labelKey: "news.period1m", months: 1 },
+  { key: "3m",  label: "3 mois",  labelKey: "news.period3m", months: 3 },
+  { key: "6m",  label: "6 mois",  labelKey: "news.period6m", months: 6 },
+  { key: "1y",  label: "1 an",    labelKey: "news.period1y", months: 12 },
 ];
 
+const LOADING_MSGS_JOURNAL = {
+  fr: [
+    "Consultation de L'Équipe, RMC Sport…",
+    "Analyse de Transfermarkt & Sky Sports…",
+    "Lecture de Football Italia, Marca…",
+    "Compilation des transferts du jour…",
+    "Analyse des contrats en fin de course…",
+    "Identification des talents à surveiller…",
+    "Génération du journal personnalisé…",
+  ],
+  es: [
+    "Consultando L'Équipe, RMC Sport…",
+    "Analizando Transfermarkt & Sky Sports…",
+    "Leyendo Football Italia, Marca…",
+    "Compilando transferencias del día…",
+    "Analizando contratos por expirar…",
+    "Identificando talentos a seguir…",
+    "Generando el diario personalizado…",
+  ],
+  en: [
+    "Consulting L'Équipe, RMC Sport…",
+    "Analysing Transfermarkt & Sky Sports…",
+    "Reading Football Italia, Marca…",
+    "Compiling today's transfers…",
+    "Analysing expiring contracts…",
+    "Identifying talents to watch…",
+    "Generating your personalised journal…",
+  ],
+};
+
+const LOADING_MSGS_PLAYER = {
+  fr: [
+    "Recherche dans les archives sportives…",
+    "Consultation Transfermarkt, SofaScore…",
+    "Analyse des médias et journaux…",
+    "Compilation des informations…",
+    "Génération du rapport joueur…",
+  ],
+  es: [
+    "Buscando en los archivos deportivos…",
+    "Consultando Transfermarkt, SofaScore…",
+    "Analizando medios y periódicos…",
+    "Compilando la información…",
+    "Generando el informe del jugador…",
+  ],
+  en: [
+    "Searching sports archives…",
+    "Consulting Transfermarkt, SofaScore…",
+    "Analysing media and press…",
+    "Compiling information…",
+    "Generating player report…",
+  ],
+};
+
 function NewsCard({ item, onExpand }) {
+  const { lang } = useLanguage();
   const style = CATEGORY_STYLES[item.categorie] || CATEGORY_STYLES.default;
   const Icon = style.icon;
   const urgency = URGENCY_CONFIG[item.urgence] || URGENCY_CONFIG.basse;
@@ -58,7 +117,7 @@ function NewsCard({ item, onExpand }) {
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2 mb-1">
               <h3 className="font-semibold text-slate-900 text-sm leading-snug group-hover:text-green-700 transition-colors line-clamp-2">{item.titre}</h3>
-              <Badge className={`text-[10px] px-1.5 py-0.5 flex-shrink-0 ${urgency.color}`}>{urgency.label}</Badge>
+              <Badge className={`text-[10px] px-1.5 py-0.5 flex-shrink-0 ${urgency.color}`}>{t(lang, urgency.labelKey)}</Badge>
             </div>
             <p className="text-xs text-slate-500 line-clamp-2 mb-2">{item.resume}</p>
             <div className="flex items-center justify-between">
@@ -81,6 +140,7 @@ function NewsCard({ item, onExpand }) {
 }
 
 function NewsModal({ item, onClose }) {
+  const { lang } = useLanguage();
   if (!item) return null;
   const style = CATEGORY_STYLES[item.categorie] || CATEGORY_STYLES.default;
   const Icon = style.icon;
@@ -104,7 +164,7 @@ function NewsModal({ item, onClose }) {
               </div>
               <div>
                 <Badge className={`text-xs ${style.badge} mb-1`}>{item.categorie}</Badge>
-                <Badge className={`text-xs ${urgency.color} ml-1 mb-1`}>{urgency.label}</Badge>
+                <Badge className={`text-xs ${urgency.color} ml-1 mb-1`}>{t(lang, urgency.labelKey)}</Badge>
               </div>
             </div>
             <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 transition-colors">
@@ -117,28 +177,28 @@ function NewsModal({ item, onClose }) {
 
           {item.details && (
             <div className="bg-slate-50 rounded-xl p-4 mb-4">
-              <p className="text-xs font-semibold text-slate-400 uppercase mb-2">Analyse détaillée</p>
+              <p className="text-xs font-semibold text-slate-400 uppercase mb-2">{t(lang, 'news.detailAnalysis')}</p>
               <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{item.details}</p>
             </div>
           )}
 
           {item.impact_marche && (
             <div className="bg-green-50 rounded-xl p-4 mb-4">
-              <p className="text-xs font-semibold text-green-600 uppercase mb-2 flex items-center gap-1"><DollarSign className="w-3 h-3" /> Impact marché</p>
+              <p className="text-xs font-semibold text-green-600 uppercase mb-2 flex items-center gap-1"><DollarSign className="w-3 h-3" /> {t(lang, 'news.marketImpact')}</p>
               <p className="text-sm text-slate-700">{item.impact_marche}</p>
             </div>
           )}
 
           {item.conseil_scout && (
             <div className="bg-purple-50 rounded-xl p-4 mb-4">
-              <p className="text-xs font-semibold text-purple-600 uppercase mb-2 flex items-center gap-1"><Star className="w-3 h-3" /> Conseil scout</p>
+              <p className="text-xs font-semibold text-purple-600 uppercase mb-2 flex items-center gap-1"><Star className="w-3 h-3" /> {t(lang, 'news.scoutAdvice')}</p>
               <p className="text-sm text-slate-700">{item.conseil_scout}</p>
             </div>
           )}
 
           {item.joueurs_concernes?.length > 0 && (
             <div className="mb-4">
-              <p className="text-xs font-semibold text-slate-400 uppercase mb-2 flex items-center gap-1"><Users className="w-3 h-3" /> Joueurs concernés</p>
+              <p className="text-xs font-semibold text-slate-400 uppercase mb-2 flex items-center gap-1"><Users className="w-3 h-3" /> {t(lang, 'news.playersInvolved')}</p>
               <div className="flex flex-wrap gap-2">
                 {item.joueurs_concernes.map((j, i) => (
                   <Badge key={i} variant="outline" className="text-xs">{j}</Badge>
@@ -149,7 +209,7 @@ function NewsModal({ item, onClose }) {
 
           {item.clubs_concernes?.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase mb-2">Clubs concernés</p>
+              <p className="text-xs font-semibold text-slate-400 uppercase mb-2">{t(lang, 'news.clubsInvolved')}</p>
               <div className="flex flex-wrap gap-2">
                 {item.clubs_concernes.map((c, i) => (
                   <Badge key={i} className="bg-slate-100 text-slate-700 text-xs">{c}</Badge>
@@ -164,6 +224,7 @@ function NewsModal({ item, onClose }) {
 }
 
 function ArticlesList({ articles, selectedCategory, onCategoryChange, onExpand }) {
+  const { lang } = useLanguage();
   const filtered = selectedCategory === "all"
     ? articles
     : articles.filter(a => a.categorie === selectedCategory);
@@ -185,7 +246,7 @@ function ArticlesList({ articles, selectedCategory, onCategoryChange, onExpand }
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
-              {cat.label}
+              {t(lang, cat.labelKey)}
               <span className={`text-xs px-1.5 py-0.5 rounded-full ${isActive ? "bg-white/20" : "bg-slate-100 text-slate-500"}`}>{count}</span>
             </button>
           );
@@ -195,7 +256,7 @@ function ArticlesList({ articles, selectedCategory, onCategoryChange, onExpand }
       {filtered.filter(a => a.urgence === "haute").length > 0 && (
         <div>
           <h2 className="text-sm font-bold text-red-600 uppercase flex items-center gap-1.5 mb-3">
-            <AlertCircle className="w-4 h-4" /> Urgent
+            <AlertCircle className="w-4 h-4" /> {t(lang, 'news.urgentSection')}
           </h2>
           <div className="grid md:grid-cols-2 gap-3">
             {filtered.filter(a => a.urgence === "haute").map((item, i) => (
@@ -207,7 +268,7 @@ function ArticlesList({ articles, selectedCategory, onCategoryChange, onExpand }
       {filtered.filter(a => a.urgence === "moyenne").length > 0 && (
         <div>
           <h2 className="text-sm font-bold text-orange-600 uppercase flex items-center gap-1.5 mb-3">
-            <Clock className="w-4 h-4" /> Important
+            <Clock className="w-4 h-4" /> {t(lang, 'news.importantSection')}
           </h2>
           <div className="grid md:grid-cols-2 gap-3">
             {filtered.filter(a => a.urgence === "moyenne").map((item, i) => (
@@ -219,7 +280,7 @@ function ArticlesList({ articles, selectedCategory, onCategoryChange, onExpand }
       {filtered.filter(a => a.urgence === "basse").length > 0 && (
         <div>
           <h2 className="text-sm font-bold text-slate-400 uppercase flex items-center gap-1.5 mb-3">
-            <Newspaper className="w-4 h-4" /> Informations
+            <Newspaper className="w-4 h-4" /> {t(lang, 'news.infoSection')}
           </h2>
           <div className="grid md:grid-cols-2 gap-3">
             {filtered.filter(a => a.urgence === "basse").map((item, i) => (
@@ -255,35 +316,18 @@ const NEWS_SCHEMA = {
   },
 };
 
-const LOADING_MSGS_JOURNAL = [
-  "Consultation de L'Équipe, RMC Sport…",
-  "Analyse de Transfermarkt & Sky Sports…",
-  "Lecture de Football Italia, Marca…",
-  "Compilation des transferts du jour…",
-  "Analyse des contrats en fin de course…",
-  "Identification des talents à surveiller…",
-  "Génération du journal personnalisé…",
-];
-
-const LOADING_MSGS_PLAYER = [
-  "Recherche dans les archives sportives…",
-  "Consultation Transfermarkt, SofaScore…",
-  "Analyse des médias et journaux…",
-  "Compilation des informations…",
-  "Génération du rapport joueur…",
-];
-
 export default function NewsPage() {
+  const { lang } = useLanguage();
+  const dateLocale = DATE_LOCALES[lang] || enUS;
+
   const [activeTab, setActiveTab] = useState("journal");
 
-  // Journal du jour
   const [loadingJournal, setLoadingJournal] = useState(false);
   const [articlesJournal, setArticlesJournal] = useState([]);
   const [categoryJournal, setCategoryJournal] = useState("all");
   const [lastUpdate, setLastUpdate] = useState(null);
   const [loadingMsgJournal, setLoadingMsgJournal] = useState("");
 
-  // Mes joueurs
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState("3m");
   const [loadingPlayer, setLoadingPlayer] = useState(false);
@@ -299,17 +343,17 @@ export default function NewsPage() {
     queryFn: () => base44.entities.Player.list('-created_date'),
   });
 
-  // ── Journal du jour ──────────────────────────────────────────────────────────
   const fetchJournal = async () => {
     setLoadingJournal(true);
     setArticlesJournal([]);
     setLastUpdate(null);
 
+    const msgs = LOADING_MSGS_JOURNAL[lang] || LOADING_MSGS_JOURNAL.fr;
     let msgIdx = 0;
-    setLoadingMsgJournal(LOADING_MSGS_JOURNAL[0]);
+    setLoadingMsgJournal(msgs[0]);
     const interval = setInterval(() => {
-      msgIdx = (msgIdx + 1) % LOADING_MSGS_JOURNAL.length;
-      setLoadingMsgJournal(LOADING_MSGS_JOURNAL[msgIdx]);
+      msgIdx = (msgIdx + 1) % msgs.length;
+      setLoadingMsgJournal(msgs[msgIdx]);
     }, 2500);
 
     const today = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -341,42 +385,42 @@ IMPORTANT: urgence = "haute" si transfert imminent ou fin de contrat < 6 mois, "
     setLoadingJournal(false);
   };
 
-  // ── Infos joueur sur une période ─────────────────────────────────────────────
   const fetchPlayerNews = async () => {
     if (!selectedPlayer) return;
     setLoadingPlayer(true);
     setArticlesPlayer([]);
     setPlayerSearchDone(false);
 
+    const msgs = LOADING_MSGS_PLAYER[lang] || LOADING_MSGS_PLAYER.fr;
     let msgIdx = 0;
-    setLoadingMsgPlayer(LOADING_MSGS_PLAYER[0]);
+    setLoadingMsgPlayer(msgs[0]);
     const interval = setInterval(() => {
-      msgIdx = (msgIdx + 1) % LOADING_MSGS_PLAYER.length;
-      setLoadingMsgPlayer(LOADING_MSGS_PLAYER[msgIdx]);
+      msgIdx = (msgIdx + 1) % msgs.length;
+      setLoadingMsgPlayer(msgs[msgIdx]);
     }, 2000);
 
-    const period = PERIODS.find(p => p.key === selectedPeriod);
+    const period = PERIODS.find(pd => pd.key === selectedPeriod);
     const periodLabel = period?.label || "3 mois";
     const today = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
     const fromDate = new Date();
     fromDate.setMonth(fromDate.getMonth() - (period?.months || 3));
     const fromLabel = fromDate.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
-    const p = selectedPlayer;
+    const pl = selectedPlayer;
     const context = [
-      p.club_actuel && `Club actuel : ${p.club_actuel}`,
-      p.poste && `Poste : ${p.poste}`,
-      p.nationalite && `Nationalité : ${p.nationalite}`,
-      p.age && `Âge : ${p.age} ans`,
-      p.ligue && `Ligue : ${p.ligue}`,
-      p.valeur_marchande && `Valeur marchande : ${p.valeur_marchande} M€`,
-      p.contrat_fin && `Fin de contrat : ${p.contrat_fin}`,
+      pl.club_actuel && `Club actuel : ${pl.club_actuel}`,
+      pl.poste && `Poste : ${pl.poste}`,
+      pl.nationalite && `Nationalité : ${pl.nationalite}`,
+      pl.age && `Âge : ${pl.age} ans`,
+      pl.ligue && `Ligue : ${pl.ligue}`,
+      pl.valeur_marchande && `Valeur marchande : ${pl.valeur_marchande} M€`,
+      pl.contrat_fin && `Fin de contrat : ${pl.contrat_fin}`,
     ].filter(Boolean).join(", ");
 
     const data = await base44.integrations.Core.InvokeLLM({
       prompt: `Tu es un analyste sportif expert. Nous sommes le ${today}.
 
-Recherche toutes les informations et actualités concernant le joueur de football **${p.nom}** sur les ${periodLabel} écoulés (depuis le ${fromLabel}).
+Recherche toutes les informations et actualités concernant le joueur de football **${pl.nom}** sur les ${periodLabel} écoulés (depuis le ${fromLabel}).
 ${context ? `\nContexte du joueur dans notre CRM : ${context}` : ""}
 
 Fouille toutes les sources : L'Équipe, RMC Sport, Sky Sports, Transfermarkt, SofaScore, Fabrizio Romano, Goal.com, Marca, AS, Gazzetta dello Sport, BBC Sport, les journaux locaux de son club.
@@ -418,11 +462,11 @@ urgence = "haute" si c'est une info très récente (< 2 semaines) ou critique, "
                 <Newspaper className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-slate-900">Journal du Football</h1>
+                <h1 className="text-xl font-bold text-slate-900">{t(lang, 'news.title')}</h1>
                 <p className="text-xs text-slate-500">
                   {lastUpdate && activeTab === "journal"
-                    ? `Mis à jour à ${format(lastUpdate, "HH:mm", { locale: fr })}`
-                    : format(new Date(), "EEEE d MMMM yyyy", { locale: fr })}
+                    ? t(lang, 'news.updatedAt', { time: format(lastUpdate, "HH:mm", { locale: dateLocale }) })
+                    : format(new Date(), "EEEE d MMMM yyyy", { locale: dateLocale })}
                 </p>
               </div>
             </div>
@@ -436,7 +480,7 @@ urgence = "haute" si c'est une info très récente (< 2 semaines) ou critique, "
                 }`}
               >
                 <Newspaper className="w-4 h-4" />
-                <span className="hidden sm:inline">Journal du jour</span>
+                <span className="hidden sm:inline">{t(lang, 'news.tabJournal')}</span>
               </button>
               <button
                 onClick={() => setActiveTab("joueur")}
@@ -445,7 +489,7 @@ urgence = "haute" si c'est une info très récente (< 2 semaines) ou critique, "
                 }`}
               >
                 <UserSearch className="w-4 h-4" />
-                <span className="hidden sm:inline">Mes joueurs</span>
+                <span className="hidden sm:inline">{t(lang, 'news.tabPlayers')}</span>
               </button>
             </div>
 
@@ -455,12 +499,12 @@ urgence = "haute" si c'est une info très récente (< 2 semaines) ou critique, "
                 {urgentCountJournal > 0 && (
                   <Badge className="bg-red-500 text-white gap-1 hidden sm:flex">
                     <AlertCircle className="w-3 h-3" />
-                    {urgentCountJournal} urgent{urgentCountJournal > 1 ? "s" : ""}
+                    {t(lang, 'news.urgentBadge', { count: urgentCountJournal, s: urgentCountJournal > 1 ? "s" : "" })}
                   </Badge>
                 )}
                 <Button onClick={fetchJournal} disabled={loadingJournal} className="bg-green-600 hover:bg-green-700 gap-2">
                   {loadingJournal ? <Loader2 className="w-4 h-4 animate-spin" /> : articlesJournal.length > 0 ? <RefreshCw className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
-                  <span className="hidden sm:inline">{articlesJournal.length > 0 ? "Actualiser" : "Lire le journal"}</span>
+                  <span className="hidden sm:inline">{articlesJournal.length > 0 ? t(lang, 'news.refresh') : t(lang, 'news.readJournal')}</span>
                 </Button>
               </div>
             )}
@@ -479,13 +523,11 @@ urgence = "haute" si c'est une info très récente (< 2 semaines) ou critique, "
                   <Newspaper className="w-12 h-12 text-slate-400" />
                 </div>
                 <div className="text-center">
-                  <h2 className="text-2xl font-bold text-slate-800 mb-2">Votre journal du jour</h2>
-                  <p className="text-slate-500 max-w-md">
-                    Cliquez sur <strong>"Lire le journal"</strong> pour que l'IA consulte tous les journaux sportifs du jour.
-                  </p>
+                  <h2 className="text-2xl font-bold text-slate-800 mb-2">{t(lang, 'news.yourJournalTitle')}</h2>
+                  <p className="text-slate-500 max-w-md">{t(lang, 'news.yourJournalDesc')}</p>
                 </div>
                 <Button onClick={fetchJournal} size="lg" className="bg-green-600 hover:bg-green-700 gap-2 px-8">
-                  <Zap className="w-5 h-5" /> Lire le journal du jour
+                  <Zap className="w-5 h-5" /> {t(lang, 'news.readToday')}
                 </Button>
                 <div className="flex flex-wrap justify-center gap-2 max-w-lg">
                   {["L'Équipe", "RMC Sport", "Sky Sports", "Transfermarkt", "Fabrizio Romano", "Marca", "Gazzetta"].map(s => (
@@ -501,18 +543,18 @@ urgence = "haute" si c'est une info très récente (< 2 semaines) ou critique, "
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {[
-                    { label: "Articles",    value: articlesJournal.length,                                              icon: Newspaper,      color: "text-slate-700",  bg: "bg-slate-100" },
-                    { label: "Transferts",  value: articlesJournal.filter(a => a.categorie === "transfert").length,     icon: ArrowRightLeft, color: "text-blue-700",   bg: "bg-blue-50" },
-                    { label: "Contrats",    value: articlesJournal.filter(a => a.categorie === "contrat").length,       icon: FileText,       color: "text-orange-700", bg: "bg-orange-50" },
-                    { label: "À surveiller",value: articlesJournal.filter(a => a.categorie === "alerte").length,        icon: Star,           color: "text-purple-700", bg: "bg-purple-50" },
-                  ].map(({ label, value, icon: Icon, color, bg }) => (
-                    <div key={label} className="bg-white rounded-xl border border-slate-100 shadow-sm p-4 flex items-center gap-3">
+                    { labelKey: "news.statsArticles",  value: articlesJournal.length,                                              icon: Newspaper,      color: "text-slate-700",  bg: "bg-slate-100" },
+                    { labelKey: "news.statsTransfers", value: articlesJournal.filter(a => a.categorie === "transfert").length,     icon: ArrowRightLeft, color: "text-blue-700",   bg: "bg-blue-50" },
+                    { labelKey: "news.statsContracts", value: articlesJournal.filter(a => a.categorie === "contrat").length,       icon: FileText,       color: "text-orange-700", bg: "bg-orange-50" },
+                    { labelKey: "news.statsWatch",     value: articlesJournal.filter(a => a.categorie === "alerte").length,        icon: Star,           color: "text-purple-700", bg: "bg-purple-50" },
+                  ].map(({ labelKey, value, icon: Icon, color, bg }) => (
+                    <div key={labelKey} className="bg-white rounded-xl border border-slate-100 shadow-sm p-4 flex items-center gap-3">
                       <div className={`w-9 h-9 rounded-lg ${bg} flex items-center justify-center`}>
                         <Icon className={`w-4 h-4 ${color}`} />
                       </div>
                       <div>
                         <p className="text-2xl font-bold text-slate-900">{value}</p>
-                        <p className="text-xs text-slate-500">{label}</p>
+                        <p className="text-xs text-slate-500">{t(lang, labelKey)}</p>
                       </div>
                     </div>
                   ))}
@@ -532,18 +574,16 @@ urgence = "haute" si c'est une info très récente (< 2 semaines) ou critique, "
         {/* ── MES JOUEURS ── */}
         {activeTab === "joueur" && (
           <div className="space-y-5">
-            {/* Sélection joueur + période */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-5">
               <h2 className="font-semibold text-slate-800 flex items-center gap-2">
                 <UserSearch className="w-5 h-5 text-green-500" />
-                Rechercher les infos sur un joueur
+                {t(lang, 'news.searchPlayerTitle')}
               </h2>
 
-              {/* Dropdown joueur */}
               <div>
-                <p className="text-xs font-semibold text-slate-400 uppercase mb-2">Choisir un joueur</p>
+                <p className="text-xs font-semibold text-slate-400 uppercase mb-2">{t(lang, 'news.choosePlayer')}</p>
                 {players.length === 0 ? (
-                  <p className="text-sm text-slate-400 italic">Aucun joueur dans votre liste.</p>
+                  <p className="text-sm text-slate-400 italic">{t(lang, 'news.noPlayers')}</p>
                 ) : (
                   <div className="relative">
                     <button
@@ -561,32 +601,32 @@ urgence = "haute" si c'est une info très récente (< 2 semaines) ou critique, "
                           </div>
                         </div>
                       ) : (
-                        <span className="text-slate-400 text-sm">Sélectionner un joueur…</span>
+                        <span className="text-slate-400 text-sm">{t(lang, 'news.selectPlayerPlh')}</span>
                       )}
                       <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
                     </button>
 
                     {dropdownOpen && (
                       <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-xl max-h-64 overflow-y-auto">
-                        {players.map(p => (
+                        {players.map(pl => (
                           <button
-                            key={p.id}
+                            key={pl.id}
                             onClick={() => {
-                              setSelectedPlayer(p);
+                              setSelectedPlayer(pl);
                               setDropdownOpen(false);
                               setArticlesPlayer([]);
                               setPlayerSearchDone(false);
                             }}
-                            className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-green-50 transition-colors text-left ${selectedPlayer?.id === p.id ? "bg-green-50" : ""}`}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-green-50 transition-colors text-left ${selectedPlayer?.id === pl.id ? "bg-green-50" : ""}`}
                           >
-                            {p.photo_url
-                              ? <img src={p.photo_url} alt={p.nom} className="w-8 h-8 rounded-full object-cover flex-shrink-0 border" referrerPolicy="no-referrer" onError={e => e.target.style.display = 'none'} />
+                            {pl.photo_url
+                              ? <img src={pl.photo_url} alt={pl.nom} className="w-8 h-8 rounded-full object-cover flex-shrink-0 border" referrerPolicy="no-referrer" onError={e => e.target.style.display = 'none'} />
                               : <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0"><Users className="w-4 h-4 text-slate-400" /></div>}
                             <div className="min-w-0">
-                              <p className="font-medium text-slate-900 text-sm truncate">{p.nom}</p>
-                              <p className="text-xs text-slate-500 truncate">{p.poste}{p.club_actuel ? ` · ${p.club_actuel}` : ""}</p>
+                              <p className="font-medium text-slate-900 text-sm truncate">{pl.nom}</p>
+                              <p className="text-xs text-slate-500 truncate">{pl.poste}{pl.club_actuel ? ` · ${pl.club_actuel}` : ""}</p>
                             </div>
-                            {selectedPlayer?.id === p.id && <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0 ml-auto" />}
+                            {selectedPlayer?.id === pl.id && <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0 ml-auto" />}
                           </button>
                         ))}
                       </div>
@@ -595,35 +635,33 @@ urgence = "haute" si c'est une info très récente (< 2 semaines) ou critique, "
                 )}
               </div>
 
-              {/* Période */}
               <div>
-                <p className="text-xs font-semibold text-slate-400 uppercase mb-2">Période</p>
+                <p className="text-xs font-semibold text-slate-400 uppercase mb-2">{t(lang, 'news.period')}</p>
                 <div className="flex gap-2 flex-wrap">
-                  {PERIODS.map(p => (
+                  {PERIODS.map(pd => (
                     <button
-                      key={p.key}
-                      onClick={() => setSelectedPeriod(p.key)}
+                      key={pd.key}
+                      onClick={() => setSelectedPeriod(pd.key)}
                       className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
-                        selectedPeriod === p.key
+                        selectedPeriod === pd.key
                           ? "bg-green-600 text-white border-green-600 shadow"
                           : "bg-white text-slate-600 border-slate-200 hover:border-green-300"
                       }`}
                     >
-                      {p.label}
+                      {t(lang, pd.labelKey)}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Bouton */}
               <Button
                 onClick={fetchPlayerNews}
                 disabled={!selectedPlayer || loadingPlayer}
                 className="w-full bg-green-600 hover:bg-green-700 gap-2 h-11"
               >
                 {loadingPlayer
-                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Recherche en cours…</>
-                  : <><UserSearch className="w-4 h-4" /> Rechercher les informations</>}
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> {t(lang, 'news.searching')}</>
+                  : <><UserSearch className="w-4 h-4" /> {t(lang, 'news.searchBtn')}</>}
               </Button>
             </div>
 
@@ -631,7 +669,7 @@ urgence = "haute" si c'est une info très récente (< 2 semaines) ou critique, "
 
             {!loadingPlayer && playerSearchDone && articlesPlayer.length === 0 && (
               <div className="text-center py-12">
-                <p className="text-slate-500">Aucune information trouvée pour {selectedPlayer?.nom} sur cette période.</p>
+                <p className="text-slate-500">{t(lang, 'news.noResults', { name: selectedPlayer?.nom })}</p>
               </div>
             )}
 
@@ -641,11 +679,11 @@ urgence = "haute" si c'est une info très récente (< 2 semaines) ou critique, "
                   <div>
                     <h2 className="font-bold text-slate-900">{selectedPlayer?.nom}</h2>
                     <p className="text-xs text-slate-500">
-                      {articlesPlayer.length} article{articlesPlayer.length > 1 ? "s" : ""} · {PERIODS.find(p => p.key === selectedPeriod)?.label}
+                      {articlesPlayer.length} article{articlesPlayer.length > 1 ? "s" : ""} · {t(lang, PERIODS.find(pd => pd.key === selectedPeriod)?.labelKey || 'news.period3m')}
                     </p>
                   </div>
                   <Button onClick={fetchPlayerNews} disabled={loadingPlayer} variant="outline" size="sm" className="gap-1.5">
-                    <RefreshCw className="w-3.5 h-3.5" /> Actualiser
+                    <RefreshCw className="w-3.5 h-3.5" /> {t(lang, 'news.refresh')}
                   </Button>
                 </div>
 
@@ -667,6 +705,7 @@ urgence = "haute" si c'est une info très récente (< 2 semaines) ou critique, "
 }
 
 function LoadingSpinner({ msg, icon }) {
+  const { lang } = useLanguage();
   return (
     <div className="flex flex-col items-center justify-center py-24 gap-6">
       <div className="relative w-20 h-20">
@@ -674,7 +713,7 @@ function LoadingSpinner({ msg, icon }) {
         <div className="absolute inset-0 flex items-center justify-center">{icon}</div>
       </div>
       <div className="text-center">
-        <p className="font-semibold text-slate-800 mb-1">Consultation des sources…</p>
+        <p className="font-semibold text-slate-800 mb-1">{t(lang, 'news.consultingSources')}</p>
         <p className="text-sm text-slate-500">{msg}</p>
       </div>
       <div className="flex gap-1">

@@ -1,15 +1,14 @@
 import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { X, Plus, Users, TrendingUp, ArrowRightLeft, RefreshCw, Star, ChevronDown } from "lucide-react";
+import { X, Plus, Users, TrendingUp, ArrowRightLeft, Star } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, RadarChart, Radar,
   PolarGrid, PolarAngleAxis, Legend
 } from "recharts";
-
-// ─── Shared logic (copied from sibling components) ────────────────────────────
+import { useLanguage } from "../../../lib/LanguageContext";
+import { t } from "../../../i18n/translations";
 
 const PLAYER_COLORS = ["#8b5cf6", "#22c55e", "#f59e0b", "#ef4444"];
 
@@ -68,27 +67,18 @@ function radarData(players) {
   };
 
   const keys = [
-    { key: "note_moyenne", label: "Forme" },
-    { key: "buts", label: "Buts" },
-    { key: "passes_decisives", label: "Passes déc." },
-    { key: "dribbles_reussis", label: "Dribbles" },
-    { key: "interceptions", label: "Interceptions" },
-    { key: "duels_gagnes_pct", label: "Duels %" },
+    { key: "note_moyenne", labelKey: "predictive.statRating" },
+    { key: "buts", labelKey: "predictive.statGoals" },
+    { key: "passes_decisives", labelKey: "predictive.statAssists" },
+    { key: "dribbles_reussis", labelKey: "predictive.statDribbles" },
+    { key: "interceptions", labelKey: "predictive.statInterceptions" },
+    { key: "duels_gagnes_pct", labelKey: "predictive.statDuels" },
   ];
 
-  return keys.map(({ key, label }) => {
-    const values = players.map(p => p[key] || 0);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const row = { label };
-    players.forEach((p, i) => { row[p.nom] = normalize(p[key] || 0, min, max); });
-    return row;
-  });
+  return { keys, players };
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function PlayerSelector({ allPlayers, selected, onSelect, onRemove, max }) {
+function PlayerSelector({ allPlayers, selected, onSelect, onRemove, max, lang }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -119,7 +109,7 @@ function PlayerSelector({ allPlayers, selected, onSelect, onRemove, max }) {
             onClick={() => setOpen(o => !o)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border-2 border-dashed border-slate-300 text-slate-500 text-sm hover:border-purple-400 hover:text-purple-600 transition-colors"
           >
-            <Plus className="w-3.5 h-3.5" /> Ajouter un joueur
+            <Plus className="w-3.5 h-3.5" /> {t(lang, 'predictive.addPlayer')}
           </button>
           {open && (
             <div className="absolute top-9 left-0 z-20 bg-white border border-slate-200 rounded-xl shadow-xl w-64 overflow-hidden">
@@ -128,13 +118,13 @@ function PlayerSelector({ allPlayers, selected, onSelect, onRemove, max }) {
                   autoFocus
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  placeholder="Rechercher…"
+                  placeholder={t(lang, 'common.search') || "Rechercher…"}
                   className="w-full text-sm px-2 py-1.5 rounded-lg border border-slate-200 outline-none focus:ring-2 focus:ring-purple-300"
                 />
               </div>
               <div className="max-h-52 overflow-y-auto">
                 {available.length === 0 && (
-                  <p className="text-xs text-slate-400 text-center py-4">Aucun joueur trouvé</p>
+                  <p className="text-xs text-slate-400 text-center py-4">{t(lang, 'teams.noPlayerFound')}</p>
                 )}
                 {available.map(p => (
                   <button
@@ -148,7 +138,7 @@ function PlayerSelector({ allPlayers, selected, onSelect, onRemove, max }) {
                     }
                     <div>
                       <p className="font-medium text-slate-800">{p.nom}</p>
-                      <p className="text-[10px] text-slate-400">{p.poste} · {p.age} ans · {p.club_actuel || "—"}</p>
+                      <p className="text-[10px] text-slate-400">{p.poste} · {p.age} {t(lang, 'common.ageUnit')} · {p.club_actuel || "—"}</p>
                     </div>
                   </button>
                 ))}
@@ -184,15 +174,13 @@ function StatRow({ label, players, field, format = v => v ?? "—", higherIsBett
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 export default function PlayerComparisonTool({ allPlayers }) {
+  const { lang } = useLanguage();
   const [selected, setSelected] = useState([]);
 
   const onSelect = (p) => setSelected(prev => prev.length < 4 ? [...prev, p] : prev);
   const onRemove = (id) => setSelected(prev => prev.filter(p => p.id !== id));
 
-  // Projections
   const projections = useMemo(() => selected.map(projectValue), [selected]);
   const projYears = projections[0] || [];
 
@@ -204,43 +192,57 @@ export default function PlayerComparisonTool({ allPlayers }) {
     return point;
   });
 
-  // Transfer predictions
   const transferPreds = useMemo(() => selected.map(predictTransfer), [selected]);
 
-  // Radar
-  const radar = useMemo(() => radarData(selected), [selected]);
+  const { keys: radarKeys } = useMemo(() => radarData(selected), [selected]);
+  const radar = useMemo(() => {
+    const normalize = (val, min, max) => {
+      if (!val || max === min) return 0;
+      return Math.round(((val - min) / (max - min)) * 100);
+    };
+    return radarKeys.map(({ key, labelKey }) => {
+      const values = selected.map(p => p[key] || 0);
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const row = { label: t(lang, labelKey) };
+      selected.forEach(p => { row[p.nom] = normalize(p[key] || 0, min, max); });
+      return row;
+    });
+  }, [selected, lang]);
+
+  const ageUnit = t(lang, 'common.ageUnit');
 
   return (
     <Card className="border-purple-100">
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2 text-base">
           <Users className="w-4 h-4 text-purple-600" />
-          Comparaison avancée de joueurs
-          <Badge className="bg-purple-100 text-purple-700 border-0 ml-1">2–4 joueurs</Badge>
+          {t(lang, 'predictive.compareTitle')}
+          <Badge className="bg-purple-100 text-purple-700 border-0 ml-1">{t(lang, 'predictive.compareBadge')}</Badge>
         </CardTitle>
-        <p className="text-xs text-slate-500">Sélectionnez de 2 à 4 joueurs pour comparer leurs statistiques, trajectoires et prédictions côte à côte</p>
+        <p className="text-xs text-slate-500">{t(lang, 'predictive.compareDesc')}</p>
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Sélecteur */}
         <PlayerSelector
           allPlayers={allPlayers}
           selected={selected}
           onSelect={onSelect}
           onRemove={onRemove}
           max={4}
+          lang={lang}
         />
 
         {selected.length < 2 && (
           <div className="text-center py-12 text-slate-400">
             <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Sélectionnez au moins 2 joueurs pour démarrer la comparaison</p>
+            <p className="text-sm">{t(lang, 'predictive.selectMin2')}</p>
           </div>
         )}
 
         {selected.length >= 2 && (
           <>
-            {/* ── En-têtes joueurs ── */}
+            {/* Player headers */}
             <div className="grid gap-3" style={{ gridTemplateColumns: `140px repeat(${selected.length}, 1fr)` }}>
               <div />
               {selected.map((p, i) => (
@@ -253,32 +255,32 @@ export default function PlayerComparisonTool({ allPlayers }) {
                   }
                   <p className="font-bold text-xs text-slate-900 leading-tight">{p.nom}</p>
                   <p className="text-[10px] text-slate-400 mt-0.5">{p.poste}</p>
-                  <p className="text-[10px] text-slate-400">{p.age} ans · {p.club_actuel || "—"}</p>
+                  <p className="text-[10px] text-slate-400">{p.age} {ageUnit} · {p.club_actuel || "—"}</p>
                 </div>
               ))}
             </div>
 
-            {/* ── Stats clés ── */}
+            {/* Key stats */}
             <div>
-              <p className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">Statistiques clés</p>
+              <p className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">{t(lang, 'predictive.keyStats')}</p>
               <div className="space-y-1.5 bg-slate-50 rounded-xl p-3">
-                <StatRow label="Valeur marchande" players={selected} field="valeur_marchande" format={v => v ? `${v} M€` : "—"} />
-                <StatRow label="Âge" players={selected} field="age" format={v => v ? `${v} ans` : "—"} higherIsBetter={false} />
-                <StatRow label="Note SofaScore" players={selected} field="note_moyenne" format={v => v ?? "—"} />
-                <StatRow label="Buts" players={selected} field="buts" format={v => v ?? "—"} />
-                <StatRow label="Passes déc." players={selected} field="passes_decisives" format={v => v ?? "—"} />
-                <StatRow label="xG" players={selected} field="xg" format={v => v ?? "—"} />
-                <StatRow label="Dribbles réussis" players={selected} field="dribbles_reussis" format={v => v ?? "—"} />
-                <StatRow label="Interceptions" players={selected} field="interceptions" format={v => v ?? "—"} />
-                <StatRow label="% Duels gagnés" players={selected} field="duels_gagnes_pct" format={v => v ? `${v}%` : "—"} />
-                <StatRow label="Minutes jouées" players={selected} field="minutes_jouees" format={v => v ?? "—"} />
+                <StatRow label={t(lang, 'predictive.statValue')} players={selected} field="valeur_marchande" format={v => v ? `${v} M€` : "—"} />
+                <StatRow label={t(lang, 'predictive.statAge')} players={selected} field="age" format={v => v ? `${v} ${ageUnit}` : "—"} higherIsBetter={false} />
+                <StatRow label={t(lang, 'predictive.statRating')} players={selected} field="note_moyenne" format={v => v ?? "—"} />
+                <StatRow label={t(lang, 'predictive.statGoals')} players={selected} field="buts" format={v => v ?? "—"} />
+                <StatRow label={t(lang, 'predictive.statAssists')} players={selected} field="passes_decisives" format={v => v ?? "—"} />
+                <StatRow label={t(lang, 'predictive.statXG')} players={selected} field="xg" format={v => v ?? "—"} />
+                <StatRow label={t(lang, 'predictive.statDribbles')} players={selected} field="dribbles_reussis" format={v => v ?? "—"} />
+                <StatRow label={t(lang, 'predictive.statInterceptions')} players={selected} field="interceptions" format={v => v ?? "—"} />
+                <StatRow label={t(lang, 'predictive.statDuels')} players={selected} field="duels_gagnes_pct" format={v => v ? `${v}%` : "—"} />
+                <StatRow label={t(lang, 'predictive.statMinutes')} players={selected} field="minutes_jouees" format={v => v ?? "—"} />
               </div>
             </div>
 
-            {/* ── Trajectoires de valeur ── */}
+            {/* Value trajectories */}
             <div>
               <p className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3 flex items-center gap-1.5">
-                <TrendingUp className="w-3.5 h-3.5 text-green-600" /> Trajectoires valeur marchande projetées
+                <TrendingUp className="w-3.5 h-3.5 text-green-600" /> {t(lang, 'predictive.projTraj')}
               </p>
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={chartData}>
@@ -289,36 +291,21 @@ export default function PlayerComparisonTool({ allPlayers }) {
                   <ReferenceLine x={2025} stroke="#cbd5e1" strokeDasharray="4 4" />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                   {selected.map((p, i) => (
-                    <Line
-                      key={p.id}
-                      type="monotone"
-                      dataKey={p.nom}
-                      stroke={PLAYER_COLORS[i]}
-                      strokeWidth={2.5}
-                      dot={{ r: 3, fill: PLAYER_COLORS[i] }}
-                    />
+                    <Line key={p.id} type="monotone" dataKey={p.nom} stroke={PLAYER_COLORS[i]} strokeWidth={2.5} dot={{ r: 3, fill: PLAYER_COLORS[i] }} />
                   ))}
                 </LineChart>
               </ResponsiveContainer>
             </div>
 
-            {/* ── Radar stats ── */}
+            {/* Radar */}
             <div>
-              <p className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">Profil statistique (normalisé)</p>
+              <p className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3">{t(lang, 'predictive.radarTitle')}</p>
               <ResponsiveContainer width="100%" height={260}>
                 <RadarChart data={radar}>
                   <PolarGrid stroke="#e2e8f0" />
                   <PolarAngleAxis dataKey="label" tick={{ fontSize: 10, fill: "#64748b" }} />
                   {selected.map((p, i) => (
-                    <Radar
-                      key={p.id}
-                      name={p.nom}
-                      dataKey={p.nom}
-                      stroke={PLAYER_COLORS[i]}
-                      fill={PLAYER_COLORS[i]}
-                      fillOpacity={0.12}
-                      strokeWidth={2}
-                    />
+                    <Radar key={p.id} name={p.nom} dataKey={p.nom} stroke={PLAYER_COLORS[i]} fill={PLAYER_COLORS[i]} fillOpacity={0.12} strokeWidth={2} />
                   ))}
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                   <Tooltip />
@@ -326,10 +313,10 @@ export default function PlayerComparisonTool({ allPlayers }) {
               </ResponsiveContainer>
             </div>
 
-            {/* ── Probabilités transfert/renouvellement ── */}
+            {/* Transfer probability */}
             <div>
               <p className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3 flex items-center gap-1.5">
-                <ArrowRightLeft className="w-3.5 h-3.5 text-orange-500" /> Probabilité transfert / renouvellement
+                <ArrowRightLeft className="w-3.5 h-3.5 text-orange-500" /> {t(lang, 'predictive.transferProbTitle')}
               </p>
               <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${selected.length}, 1fr)` }}>
                 {selected.map((p, i) => {
@@ -338,7 +325,6 @@ export default function PlayerComparisonTool({ allPlayers }) {
                   return (
                     <div key={p.id} className="rounded-xl border border-slate-100 p-3 text-center">
                       <p className="text-xs font-semibold text-slate-800 mb-2 truncate">{p.nom}</p>
-                      {/* Donut-like */}
                       <div className="relative h-2 bg-slate-100 rounded-full overflow-hidden mb-2">
                         <div className="h-full rounded-full transition-all" style={{ width: `${transferPct}%`, backgroundColor: PLAYER_COLORS[i] }} />
                       </div>
@@ -347,11 +333,11 @@ export default function PlayerComparisonTool({ allPlayers }) {
                         <span>{transferPct}% ✈️</span>
                       </div>
                       <Badge className={`text-[10px] border-0 px-2 ${isTransfer ? "bg-orange-50 text-orange-700" : "bg-green-50 text-green-700"}`}>
-                        {isTransfer ? "Transfert probable" : "Renouvellement probable"}
+                        {isTransfer ? t(lang, 'predictive.transferLikely') : t(lang, 'predictive.renewalLikely')}
                       </Badge>
                       {monthsLeft !== null && (
                         <p className="text-[10px] text-slate-400 mt-1.5">
-                          {monthsLeft < 1 ? "Libre !" : `${Math.round(monthsLeft)} mois de contrat`}
+                          {monthsLeft < 1 ? t(lang, 'predictive.freeAgent') : t(lang, 'predictive.monthsContract', { count: Math.round(monthsLeft) })}
                         </p>
                       )}
                     </div>

@@ -5,8 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Image, Loader2, CheckCircle2, RefreshCw, ExternalLink, Link2, AlertCircle } from "lucide-react";
 import TransfermarktImage from "../ui/TransfermarktImage";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 export default function ImportTransfermarktPhoto({ player, onApply }) {
+  const { lang } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [candidates, setCandidates] = useState(null);
   const [selected, setSelected] = useState(null);
@@ -31,7 +34,7 @@ Donne-moi 3 URLs directes d'images de ce joueur, en priorité :
 2. Site officiel du club ou UEFA/FIFA
 3. Une autre source fiable
 
-IMPORTANT : 
+IMPORTANT :
 - Les URLs doivent pointer directement vers un fichier image (.jpg, .png, .webp)
 - NE PAS donner des URLs Transfermarkt car elles sont bloquées
 - Préfère Wikipedia, les sites officiels des clubs, UEFA.com, FIFA.com
@@ -78,12 +81,11 @@ IMPORTANT :
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2 text-blue-800">
           <Image className="w-4 h-4" />
-          Importer une photo
+          {t(lang, 'playerDetail.photoTitle')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
 
-        {/* Photo actuelle */}
         {player.photo_url && (
           <div className="flex items-center gap-3 p-2 bg-white rounded-lg border border-slate-200">
             <TransfermarktImage
@@ -92,32 +94,30 @@ IMPORTANT :
               className="w-12 h-12 rounded-full object-cover border border-slate-200"
               fallback={<div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center"><Image className="w-5 h-5 text-slate-400" /></div>}
             />
-            <div className="text-xs text-slate-500">Photo actuelle</div>
+            <div className="text-xs text-slate-500">{t(lang, 'playerDetail.currentPhoto')}</div>
           </div>
         )}
 
-        {/* Tabs */}
         <div className="flex rounded-lg border border-slate-200 overflow-hidden text-xs font-medium">
           <button
             type="button"
             onClick={() => setManualMode(false)}
             className={`flex-1 py-1.5 transition-colors ${!manualMode ? "bg-blue-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
           >
-            🤖 Recherche IA
+            {t(lang, 'playerDetail.aiSearchTab')}
           </button>
           <button
             type="button"
             onClick={() => setManualMode(true)}
             className={`flex-1 py-1.5 transition-colors ${manualMode ? "bg-blue-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
           >
-            <span className="flex items-center justify-center gap-1"><Link2 className="w-3 h-3" /> URL manuelle</span>
+            <span className="flex items-center justify-center gap-1"><Link2 className="w-3 h-3" /> {t(lang, 'playerDetail.manualUrlTab')}</span>
           </button>
         </div>
 
-        {/* Mode URL manuelle */}
         {manualMode && (
           <div className="space-y-2">
-            <p className="text-xs text-slate-500">Collez l'URL directe d'une image (.jpg, .png, .webp)</p>
+            <p className="text-xs text-slate-500">{t(lang, 'playerDetail.pasteUrl')}</p>
             <Input
               value={manualUrl}
               onChange={(e) => { setManualUrl(e.target.value); setApplied(false); }}
@@ -128,17 +128,17 @@ IMPORTANT :
               <div className="flex justify-center p-2 bg-white rounded-lg border">
                 <img
                   src={manualUrl}
-                  alt="Aperçu"
+                  alt={t(lang, 'common.preview')}
                   className="h-24 w-24 rounded-lg object-cover" referrerPolicy="no-referrer"
-                  onError={(e) => { e.target.src = ""; e.currentTarget.parentElement.innerHTML = '<p class="text-xs text-red-500 p-2">Image non accessible</p>'; }}
+                  onError={(e) => { e.target.src = ""; e.currentTarget.parentElement.innerHTML = `<p class="text-xs text-red-500 p-2">${t(lang, 'playerDetail.imageNotAccessible')}</p>`; }}
                 />
               </div>
             )}
             {applied ? (
               <div className="flex items-center gap-2 p-2 bg-green-50 rounded-lg border border-green-200">
                 <CheckCircle2 className="w-4 h-4 text-green-600" />
-                <span className="text-xs text-green-700 font-medium">Photo mise à jour !</span>
-                <Button onClick={() => setApplied(false)} size="sm" variant="ghost" className="ml-auto h-6 text-xs">Changer</Button>
+                <span className="text-xs text-green-700 font-medium">{t(lang, 'playerDetail.photoUpdated')}</span>
+                <Button onClick={() => setApplied(false)} size="sm" variant="ghost" className="ml-auto h-6 text-xs">{t(lang, 'playerDetail.change')}</Button>
               </div>
             ) : (
               <Button
@@ -147,20 +147,19 @@ IMPORTANT :
                 size="sm"
                 className="w-full bg-green-600 hover:bg-green-700 text-white"
               >
-                {applying ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-4 h-4 mr-1.5" />Appliquer cette photo</>}
+                {applying ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-4 h-4 mr-1.5" />{t(lang, 'playerDetail.applyPhoto')}</>}
               </Button>
             )}
           </div>
         )}
 
-        {/* Mode recherche IA */}
         {!manualMode && (
           <>
             {!candidates && !loading && (
               <>
-                <p className="text-xs text-slate-500">Recherche automatique d'une photo pour <strong>{player.nom}</strong> via Wikipedia & sites officiels.</p>
+                <p className="text-xs text-slate-500">{t(lang, 'playerDetail.searchPhotoDesc', { name: player.nom })}</p>
                 <Button onClick={handleSearch} className="w-full bg-blue-600 hover:bg-blue-700 text-white" size="sm">
-                  <Image className="w-4 h-4 mr-2" />Rechercher la photo
+                  <Image className="w-4 h-4 mr-2" />{t(lang, 'playerDetail.searchPhotoBtn')}
                 </Button>
               </>
             )}
@@ -168,7 +167,7 @@ IMPORTANT :
             {loading && (
               <div className="flex flex-col items-center py-4 gap-2">
                 <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
-                <p className="text-xs text-slate-500">Recherche en cours…</p>
+                <p className="text-xs text-slate-500">{t(lang, 'playerDetail.searchingPhoto')}</p>
               </div>
             )}
 
@@ -177,11 +176,11 @@ IMPORTANT :
                 {candidateList.length === 0 ? (
                   <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                     <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                    <p className="text-xs text-amber-700">Aucune photo trouvée. Essayez l'URL manuelle ou relancez.</p>
+                    <p className="text-xs text-amber-700">{t(lang, 'playerDetail.noPhotoFound')}</p>
                   </div>
                 ) : (
                   <>
-                    <p className="text-xs font-medium text-slate-600">Sélectionnez une photo :</p>
+                    <p className="text-xs font-medium text-slate-600">{t(lang, 'playerDetail.selectPhoto')}</p>
                     <div className="space-y-2">
                       {candidateList.map((candidate, i) => (
                         <div
@@ -206,7 +205,7 @@ IMPORTANT :
                           <div className="flex-1 min-w-0">
                             <div className="text-xs font-medium text-slate-700">{candidate.label}</div>
                             <div className="text-[10px] text-slate-400 truncate">{candidate.url}</div>
-                            {imageErrors[i] && <div className="text-[10px] text-red-400">Image non accessible</div>}
+                            {imageErrors[i] && <div className="text-[10px] text-red-400">{t(lang, 'playerDetail.imageNotAccessible')}</div>}
                           </div>
                           {selected === candidate.url && <CheckCircle2 className="w-4 h-4 text-blue-500 flex-shrink-0" />}
                         </div>
@@ -218,7 +217,7 @@ IMPORTANT :
                 {candidates.profil_transfermarkt && (
                   <a href={candidates.profil_transfermarkt} target="_blank" rel="noopener noreferrer"
                     className="flex items-center gap-1 text-xs text-blue-600 hover:underline">
-                    <ExternalLink className="w-3 h-3" />Voir sur Transfermarkt
+                    <ExternalLink className="w-3 h-3" />{t(lang, 'playerDetail.viewOnTM')}
                   </a>
                 )}
 
@@ -229,9 +228,9 @@ IMPORTANT :
                     size="sm"
                     className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                   >
-                    {applying ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-4 h-4 mr-1" />Appliquer</>}
+                    {applying ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-4 h-4 mr-1" />{t(lang, 'playerDetail.applyBtn')}</>}
                   </Button>
-                  <Button onClick={handleSearch} size="sm" variant="outline" disabled={loading} title="Relancer la recherche">
+                  <Button onClick={handleSearch} size="sm" variant="outline" disabled={loading} title={t(lang, 'playerDetail.relaunch')}>
                     <RefreshCw className="w-4 h-4" />
                   </Button>
                 </div>
@@ -241,8 +240,8 @@ IMPORTANT :
             {applied && (
               <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg border border-green-200">
                 <CheckCircle2 className="w-4 h-4 text-green-600" />
-                <span className="text-sm text-green-700 font-medium">Photo mise à jour !</span>
-                <Button onClick={() => { setCandidates(null); setApplied(false); }} size="sm" variant="ghost" className="ml-auto h-6 text-xs">Changer</Button>
+                <span className="text-sm text-green-700 font-medium">{t(lang, 'playerDetail.photoUpdated')}</span>
+                <Button onClick={() => { setCandidates(null); setApplied(false); }} size="sm" variant="ghost" className="ml-auto h-6 text-xs">{t(lang, 'playerDetail.change')}</Button>
               </div>
             )}
           </>

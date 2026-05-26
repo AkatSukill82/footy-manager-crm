@@ -4,9 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../../utils";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
-export default function TopPlayers({ players, title = "Joueurs les plus chers", limit = 5 }) {
+export default function TopPlayers({ players, title, limit = 5 }) {
+  const { lang } = useLanguage();
   const navigate = useNavigate();
+  const displayTitle = title || t(lang,'dashboard.topPlayers');
   
   const sortedPlayers = [...players]
     .filter(p => p.valeur_marchande)
@@ -18,7 +22,7 @@ export default function TopPlayers({ players, title = "Joueurs les plus chers", 
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-green-600" />
-          {title}
+          {displayTitle}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -45,7 +49,7 @@ export default function TopPlayers({ players, title = "Joueurs les plus chers", 
           ))}
           {sortedPlayers.length === 0 && (
             <div className="text-center py-4 text-slate-500">
-              Aucun joueur avec valeur marchande
+              {t(lang,'dashboard.noTopPlayers')}
             </div>
           )}
         </div>

@@ -13,6 +13,8 @@ import TransfermarktImage from "../components/ui/TransfermarktImage";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import ClubForm from "../components/clubs/ClubForm";
+import { useLanguage } from "../lib/LanguageContext";
+import { t } from "../i18n/translations";
 
 function Row({ label, value, valueClass = "font-medium text-slate-900" }) {
   if (!value) return null;
@@ -54,6 +56,7 @@ function ContactLink({ href, icon: Icon, label, value, color = "blue" }) {
 }
 
 export default function ClubDetailPage() {
+  const { lang } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(window.location.search);
@@ -104,7 +107,7 @@ export default function ClubDetailPage() {
     return (
       <div className="p-8">
         <div className="max-w-4xl mx-auto">
-          <Button variant="ghost" onClick={() => setIsEditing(false)} className="mb-4">← Annuler</Button>
+          <Button variant="ghost" onClick={() => setIsEditing(false)} className="mb-4">← {t(lang,'clubDetail.cancel')}</Button>
           <ClubForm club={club} onSubmit={(data) => updateClubMutation.mutate(data)} onCancel={() => setIsEditing(false)} />
         </div>
       </div>
@@ -123,7 +126,7 @@ export default function ClubDetailPage() {
   return (
     <div className="p-4 md:p-8 space-y-6">
       <Button variant="ghost" onClick={() => navigate(createPageUrl("Clubs"))}>
-        <ArrowLeft className="w-4 h-4 mr-2" /> Retour
+        <ArrowLeft className="w-4 h-4 mr-2" /> {t(lang,'clubDetail.back')}
       </Button>
 
       {/* Header */}
@@ -147,7 +150,7 @@ export default function ClubDetailPage() {
               )}
               {club.annee_fondation && (
                 <span className="flex items-center gap-1">
-                  <Calendar className="w-4 h-4" />Fondé en {club.annee_fondation}
+                  <Calendar className="w-4 h-4" />{t(lang,'clubDetail.foundedIn', { year: club.annee_fondation })}
                 </span>
               )}
               {club.ligue && <Badge variant="outline">{club.ligue}</Badge>}
@@ -170,7 +173,7 @@ export default function ClubDetailPage() {
             <Edit2 className="w-4 h-4" />
           </Button>
           <Button variant="outline" size="icon" onClick={() => {
-            if (confirm("Supprimer ce club ?")) deleteClubMutation.mutate();
+            if (confirm(t(lang,'clubDetail.deleteConfirm'))) deleteClubMutation.mutate();
           }}>
             <Trash2 className="w-4 h-4 text-red-500" />
           </Button>
@@ -180,10 +183,10 @@ export default function ClubDetailPage() {
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Joueurs", value: players.length, color: "text-slate-900" },
-          { label: "Budget transfert", value: club.budget_transfert ? `${club.budget_transfert}M€` : "—", color: "text-green-600" },
-          { label: "Valeur effectif", value: club.valeur_effectif ? `${club.valeur_effectif}M€` : "—", color: "text-purple-600" },
-          { label: "Transferts", value: transfers.length, color: "text-slate-900" },
+          { label: t(lang,'clubDetail.players'), value: players.length, color: "text-slate-900" },
+          { label: t(lang,'clubDetail.transferBudget'), value: club.budget_transfert ? `${club.budget_transfert}M€` : "—", color: "text-green-600" },
+          { label: t(lang,'clubDetail.squadValue'), value: club.valeur_effectif ? `${club.valeur_effectif}M€` : "—", color: "text-purple-600" },
+          { label: t(lang,'clubDetail.transfers'), value: transfers.length, color: "text-slate-900" },
         ].map(({ label, value, color }) => (
           <div key={label} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 text-center">
             <div className={`text-3xl font-bold ${color}`}>{value}</div>
@@ -197,19 +200,19 @@ export default function ClubDetailPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <Building2 className="w-4 h-4" /> Informations générales
+              <Building2 className="w-4 h-4" /> {t(lang,'clubDetail.generalInfo')}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Row label="Stade" value={club.stade ? `${club.stade}${club.capacite_stade ? ` — ${club.capacite_stade.toLocaleString()} places` : ''}` : null} />
-            <Row label="Ligue" value={club.ligue} />
-            <Row label="Pays" value={club.pays} />
-            <Row label="Ville" value={club.ville} />
-            <Row label="Année de fondation" value={club.annee_fondation} />
-            <Row label="Couleurs" value={club.couleurs} />
-            <Row label="Adresse" value={club.adresse} />
+            <Row label={t(lang,'clubDetail.stadium')} value={club.stade ? `${club.stade}${club.capacite_stade ? ` — ${club.capacite_stade.toLocaleString()} ${t(lang,'clubDetail.places')}` : ''}` : null} />
+            <Row label={t(lang,'clubDetail.league')} value={club.ligue} />
+            <Row label={t(lang,'clubDetail.country')} value={club.pays} />
+            <Row label={t(lang,'clubDetail.city')} value={club.ville} />
+            <Row label={t(lang,'clubDetail.founded')} value={club.annee_fondation} />
+            <Row label={t(lang,'clubDetail.colors')} value={club.couleurs} />
+            <Row label={t(lang,'clubDetail.address')} value={club.adresse} />
             {!club.stade && !club.ligue && !club.annee_fondation && (
-              <p className="text-slate-400 italic text-xs">Aucune info — cliquez sur Modifier pour renseigner.</p>
+              <p className="text-slate-400 italic text-xs">{t(lang,'clubDetail.noInfo')}</p>
             )}
           </CardContent>
         </Card>
@@ -218,13 +221,13 @@ export default function ClubDetailPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <User className="w-4 h-4 text-purple-500" /> Direction
+              <User className="w-4 h-4 text-purple-500" /> {t(lang,'clubDetail.management')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {club.president && (
               <div className="p-2 rounded-lg bg-slate-50">
-                <p className="text-xs text-slate-400 mb-0.5">Président</p>
+                <p className="text-xs text-slate-400 mb-0.5">{t(lang,'clubDetail.president')}</p>
                 <p className="font-semibold text-slate-900 text-sm">{club.president}</p>
                 <div className="flex flex-wrap gap-3 mt-1">
                   {club.president_email && (
@@ -242,7 +245,7 @@ export default function ClubDetailPage() {
             )}
             {club.entraineur && (
               <div className="p-2 rounded-lg bg-slate-50">
-                <p className="text-xs text-slate-400 mb-0.5">Entraîneur</p>
+                <p className="text-xs text-slate-400 mb-0.5">{t(lang,'clubDetail.coach')}</p>
                 <p className="font-semibold text-slate-900 text-sm">{club.entraineur}</p>
                 {club.entraineur_email && (
                   <a href={`mailto:${club.entraineur_email}`} className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1">
@@ -253,7 +256,7 @@ export default function ClubDetailPage() {
             )}
             {club.directeur_sportif && (
               <div className="p-2 rounded-lg bg-slate-50">
-                <p className="text-xs text-slate-400 mb-0.5">Directeur sportif</p>
+                <p className="text-xs text-slate-400 mb-0.5">{t(lang,'clubDetail.sportingDirector')}</p>
                 <p className="font-semibold text-slate-900 text-sm">{club.directeur_sportif}</p>
                 <div className="flex flex-wrap gap-3 mt-1">
                   {club.directeur_sportif_email && (
@@ -270,7 +273,7 @@ export default function ClubDetailPage() {
               </div>
             )}
             {!club.president && !club.entraineur && !club.directeur_sportif && (
-              <p className="text-slate-400 italic text-xs">Aucune direction renseignée.</p>
+              <p className="text-slate-400 italic text-xs">{t(lang,'clubDetail.noManagement')}</p>
             )}
           </CardContent>
         </Card>
@@ -281,15 +284,15 @@ export default function ClubDetailPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <Phone className="w-4 h-4 text-green-500" /> Contact du club
+              <Phone className="w-4 h-4 text-green-500" /> {t(lang,'clubDetail.contact')}
             </CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <ContactLink href={`tel:${club.telephone}`} icon={Phone} label="Téléphone" value={club.telephone} color="green" />
-            <ContactLink href={`mailto:${club.email}`} icon={Mail} label="Email" value={club.email} color="blue" />
-            <ContactLink href={club.site_web} icon={Globe} label="Site web" value={club.site_web} color="slate" />
-            <ContactLink href={club.instagram ? `https://instagram.com/${club.instagram.replace('@','')}` : null} icon={Instagram} label="Instagram" value={club.instagram} color="pink" />
-            <ContactLink href={club.twitter ? `https://twitter.com/${club.twitter.replace('@','')}` : null} icon={Twitter} label="Twitter / X" value={club.twitter} color="sky" />
+            <ContactLink href={`tel:${club.telephone}`} icon={Phone} label={t(lang,'clubDetail.phone')} value={club.telephone} color="green" />
+            <ContactLink href={`mailto:${club.email}`} icon={Mail} label={t(lang,'clubDetail.email')} value={club.email} color="blue" />
+            <ContactLink href={club.site_web} icon={Globe} label={t(lang,'clubDetail.website')} value={club.site_web} color="slate" />
+            <ContactLink href={club.instagram ? `https://instagram.com/${club.instagram.replace('@','')}` : null} icon={Instagram} label={t(lang,'clubDetail.instagram')} value={club.instagram} color="pink" />
+            <ContactLink href={club.twitter ? `https://twitter.com/${club.twitter.replace('@','')}` : null} icon={Twitter} label={t(lang,'clubDetail.twitter')} value={club.twitter} color="sky" />
           </CardContent>
         </Card>
       )}
@@ -299,7 +302,7 @@ export default function ClubDetailPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <User className="w-4 h-4 text-indigo-500" /> Personne de contact
+              <User className="w-4 h-4 text-indigo-500" /> {t(lang,'clubDetail.contactPerson')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -333,32 +336,32 @@ export default function ClubDetailPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-green-500" /> Situation financière
+              <TrendingUp className="w-4 h-4 text-green-500" /> {t(lang,'clubDetail.finances')}
             </CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {club.budget_annuel && (
               <div className="bg-green-50 rounded-xl p-3 text-center">
                 <p className="font-bold text-green-700 text-lg">{club.budget_annuel}M€</p>
-                <p className="text-xs text-slate-500">Budget annuel</p>
+                <p className="text-xs text-slate-500">{t(lang,'clubDetail.annualBudget')}</p>
               </div>
             )}
             {club.budget_transfert && (
               <div className="bg-blue-50 rounded-xl p-3 text-center">
                 <p className="font-bold text-blue-700 text-lg">{club.budget_transfert}M€</p>
-                <p className="text-xs text-slate-500">Budget transfert</p>
+                <p className="text-xs text-slate-500">{t(lang,'clubDetail.transferBudget')}</p>
               </div>
             )}
             {club.valeur_effectif && (
               <div className="bg-purple-50 rounded-xl p-3 text-center">
                 <p className="font-bold text-purple-700 text-lg">{club.valeur_effectif}M€</p>
-                <p className="text-xs text-slate-500">Valeur effectif</p>
+                <p className="text-xs text-slate-500">{t(lang,'clubDetail.squadValue')}</p>
               </div>
             )}
             {club.dette && (
               <div className="bg-red-50 rounded-xl p-3 text-center">
                 <p className="font-bold text-red-700 text-lg">{club.dette}M€</p>
-                <p className="text-xs text-slate-500">Dette</p>
+                <p className="text-xs text-slate-500">{t(lang,'clubDetail.debt')}</p>
               </div>
             )}
           </CardContent>
@@ -370,7 +373,7 @@ export default function ClubDetailPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <Users className="w-4 h-4 text-blue-500" /> Joueurs ({players.length})
+              <Users className="w-4 h-4 text-blue-500" /> {t(lang,'clubDetail.playersCount', { count: players.length })}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -404,7 +407,7 @@ export default function ClubDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {club.historique && (
           <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-base">Historique</CardTitle></CardHeader>
+            <CardHeader className="pb-3"><CardTitle className="text-base">{t(lang,'clubDetail.history')}</CardTitle></CardHeader>
             <CardContent><p className="text-slate-700 text-sm whitespace-pre-line leading-relaxed">{club.historique}</p></CardContent>
           </Card>
         )}
@@ -412,7 +415,7 @@ export default function ClubDetailPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-yellow-600" /> Palmarès
+                <Trophy className="w-4 h-4 text-yellow-600" /> {t(lang,'clubDetail.trophies')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -430,17 +433,17 @@ export default function ClubDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Arrivées ({arrivals.length})</CardTitle>
+            <CardTitle className="text-base">{t(lang,'clubDetail.arrivals', { count: arrivals.length })}</CardTitle>
           </CardHeader>
           <CardContent>
             {arrivals.length === 0 ? (
-              <p className="text-center text-slate-500 py-4 text-sm">Aucune arrivée</p>
+              <p className="text-center text-slate-500 py-4 text-sm">{t(lang,'clubDetail.noArrivals')}</p>
             ) : (
               <div className="space-y-2">
-                {arrivals.slice(0, 5).map(t => (
-                  <div key={t.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
-                    <span className="font-medium text-slate-900 text-sm">{players.find(p => p.id === t.player_id)?.nom || t.joueur || "Joueur"}</span>
-                    {t.montant && <span className="text-green-600 font-bold text-sm">{t.montant}M€</span>}
+                {arrivals.slice(0, 5).map(tr => (
+                  <div key={tr.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                    <span className="font-medium text-slate-900 text-sm">{players.find(p => p.id === tr.player_id)?.nom || tr.joueur || t(lang,'clubDetail.player')}</span>
+                    {tr.montant && <span className="text-green-600 font-bold text-sm">{tr.montant}M€</span>}
                   </div>
                 ))}
               </div>
@@ -449,17 +452,17 @@ export default function ClubDetailPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Départs ({departures.length})</CardTitle>
+            <CardTitle className="text-base">{t(lang,'clubDetail.departures', { count: departures.length })}</CardTitle>
           </CardHeader>
           <CardContent>
             {departures.length === 0 ? (
-              <p className="text-center text-slate-500 py-4 text-sm">Aucun départ</p>
+              <p className="text-center text-slate-500 py-4 text-sm">{t(lang,'clubDetail.noDepartures')}</p>
             ) : (
               <div className="space-y-2">
-                {departures.slice(0, 5).map(t => (
-                  <div key={t.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
-                    <span className="font-medium text-slate-900 text-sm">{players.find(p => p.id === t.player_id)?.nom || t.joueur || "Joueur"}</span>
-                    {t.montant && <span className="text-orange-600 font-bold text-sm">{t.montant}M€</span>}
+                {departures.slice(0, 5).map(tr => (
+                  <div key={tr.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                    <span className="font-medium text-slate-900 text-sm">{players.find(p => p.id === tr.player_id)?.nom || tr.joueur || t(lang,'clubDetail.player')}</span>
+                    {tr.montant && <span className="text-orange-600 font-bold text-sm">{tr.montant}M€</span>}
                   </div>
                 ))}
               </div>

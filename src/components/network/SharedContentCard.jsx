@@ -4,13 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ThumbsUp, User, Clock, Eye } from "lucide-react";
 import { format } from "date-fns";
-
-const typeLabels = {
-  player_profile: "Profil joueur",
-  team_analysis: "Analyse d'équipe",
-  market_insight: "Insight marché",
-  transfer_opportunity: "Opportunité de transfert"
-};
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 const typeColors = {
   player_profile: "bg-blue-100 text-blue-800",
@@ -19,7 +14,15 @@ const typeColors = {
   transfer_opportunity: "bg-orange-100 text-orange-800"
 };
 
+const TYPE_LABEL_KEYS = {
+  player_profile: "network.typePlayerProfile",
+  team_analysis: "network.typeTeamAnalysis",
+  market_insight: "network.typeMarketInsight",
+  transfer_opportunity: "network.typeTransferOpp",
+};
+
 export default function SharedContentCard({ content, onLike, currentUserEmail, player, team }) {
+  const { lang } = useLanguage();
   const hasLiked = content.liked_by?.includes(currentUserEmail);
 
   return (
@@ -27,7 +30,7 @@ export default function SharedContentCard({ content, onLike, currentUserEmail, p
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-3">
           <Badge className={typeColors[content.type]}>
-            {typeLabels[content.type]}
+            {t(lang, TYPE_LABEL_KEYS[content.type] || 'network.typePlayerProfile')}
           </Badge>
           <div className="flex items-center gap-2 text-sm text-slate-500">
             <Clock className="w-4 h-4" />
@@ -36,7 +39,7 @@ export default function SharedContentCard({ content, onLike, currentUserEmail, p
         </div>
 
         <h3 className="text-xl font-bold text-slate-900 mb-2">{content.titre}</h3>
-        
+
         {player && (
           <div className="flex items-center gap-2 mb-3 text-sm text-slate-600">
             <User className="w-4 h-4" />
@@ -55,7 +58,7 @@ export default function SharedContentCard({ content, onLike, currentUserEmail, p
 
         {content.insights && (
           <div className="bg-slate-50 rounded-lg p-4 mb-3">
-            <p className="text-sm text-slate-600 font-medium mb-1">Insights:</p>
+            <p className="text-sm text-slate-600 font-medium mb-1">{t(lang, 'network.insightsLabel')}:</p>
             <p className="text-slate-700">{content.insights}</p>
           </div>
         )}
@@ -73,7 +76,7 @@ export default function SharedContentCard({ content, onLike, currentUserEmail, p
         <div className="flex items-center justify-between pt-3 border-t border-slate-200">
           <div className="flex items-center gap-2 text-sm text-slate-500">
             <User className="w-4 h-4" />
-            <span>Partagé par {content.created_by}</span>
+            <span>{t(lang, 'network.sharedBy', { name: content.created_by })}</span>
           </div>
           <Button
             variant="ghost"

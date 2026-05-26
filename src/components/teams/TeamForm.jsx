@@ -6,8 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Users } from "lucide-react";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 export default function TeamForm({ team, onSubmit, onCancel }) {
+  const { lang } = useLanguage();
   const [formData, setFormData] = useState(team || {
     nom: "",
     formation: "4-3-3",
@@ -25,23 +28,23 @@ export default function TeamForm({ team, onSubmit, onCancel }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="w-5 h-5" />
-          {team ? "Modifier l'équipe" : "Créer une équipe"}
+          {team ? t(lang, 'teams.editTeam') : t(lang, 'teams.newTeam')}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label>Nom de l'équipe</Label>
+            <Label>{t(lang, 'teams.nameLabel')}</Label>
             <Input
               value={formData.nom}
               onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-              placeholder="Ex: Mon équipe idéale"
+              placeholder={t(lang, 'teams.namePlh')}
               required
             />
           </div>
 
           <div>
-            <Label>Formation</Label>
+            <Label>{t(lang, 'teams.formationLabel')}</Label>
             <Select value={formData.formation} onValueChange={(value) => setFormData({ ...formData, formation: value })}>
               <SelectTrigger>
                 <SelectValue />
@@ -58,32 +61,32 @@ export default function TeamForm({ team, onSubmit, onCancel }) {
           </div>
 
           <div>
-            <Label>Budget (M€)</Label>
+            <Label>{t(lang, 'teams.budgetLabel')}</Label>
             <Input
               type="number"
               value={formData.budget}
               onChange={(e) => setFormData({ ...formData, budget: parseFloat(e.target.value) })}
-              placeholder="Budget disponible"
+              placeholder={t(lang, 'teams.budgetPlh')}
             />
           </div>
 
           <div>
-            <Label>Description</Label>
+            <Label>{t(lang, 'teams.descriptionLabel')}</Label>
             <Textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Description de l'équipe..."
+              placeholder={t(lang, 'teams.descPlh')}
               rows={3}
             />
           </div>
 
           <div className="flex gap-2">
             <Button type="submit" className="flex-1">
-              {team ? "Mettre à jour" : "Créer l'équipe"}
+              {team ? t(lang, 'teams.updateBtn') : t(lang, 'teams.createBtn')}
             </Button>
             {onCancel && (
               <Button type="button" variant="outline" onClick={onCancel}>
-                Annuler
+                {t(lang, 'common.cancel')}
               </Button>
             )}
           </div>

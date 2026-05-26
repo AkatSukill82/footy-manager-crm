@@ -6,8 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Search, Loader2, Plus, CheckCircle, Globe, Trophy, Users, Banknote, Calendar } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 export default function ClubSearch({ onClose }) {
+  const { lang } = useLanguage();
   const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,7 +26,7 @@ export default function ClubSearch({ onClose }) {
 
     const data = await base44.integrations.Core.InvokeLLM({
       prompt: `Recherche des informations complètes sur le club de football "${query}" en utilisant Transfermarkt et Sofascore.
-      
+
 Retourne les données dans le format JSON demandé. Sois précis et utilise des données réelles et à jour.
 Si le club n'existe pas ou n'est pas trouvé, retourne null pour tous les champs.`,
       add_context_from_internet: true,
@@ -66,7 +69,6 @@ Si le club n'existe pas ou n'est pas trouvé, retourne null pour tous les champs
 
   return (
     <div className="space-y-4">
-      {/* Search bar */}
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -74,7 +76,7 @@ Si le club n'existe pas ou n'est pas trouvé, retourne null pour tous les champs
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            placeholder="Nom du club (ex: Paris Saint-Germain, Real Madrid…)"
+            placeholder={t(lang, 'clubs.searchTMPlh')}
             className="pl-9"
           />
         </div>
@@ -87,15 +89,13 @@ Si le club n'existe pas ou n'est pas trouvé, retourne null pour tous les champs
         </Button>
       </div>
 
-      {/* Loading */}
       {loading && (
         <div className="flex items-center justify-center gap-3 py-8 text-slate-500">
           <Loader2 className="w-5 h-5 animate-spin text-green-600" />
-          <span>Recherche sur Transfermarkt & Sofascore…</span>
+          <span>{t(lang, 'clubs.searchingTM')}</span>
         </div>
       )}
 
-      {/* Result */}
       {result && !loading && (
         <Card className="border-2 border-green-100">
           <CardHeader className="pb-3">
@@ -129,71 +129,67 @@ Si le club n'existe pas ou n'est pas trouvé, retourne null pour tous les champs
           </CardHeader>
 
           <CardContent className="space-y-4">
-            {/* Key stats grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {result.valeur_effectif && (
                 <div className="bg-green-50 rounded-lg p-3 text-center">
                   <Banknote className="w-4 h-4 text-green-600 mx-auto mb-1" />
-                  <p className="text-xs text-slate-500">Valeur effectif</p>
+                  <p className="text-xs text-slate-500">{t(lang, 'clubs.squadValue')}</p>
                   <p className="font-bold text-green-700">{result.valeur_effectif} M€</p>
                 </div>
               )}
               {result.budget_transfert && (
                 <div className="bg-blue-50 rounded-lg p-3 text-center">
                   <Banknote className="w-4 h-4 text-blue-600 mx-auto mb-1" />
-                  <p className="text-xs text-slate-500">Budget transfert</p>
+                  <p className="text-xs text-slate-500">{t(lang, 'clubs.transferBudgetLabel')}</p>
                   <p className="font-bold text-blue-700">{result.budget_transfert} M€</p>
                 </div>
               )}
               {result.capacite_stade && (
                 <div className="bg-slate-50 rounded-lg p-3 text-center">
                   <Users className="w-4 h-4 text-slate-500 mx-auto mb-1" />
-                  <p className="text-xs text-slate-500">Capacité stade</p>
+                  <p className="text-xs text-slate-500">{t(lang, 'clubs.stadiumCapacity')}</p>
                   <p className="font-bold text-slate-700">{result.capacite_stade.toLocaleString()}</p>
                 </div>
               )}
               {result.annee_fondation && (
                 <div className="bg-slate-50 rounded-lg p-3 text-center">
                   <Calendar className="w-4 h-4 text-slate-500 mx-auto mb-1" />
-                  <p className="text-xs text-slate-500">Fondé en</p>
+                  <p className="text-xs text-slate-500">{t(lang, 'clubs.foundedLabel')}</p>
                   <p className="font-bold text-slate-700">{result.annee_fondation}</p>
                 </div>
               )}
             </div>
 
-            {/* Staff */}
             {(result.entraineur || result.president || result.directeur_sportif) && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
                 {result.entraineur && (
                   <div className="bg-slate-50 rounded-lg px-3 py-2">
-                    <p className="text-xs text-slate-400">Entraîneur</p>
+                    <p className="text-xs text-slate-400">{t(lang, 'clubs.coachLabel')}</p>
                     <p className="font-medium">{result.entraineur}</p>
                   </div>
                 )}
                 {result.president && (
                   <div className="bg-slate-50 rounded-lg px-3 py-2">
-                    <p className="text-xs text-slate-400">Président</p>
+                    <p className="text-xs text-slate-400">{t(lang, 'clubs.presidentLabel')}</p>
                     <p className="font-medium">{result.president}</p>
                   </div>
                 )}
                 {result.directeur_sportif && (
                   <div className="bg-slate-50 rounded-lg px-3 py-2">
-                    <p className="text-xs text-slate-400">Directeur sportif</p>
+                    <p className="text-xs text-slate-400">{t(lang, 'clubs.sportingDirLabel')}</p>
                     <p className="font-medium">{result.directeur_sportif}</p>
                   </div>
                 )}
               </div>
             )}
 
-            {/* Stadium */}
             {result.stade && (
               <div className="text-sm text-slate-600">
                 🏟️ <span className="font-medium">{result.stade}</span>
-                {result.capacite_stade && <span className="text-slate-400"> ({result.capacite_stade.toLocaleString()} places)</span>}
+                {result.capacite_stade && <span className="text-slate-400"> ({result.capacite_stade.toLocaleString()} {t(lang, 'clubs.capacityUnit')})</span>}
               </div>
             )}
 
-            {/* Palmares */}
             {result.palmares && (
               <div className="flex items-start gap-2">
                 <Trophy className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
@@ -201,17 +197,15 @@ Si le club n'existe pas ou n'est pas trouvé, retourne null pour tous les champs
               </div>
             )}
 
-            {/* Historique */}
             {result.historique && (
               <p className="text-sm text-slate-500 italic border-l-2 border-slate-200 pl-3">{result.historique}</p>
             )}
 
-            {/* Actions */}
             <div className="flex gap-2 pt-2">
               {saved ? (
                 <div className="flex items-center gap-2 text-green-600 font-medium">
                   <CheckCircle className="w-5 h-5" />
-                  Club enregistré avec succès !
+                  {t(lang, 'clubs.savedSuccess')}
                 </div>
               ) : (
                 <Button
@@ -220,14 +214,14 @@ Si le club n'existe pas ou n'est pas trouvé, retourne null pour tous les champs
                   className="bg-green-600 hover:bg-green-700"
                 >
                   {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-                  Enregistrer dans la base de données
+                  {t(lang, 'clubs.saveBtn')}
                 </Button>
               )}
               <Button
                 variant="outline"
                 onClick={() => { setResult(null); setQuery(""); setSaved(false); }}
               >
-                Nouvelle recherche
+                {t(lang, 'clubs.newSearch')}
               </Button>
             </div>
           </CardContent>

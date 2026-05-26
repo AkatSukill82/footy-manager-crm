@@ -2,13 +2,15 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ClipboardList, Save, X } from "lucide-react";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 const CATEGORIES = [
-  { key: "note_technique",     label: "Technique",                color: "from-blue-400 to-blue-600" },
-  { key: "note_physique",      label: "Physique",                 color: "from-green-400 to-green-600" },
-  { key: "note_intelligence",  label: "Intelligence de jeu",      color: "from-purple-400 to-purple-600" },
-  { key: "note_mental",        label: "Mental / Caractère",       color: "from-orange-400 to-orange-600" },
-  { key: "note_attitude",      label: "Attitude & Esprit d'équipe", color: "from-pink-400 to-pink-600" },
+  { key: "note_technique",     tKey: "technique",  color: "from-blue-400 to-blue-600" },
+  { key: "note_physique",      tKey: "physical",   color: "from-green-400 to-green-600" },
+  { key: "note_intelligence",  tKey: "gameIQ",     color: "from-purple-400 to-purple-600" },
+  { key: "note_mental",        tKey: "mental",     color: "from-orange-400 to-orange-600" },
+  { key: "note_attitude",      tKey: "attitude",   color: "from-pink-400 to-pink-600" },
 ];
 
 function RatingBar({ value, onChange, color }) {
@@ -43,6 +45,7 @@ function average(player) {
 }
 
 export default function PlayerScoutingRatings({ player, onSave }) {
+  const { lang } = useLanguage();
   const [draft, setDraft] = useState(() =>
     Object.fromEntries(CATEGORIES.map((c) => [c.key, player[c.key] ?? null]))
   );
@@ -77,11 +80,11 @@ export default function PlayerScoutingRatings({ player, onSave }) {
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <ClipboardList className="w-4 h-4 text-slate-500" />
-            Notes Scout
+            {t(lang,'scoutingRatings.title')}
           </CardTitle>
           {avg && (
             <span className="text-sm font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full">
-              Moy. {avg}/10
+              {t(lang,'scoutingRatings.avg', { avg })}
             </span>
           )}
         </div>
@@ -90,7 +93,7 @@ export default function PlayerScoutingRatings({ player, onSave }) {
         {CATEGORIES.map((cat) => (
           <div key={cat.key}>
             <div className="flex justify-between mb-1">
-              <span className="text-sm text-slate-600">{cat.label}</span>
+              <span className="text-sm text-slate-600">{t(lang, `scoutingRatings.${cat.tKey}`)}</span>
             </div>
             <RatingBar
               value={draft[cat.key]}
@@ -109,7 +112,7 @@ export default function PlayerScoutingRatings({ player, onSave }) {
               className="flex-1"
             >
               <Save className="w-3 h-3 mr-1.5" />
-              {saving ? "Enregistrement…" : "Enregistrer"}
+              {saving ? t(lang,'scoutingRatings.saving') : t(lang,'common.save')}
             </Button>
             <Button size="sm" variant="outline" onClick={handleReset} disabled={saving}>
               <X className="w-3 h-3" />

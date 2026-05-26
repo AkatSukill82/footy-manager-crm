@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "../lib/useCurrentUser";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2, List, Search } from "lucide-react";
+import { useLanguage } from "../lib/LanguageContext";
+import { t } from "../i18n/translations";
 import PlayerCard from "../components/players/PlayerCard";
 import AdvancedFilters from "../components/players/AdvancedFilters";
 import PlayerForm from "../components/players/PlayerForm";
@@ -11,6 +13,7 @@ import TransfermarktSearch from "../components/players/TransfermarktSearch";
 import PlayerStatusModal from "../components/players/PlayerStatusModal";
 
 export default function PlayersPage() {
+  const { lang } = useLanguage();
   const [activeTab, setActiveTab] = useState("liste");
   const [showForm, setShowForm] = useState(false);
   const [filters, setFilters] = useState({
@@ -106,8 +109,8 @@ export default function PlayersPage() {
         {/* Header */}
         <div className="flex justify-between items-center mb-4 md:mb-6 gap-3">
           <div className="min-w-0">
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 truncate">Joueurs</h1>
-            <p className="text-slate-600 mt-0.5 text-sm">{players.length} joueurs enregistrés</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 truncate">{t(lang, 'players.title')}</h1>
+            <p className="text-slate-600 mt-0.5 text-sm">{t(lang, 'players.count', { count: players.length })}</p>
           </div>
           {activeTab === "liste" && (
             <Button
@@ -116,8 +119,8 @@ export default function PlayersPage() {
               size="sm"
             >
               <Plus className="w-4 h-4 md:mr-2" />
-              <span className="hidden md:inline">Ajouter un joueur</span>
-              <span className="md:hidden">Ajouter</span>
+              <span className="hidden md:inline">{t(lang, 'players.addPlayer')}</span>
+              <span className="md:hidden">{t(lang, 'common.add')}</span>
             </Button>
           )}
         </div>
@@ -133,7 +136,7 @@ export default function PlayersPage() {
             }`}
           >
             <List className="w-4 h-4" />
-            Ma liste
+            {t(lang, 'players.myList')}
           </button>
           <button
             onClick={() => setActiveTab("recherche")}
@@ -144,7 +147,7 @@ export default function PlayersPage() {
             }`}
           >
             <Search className="w-4 h-4" />
-            Rajoute des joueurs
+            {t(lang, 'players.searchTab')}
           </button>
         </div>
 
@@ -184,7 +187,7 @@ export default function PlayersPage() {
 
             {!isLoading && filteredPlayers.length === 0 && (
               <div className="text-center py-20">
-                <p className="text-slate-500 text-lg">Aucun joueur trouvé</p>
+                <p className="text-slate-500 text-lg">{t(lang, 'players.noResults')}</p>
               </div>
             )}
           </>

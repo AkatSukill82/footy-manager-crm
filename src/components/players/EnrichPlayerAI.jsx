@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Loader2, CheckCircle2, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 const ALL_FIELDS = [
-  // Identité
   { key: "nom", label: "Nom complet" },
   { key: "age", label: "Âge", fmt: v => `${v} ans` },
   { key: "date_naissance", label: "Date de naissance" },
@@ -18,7 +19,6 @@ const ALL_FIELDS = [
   { key: "pied_fort", label: "Pied fort" },
   { key: "taille", label: "Taille", fmt: v => `${v} cm` },
   { key: "poids", label: "Poids", fmt: v => `${v} kg` },
-  // Club & contrat
   { key: "club_actuel", label: "Club actuel" },
   { key: "ligue", label: "Ligue" },
   { key: "pays_ligue", label: "Pays de la ligue" },
@@ -29,18 +29,13 @@ const ALL_FIELDS = [
   { key: "salaire_semaine", label: "Salaire hebdo", fmt: v => `${v} k€` },
   { key: "coach", label: "Entraîneur" },
   { key: "manager", label: "Directeur sportif" },
-  // Agent
   { key: "agent", label: "Agent" },
   { key: "agence", label: "Agence" },
-  // Valeur marchande
   { key: "valeur_marchande", label: "Valeur marchande", fmt: v => `${v} M€` },
   { key: "valeur_marchande_peak", label: "Valeur max carrière", fmt: v => `${v} M€` },
-  // Photo
   { key: "photo_url", label: "Photo" },
-  // IDs
   { key: "transfermarkt_id", label: "ID Transfermarkt" },
   { key: "sofascore_id", label: "ID SofaScore" },
-  // Stats saison
   { key: "matchs_joues", label: "Matchs joués" },
   { key: "titularisations", label: "Titularisations" },
   { key: "minutes_jouees", label: "Minutes jouées" },
@@ -50,7 +45,6 @@ const ALL_FIELDS = [
   { key: "cartons_jaunes", label: "Cartons jaunes" },
   { key: "cartons_rouges", label: "Cartons rouges" },
   { key: "note_moyenne", label: "Note SofaScore" },
-  // Stats avancées offensives
   { key: "xg", label: "xG" },
   { key: "xa", label: "xA" },
   { key: "xg_par_90", label: "xG/90min" },
@@ -65,14 +59,12 @@ const ALL_FIELDS = [
   { key: "buts_tete", label: "Buts de la tête" },
   { key: "buts_pied_gauche", label: "Buts pied gauche" },
   { key: "buts_pied_droit", label: "Buts pied droit" },
-  // Passes & création
   { key: "passes_reussies", label: "Passes réussies" },
   { key: "passes_reussies_pct", label: "% passes réussies", fmt: v => `${v}%` },
   { key: "passes_longues_pct", label: "% passes longues", fmt: v => `${v}%` },
   { key: "passes_cles", label: "Passes clés/match" },
   { key: "centres", label: "Centres tentés" },
   { key: "centres_reussis_pct", label: "% centres réussis", fmt: v => `${v}%` },
-  // Dribbles & physique
   { key: "dribbles_reussis", label: "Dribbles réussis" },
   { key: "dribbles_tentes", label: "Dribbles tentés" },
   { key: "dribbles_pct", label: "% dribbles", fmt: v => `${v}%` },
@@ -81,7 +73,6 @@ const ALL_FIELDS = [
   { key: "distance_course", label: "Distance course km/match" },
   { key: "sprints", label: "Sprints/match" },
   { key: "vitesse_max", label: "Vitesse max", fmt: v => `${v} km/h` },
-  // Défense
   { key: "interceptions", label: "Interceptions" },
   { key: "tacles", label: "Tacles réussis" },
   { key: "tacles_reussis_pct", label: "% tacles réussis", fmt: v => `${v}%` },
@@ -93,30 +84,25 @@ const ALL_FIELDS = [
   { key: "fautes_subies", label: "Fautes subies" },
   { key: "hors_jeu", label: "Hors-jeu" },
   { key: "corners_provoquees", label: "Corners provoqués" },
-  // Gardien
   { key: "arrets", label: "Arrêts (GK)" },
   { key: "arrets_pct", label: "% arrêts (GK)", fmt: v => `${v}%` },
   { key: "buts_encaisses", label: "Buts encaissés (GK)" },
   { key: "clean_sheets", label: "Clean sheets (GK)" },
   { key: "sorties_reussies", label: "Sorties réussies (GK)" },
   { key: "xg_contre", label: "xG encaissés (GK)" },
-  // Blessures
   { key: "blessures", label: "Blessures (carrière)" },
   { key: "jours_blesses", label: "Jours manqués sur blessure" },
   { key: "type_blessures", label: "Types de blessures" },
-  // Carrière
   { key: "matchs_carriere", label: "Matchs (carrière club)" },
   { key: "buts_carriere", label: "Buts (carrière club)" },
   { key: "passes_carriere", label: "Passes déc. (carrière club)" },
   { key: "nb_clubs", label: "Clubs différents" },
   { key: "saisons_pro", label: "Saisons pro" },
-  // Sélection nationale
   { key: "matchs_international", label: "Sélections nat." },
   { key: "buts_international", label: "Buts en sélection" },
   { key: "passes_international", label: "Passes déc. sélection" },
   { key: "premier_match_selection", label: "1er match sélection" },
   { key: "selection_u21", label: "U21 national", fmt: v => v ? "Oui" : "Non" },
-  // Palmarès & profil
   { key: "palmares", label: "Palmarès" },
   { key: "distinctions", label: "Distinctions individuelles" },
   { key: "style_jeu", label: "Style de jeu" },
@@ -127,6 +113,7 @@ const ALL_FIELDS = [
 ];
 
 export default function EnrichPlayerAI({ player, onApply }) {
+  const { lang } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [applied, setApplied] = useState(false);
@@ -172,108 +159,54 @@ RÈGLES DE FORMAT STRICTES :
       response_json_schema: {
         type: "object",
         properties: {
-          nom: { type: "string" },
-          age: { type: "number" },
-          date_naissance: { type: "string" },
-          lieu_naissance: { type: "string" },
-          nationalite: { type: "string" },
-          nationalite_secondaire: { type: "string" },
-          poste: { type: "string" },
-          poste_secondaire: { type: "string" },
-          pied_fort: { type: "string" },
-          taille: { type: "number" },
-          poids: { type: "number" },
-          club_actuel: { type: "string" },
-          ligue: { type: "string" },
-          pays_ligue: { type: "string" },
-          stade: { type: "string" },
-          numero_maillot: { type: "number" },
-          contrat_fin: { type: "string" },
-          salaire: { type: "number" },
-          salaire_semaine: { type: "number" },
-          coach: { type: "string" },
-          manager: { type: "string" },
-          agent: { type: "string" },
-          agence: { type: "string" },
-          valeur_marchande: { type: "number" },
-          valeur_marchande_peak: { type: "number" },
-          transfermarkt_id: { type: "string" },
-          sofascore_id: { type: "string" },
-          photo_url: { type: "string" },
-          matchs_joues: { type: "number" },
-          titularisations: { type: "number" },
-          minutes_jouees: { type: "number" },
-          buts: { type: "number" },
-          passes_decisives: { type: "number" },
-          buts_passes: { type: "number" },
-          cartons_jaunes: { type: "number" },
-          cartons_rouges: { type: "number" },
-          note_moyenne: { type: "number" },
-          xg: { type: "number" },
-          xa: { type: "number" },
-          xg_par_90: { type: "number" },
-          tirs: { type: "number" },
-          tirs_cadres: { type: "number" },
-          tirs_cadres_pct: { type: "number" },
-          grandes_chances: { type: "number" },
-          grandes_chances_manquees: { type: "number" },
-          penaltys_marques: { type: "number" },
-          penaltys_tires: { type: "number" },
-          penaltys_provoques: { type: "number" },
-          buts_tete: { type: "number" },
-          buts_pied_gauche: { type: "number" },
-          buts_pied_droit: { type: "number" },
-          passes_reussies: { type: "number" },
-          passes_reussies_pct: { type: "number" },
-          passes_longues_pct: { type: "number" },
-          passes_cles: { type: "number" },
-          centres: { type: "number" },
-          centres_reussis_pct: { type: "number" },
-          dribbles_reussis: { type: "number" },
-          dribbles_tentes: { type: "number" },
-          dribbles_pct: { type: "number" },
-          touches_balle: { type: "number" },
-          pertes_balle: { type: "number" },
-          distance_course: { type: "number" },
-          sprints: { type: "number" },
-          vitesse_max: { type: "number" },
-          interceptions: { type: "number" },
-          tacles: { type: "number" },
-          tacles_reussis_pct: { type: "number" },
-          degagements: { type: "number" },
-          duels_gagnes_pct: { type: "number" },
-          duels_aeriens_pct: { type: "number" },
-          recuperations: { type: "number" },
-          fautes_commises: { type: "number" },
-          fautes_subies: { type: "number" },
-          hors_jeu: { type: "number" },
-          corners_provoquees: { type: "number" },
-          arrets: { type: "number" },
-          arrets_pct: { type: "number" },
-          buts_encaisses: { type: "number" },
-          clean_sheets: { type: "number" },
-          sorties_reussies: { type: "number" },
-          xg_contre: { type: "number" },
-          blessures: { type: "number" },
-          jours_blesses: { type: "number" },
-          type_blessures: { type: "string" },
-          matchs_carriere: { type: "number" },
-          buts_carriere: { type: "number" },
-          passes_carriere: { type: "number" },
-          nb_clubs: { type: "number" },
-          saisons_pro: { type: "number" },
-          matchs_international: { type: "number" },
-          buts_international: { type: "number" },
-          passes_international: { type: "number" },
-          premier_match_selection: { type: "string" },
-          selection_u21: { type: "boolean" },
-          palmares: { type: "string" },
-          distinctions: { type: "string" },
-          style_jeu: { type: "string" },
-          forces: { type: "string" },
-          faiblesses: { type: "string" },
-          note_globale_scout: { type: "number" },
-          stats_resume: { type: "string" },
+          nom: { type: "string" }, age: { type: "number" }, date_naissance: { type: "string" },
+          lieu_naissance: { type: "string" }, nationalite: { type: "string" },
+          nationalite_secondaire: { type: "string" }, poste: { type: "string" },
+          poste_secondaire: { type: "string" }, pied_fort: { type: "string" },
+          taille: { type: "number" }, poids: { type: "number" }, club_actuel: { type: "string" },
+          ligue: { type: "string" }, pays_ligue: { type: "string" }, stade: { type: "string" },
+          numero_maillot: { type: "number" }, contrat_fin: { type: "string" },
+          salaire: { type: "number" }, salaire_semaine: { type: "number" },
+          coach: { type: "string" }, manager: { type: "string" }, agent: { type: "string" },
+          agence: { type: "string" }, valeur_marchande: { type: "number" },
+          valeur_marchande_peak: { type: "number" }, transfermarkt_id: { type: "string" },
+          sofascore_id: { type: "string" }, photo_url: { type: "string" },
+          matchs_joues: { type: "number" }, titularisations: { type: "number" },
+          minutes_jouees: { type: "number" }, buts: { type: "number" },
+          passes_decisives: { type: "number" }, buts_passes: { type: "number" },
+          cartons_jaunes: { type: "number" }, cartons_rouges: { type: "number" },
+          note_moyenne: { type: "number" }, xg: { type: "number" }, xa: { type: "number" },
+          xg_par_90: { type: "number" }, tirs: { type: "number" }, tirs_cadres: { type: "number" },
+          tirs_cadres_pct: { type: "number" }, grandes_chances: { type: "number" },
+          grandes_chances_manquees: { type: "number" }, penaltys_marques: { type: "number" },
+          penaltys_tires: { type: "number" }, penaltys_provoques: { type: "number" },
+          buts_tete: { type: "number" }, buts_pied_gauche: { type: "number" },
+          buts_pied_droit: { type: "number" }, passes_reussies: { type: "number" },
+          passes_reussies_pct: { type: "number" }, passes_longues_pct: { type: "number" },
+          passes_cles: { type: "number" }, centres: { type: "number" },
+          centres_reussis_pct: { type: "number" }, dribbles_reussis: { type: "number" },
+          dribbles_tentes: { type: "number" }, dribbles_pct: { type: "number" },
+          touches_balle: { type: "number" }, pertes_balle: { type: "number" },
+          distance_course: { type: "number" }, sprints: { type: "number" },
+          vitesse_max: { type: "number" }, interceptions: { type: "number" },
+          tacles: { type: "number" }, tacles_reussis_pct: { type: "number" },
+          degagements: { type: "number" }, duels_gagnes_pct: { type: "number" },
+          duels_aeriens_pct: { type: "number" }, recuperations: { type: "number" },
+          fautes_commises: { type: "number" }, fautes_subies: { type: "number" },
+          hors_jeu: { type: "number" }, corners_provoquees: { type: "number" },
+          arrets: { type: "number" }, arrets_pct: { type: "number" },
+          buts_encaisses: { type: "number" }, clean_sheets: { type: "number" },
+          sorties_reussies: { type: "number" }, xg_contre: { type: "number" },
+          blessures: { type: "number" }, jours_blesses: { type: "number" },
+          type_blessures: { type: "string" }, matchs_carriere: { type: "number" },
+          buts_carriere: { type: "number" }, passes_carriere: { type: "number" },
+          nb_clubs: { type: "number" }, saisons_pro: { type: "number" },
+          matchs_international: { type: "number" }, buts_international: { type: "number" },
+          passes_international: { type: "number" }, premier_match_selection: { type: "string" },
+          selection_u21: { type: "boolean" }, palmares: { type: "string" },
+          distinctions: { type: "string" }, style_jeu: { type: "string" },
+          forces: { type: "string" }, faiblesses: { type: "string" },
+          note_globale_scout: { type: "number" }, stats_resume: { type: "string" },
         }
       }
     });
@@ -322,7 +255,7 @@ RÈGLES DE FORMAT STRICTES :
           <span className={`text-xs font-semibold ${changed ? "text-green-700" : "text-slate-700"} text-right max-w-[200px] break-words`}>
             {fmt ? fmt(newVal) : String(newVal)}
           </span>
-          {changed && <Badge className="bg-green-100 text-green-700 text-[10px] px-1 py-0 leading-tight border-0">Nouveau</Badge>}
+          {changed && <Badge className="bg-green-100 text-green-700 text-[10px] px-1 py-0 leading-tight border-0">{t(lang, 'playerDetail.newBadge')}</Badge>}
         </div>
       </div>
     );
@@ -333,7 +266,7 @@ RÈGLES DE FORMAT STRICTES :
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2 text-purple-800">
           <Sparkles className="w-4 h-4" />
-          Enrichir avec l'IA — Transfermarkt & SofaScore
+          {t(lang, 'playerDetail.enrichTitle')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -341,27 +274,33 @@ RÈGLES DE FORMAT STRICTES :
         {!result && !applied && (
           <>
             <p className="text-xs text-slate-500">
-              L'IA scrute <strong>Transfermarkt</strong> et <strong>SofaScore</strong> pour récupérer <strong>toutes les données disponibles</strong> sur <strong>{player.nom}</strong> : identité, contrat, agent, valeur marchande, stats avancées (xG, xA, duels, physique…), blessures, sélection nationale, palmarès, distinctions individuelles et plus encore.
+              {t(lang, 'playerDetail.enrichDesc', { name: player.nom })}
             </p>
             <div className="grid grid-cols-3 gap-2 text-center text-xs text-slate-500">
-              {["🏷️ Identité & contrat", "📊 Stats avancées xG/xA", "🏆 Palmarès & distinctions", "🩺 Blessures & physique", "🌍 Sélection nationale", "🤝 Agent & transferts"].map(t => (
-                <div key={t} className="bg-white rounded-lg p-2 border border-slate-100">{t}</div>
+              {[
+                t(lang, 'playerDetail.catIdentity'),
+                t(lang, 'playerDetail.catStats'),
+                t(lang, 'playerDetail.catTrophies'),
+                t(lang, 'playerDetail.catHealth'),
+                t(lang, 'playerDetail.catNational'),
+                t(lang, 'playerDetail.catTransfer'),
+              ].map(cat => (
+                <div key={cat} className="bg-white rounded-lg p-2 border border-slate-100">{cat}</div>
               ))}
             </div>
             <Button onClick={handleEnrich} disabled={loading} className="w-full bg-purple-600 hover:bg-purple-700 text-white" size="sm">
               {loading
-                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Recherche en cours… (peut prendre 20-30s)</>
-                : <><Sparkles className="w-4 h-4 mr-2" />Rechercher TOUTES les infos</>}
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t(lang, 'playerDetail.searching')}</>
+                : <><Sparkles className="w-4 h-4 mr-2" />{t(lang, 'playerDetail.searchAll')}</>}
             </Button>
           </>
         )}
 
         {loading && (
           <div className="space-y-2">
-            {["Transfermarkt…", "SofaScore…", "Presse & Wikipedia…"].map(s => (
+            {[t(lang, 'playerDetail.searchingTM'), t(lang, 'playerDetail.searchingSS'), t(lang, 'playerDetail.searchingPress')].map(s => (
               <div key={s} className="flex items-center gap-2 text-xs text-slate-500">
-                <Loader2 className="w-3 h-3 animate-spin text-purple-500" />
-                {s}
+                <Loader2 className="w-3 h-3 animate-spin text-purple-500" />{s}
               </div>
             ))}
           </div>
@@ -371,10 +310,10 @@ RÈGLES DE FORMAT STRICTES :
           <div className="space-y-2">
             <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg border border-green-200">
               <CheckCircle2 className="w-4 h-4 text-green-600" />
-              <span className="text-sm text-green-700 font-medium">Profil mis à jour avec succès !</span>
+              <span className="text-sm text-green-700 font-medium">{t(lang, 'playerDetail.profileUpdated')}</span>
             </div>
             <Button onClick={() => setApplied(false)} size="sm" variant="outline" className="w-full text-xs">
-              <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Relancer une recherche
+              <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> {t(lang, 'playerDetail.relaunch')}
             </Button>
           </div>
         )}
@@ -382,14 +321,20 @@ RÈGLES DE FORMAT STRICTES :
         {result && !loading && (
           <div className="space-y-3">
             <div className="flex items-center gap-3">
-              <Badge className="bg-green-100 text-green-800 border-0">{changedFields.length} mise{changedFields.length > 1 ? "s" : ""} à jour</Badge>
-              <Badge className="bg-slate-100 text-slate-600 border-0">{unchangedFields.length} déjà à jour</Badge>
-              <Badge className="bg-purple-100 text-purple-700 border-0">{changedFields.length + unchangedFields.length} champs total</Badge>
+              <Badge className="bg-green-100 text-green-800 border-0">
+                {t(lang, 'playerDetail.updates', { count: changedFields.length, s: changedFields.length > 1 ? "s" : "" })}
+              </Badge>
+              <Badge className="bg-slate-100 text-slate-600 border-0">
+                {t(lang, 'playerDetail.alreadyUpToDate', { count: unchangedFields.length, s: unchangedFields.length > 1 ? "s" : "" })}
+              </Badge>
+              <Badge className="bg-purple-100 text-purple-700 border-0">
+                {t(lang, 'playerDetail.totalFields', { count: changedFields.length + unchangedFields.length })}
+              </Badge>
             </div>
 
             {changedFields.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-green-700 mb-2">✅ Champs à mettre à jour</p>
+                <p className="text-xs font-semibold text-green-700 mb-2">{t(lang, 'playerDetail.toUpdate')}</p>
                 <div className="bg-white rounded-lg border border-slate-200 px-2 py-1 max-h-80 overflow-y-auto">
                   {changedFields.map(f => <DiffRow key={f.key} fieldDef={f} />)}
                 </div>
@@ -404,7 +349,7 @@ RÈGLES DE FORMAT STRICTES :
                   className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
                 >
                   {showUnchanged ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                  {unchangedFields.length} champ{unchangedFields.length > 1 ? "s" : ""} déjà à jour
+                  {t(lang, 'playerDetail.alreadyUpToDate', { count: unchangedFields.length, s: unchangedFields.length > 1 ? "s" : "" })}
                 </button>
                 {showUnchanged && (
                   <div className="bg-slate-50 rounded-lg border border-slate-100 px-2 py-1 mt-1 max-h-48 overflow-y-auto">
@@ -415,7 +360,7 @@ RÈGLES DE FORMAT STRICTES :
             )}
 
             {changedFields.length === 0 && unchangedFields.length === 0 && (
-              <p className="text-xs text-slate-500 text-center py-2">Aucune donnée trouvée par l'IA.</p>
+              <p className="text-xs text-slate-500 text-center py-2">{t(lang, 'playerDetail.noDataAI')}</p>
             )}
 
             <div className="flex gap-2 pt-1">
@@ -426,7 +371,7 @@ RÈGLES DE FORMAT STRICTES :
                 disabled={changedFields.length === 0 && unchangedFields.length === 0}
               >
                 <CheckCircle2 className="w-4 h-4 mr-1" />
-                Tout intégrer ({changedFields.length + unchangedFields.length} champs)
+                {t(lang, 'playerDetail.applyAll', { count: changedFields.length + unchangedFields.length })}
               </Button>
               <Button onClick={handleEnrich} size="sm" variant="outline" disabled={loading}>
                 <RefreshCw className="w-4 h-4" />

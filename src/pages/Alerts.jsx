@@ -12,10 +12,15 @@ import {
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { format, differenceInDays, isPast } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr, es, enUS } from "date-fns/locale";
 import { useCurrentUser } from "../lib/useCurrentUser";
+import { useLanguage } from "../lib/LanguageContext";
+import { t } from "../i18n/translations";
 
 export default function AlertsPage() {
+  const { lang } = useLanguage();
+  const DATE_LOCALES = { fr, es, en: enUS };
+  const dateLocale = DATE_LOCALES[lang] || enUS;
   const navigate = useNavigate();
   const [contractPeriod, setContractPeriod] = useState("6months");
   const user = useCurrentUser();
@@ -77,7 +82,7 @@ export default function AlertsPage() {
   }, [players, contractPeriod, watchedPlayerIds]);
 
   // 2. Matchs à venir (équipes suivies)
-  const myTeamIds = useMemo(() => new Set(teams.map(t => t.id)), [teams]);
+  const myTeamIds = useMemo(() => new Set(teams.map(tm => tm.id)), [teams]);
   const upcomingMatches = useMemo(() => {
     const now = new Date();
     return matches
@@ -121,14 +126,17 @@ export default function AlertsPage() {
     annule: "bg-slate-100 text-slate-500",
   };
   const statutLabels = {
-    demande_initiale: "Initiale", en_negociation: "En cours",
-    offre_acceptee: "Acceptée", offre_refusee: "Refusée",
-    transfert_finalise: "Finalisé", annule: "Annulé",
+    demande_initiale: t(lang,'alerts.statutInitiale'),
+    en_negociation: t(lang,'alerts.statutOngoing'),
+    offre_acceptee: t(lang,'alerts.statutAccepted'),
+    offre_refusee: t(lang,'alerts.statutRefused'),
+    transfert_finalise: t(lang,'alerts.statutFinalized'),
+    annule: t(lang,'alerts.statutCancelled'),
   };
 
   if (loadingPlayers) return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="text-slate-500">Chargement des alertes...</div>
+      <div className="text-slate-500">{t(lang,'alerts.loadingAlerts')}</div>
     </div>
   );
 
@@ -139,9 +147,9 @@ export default function AlertsPage() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-2">
             <Bell className="w-6 h-6 md:w-8 md:h-8 text-orange-500" />
-            Alertes & Notifications
+            {t(lang, 'alerts.title')}
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">{totalAlerts} alerte{totalAlerts > 1 ? 's' : ''} active{totalAlerts > 1 ? 's' : ''}</p>
+          <p className="text-sm text-slate-500 mt-0.5">{t(lang, 'alerts.count', { count: totalAlerts })}</p>
         </div>
       </div>
 
@@ -149,22 +157,22 @@ export default function AlertsPage() {
         <TabsList className="w-full grid grid-cols-4 h-auto">
           <TabsTrigger value="contracts" className="flex flex-col items-center gap-0.5 py-2 text-xs">
             <FileText className="w-4 h-4" />
-            <span className="hidden sm:inline">Contrats</span>
+            <span className="hidden sm:inline">{t(lang, 'alerts.tabContracts')}</span>
             {contractAlerts.length > 0 && <Badge className="bg-red-500 text-white text-[10px] px-1 py-0 h-4 min-w-4">{contractAlerts.length}</Badge>}
           </TabsTrigger>
           <TabsTrigger value="matches" className="flex flex-col items-center gap-0.5 py-2 text-xs">
             <Shield className="w-4 h-4" />
-            <span className="hidden sm:inline">Matchs</span>
+            <span className="hidden sm:inline">{t(lang, 'alerts.tabMatches')}</span>
             {upcomingMatches.length > 0 && <Badge className="bg-blue-500 text-white text-[10px] px-1 py-0 h-4 min-w-4">{upcomingMatches.length}</Badge>}
           </TabsTrigger>
           <TabsTrigger value="transfers" className="flex flex-col items-center gap-0.5 py-2 text-xs">
             <ArrowRightLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Transferts</span>
+            <span className="hidden sm:inline">{t(lang, 'alerts.tabTransfers')}</span>
             {activeNegociations.length > 0 && <Badge className="bg-orange-500 text-white text-[10px] px-1 py-0 h-4 min-w-4">{activeNegociations.length}</Badge>}
           </TabsTrigger>
           <TabsTrigger value="reminders" className="flex flex-col items-center gap-0.5 py-2 text-xs">
             <Clock className="w-4 h-4" />
-            <span className="hidden sm:inline">Rappels</span>
+            <span className="hidden sm:inline">{t(lang, 'alerts.tabReminders')}</span>
             {pendingReminders.filter(r => r.overdue || r.daysUntil <= 3).length > 0 && (
               <Badge className="bg-purple-500 text-white text-[10px] px-1 py-0 h-4 min-w-4">
                 {pendingReminders.filter(r => r.overdue || r.daysUntil <= 3).length}
@@ -178,18 +186,18 @@ export default function AlertsPage() {
           <div className="flex flex-wrap gap-2">
             {["1month", "3months", "6months", "1year"].map(p => (
               <Button key={p} size="sm" variant={contractPeriod === p ? "default" : "outline"} onClick={() => setContractPeriod(p)}>
-                {p === "1month" ? "1 mois" : p === "3months" ? "3 mois" : p === "6months" ? "6 mois" : "1 an"}
+                {p === "1month" ? t(lang,'alerts.month1') : p === "3months" ? t(lang,'alerts.months3') : p === "6months" ? t(lang,'alerts.months6') : t(lang,'alerts.year1')}
               </Button>
             ))}
           </div>
 
           {contractAlerts.length === 0 ? (
-            <Card><CardContent className="py-12 text-center text-slate-500">Aucun contrat expirant sur cette période</CardContent></Card>
+            <Card><CardContent className="py-12 text-center text-slate-500">{t(lang, 'alerts.noContracts')}</CardContent></Card>
           ) : (
             <div className="space-y-2">
               {contractAlerts.filter(a => a.isWatched).length > 0 && (
                 <p className="text-xs font-semibold text-orange-600 flex items-center gap-1">
-                  <Star className="w-3 h-3 fill-orange-500 text-orange-500" /> Joueurs suivis
+                  <Star className="w-3 h-3 fill-orange-500 text-orange-500" /> {t(lang, 'alerts.watchedPlayers')}
                 </p>
               )}
               {contractAlerts.map(alert => (
@@ -204,7 +212,7 @@ export default function AlertsPage() {
                       : <div className="w-10 h-10 bg-slate-200 rounded-full flex-shrink-0" />}
                     <div className="min-w-0">
                       <div className="font-semibold text-slate-900 truncate">{alert.nom}</div>
-                      <div className="text-xs text-slate-500 truncate">{alert.poste} • {alert.club_actuel || "Sans club"}</div>
+                      <div className="text-xs text-slate-500 truncate">{alert.poste} • {alert.club_actuel || t(lang, 'players.noClub')}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
@@ -226,30 +234,30 @@ export default function AlertsPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <Shield className="w-4 h-4 text-blue-500" />
-                Matchs à venir – Mes équipes
+                {t(lang, 'alerts.upcomingMatches')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {upcomingMatches.length === 0 ? (
-                <div className="py-8 text-center text-slate-500 text-sm">Aucun match à venir pour vos équipes</div>
+                <div className="py-8 text-center text-slate-500 text-sm">{t(lang, 'alerts.noMatches')}</div>
               ) : (
                 <div className="space-y-2">
                   {upcomingMatches.map(match => {
-                    const team1 = teams.find(t => t.id === match.team1_id);
-                    const team2 = teams.find(t => t.id === match.team2_id);
+                    const team1 = teams.find(tm => tm.id === match.team1_id);
+                    const team2 = teams.find(tm => tm.id === match.team2_id);
                     const daysUntil = differenceInDays(new Date(match.date_match), new Date());
                     return (
                       <div key={match.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
                         <div>
                           <div className="font-semibold text-slate-900 text-sm">
-                            {team1?.nom || "Équipe 1"} vs {team2?.nom || "Équipe 2"}
+                            {team1?.nom || t(lang,'alerts.team1')} vs {team2?.nom || t(lang,'alerts.team2')}
                           </div>
                           <div className="text-xs text-slate-500">
-                            {format(new Date(match.date_match), "d MMMM yyyy", { locale: fr })} • {match.type_match}
+                            {format(new Date(match.date_match), "d MMMM yyyy", { locale: dateLocale })} • {match.type_match}
                           </div>
                         </div>
                         <Badge className={daysUntil <= 3 ? "bg-red-100 text-red-700" : daysUntil <= 7 ? "bg-orange-100 text-orange-700" : "bg-blue-100 text-blue-700"}>
-                          {daysUntil === 0 ? "Aujourd'hui" : `J-${daysUntil}`}
+                          {daysUntil === 0 ? t(lang,'alerts.today') : t(lang,'alerts.daysUntil',{days:daysUntil})}
                         </Badge>
                       </div>
                     );
@@ -267,7 +275,7 @@ export default function AlertsPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-orange-500" />
-                  Négociations actives ({activeNegociations.length})
+                  {t(lang, 'alerts.activeNegotiations', { count: activeNegociations.length })}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -276,11 +284,11 @@ export default function AlertsPage() {
                   return (
                     <div key={neg.id} className="flex items-center justify-between p-3 bg-orange-50 border border-orange-200 rounded-xl">
                       <div className="min-w-0">
-                        <div className="font-semibold text-slate-900 text-sm truncate">{player?.nom || "Joueur inconnu"}</div>
+                        <div className="font-semibold text-slate-900 text-sm truncate">{player?.nom || t(lang,'alerts.unknownPlayer')}</div>
                         <div className="text-xs text-slate-500">{neg.club_acheteur} • {neg.montant_propose}M€</div>
                         {neg.date_limite && (
                           <div className="text-xs text-red-500 mt-0.5">
-                            Deadline: {format(new Date(neg.date_limite), "d MMM", { locale: fr })}
+                            {t(lang,'alerts.deadline')}: {format(new Date(neg.date_limite), "d MMM", { locale: dateLocale })}
                           </div>
                         )}
                       </div>
@@ -298,27 +306,27 @@ export default function AlertsPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <ArrowRightLeft className="w-4 h-4 text-purple-500" />
-                Derniers transferts
+                {t(lang, 'alerts.latestTransfers')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {recentTransfers.length === 0 ? (
-                <div className="py-8 text-center text-slate-500 text-sm">Aucun transfert enregistré</div>
+                <div className="py-8 text-center text-slate-500 text-sm">{t(lang, 'alerts.noTransfers')}</div>
               ) : (
                 <div className="space-y-2">
-                  {recentTransfers.map(t => {
-                    const player = players.find(p => p.id === t.player_id);
+                  {recentTransfers.map(tr => {
+                    const player = players.find(p => p.id === tr.player_id);
                     return (
-                      <div key={t.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+                      <div key={tr.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
                         <div className="min-w-0">
-                          <div className="font-semibold text-slate-900 text-sm truncate">{player?.nom || "Joueur"}</div>
+                          <div className="font-semibold text-slate-900 text-sm truncate">{player?.nom || t(lang,'alerts.player')}</div>
                           <div className="text-xs text-slate-500">
-                            {t.club_depart || "—"} → {t.club_arrivee}
+                            {tr.club_depart || "—"} → {tr.club_arrivee}
                           </div>
                         </div>
                         <div className="text-right flex-shrink-0 ml-3">
-                          {t.montant ? <div className="font-semibold text-green-600 text-sm">{t.montant}M€</div> : null}
-                          <div className="text-xs text-slate-400">{t.type_transfert}</div>
+                          {tr.montant ? <div className="font-semibold text-green-600 text-sm">{tr.montant}M€</div> : null}
+                          <div className="text-xs text-slate-400">{tr.type_transfert}</div>
                         </div>
                       </div>
                     );
@@ -332,7 +340,7 @@ export default function AlertsPage() {
         {/* ── RAPPELS ── */}
         <TabsContent value="reminders" className="space-y-4 mt-4">
           {pendingReminders.length === 0 ? (
-            <Card><CardContent className="py-12 text-center text-slate-500">Aucun rappel en attente</CardContent></Card>
+            <Card><CardContent className="py-12 text-center text-slate-500">{t(lang, 'alerts.noReminders')}</CardContent></Card>
           ) : (
             <div className="space-y-2">
               {pendingReminders.map(r => {
@@ -358,7 +366,7 @@ export default function AlertsPage() {
                         <div className="font-semibold text-slate-900 text-sm truncate">{r.titre}</div>
                         {player && <div className="text-xs text-slate-500">{player.nom}</div>}
                         <div className="text-xs text-slate-400 mt-0.5">
-                          {format(new Date(r.date_rappel), "d MMM yyyy", { locale: fr })}
+                          {format(new Date(r.date_rappel), "d MMM yyyy", { locale: dateLocale })}
                           {r.type && ` • ${r.type}`}
                         </div>
                       </div>
@@ -371,7 +379,7 @@ export default function AlertsPage() {
                         r.priorite === "Moyenne" ? "bg-orange-100 text-orange-700" :
                         "bg-slate-100 text-slate-700"
                       }>
-                        {r.overdue ? "En retard" : r.daysUntil === 0 ? "Aujourd'hui" : `J-${r.daysUntil}`}
+                        {r.overdue ? t(lang,'alerts.overdue') : r.daysUntil === 0 ? t(lang,'alerts.today') : t(lang,'alerts.daysUntil',{days:r.daysUntil})}
                       </Badge>
                     </div>
                   </div>

@@ -4,23 +4,24 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Swords, Trophy } from "lucide-react";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 export default function MatchSimulator({ currentTeamId, allTeams, onSimulate }) {
+  const { lang } = useLanguage();
   const [opponentId, setOpponentId] = useState("");
   const [simulating, setSimulating] = useState(false);
   const [result, setResult] = useState(null);
 
-  const opponents = allTeams.filter(t => t.id !== currentTeamId);
+  const opponents = allTeams.filter(tm => tm.id !== currentTeamId);
 
   const simulateMatch = async () => {
     if (!opponentId) return;
-
     setSimulating(true);
-    
-    // Simulation simple basée sur des valeurs aléatoires
+
     const score1 = Math.floor(Math.random() * 5);
     const score2 = Math.floor(Math.random() * 5);
-    
+
     const matchData = {
       team1_id: currentTeamId,
       team2_id: opponentId,
@@ -32,7 +33,7 @@ export default function MatchSimulator({ currentTeamId, allTeams, onSimulate }) 
 
     await onSimulate(matchData);
     setResult({ score1, score2 });
-    
+
     setTimeout(() => {
       setSimulating(false);
     }, 1500);
@@ -43,17 +44,17 @@ export default function MatchSimulator({ currentTeamId, allTeams, onSimulate }) 
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Swords className="w-5 h-5 text-orange-600" />
-          Simuler un match
+          {t(lang, 'teams.simulator')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
           <label className="text-sm font-medium text-slate-700 mb-2 block">
-            Adversaire
+            {t(lang, 'teams.selectOpponent')}
           </label>
           <Select value={opponentId} onValueChange={setOpponentId}>
             <SelectTrigger>
-              <SelectValue placeholder="Choisir un adversaire..." />
+              <SelectValue placeholder={t(lang, 'teams.selectOpponent')} />
             </SelectTrigger>
             <SelectContent>
               {opponents.map(team => (
@@ -65,34 +66,30 @@ export default function MatchSimulator({ currentTeamId, allTeams, onSimulate }) 
           </Select>
         </div>
 
-        <Button 
-          onClick={simulateMatch} 
+        <Button
+          onClick={simulateMatch}
           disabled={!opponentId || simulating}
           className="w-full"
         >
-          {simulating ? "Simulation en cours..." : "Lancer le match"}
+          {simulating ? t(lang, 'teams.simulating') : t(lang, 'teams.simulateBtn')}
         </Button>
 
         {result && !simulating && (
           <div className="p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border-2 border-blue-200">
             <div className="flex items-center justify-center gap-4 mb-2">
               <Trophy className="w-6 h-6 text-yellow-600" />
-              <span className="font-bold text-lg">Résultat</span>
+              <span className="font-bold text-lg">{t(lang, 'teams.simTitle')}</span>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-4">
-                <Badge className="text-2xl py-2 px-4 bg-blue-600">
-                  {result.score1}
-                </Badge>
+                <Badge className="text-2xl py-2 px-4 bg-blue-600">{result.score1}</Badge>
                 <span className="text-slate-600 font-semibold">-</span>
-                <Badge className="text-2xl py-2 px-4 bg-green-600">
-                  {result.score2}
-                </Badge>
+                <Badge className="text-2xl py-2 px-4 bg-green-600">{result.score2}</Badge>
               </div>
               <div className="mt-2 text-sm text-slate-600">
-                {result.score1 > result.score2 ? "🎉 Victoire !" : 
-                 result.score1 < result.score2 ? "😞 Défaite" : 
-                 "🤝 Match nul"}
+                {result.score1 > result.score2 ? t(lang, 'teams.win') :
+                 result.score1 < result.score2 ? t(lang, 'teams.loss') :
+                 t(lang, 'teams.draw')}
               </div>
             </div>
           </div>

@@ -16,6 +16,8 @@ import {
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { useQueryClient } from "@tanstack/react-query";
+import { useLanguage } from "../lib/LanguageContext";
+import { t } from "../i18n/translations";
 
 const posteColors = {
   "Gardien": "bg-yellow-100 text-yellow-800",
@@ -51,6 +53,7 @@ function StatBox({ label, value, color = "bg-slate-50", textColor = "text-slate-
 }
 
 export default function PlayerSearchPage() {
+  const { lang } = useLanguage();
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingFull, setLoadingFull] = useState(false);
@@ -105,7 +108,7 @@ export default function PlayerSearchPage() {
 
     try {
       // 1. Données réelles Transfermarkt
-      setLoadingStatus("Récupération des données Transfermarkt...");
+      setLoadingStatus(t(lang, 'playerSearch.loadingTM'));
       const { profile, stats, marketValue, transfers } = await TransfermarktAPI.getFullPlayerData(tmId);
 
       if (!profile) throw new Error("Profil introuvable sur Transfermarkt.");
@@ -113,7 +116,7 @@ export default function PlayerSearchPage() {
       const crmData = TransfermarktAPI.buildCRMPlayer(profile, stats, marketValue, transfers);
 
       // 2. Enrichissement LLM : description, style, forces, palmarès, SofaScore stats
-      setLoadingStatus("Enrichissement avec données SofaScore & profil scout...");
+      setLoadingStatus(t(lang, 'playerSearch.loadingScout'));
       let llmEnrichment = {};
       try {
         const llm = await base44.integrations.Core.InvokeLLM({
@@ -391,11 +394,9 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-2">
             <Search className="w-7 h-7 text-green-500" />
-            Recherche de joueur
+            {t(lang, 'playerSearch.title')}
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Données réelles Transfermarkt · Club créé automatiquement si absent
-          </p>
+          <p className="text-xs text-slate-500 mt-1">{t(lang, 'playerSearch.subtitle')}</p>
         </div>
 
         {/* Search */}
@@ -424,7 +425,7 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
               <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
             </div>
-            <p className="text-slate-600 font-medium">Recherche sur Transfermarkt…</p>
+            <p className="text-slate-600 font-medium">{t(lang, 'playerSearch.searching')}</p>
           </div>
         )}
 
@@ -434,7 +435,7 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <Search className="w-4 h-4 text-green-500" />
-                {candidates.length} joueurs trouvés pour "{query}" — Lequel ?
+                {t(lang, 'playerSearch.candidatesTitle', { count: candidates.length })}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -455,7 +456,7 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
                       {c.position && <Badge className={`text-xs ${posteColors[TransfermarktAPI.mapPosition(c.position)] || "bg-slate-100 text-slate-700"}`}>{c.position}</Badge>}
                       {c.nationality && <Badge variant="outline" className="text-xs">{c.nationality}</Badge>}
                       {c.club && <Badge className="bg-slate-800 text-white text-xs">{c.club}</Badge>}
-                      {c.age && <Badge variant="outline" className="text-xs">{c.age} ans</Badge>}
+                      {c.age && <Badge variant="outline" className="text-xs">{c.age} {t(lang, 'common.ageUnit')}</Badge>}
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
@@ -474,10 +475,10 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
               <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
             </div>
-            <p className="text-slate-600 font-medium">{loadingStatus || "Chargement du profil…"}</p>
+            <p className="text-slate-600 font-medium">{loadingStatus || t(lang, 'playerSearch.loadingProfile')}</p>
             <div className="flex flex-col items-center gap-1">
-              {["Transfermarkt (profil, stats, valeur, transferts)…", "SofaScore & profil scout…"].map(t => (
-                <p key={t} className="text-xs text-slate-400">{t}</p>
+              {[t(lang, 'playerSearch.loadingTMDetail'), t(lang, 'playerSearch.loadingScoutDetail')].map(msg => (
+                <p key={msg} className="text-xs text-slate-400">{msg}</p>
               ))}
             </div>
           </div>
@@ -510,19 +511,19 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
                   </div>
                   <Button onClick={handleSaveToApp} disabled={saving || saved}
                     className={`flex-shrink-0 ${saved ? "bg-green-600" : "bg-slate-900 hover:bg-slate-700"}`} size="sm">
-                    {saved ? <><Trophy className="w-4 h-4 mr-1" /> Sauvegardé</> :
+                    {saved ? <><Trophy className="w-4 h-4 mr-1" /> {t(lang, 'playerSearch.saved')}</> :
                       saving ? <Loader2 className="w-4 h-4 animate-spin" /> :
-                        <><Plus className="w-4 h-4 mr-1" /> Ajouter</>}
+                        <><Plus className="w-4 h-4 mr-1" /> {t(lang, 'playerSearch.add')}</>}
                   </Button>
                 </div>
 
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-4">
-                  <StatBox label="Âge" value={result.age ? `${result.age} ans` : null} />
-                  <StatBox label="Taille" value={result.taille ? `${result.taille} cm` : null} />
-                  <StatBox label="Poids" value={result.poids ? `${result.poids} kg` : null} />
-                  <StatBox label="Pied fort" value={result.pied_fort} />
-                  <StatBox label="Valeur marchande" value={result.valeur_marchande ? `${result.valeur_marchande} M€` : null} color="bg-green-50" textColor="text-green-700" />
-                  <StatBox label="Valeur max" value={result.valeur_marchande_peak ? `${result.valeur_marchande_peak} M€` : null} color="bg-emerald-50" textColor="text-emerald-700" />
+                  <StatBox label={t(lang,'playerDetail.age')} value={result.age ? `${result.age} ${t(lang,'common.ageUnit')}` : null} />
+                  <StatBox label={t(lang,'playerSearch.height')} value={result.taille ? `${result.taille} cm` : null} />
+                  <StatBox label={t(lang,'playerSearch.weight')} value={result.poids ? `${result.poids} kg` : null} />
+                  <StatBox label={t(lang,'playerSearch.foot')} value={result.pied_fort} />
+                  <StatBox label={t(lang,'playerSearch.marketValue')} value={result.valeur_marchande ? `${result.valeur_marchande} M€` : null} color="bg-green-50" textColor="text-green-700" />
+                  <StatBox label={t(lang,'playerSearch.marketValuePeak')} value={result.valeur_marchande_peak ? `${result.valeur_marchande_peak} M€` : null} color="bg-emerald-50" textColor="text-emerald-700" />
                 </div>
               </CardContent>
             </Card>
@@ -531,38 +532,38 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
             <div className="grid md:grid-cols-2 gap-4">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2"><User className="w-4 h-4 text-blue-500" /> Identité</CardTitle>
+                  <CardTitle className="text-sm flex items-center gap-2"><User className="w-4 h-4 text-blue-500" /> {t(lang,'playerSearch.identity')}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <InfoRow label="Date de naissance" value={result.date_naissance} />
-                  <InfoRow label="Lieu de naissance" value={result.lieu_naissance} />
-                  <InfoRow label="Nationalité" value={result.nationalite} />
-                  <InfoRow label="2ème nationalité" value={result.nationalite_secondaire} />
-                  <InfoRow label="Taille" value={result.taille ? `${result.taille} cm` : null} />
-                  <InfoRow label="Poids" value={result.poids ? `${result.poids} kg` : null} />
-                  <InfoRow label="Pied fort" value={result.pied_fort} />
+                  <InfoRow label={t(lang,'playerSearch.dob')} value={result.date_naissance} />
+                  <InfoRow label={t(lang,'playerSearch.birthplace')} value={result.lieu_naissance} />
+                  <InfoRow label={t(lang,'playerDetail.nationality')} value={result.nationalite} />
+                  <InfoRow label={t(lang,'playerSearch.nationality2')} value={result.nationalite_secondaire} />
+                  <InfoRow label={t(lang,'playerSearch.height')} value={result.taille ? `${result.taille} cm` : null} />
+                  <InfoRow label={t(lang,'playerSearch.weight')} value={result.poids ? `${result.poids} kg` : null} />
+                  <InfoRow label={t(lang,'playerSearch.foot')} value={result.pied_fort} />
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-orange-500" /> Contrat & Club
-                    {result.club_actuel && <span className="text-xs text-green-600 font-normal ml-auto">→ club créé automatiquement</span>}
+                    <Building2 className="w-4 h-4 text-orange-500" /> {t(lang,'playerSearch.contractClub')}
+                    {result.club_actuel && <span className="text-xs text-green-600 font-normal ml-auto">{t(lang,'playerSearch.autoClub')}</span>}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <InfoRow label="Club actuel" value={result.club_actuel} />
-                  <InfoRow label="Ligue" value={result.ligue} />
-                  <InfoRow label="Pays" value={result.pays_ligue} />
-                  <InfoRow label="N° maillot" value={result.numero_maillot} />
-                  <InfoRow label="Fin contrat" value={result.contrat_fin} />
-                  <InfoRow label="Salaire annuel" value={result.salaire_annuel ? `${result.salaire_annuel} M€` : null} />
-                  <InfoRow label="Salaire / semaine" value={result.salaire_semaine ? `${result.salaire_semaine} k€` : null} />
-                  <InfoRow label="Agent" value={result.agent} />
-                  <InfoRow label="Entraîneur" value={result.coach} />
-                  <InfoRow label="ID Transfermarkt" value={result.transfermarkt_id} />
-                  <InfoRow label="ID SofaScore" value={result.sofascore_id} />
+                  <InfoRow label={t(lang,'playerSearch.currentClub')} value={result.club_actuel} />
+                  <InfoRow label={t(lang,'playerSearch.league')} value={result.ligue} />
+                  <InfoRow label={t(lang,'playerSearch.country')} value={result.pays_ligue} />
+                  <InfoRow label={t(lang,'playerSearch.jerseyNum')} value={result.numero_maillot} />
+                  <InfoRow label={t(lang,'playerSearch.contractEnd')} value={result.contrat_fin} />
+                  <InfoRow label={t(lang,'playerSearch.annualSalary')} value={result.salaire_annuel ? `${result.salaire_annuel} M€` : null} />
+                  <InfoRow label={t(lang,'playerSearch.weeklySalary')} value={result.salaire_semaine ? `${result.salaire_semaine} k€` : null} />
+                  <InfoRow label={t(lang,'playerSearch.agent')} value={result.agent} />
+                  <InfoRow label={t(lang,'playerSearch.coach')} value={result.coach} />
+                  <InfoRow label={t(lang,'playerSearch.tmId')} value={result.transfermarkt_id} />
+                  <InfoRow label={t(lang,'playerSearch.ssId')} value={result.sofascore_id} />
                 </CardContent>
               </Card>
             </div>
@@ -573,32 +574,32 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <BarChart2 className="w-4 h-4 text-purple-500" />
-                    Stats saison {s.saison || "2024/2025"}
+                    {t(lang,'playerSearch.statsSeason')} {s.saison || "2024/2025"}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
-                    <StatBox label="Matchs" value={s.matchs} />
-                    <StatBox label="Titulaire" value={s.titulaire} />
-                    <StatBox label="Minutes" value={s.minutes} />
-                    <StatBox label="Buts" value={s.buts} color="bg-green-50" textColor="text-green-700" />
-                    <StatBox label="Passes D." value={s.passes_decisives} color="bg-blue-50" textColor="text-blue-700" />
-                    <StatBox label="Jaunes" value={s.cartons_jaunes} color="bg-yellow-50" />
-                    <StatBox label="Note" value={s.note_sofascore} color="bg-indigo-50" textColor="text-indigo-700" />
+                    <StatBox label={t(lang,'playerSearch.matches')} value={s.matchs} />
+                    <StatBox label={t(lang,'playerSearch.starter')} value={s.titulaire} />
+                    <StatBox label={t(lang,'playerSearch.minutes')} value={s.minutes} />
+                    <StatBox label={t(lang,'playerSearch.goals')} value={s.buts} color="bg-green-50" textColor="text-green-700" />
+                    <StatBox label={t(lang,'playerSearch.assists')} value={s.passes_decisives} color="bg-blue-50" textColor="text-blue-700" />
+                    <StatBox label={t(lang,'playerSearch.yellows')} value={s.cartons_jaunes} color="bg-yellow-50" />
+                    <StatBox label={t(lang,'playerSearch.rating')} value={s.note_sofascore} color="bg-indigo-50" textColor="text-indigo-700" />
                   </div>
                   {(s.xg != null || s.tirs != null) && (
                     <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-2">
                       <StatBox label="xG" value={s.xg} color="bg-green-50" textColor="text-green-700" />
                       <StatBox label="xA" value={s.xa} color="bg-blue-50" textColor="text-blue-700" />
-                      <StatBox label="Tirs" value={s.tirs} />
-                      <StatBox label="Tirs cadrés" value={s.tirs_cadres} />
-                      <StatBox label="Passes clés" value={s.passes_cles} />
-                      <StatBox label="Dribbles" value={s.dribbles_reussis} />
-                      <StatBox label="Interceptions" value={s.interceptions} />
-                      <StatBox label="Tacles" value={s.tacles} />
-                      <StatBox label="% duels" value={s.duels_gagnes_pct != null ? `${s.duels_gagnes_pct}%` : null} />
-                      <StatBox label="Distance km/m" value={s.distance_course} />
-                      <StatBox label="Vitesse max" value={s.vitesse_max ? `${s.vitesse_max} km/h` : null} />
+                      <StatBox label={t(lang,'playerSearch.shots')} value={s.tirs} />
+                      <StatBox label={t(lang,'playerSearch.shotsOnTarget')} value={s.tirs_cadres} />
+                      <StatBox label={t(lang,'playerSearch.keyPasses')} value={s.passes_cles} />
+                      <StatBox label={t(lang,'playerSearch.dribbles')} value={s.dribbles_reussis} />
+                      <StatBox label={t(lang,'playerSearch.interceptions')} value={s.interceptions} />
+                      <StatBox label={t(lang,'playerSearch.tackles')} value={s.tacles} />
+                      <StatBox label={t(lang,'playerSearch.duelsPct')} value={s.duels_gagnes_pct != null ? `${s.duels_gagnes_pct}%` : null} />
+                      <StatBox label={t(lang,'playerSearch.distance')} value={s.distance_course} />
+                      <StatBox label={t(lang,'playerSearch.topSpeed')} value={s.vitesse_max ? `${s.vitesse_max} km/h` : null} />
                     </div>
                   )}
                 </CardContent>
@@ -610,7 +611,7 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-green-500" /> Évolution valeur marchande — Transfermarkt
+                    <TrendingUp className="w-4 h-4 text-green-500" /> {t(lang,'playerSearch.marketValueChart')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -638,7 +639,7 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <BarChart2 className="w-4 h-4 text-indigo-500" /> Stats par saison — Transfermarkt
+                    <BarChart2 className="w-4 h-4 text-indigo-500" /> {t(lang,'playerSearch.seasonStats')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -646,12 +647,12 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="text-xs text-slate-400 border-b border-slate-100">
-                          <th className="text-left pb-2 pr-3">Saison</th>
-                          <th className="text-left pb-2 pr-3">Compétition</th>
-                          <th className="text-center pb-2">MJ</th>
-                          <th className="text-center pb-2">Min.</th>
-                          <th className="text-center pb-2">Buts</th>
-                          <th className="text-center pb-2">PD</th>
+                          <th className="text-left pb-2 pr-3">{t(lang,'playerSearch.thSeason')}</th>
+                          <th className="text-left pb-2 pr-3">{t(lang,'playerSearch.thCompetition')}</th>
+                          <th className="text-center pb-2">{t(lang,'playerSearch.thApps')}</th>
+                          <th className="text-center pb-2">{t(lang,'playerSearch.thMins')}</th>
+                          <th className="text-center pb-2">{t(lang,'playerSearch.thGoals')}</th>
+                          <th className="text-center pb-2">{t(lang,'playerSearch.thAssists')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -677,7 +678,7 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-red-500" /> Historique transferts — Transfermarkt
+                    <MapPin className="w-4 h-4 text-red-500" /> {t(lang,'playerSearch.transferHistory')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
@@ -704,39 +705,39 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
               {result.selection_nationale && (
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2"><Globe className="w-4 h-4 text-blue-500" /> Sélection nationale</CardTitle>
+                    <CardTitle className="text-sm flex items-center gap-2"><Globe className="w-4 h-4 text-blue-500" /> {t(lang,'playerSearch.national')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="font-semibold text-slate-900 mb-2">{result.selection_nationale.equipe}</p>
-                    <InfoRow label="Matchs" value={result.selection_nationale.matchs} />
-                    <InfoRow label="Buts" value={result.selection_nationale.buts} />
-                    <InfoRow label="Passes déc." value={result.selection_nationale.passes} />
-                    <InfoRow label="1ère sélection" value={result.selection_nationale.premiere_selection} />
+                    <InfoRow label={t(lang,'playerSearch.matches')} value={result.selection_nationale.matchs} />
+                    <InfoRow label={t(lang,'playerSearch.goals')} value={result.selection_nationale.buts} />
+                    <InfoRow label={t(lang,'playerSearch.passesCareer')} value={result.selection_nationale.passes} />
+                    <InfoRow label={t(lang,'playerSearch.firstCap')} value={result.selection_nationale.premiere_selection} />
                   </CardContent>
                 </Card>
               )}
               {(result.blessures_total != null || result.jours_blesses != null) && (
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2"><Heart className="w-4 h-4 text-red-500" /> Blessures</CardTitle>
+                    <CardTitle className="text-sm flex items-center gap-2"><Heart className="w-4 h-4 text-red-500" /> {t(lang,'playerSearch.injuries')}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <InfoRow label="Nombre" value={result.blessures_total} />
-                    <InfoRow label="Jours manqués" value={result.jours_blesses} />
-                    <InfoRow label="Types" value={result.type_blessures} />
+                    <InfoRow label={t(lang,'playerSearch.injuryCount')} value={result.blessures_total} />
+                    <InfoRow label={t(lang,'playerSearch.injuryDays')} value={result.jours_blesses} />
+                    <InfoRow label={t(lang,'playerSearch.injuryTypes')} value={result.type_blessures} />
                   </CardContent>
                 </Card>
               )}
               {(result.matchs_carriere != null || result.buts_carriere != null) && (
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2"><Activity className="w-4 h-4 text-slate-500" /> Carrière complète</CardTitle>
+                    <CardTitle className="text-sm flex items-center gap-2"><Activity className="w-4 h-4 text-slate-500" /> {t(lang,'playerSearch.career')}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <InfoRow label="Matchs" value={result.matchs_carriere} />
-                    <InfoRow label="Buts" value={result.buts_carriere} />
-                    <InfoRow label="Passes déc." value={result.passes_carriere} />
-                    <InfoRow label="Clubs" value={result.historique_clubs?.length} />
+                    <InfoRow label={t(lang,'playerSearch.matches')} value={result.matchs_carriere} />
+                    <InfoRow label={t(lang,'playerSearch.goals')} value={result.buts_carriere} />
+                    <InfoRow label={t(lang,'playerSearch.passesCareer')} value={result.passes_carriere} />
+                    <InfoRow label={t(lang,'playerSearch.careerClubs')} value={result.historique_clubs?.length} />
                   </CardContent>
                 </Card>
               )}
@@ -746,13 +747,13 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
             {(result.style_jeu || result.forces || result.faiblesses) && (
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2"><Star className="w-4 h-4 text-amber-500" /> Profil scout</CardTitle>
+                  <CardTitle className="text-sm flex items-center gap-2"><Star className="w-4 h-4 text-amber-500" /> {t(lang,'playerSearch.scoutProfile')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {result.style_jeu && <div><p className="text-xs font-semibold text-slate-400 uppercase mb-1">Style de jeu</p><p className="text-sm text-slate-700">{result.style_jeu}</p></div>}
-                  {result.forces && <div><p className="text-xs font-semibold text-green-600 uppercase mb-1">Points forts</p><p className="text-sm text-slate-700">{result.forces}</p></div>}
-                  {result.faiblesses && <div><p className="text-xs font-semibold text-red-500 uppercase mb-1">Points faibles</p><p className="text-sm text-slate-700">{result.faiblesses}</p></div>}
-                  {result.note_globale_scout != null && <div className="flex items-center gap-2"><Star className="w-4 h-4 text-amber-400" /><span className="font-bold text-lg">{result.note_globale_scout}/100</span><span className="text-xs text-slate-500">Note scout</span></div>}
+                  {result.style_jeu && <div><p className="text-xs font-semibold text-slate-400 uppercase mb-1">{t(lang,'playerSearch.playStyle')}</p><p className="text-sm text-slate-700">{result.style_jeu}</p></div>}
+                  {result.forces && <div><p className="text-xs font-semibold text-green-600 uppercase mb-1">{t(lang,'playerSearch.strengths')}</p><p className="text-sm text-slate-700">{result.forces}</p></div>}
+                  {result.faiblesses && <div><p className="text-xs font-semibold text-red-500 uppercase mb-1">{t(lang,'playerSearch.weaknesses')}</p><p className="text-sm text-slate-700">{result.faiblesses}</p></div>}
+                  {result.note_globale_scout != null && <div className="flex items-center gap-2"><Star className="w-4 h-4 text-amber-400" /><span className="font-bold text-lg">{result.note_globale_scout}/100</span><span className="text-xs text-slate-500">{t(lang,'playerSearch.scoutRating')}</span></div>}
                 </CardContent>
               </Card>
             )}
@@ -761,12 +762,12 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
             {result.palmares?.length > 0 && (
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2"><Trophy className="w-4 h-4 text-amber-500" /> Palmarès</CardTitle>
+                  <CardTitle className="text-sm flex items-center gap-2"><Trophy className="w-4 h-4 text-amber-500" /> {t(lang,'playerSearch.trophies')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
-                    {result.palmares.map((t, i) => (
-                      <Badge key={i} className="bg-amber-50 text-amber-800 border border-amber-200">{t}</Badge>
+                    {result.palmares.map((tr, i) => (
+                      <Badge key={i} className="bg-amber-50 text-amber-800 border border-amber-200">{tr}</Badge>
                     ))}
                   </div>
                 </CardContent>
@@ -775,13 +776,13 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
 
             {/* CTA final */}
             <div className="flex justify-end pb-6 gap-3">
-              <p className="text-xs text-slate-400 self-center">Le club "{result.club_actuel}" sera créé automatiquement si absent</p>
+              <p className="text-xs text-slate-400 self-center">{t(lang, 'playerSearch.autoClubNote', { club: result.club_actuel })}</p>
               <Button onClick={handleSaveToApp} disabled={saving || saved}
                 className={`${saved ? "bg-green-600" : "bg-slate-900 hover:bg-slate-700"} px-8`}>
                 {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                 {saved
-                  ? <><Trophy className="w-4 h-4 mr-2" /> Joueur ajouté ! <ArrowRight className="w-4 h-4 ml-2" /></>
-                  : <><Plus className="w-4 h-4 mr-2" /> Ajouter à mes joueurs</>}
+                  ? <><Trophy className="w-4 h-4 mr-2" /> {t(lang,'playerSearch.playerAdded')} <ArrowRight className="w-4 h-4 ml-2" /></>
+                  : <><Plus className="w-4 h-4 mr-2" /> {t(lang,'playerSearch.addToPlayers')}</>}
               </Button>
             </div>
           </div>

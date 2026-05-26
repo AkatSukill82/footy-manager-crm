@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { useLanguage } from "../lib/LanguageContext";
+import { t } from "../i18n/translations";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,15 +14,15 @@ import { useCurrentUser } from "../lib/useCurrentUser";
 import PlayerStatusModal, { STATUTS, statutConfig } from "../components/players/PlayerStatusModal";
 import { format } from "date-fns";
 
-const TABS = [
-  { value: "all", label: "Tous", Icon: Star },
-  { value: "Client", label: "Clients", Icon: UserCheck },
-  { value: "Prospect", label: "Prospects", Icon: Zap },
-  { value: "Mandaté", label: "Mandatés", Icon: FileText },
-  { value: "En observation", label: "En observation", Icon: Eye },
+const TABS = (lang) => [
+  { value: "all", label: t(lang, 'watchlist.tabAll'), Icon: Star },
+  { value: "Client", label: t(lang, 'watchlist.tabClient'), Icon: UserCheck },
+  { value: "Prospect", label: t(lang, 'watchlist.tabProspect'), Icon: Zap },
+  { value: "Mandaté", label: t(lang, 'watchlist.tabMandated'), Icon: FileText },
+  { value: "En observation", label: t(lang, 'watchlist.tabWatching'), Icon: Eye },
 ];
 
-function PlayerRow({ item, player, note, onEditStatus, onRemove }) {
+function PlayerRow({ item, player, note, onEditStatus, onRemove, lang }) {
   const navigate = useNavigate();
   const sc = statutConfig(item.statut);
   const Icon = sc.Icon || Eye;
@@ -104,7 +106,7 @@ function PlayerRow({ item, player, note, onEditStatus, onRemove }) {
               onClick={() => onEditStatus(item, player)}
             >
               <Edit2 className="w-3 h-3 mr-1" />
-              Statut
+              {t(lang, 'watchlist.statusBtn')}
             </Button>
             <Button
               variant="ghost"
@@ -124,12 +126,12 @@ function PlayerRow({ item, player, note, onEditStatus, onRemove }) {
           const months = Math.round((end - now) / (1000 * 60 * 60 * 24 * 30));
           if (months < 0) return (
             <div className="mt-2 text-xs bg-red-50 text-red-700 border border-red-200 rounded-lg px-3 py-1.5">
-              ⚠️ Contrat expiré depuis {format(end, "MM/yyyy")}
+              {t(lang, 'watchlist.contractExpired', { date: format(end, "MM/yyyy") })}
             </div>
           );
           if (months <= 6) return (
             <div className="mt-2 text-xs bg-orange-50 text-orange-700 border border-orange-200 rounded-lg px-3 py-1.5">
-              ⏰ Contrat expire dans {months} mois ({format(end, "MM/yyyy")})
+              {t(lang, 'watchlist.contractExpiring', { months, date: format(end, "MM/yyyy") })}
             </div>
           );
           return null;
@@ -140,6 +142,7 @@ function PlayerRow({ item, player, note, onEditStatus, onRemove }) {
 }
 
 export default function MyWatchListPage() {
+  const { lang } = useLanguage();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("all");
   const [modalData, setModalData] = useState(null); // { item, player }
@@ -200,16 +203,16 @@ export default function MyWatchListPage() {
         <div className="flex items-center gap-3">
           <Star className="w-8 h-8 fill-yellow-400 text-yellow-400 flex-shrink-0" />
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Ma liste de suivi</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900">{t(lang, 'watchlist.title')}</h1>
             <p className="text-slate-500 text-sm">
-              {watchList.length} joueur{watchList.length !== 1 ? 's' : ''} suivis
+              {t(lang, 'watchlist.count', { count: watchList.length })}
             </p>
           </div>
         </div>
 
         {/* Status tabs */}
         <div className="flex flex-wrap gap-2">
-          {TABS.map(({ value, label, Icon }) => {
+          {TABS(lang).map(({ value, label, Icon }) => {
             const count = value === "all" ? enriched.length : (counts[value] || 0);
             const active = activeTab === value;
             const sc = value !== "all" ? statutConfig(value) : null;
@@ -239,7 +242,9 @@ export default function MyWatchListPage() {
 
         {/* Summary cards by status */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {STATUTS.map(({ value, label, Icon, bg, text }) => (
+          {STATUTS.map(({ value, bg, text, Icon }) => {
+            const label = TABS(lang).find(tab => tab.value === value)?.label || value;
+            return (
             <button
               key={value}
               onClick={() => setActiveTab(value)}
@@ -249,7 +254,7 @@ export default function MyWatchListPage() {
               <div className={`text-2xl font-bold ${text}`}>{counts[value] || 0}</div>
               <div className={`text-xs font-medium ${text} opacity-70 mt-0.5`}>{label}</div>
             </button>
-          ))}
+          );})}
         </div>
 
         {/* List */}
@@ -263,11 +268,11 @@ export default function MyWatchListPage() {
               <Star className="w-16 h-16 mx-auto text-slate-300 mb-4" />
               <p className="text-slate-500 text-lg font-medium">
                 {activeTab === "all"
-                  ? "Aucun joueur dans votre liste de suivi"
-                  : `Aucun joueur avec le statut "${activeTab}"`}
+                  ? t(lang, 'watchlist.emptyAll')
+                  : t(lang, 'watchlist.emptyStatus', { status: activeTab })}
               </p>
               <p className="text-slate-400 mt-2 text-sm">
-                Ajoutez des joueurs depuis la liste des joueurs
+                {t(lang, 'watchlist.emptyHint')}
               </p>
             </CardContent>
           </Card>
@@ -279,6 +284,7 @@ export default function MyWatchListPage() {
                 item={item}
                 player={item.player}
                 note={item.note}
+                lang={lang}
                 onEditStatus={(i, p) => setModalData({ item: i, player: p })}
                 onRemove={(id) => removeFromWatchListMutation.mutate(id)}
               />

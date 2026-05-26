@@ -6,8 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Bell } from "lucide-react";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 export default function ReminderForm({ playerId, onSubmit }) {
+  const { lang } = useLanguage();
   const [reminder, setReminder] = useState({
     player_id: playerId,
     titre: "",
@@ -37,24 +40,24 @@ export default function ReminderForm({ playerId, onSubmit }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Bell className="w-5 h-5" />
-          Créer un rappel
+          {t(lang,'reminderForm.title')}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label>Titre</Label>
+            <Label>{t(lang,'reminderForm.titleField')}</Label>
             <Input
               value={reminder.titre}
               onChange={(e) => setReminder({ ...reminder, titre: e.target.value })}
-              placeholder="Ex: Appeler l'agent"
+              placeholder={t(lang,'reminderForm.titlePlh')}
               required
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Date du rappel</Label>
+              <Label>{t(lang,'reminderForm.date')}</Label>
               <Input
                 type="date"
                 value={reminder.date_rappel}
@@ -63,48 +66,48 @@ export default function ReminderForm({ playerId, onSubmit }) {
               />
             </div>
             <div>
-              <Label>Type d'action</Label>
+              <Label>{t(lang,'reminderForm.typeAction')}</Label>
               <Select value={reminder.type} onValueChange={(value) => setReminder({ ...reminder, type: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Appeler">Appeler</SelectItem>
-                  <SelectItem value="Rencontrer">Rencontrer</SelectItem>
-                  <SelectItem value="Envoyer email">Envoyer email</SelectItem>
-                  <SelectItem value="Suivre dossier">Suivre dossier</SelectItem>
-                  <SelectItem value="Autre">Autre</SelectItem>
+                  <SelectItem value="Appeler">{t(lang,'reminderForm.typeCall')}</SelectItem>
+                  <SelectItem value="Rencontrer">{t(lang,'reminderForm.typeMeet')}</SelectItem>
+                  <SelectItem value="Envoyer email">{t(lang,'reminderForm.typeEmail')}</SelectItem>
+                  <SelectItem value="Suivre dossier">{t(lang,'reminderForm.typeFollow')}</SelectItem>
+                  <SelectItem value="Autre">{t(lang,'reminderForm.typeOther')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div>
-            <Label>Description</Label>
+            <Label>{t(lang,'reminderForm.description')}</Label>
             <Textarea
               value={reminder.description}
               onChange={(e) => setReminder({ ...reminder, description: e.target.value })}
-              placeholder="Détails du rappel..."
+              placeholder={t(lang,'reminderForm.descriptionPlh')}
               rows={3}
             />
           </div>
 
           <div>
-            <Label>Priorité</Label>
+            <Label>{t(lang,'reminderForm.priority')}</Label>
             <Select value={reminder.priorite} onValueChange={(value) => setReminder({ ...reminder, priorite: value })}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Haute">Haute</SelectItem>
-                <SelectItem value="Moyenne">Moyenne</SelectItem>
-                <SelectItem value="Basse">Basse</SelectItem>
+                <SelectItem value="Haute">{t(lang,'reminderForm.priorityHigh')}</SelectItem>
+                <SelectItem value="Moyenne">{t(lang,'reminderForm.priorityMedium')}</SelectItem>
+                <SelectItem value="Basse">{t(lang,'reminderForm.priorityLow')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <Button type="submit" className="w-full">
-            Créer le rappel
+            {t(lang,'reminderForm.createBtn')}
           </Button>
         </form>
       </CardContent>

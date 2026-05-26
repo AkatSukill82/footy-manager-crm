@@ -4,8 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../../utils";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 export default function ContractExpiring({ players }) {
+  const { lang } = useLanguage();
   const navigate = useNavigate();
   
   const now = new Date();
@@ -25,7 +28,7 @@ export default function ContractExpiring({ players }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Calendar className="w-5 h-5 text-orange-600" />
-          Contrats expirant bientôt
+          {t(lang,'dashboard.expiringContracts')}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -42,17 +45,17 @@ export default function ContractExpiring({ players }) {
               >
                 <div>
                   <div className="font-medium text-slate-900">{player.nom}</div>
-                  <div className="text-sm text-slate-500">{player.club_actuel || "Sans club"}</div>
+                  <div className="text-sm text-slate-500">{player.club_actuel || t(lang,'players.noClub')}</div>
                 </div>
                 <Badge variant="outline" className="text-orange-600 border-orange-300">
-                  {daysLeft} jours
+                  {t(lang,'dashboard.daysLeft', { days: daysLeft })}
                 </Badge>
               </div>
             );
           })}
           {expiringPlayers.length === 0 && (
             <div className="text-center py-4 text-slate-500">
-              Aucun contrat expirant dans les 6 prochains mois
+              {t(lang,'dashboard.noExpiring')}
             </div>
           )}
         </div>

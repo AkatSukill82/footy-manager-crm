@@ -8,8 +8,11 @@ import ImportDropzone from "@/components/import/ImportDropzone";
 import ImportPreview from "@/components/import/ImportPreview";
 import ImportResults from "@/components/import/ImportResults";
 import ImportHistory from "@/components/import/ImportHistory";
+import { useLanguage } from "../lib/LanguageContext";
+import { t } from "../i18n/translations";
 
 export default function ImportExcel() {
+  const { lang } = useLanguage();
   const [step, setStep] = useState("upload"); // upload | preview | processing | results
   const [extractedData, setExtractedData] = useState(null);
   const [results, setResults] = useState(null);
@@ -57,8 +60,8 @@ export default function ImportExcel() {
               <FileSpreadsheet className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Import Excel / CSV</h1>
-              <p className="text-slate-500 text-sm">Importez vos joueurs et clubs depuis un fichier</p>
+              <h1 className="text-2xl font-bold text-slate-900">{t(lang, 'import.title')}</h1>
+              <p className="text-slate-500 text-sm">{t(lang, 'import.subtitle')}</p>
             </div>
           </div>
         </div>
@@ -66,10 +69,10 @@ export default function ImportExcel() {
         {/* Steps indicator */}
         <div className="flex items-center gap-2 mb-8">
           {[
-            { key: "upload", label: "Fichier" },
-            { key: "preview", label: "Aperçu" },
-            { key: "processing", label: "Import" },
-            { key: "results", label: "Résultats" }
+            { key: "upload",      label: t(lang, 'import.stepFile') },
+            { key: "preview",     label: t(lang, 'import.stepPreview') },
+            { key: "processing",  label: t(lang, 'import.stepImport') },
+            { key: "results",     label: t(lang, 'import.stepResults') },
           ].map((s, i, arr) => (
             <React.Fragment key={s.key}>
               <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
@@ -95,14 +98,14 @@ export default function ImportExcel() {
               <div className="flex gap-3">
                 <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-blue-800">
-                  <p className="font-semibold mb-1">Colonnes reconnues automatiquement :</p>
+                  <p className="font-semibold mb-1">{t(lang, 'import.infoTitle')}</p>
                   <p className="text-blue-700">
-                    <strong>Joueurs :</strong> nom, prénom, poste, club, nationalité, date_naissance, âge, email, téléphone, agent, agent_email, agent_tel, valeur_marchande, contrat_fin, taille, poids, instagram, twitter, buts, passes, matchs, ligue…
+                    <strong>{t(lang, 'import.infoPlayers')}</strong> nom, prénom, poste, club, nationalité, date_naissance, âge, email, téléphone, agent, agent_email, agent_tel, valeur_marchande, contrat_fin, taille, poids, instagram, twitter, buts, passes, matchs, ligue…
                   </p>
                   <p className="text-blue-700 mt-1">
-                    <strong>Clubs :</strong> nom_club, pays, ville, président, directeur_sportif, email_club, téléphone_club, budget, stade…
+                    <strong>{t(lang, 'import.infoClubs')}</strong> nom_club, pays, ville, président, directeur_sportif, email_club, téléphone_club, budget, stade…
                   </p>
-                  <p className="text-blue-700 mt-1 italic">L'IA détecte automatiquement les colonnes même si les noms sont différents.</p>
+                  <p className="text-blue-700 mt-1 italic">{t(lang, 'import.infoAI')}</p>
                 </div>
               </div>
             </CardContent>
@@ -126,8 +129,8 @@ export default function ImportExcel() {
           <Card className="text-center py-16">
             <CardContent>
               <RefreshCw className="w-12 h-12 text-green-500 animate-spin mx-auto mb-4" />
-              <h2 className="text-xl font-bold text-slate-800 mb-2">Import en cours...</h2>
-              <p className="text-slate-500">Vérification, création et mise à jour des données</p>
+              <h2 className="text-xl font-bold text-slate-800 mb-2">{t(lang, 'import.processingTitle')}</h2>
+              <p className="text-slate-500">{t(lang, 'import.processingDesc')}</p>
             </CardContent>
           </Card>
         )}

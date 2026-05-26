@@ -1,11 +1,13 @@
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16'];
 
 export default function PlayerPerformanceReport({ players, filters }) {
-  // Filter by date if needed
+  const { lang } = useLanguage();
+
   const filteredPlayers = players.filter(player => {
     if (filters.dateDebut && player.created_date) {
       return new Date(player.created_date) >= new Date(filters.dateDebut);
@@ -13,7 +15,6 @@ export default function PlayerPerformanceReport({ players, filters }) {
     return true;
   });
 
-  // Top players by value
   const topByValue = [...filteredPlayers]
     .filter(p => p.valeur_marchande)
     .sort((a, b) => b.valeur_marchande - a.valeur_marchande)
@@ -23,7 +24,6 @@ export default function PlayerPerformanceReport({ players, filters }) {
       valeur: p.valeur_marchande
     }));
 
-  // Age distribution
   const ageDistribution = {};
   filteredPlayers.forEach(p => {
     if (p.age) {
@@ -33,16 +33,12 @@ export default function PlayerPerformanceReport({ players, filters }) {
   });
   const ageData = Object.entries(ageDistribution).map(([range, count]) => ({ range, count }));
 
-  // Position distribution
   const positionData = {};
   filteredPlayers.forEach(p => {
-    if (p.poste) {
-      positionData[p.poste] = (positionData[p.poste] || 0) + 1;
-    }
+    if (p.poste) positionData[p.poste] = (positionData[p.poste] || 0) + 1;
   });
   const pieData = Object.entries(positionData).map(([name, value]) => ({ name, value }));
 
-  // Average value by position
   const valueByPosition = {};
   const countByPosition = {};
   filteredPlayers.forEach(p => {
@@ -62,7 +58,7 @@ export default function PlayerPerformanceReport({ players, filters }) {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
           <div className="text-center">
             <div className="text-5xl font-bold text-slate-900">{filteredPlayers.length}</div>
-            <div className="text-sm text-slate-500 mt-2">Joueurs analysés</div>
+            <div className="text-sm text-slate-500 mt-2">{t(lang, 'reports.playersAnalyzed')}</div>
           </div>
         </div>
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
@@ -70,35 +66,35 @@ export default function PlayerPerformanceReport({ players, filters }) {
             <div className="text-5xl font-bold text-slate-900">
               {(filteredPlayers.reduce((sum, p) => sum + (p.valeur_marchande || 0), 0)).toFixed(1)}M€
             </div>
-            <div className="text-sm text-slate-500 mt-2">Valeur totale</div>
+            <div className="text-sm text-slate-500 mt-2">{t(lang, 'reports.totalValue')}</div>
           </div>
         </div>
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
           <div className="text-center">
             <div className="text-5xl font-bold text-slate-900">
-              {(filteredPlayers.reduce((sum, p) => sum + (p.age || 0), 0) / filteredPlayers.length).toFixed(1)} ans
+              {(filteredPlayers.reduce((sum, p) => sum + (p.age || 0), 0) / filteredPlayers.length).toFixed(1)} {t(lang, 'common.ageUnit')}
             </div>
-            <div className="text-sm text-slate-500 mt-2">Âge moyen</div>
+            <div className="text-sm text-slate-500 mt-2">{t(lang, 'reports.avgAge')}</div>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Top 10 joueurs par valeur</h3>
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">{t(lang, 'reports.top10ByValue')}</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={topByValue}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis dataKey="nom" angle={-45} textAnchor="end" height={100} stroke="#64748b" />
               <YAxis stroke="#64748b" />
               <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-              <Bar dataKey="valeur" fill="#0f172a" radius={[8, 8, 0, 0]} name="Valeur (M€)" />
+              <Bar dataKey="valeur" fill="#0f172a" radius={[8, 8, 0, 0]} name={t(lang, 'reports.valueMEur')} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Répartition par poste</h3>
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">{t(lang, 'reports.byPosition')}</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -121,27 +117,27 @@ export default function PlayerPerformanceReport({ players, filters }) {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Distribution par âge</h3>
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">{t(lang, 'reports.ageDistribution')}</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={ageData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis dataKey="range" stroke="#64748b" />
               <YAxis stroke="#64748b" />
               <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-              <Bar dataKey="count" fill="#0f172a" radius={[8, 8, 0, 0]} name="Nombre de joueurs" />
+              <Bar dataKey="count" fill="#0f172a" radius={[8, 8, 0, 0]} name={t(lang, 'reports.playerCount')} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Valeur moyenne par poste</h3>
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">{t(lang, 'reports.avgValueByPosition')}</h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={avgValueData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis dataKey="poste" angle={-45} textAnchor="end" height={80} stroke="#64748b" />
               <YAxis stroke="#64748b" />
               <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-              <Line type="monotone" dataKey="moyenne" stroke="#0f172a" strokeWidth={3} name="Valeur moy. (M€)" />
+              <Line type="monotone" dataKey="moyenne" stroke="#0f172a" strokeWidth={3} name={t(lang, 'reports.avgValueMEur')} />
             </LineChart>
           </ResponsiveContainer>
         </div>

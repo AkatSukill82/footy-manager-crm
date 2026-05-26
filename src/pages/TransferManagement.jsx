@@ -12,6 +12,8 @@ import NegociationCard from "../components/transfers/NegociationCard";
 import BudgetSimulator from "../components/transfers/BudgetSimulator";
 import PlayerTransferHistory from "../components/transfers/PlayerTransferHistory";
 import { useCurrentUser } from "../lib/useCurrentUser";
+import { useLanguage } from "../lib/LanguageContext";
+import { t } from "../i18n/translations";
 
 export default function TransferManagementPage() {
   const queryClient = useQueryClient();
@@ -29,6 +31,7 @@ export default function TransferManagementPage() {
     notes_negociation: "",
     priorite: "moyenne"
   });
+  const { lang } = useLanguage();
   const user = useCurrentUser();
   const userEmail = user?.email;
 
@@ -130,8 +133,8 @@ export default function TransferManagementPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-2xl md:text-4xl font-bold text-slate-900 truncate">Transferts</h1>
-          <p className="text-slate-500 text-sm mt-0.5 hidden md:block">Suivez vos négociations et simulez vos budgets</p>
+          <h1 className="text-2xl md:text-4xl font-bold text-slate-900 truncate">{t(lang, 'transfers.title')}</h1>
+          <p className="text-slate-500 text-sm mt-0.5 hidden md:block">{t(lang, 'transfers.subtitle')}</p>
         </div>
         <Button 
           onClick={() => setShowAddModal(true)}
@@ -139,8 +142,8 @@ export default function TransferManagementPage() {
           size="sm"
         >
           <Plus className="w-4 h-4 md:mr-2" />
-          <span className="hidden md:inline">Nouvelle négociation</span>
-          <span className="md:hidden">Nouveau</span>
+          <span className="hidden md:inline">{t(lang, 'transfers.newNegotiation')}</span>
+          <span className="md:hidden">{t(lang, 'common.create')}</span>
         </Button>
       </div>
 
@@ -156,7 +159,7 @@ export default function TransferManagementPage() {
             }`}
           >
             <TrendingUp className="w-4 h-4 flex-shrink-0" />
-            <span className="hidden sm:inline">Négociations</span>
+            <span className="hidden sm:inline">{t(lang, 'transfers.tabNegotiations')}</span>
             <span className="sm:hidden">({activeNegociations.length})</span>
             <span className="hidden sm:inline">({activeNegociations.length})</span>
           </button>
@@ -169,7 +172,7 @@ export default function TransferManagementPage() {
             }`}
           >
             <Calculator className="w-4 h-4 flex-shrink-0" />
-            <span className="hidden sm:inline">Simulateur</span>
+            <span className="hidden sm:inline">{t(lang, 'transfers.tabSimulator')}</span>
           </button>
           <button
             onClick={() => setActiveTab("history")}
@@ -180,7 +183,7 @@ export default function TransferManagementPage() {
             }`}
           >
             <History className="w-4 h-4 flex-shrink-0" />
-            <span className="hidden sm:inline">Historique</span>
+            <span className="hidden sm:inline">{t(lang, 'transfers.tabHistory')}</span>
           </button>
         </div>
       </div>
@@ -213,10 +216,10 @@ export default function TransferManagementPage() {
       {activeTab === "history" && (
         <div className="space-y-6">
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <Label>Sélectionner un joueur</Label>
+            <Label>{t(lang, 'transfers.selectPlayer')}</Label>
             <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
               <SelectTrigger className="mt-1.5">
-                <SelectValue placeholder="Choisir un joueur..." />
+                <SelectValue placeholder={t(lang, 'transfers.selectPlayerPlh')} />
               </SelectTrigger>
               <SelectContent>
                 {players.map(player => (
@@ -240,18 +243,18 @@ export default function TransferManagementPage() {
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
         <DialogContent className="max-w-2xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Nouvelle négociation de transfert</DialogTitle>
+            <DialogTitle>{t(lang, 'transfers.newNegotiationTitle')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label>Joueur</Label>
+              <Label>{t(lang, 'transfers.player')}</Label>
               <Select value={formData.player_id} onValueChange={(value) => setFormData({...formData, player_id: value})}>
                 <SelectTrigger className="mt-1.5">
-                  <SelectValue placeholder="Sélectionner un joueur" />
+                  <SelectValue placeholder={t(lang, 'transfers.selectPlayer')} />
                 </SelectTrigger>
                 <SelectContent>
                   {players.map(p => (
-                    <SelectItem key={p.id} value={p.id}>{p.nom} - {p.club_actuel || "Libre"}</SelectItem>
+                    <SelectItem key={p.id} value={p.id}>{p.nom} - {p.club_actuel || t(lang,'players.noClub')}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -259,20 +262,20 @@ export default function TransferManagementPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label>Club vendeur</Label>
+                <Label>{t(lang, 'transfers.sellerClub')}</Label>
                 <Input
                   value={formData.club_vendeur}
                   onChange={(e) => setFormData({...formData, club_vendeur: e.target.value})}
-                  placeholder="Ex: PSG"
+                  placeholder="PSG"
                   className="mt-1.5"
                 />
               </div>
               <div>
-                <Label>Club acheteur</Label>
+                <Label>{t(lang, 'transfers.buyerClub')}</Label>
                 <Input
                   value={formData.club_acheteur}
                   onChange={(e) => setFormData({...formData, club_acheteur: e.target.value})}
-                  placeholder="Ex: Real Madrid"
+                  placeholder="Real Madrid"
                   required
                   className="mt-1.5"
                 />
@@ -281,7 +284,7 @@ export default function TransferManagementPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label>Montant proposé (M€)</Label>
+                <Label>{t(lang, 'transfers.offeredAmount')}</Label>
                 <Input
                   type="number"
                   step="0.1"
@@ -292,7 +295,7 @@ export default function TransferManagementPage() {
                 />
               </div>
               <div>
-                <Label>Montant demandé (M€)</Label>
+                <Label>{t(lang, 'transfers.askedAmount')}</Label>
                 <Input
                   type="number"
                   step="0.1"
@@ -305,7 +308,7 @@ export default function TransferManagementPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label>Date limite</Label>
+                <Label>{t(lang, 'transfers.deadline')}</Label>
                 <Input
                   type="date"
                   value={formData.date_limite}
@@ -314,37 +317,37 @@ export default function TransferManagementPage() {
                 />
               </div>
               <div>
-                <Label>Priorité</Label>
+                <Label>{t(lang, 'transfers.priority')}</Label>
                 <Select value={formData.priorite} onValueChange={(value) => setFormData({...formData, priorite: value})}>
                   <SelectTrigger className="mt-1.5">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="basse">Basse</SelectItem>
-                    <SelectItem value="moyenne">Moyenne</SelectItem>
-                    <SelectItem value="haute">Haute</SelectItem>
+                    <SelectItem value="basse">{t(lang, 'transfers.low')}</SelectItem>
+                    <SelectItem value="moyenne">{t(lang, 'transfers.medium')}</SelectItem>
+                    <SelectItem value="haute">{t(lang, 'transfers.high')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div>
-              <Label>Notes de négociation</Label>
+              <Label>{t(lang, 'transfers.notes')}</Label>
               <Textarea
                 value={formData.notes_negociation}
                 onChange={(e) => setFormData({...formData, notes_negociation: e.target.value})}
                 rows={3}
-                placeholder="Notes importantes..."
+                placeholder={t(lang, 'transfers.notesPlh')}
                 className="mt-1.5"
               />
             </div>
 
             <div className="flex gap-3 pt-4">
               <Button type="button" variant="outline" onClick={() => setShowAddModal(false)} className="flex-1">
-                Annuler
+                {t(lang, 'common.cancel')}
               </Button>
               <Button type="submit" className="flex-1 bg-slate-900 hover:bg-slate-800">
-                Créer la négociation
+                {t(lang, 'transfers.createBtn')}
               </Button>
             </div>
           </form>

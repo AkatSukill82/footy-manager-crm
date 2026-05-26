@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight, Calendar, Clock, Banknote, Filter, TrendingUp, Building2, ChevronDown, ChevronUp } from "lucide-react";
 import { format, differenceInMonths } from "date-fns";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 const TYPE_CONFIG = {
   "Transfert définitif": { color: "bg-blue-500", light: "bg-blue-50 border-blue-200", badge: "bg-blue-100 text-blue-800 border-blue-200", dot: "bg-blue-500", line: "border-blue-300" },
@@ -19,6 +21,7 @@ function getConfig(type) {
 }
 
 function TransferCard({ transfer, index, total, isExpanded, onToggle }) {
+  const { lang } = useLanguage();
   const cfg = getConfig(transfer.type_transfert);
   const isLast = index === total - 1;
 
@@ -58,7 +61,7 @@ function TransferCard({ transfer, index, total, isExpanded, onToggle }) {
                   {transfer.club_depart}
                 </span>
               ) : (
-                <span className="text-slate-400 italic text-sm">Début de carrière</span>
+                <span className="text-slate-400 italic text-sm">{t(lang,'transfers.startCareer')}</span>
               )}
               <ArrowRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
               <span className="flex items-center gap-1 font-bold text-slate-900 text-sm">
@@ -76,7 +79,7 @@ function TransferCard({ transfer, index, total, isExpanded, onToggle }) {
                   {transfer.montant} M€
                 </span>
               ) : transfer.type_transfert === "Libre" ? (
-                <span className="text-xs font-medium text-green-600 bg-green-50 border border-green-200 rounded-full px-2 py-0.5">Gratuit</span>
+                <span className="text-xs font-medium text-green-600 bg-green-50 border border-green-200 rounded-full px-2 py-0.5">{t(lang,'transfers.free')}</span>
               ) : null}
               {transfer.duree_contrat && (
                 <span className="flex items-center gap-1 text-xs text-slate-500 bg-white border border-slate-200 rounded-full px-2 py-0.5">
@@ -105,18 +108,19 @@ function TransferCard({ transfer, index, total, isExpanded, onToggle }) {
 }
 
 function SummaryBar({ transfers }) {
-  const total = transfers.reduce((s, t) => s + (t.montant || 0), 0);
-  const definitifs = transfers.filter(t => t.type_transfert === "Transfert définitif").length;
-  const prets = transfers.filter(t => t.type_transfert === "Prêt").length;
-  const libres = transfers.filter(t => t.type_transfert === "Libre").length;
+  const { lang } = useLanguage();
+  const total = transfers.reduce((s, tr) => s + (tr.montant || 0), 0);
+  const definitifs = transfers.filter(tr => tr.type_transfert === "Transfert définitif").length;
+  const prets = transfers.filter(tr => tr.type_transfert === "Prêt").length;
+  const libres = transfers.filter(tr => tr.type_transfert === "Libre").length;
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
       {[
-        { label: "Total mouvements", value: transfers.length, icon: ArrowRight, color: "text-slate-700", bg: "bg-slate-50" },
-        { label: "Valeur cumulée", value: total > 0 ? `${total.toFixed(1)} M€` : "—", icon: TrendingUp, color: "text-green-700", bg: "bg-green-50" },
-        { label: "Définitifs", value: definitifs, icon: Building2, color: "text-blue-700", bg: "bg-blue-50" },
-        { label: "Prêts / Libres", value: `${prets} / ${libres}`, icon: Clock, color: "text-purple-700", bg: "bg-purple-50" },
+        { label: t(lang,'transfers.totalMoves'), value: transfers.length, icon: ArrowRight, color: "text-slate-700", bg: "bg-slate-50" },
+        { label: t(lang,'transfers.totalValue'), value: total > 0 ? `${total.toFixed(1)} M€` : "—", icon: TrendingUp, color: "text-green-700", bg: "bg-green-50" },
+        { label: t(lang,'transfers.permanent'), value: definitifs, icon: Building2, color: "text-blue-700", bg: "bg-blue-50" },
+        { label: t(lang,'transfers.loanFree'), value: `${prets} / ${libres}`, icon: Clock, color: "text-purple-700", bg: "bg-purple-50" },
       ].map(({ label, value, icon: Icon, color, bg }) => (
         <div key={label} className={`rounded-xl ${bg} px-3 py-2.5 flex items-center gap-2`}>
           <Icon className={`w-4 h-4 flex-shrink-0 ${color}`} />
@@ -131,6 +135,7 @@ function SummaryBar({ transfers }) {
 }
 
 export default function TransferHistory({ transfers }) {
+  const { lang } = useLanguage();
   const [filterYear, setFilterYear] = useState("all");
   const [filterClub, setFilterClub] = useState("all");
   const [expandedIndex, setExpandedIndex] = useState(null);
@@ -160,9 +165,9 @@ export default function TransferHistory({ transfers }) {
   if (!transfers || transfers.length === 0) {
     return (
       <Card>
-        <CardHeader><CardTitle className="text-base">Chronologie des transferts</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">{t(lang,'transfers.historyTitle')}</CardTitle></CardHeader>
         <CardContent>
-          <p className="text-slate-400 text-center py-10 text-sm">Aucun transfert enregistré pour ce joueur.</p>
+          <p className="text-slate-400 text-center py-10 text-sm">{t(lang,'transfers.noTransfers')}</p>
         </CardContent>
       </Card>
     );
@@ -174,7 +179,7 @@ export default function TransferHistory({ transfers }) {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <CardTitle className="text-base flex items-center gap-2">
             <ArrowRight className="w-4 h-4 text-blue-600" />
-            Chronologie des transferts
+            {t(lang,'transfers.historyTitle')}
           </CardTitle>
           <div className="flex items-center gap-2 flex-wrap">
             <Filter className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
@@ -183,7 +188,7 @@ export default function TransferHistory({ transfers }) {
                 <SelectValue placeholder="Année" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Toutes années</SelectItem>
+                <SelectItem value="all">{t(lang,'transfers.allYears')}</SelectItem>
                 {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -192,7 +197,7 @@ export default function TransferHistory({ transfers }) {
                 <SelectValue placeholder="Club" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les clubs</SelectItem>
+                <SelectItem value="all">{t(lang,'transfers.allClubs')}</SelectItem>
                 {clubs.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -204,7 +209,7 @@ export default function TransferHistory({ transfers }) {
         <SummaryBar transfers={filtered} />
 
         {filtered.length === 0 ? (
-          <p className="text-slate-400 text-sm text-center py-6">Aucun transfert pour ces filtres</p>
+          <p className="text-slate-400 text-sm text-center py-6">{t(lang,'transfers.noFiltered')}</p>
         ) : (
           <div className="relative">
             {/* Legend */}

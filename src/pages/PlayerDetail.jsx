@@ -25,6 +25,8 @@ import SyncPlayerButton from "../components/players/SyncPlayerButton";
 import { format } from "date-fns";
 import TransfermarktImage from "../components/ui/TransfermarktImage";
 import { exportPlayerPDF } from "../lib/exportPlayerPDF";
+import { useLanguage } from "../lib/LanguageContext";
+import { t } from "../i18n/translations";
 
 const posteColors = {
   "Gardien": "bg-yellow-100 text-yellow-800",
@@ -40,6 +42,7 @@ const posteColors = {
 };
 
 export default function PlayerDetailPage() {
+  const { lang } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(window.location.search);
@@ -200,7 +203,7 @@ export default function PlayerDetailPage() {
             className="mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Annuler
+            {t(lang, 'common.cancel')}
           </Button>
           <PlayerForm
             player={player}
@@ -221,7 +224,7 @@ export default function PlayerDetailPage() {
           className="mb-4"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Retour
+          {t(lang, 'common.back')}
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -267,7 +270,7 @@ export default function PlayerDetailPage() {
                     <Button
                       variant="outline"
                       size="icon"
-                      title="Exporter en PDF"
+                      title={t(lang, 'players.exportPDF')}
                       onClick={() => exportPlayerPDF(player, playerNote)}
                     >
                       <FileDown className="w-4 h-4 text-blue-600" />
@@ -282,7 +285,7 @@ export default function PlayerDetailPage() {
                     <Button
                       variant="outline"
                       size="icon"
-                      title={watchListItem ? `Statut : ${watchListItem.statut}` : "Ajouter au suivi"}
+                      title={watchListItem ? t(lang, 'players.trackStatus', { statut: watchListItem.statut }) : t(lang, 'players.addToWatch')}
                       onClick={() => setStatusModalOpen(true)}
                     >
                       <Star className={watchListItem ? "w-4 h-4 fill-yellow-400 text-yellow-400" : "w-4 h-4"} />
@@ -291,7 +294,7 @@ export default function PlayerDetailPage() {
                       variant="outline"
                       size="icon"
                       onClick={() => {
-                        if (confirm("Êtes-vous sûr de vouloir supprimer ce joueur ?")) {
+                        if (confirm(t(lang, 'players.deleteConfirm'))) {
                           deletePlayerMutation.mutate();
                         }
                       }}
@@ -307,8 +310,8 @@ export default function PlayerDetailPage() {
                     <div className="flex items-center gap-3">
                       <Calendar className="w-5 h-5 text-slate-400" />
                       <div>
-                        <p className="text-sm text-slate-600">Âge</p>
-                        <p className="font-semibold">{player.age} ans</p>
+                        <p className="text-sm text-slate-600">{t(lang, 'playerDetail.age')}</p>
+                        <p className="font-semibold">{player.age}</p>
                       </div>
                     </div>
                   )}
@@ -317,7 +320,7 @@ export default function PlayerDetailPage() {
                     <div className="flex items-center gap-3">
                       <MapPin className="w-5 h-5 text-slate-400" />
                       <div>
-                        <p className="text-sm text-slate-600">Nationalité</p>
+                        <p className="text-sm text-slate-600">{t(lang, 'playerDetail.nationality')}</p>
                         <p className="font-semibold">{player.nationalite}</p>
                       </div>
                     </div>
@@ -327,7 +330,7 @@ export default function PlayerDetailPage() {
                     <div className="flex items-center gap-3">
                       <MapPin className="w-5 h-5 text-slate-400" />
                       <div>
-                        <p className="text-sm text-slate-600">Club</p>
+                        <p className="text-sm text-slate-600">{t(lang, 'playerDetail.club')}</p>
                         <p className="font-semibold">{player.club_actuel}</p>
                       </div>
                     </div>
@@ -337,7 +340,7 @@ export default function PlayerDetailPage() {
                     <div className="flex items-center gap-3">
                       <TrendingUp className="w-5 h-5 text-green-600" />
                       <div>
-                        <p className="text-sm text-slate-600">Valeur</p>
+                        <p className="text-sm text-slate-600">{t(lang, 'playerDetail.value')}</p>
                         <p className="font-bold text-green-600">{player.valeur_marchande} M€</p>
                       </div>
                     </div>
@@ -347,7 +350,7 @@ export default function PlayerDetailPage() {
                     <div className="flex items-center gap-3">
                       <Ruler className="w-5 h-5 text-slate-400" />
                       <div>
-                        <p className="text-sm text-slate-600">Taille</p>
+                        <p className="text-sm text-slate-600">{t(lang, 'playerDetail.height')}</p>
                         <p className="font-semibold">{player.taille} cm</p>
                       </div>
                     </div>
@@ -357,7 +360,7 @@ export default function PlayerDetailPage() {
                     <div className="flex items-center gap-3">
                       <Calendar className="w-5 h-5 text-slate-400" />
                       <div>
-                        <p className="text-sm text-slate-600">Fin de contrat</p>
+                        <p className="text-sm text-slate-600">{t(lang, 'playerDetail.contractEnd')}</p>
                         <p className="font-semibold">{format(new Date(player.contrat_fin), "dd/MM/yyyy")}</p>
                       </div>
                     </div>

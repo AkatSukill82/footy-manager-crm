@@ -6,8 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 export default function ContactForm({ playerId, onSubmit }) {
+  const { lang } = useLanguage();
   const [contact, setContact] = useState({
     player_id: playerId,
     date_contact: new Date().toISOString().split('T')[0],
@@ -35,13 +38,13 @@ export default function ContactForm({ playerId, onSubmit }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Ajouter un contact</CardTitle>
+        <CardTitle>{t(lang,'contactForm.title')}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Date</Label>
+              <Label>{t(lang,'contactForm.date')}</Label>
               <Input
                 type="date"
                 value={contact.date_contact}
@@ -50,17 +53,17 @@ export default function ContactForm({ playerId, onSubmit }) {
               />
             </div>
             <div>
-              <Label>Type de contact</Label>
+              <Label>{t(lang,'contactForm.type')}</Label>
               <Select value={contact.type_contact} onValueChange={(value) => setContact({ ...contact, type_contact: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Appel téléphonique">Appel téléphonique</SelectItem>
-                  <SelectItem value="Réunion">Réunion</SelectItem>
-                  <SelectItem value="Email">Email</SelectItem>
-                  <SelectItem value="Visite">Visite</SelectItem>
-                  <SelectItem value="Autre">Autre</SelectItem>
+                  <SelectItem value="Appel téléphonique">{t(lang,'contactForm.typePhone')}</SelectItem>
+                  <SelectItem value="Réunion">{t(lang,'contactForm.typeMeeting')}</SelectItem>
+                  <SelectItem value="Email">{t(lang,'contactForm.typeEmail')}</SelectItem>
+                  <SelectItem value="Visite">{t(lang,'contactForm.typeVisit')}</SelectItem>
+                  <SelectItem value="Autre">{t(lang,'contactForm.typeOther')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -68,59 +71,59 @@ export default function ContactForm({ playerId, onSubmit }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Contact avec</Label>
+              <Label>{t(lang,'contactForm.contactWith')}</Label>
               <Input
                 value={contact.contact_avec}
                 onChange={(e) => setContact({ ...contact, contact_avec: e.target.value })}
-                placeholder="Nom de la personne"
+                placeholder={t(lang,'contactForm.contactWithPlh')}
                 required
               />
             </div>
             <div>
-              <Label>Rôle</Label>
+              <Label>{t(lang,'contactForm.role')}</Label>
               <Select value={contact.role_contact} onValueChange={(value) => setContact({ ...contact, role_contact: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Agent">Agent</SelectItem>
-                  <SelectItem value="Directeur sportif">Directeur sportif</SelectItem>
-                  <SelectItem value="Entraîneur">Entraîneur</SelectItem>
-                  <SelectItem value="Joueur">Joueur</SelectItem>
-                  <SelectItem value="Autre">Autre</SelectItem>
+                  <SelectItem value="Agent">{t(lang,'contactForm.roleAgent')}</SelectItem>
+                  <SelectItem value="Directeur sportif">{t(lang,'contactForm.roleSportingDirector')}</SelectItem>
+                  <SelectItem value="Entraîneur">{t(lang,'contactForm.roleCoach')}</SelectItem>
+                  <SelectItem value="Joueur">{t(lang,'contactForm.rolePlayer')}</SelectItem>
+                  <SelectItem value="Autre">{t(lang,'contactForm.roleOther')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div>
-            <Label>Notes</Label>
+            <Label>{t(lang,'contactForm.notes')}</Label>
             <Textarea
               value={contact.notes}
               onChange={(e) => setContact({ ...contact, notes: e.target.value })}
-              placeholder="Résumé du contact..."
+              placeholder={t(lang,'contactForm.notesPlh')}
               rows={4}
             />
           </div>
 
           <div>
-            <Label>Résultat</Label>
+            <Label>{t(lang,'contactForm.result')}</Label>
             <Select value={contact.resultat} onValueChange={(value) => setContact({ ...contact, resultat: value })}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Positif">Positif</SelectItem>
-                <SelectItem value="Neutre">Neutre</SelectItem>
-                <SelectItem value="Négatif">Négatif</SelectItem>
-                <SelectItem value="À suivre">À suivre</SelectItem>
+                <SelectItem value="Positif">{t(lang,'contactForm.resultPositive')}</SelectItem>
+                <SelectItem value="Neutre">{t(lang,'contactForm.resultNeutral')}</SelectItem>
+                <SelectItem value="Négatif">{t(lang,'contactForm.resultNegative')}</SelectItem>
+                <SelectItem value="À suivre">{t(lang,'contactForm.resultFollowUp')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <Button type="submit" className="w-full">
             <Plus className="w-4 h-4 mr-2" />
-            Ajouter le contact
+            {t(lang,'contactForm.addBtn')}
           </Button>
         </form>
       </CardContent>

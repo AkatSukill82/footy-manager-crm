@@ -5,6 +5,8 @@ import { Building2, MapPin, Users, TrendingUp, Trophy, Phone, Mail, Globe } from
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../../utils";
 import TransfermarktImage from "../ui/TransfermarktImage";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 const categorieColors = {
   "Elite": "bg-purple-100 text-purple-800",
@@ -14,6 +16,7 @@ const categorieColors = {
 };
 
 export default function ClubCard({ club }) {
+  const { lang } = useLanguage();
   const navigate = useNavigate();
 
   return (
@@ -55,7 +58,7 @@ export default function ClubCard({ club }) {
           {club.budget_transfert && (
             <div className="flex items-center gap-2 text-sm">
               <TrendingUp className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-              <span className="font-semibold text-green-600">{club.budget_transfert}M€ transferts</span>
+              <span className="font-semibold text-green-600">{club.budget_transfert}M€ {t(lang,'clubs.transfersSuffix')}</span>
             </div>
           )}
           {club.stade && (

@@ -2,10 +2,16 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarIcon } from "lucide-react";
-import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay } from "date-fns";
-import { fr } from "date-fns/locale";
+import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
+import { fr, es, enUS } from "date-fns/locale";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
+
+const DATE_LOCALES = { fr, es, en: enUS };
 
 export default function ContractCalendar({ players }) {
+  const { lang } = useLanguage();
+  const dateLocale = DATE_LOCALES[lang] || fr;
   const [currentDate, setCurrentDate] = React.useState(new Date());
 
   const monthStart = startOfMonth(currentDate);
@@ -23,13 +29,23 @@ export default function ContractCalendar({ players }) {
   const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
   const prevMonth = () => setCurrentDate(addMonths(currentDate, -1));
 
+  const dayLabels = [
+    t(lang, 'contacts.dayMon'),
+    t(lang, 'contacts.dayTue'),
+    t(lang, 'contacts.dayWed'),
+    t(lang, 'contacts.dayThu'),
+    t(lang, 'contacts.dayFri'),
+    t(lang, 'contacts.daySat'),
+    t(lang, 'contacts.daySun'),
+  ];
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <CalendarIcon className="w-5 h-5" />
-            Calendrier des échéances
+            {t(lang, 'contacts.calTitle')}
           </CardTitle>
           <div className="flex gap-2">
             <button
@@ -39,7 +55,7 @@ export default function ContractCalendar({ players }) {
               ←
             </button>
             <span className="px-4 py-1 font-semibold text-slate-900">
-              {format(currentDate, "MMMM yyyy", { locale: fr })}
+              {format(currentDate, "MMMM yyyy", { locale: dateLocale })}
             </span>
             <button
               onClick={nextMonth}
@@ -52,17 +68,16 @@ export default function ContractCalendar({ players }) {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-7 gap-2">
-          {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((day) => (
+          {dayLabels.map((day) => (
             <div key={day} className="text-center text-sm font-semibold text-slate-600 py-2">
               {day}
             </div>
           ))}
-          
-          {/* Empty cells for days before month start */}
+
           {Array.from({ length: (monthStart.getDay() + 6) % 7 }).map((_, i) => (
             <div key={`empty-${i}`} className="p-2" />
           ))}
-          
+
           {daysInMonth.map((day) => {
             const contracts = getContractsForDay(day);
             const hasContracts = contracts.length > 0;

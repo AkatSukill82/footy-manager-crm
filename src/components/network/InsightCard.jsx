@@ -3,6 +3,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, TrendingUp, Users, AlertCircle, Zap } from "lucide-react";
 import { format } from "date-fns";
+import { fr, es, enUS } from "date-fns/locale";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
+
+const DATE_LOCALES = { fr, es, en: enUS };
 
 const categoryIcons = {
   tendance_marche: TrendingUp,
@@ -20,12 +25,12 @@ const categoryColors = {
   prevision: "bg-yellow-100 text-yellow-800"
 };
 
-const categoryLabels = {
-  tendance_marche: "Tendance marché",
-  performance_joueur: "Performance joueur",
-  opportunite_transfert: "Opportunité de transfert",
-  analyse_equipe: "Analyse d'équipe",
-  prevision: "Prévision"
+const CATEGORY_LABEL_KEYS = {
+  tendance_marche: "network.catMarketTrend",
+  performance_joueur: "network.catPlayerPerf",
+  opportunite_transfert: "network.catTransferOpp",
+  analyse_equipe: "network.catTeamAnalysis",
+  prevision: "network.catForecast",
 };
 
 const priorityColors = {
@@ -35,6 +40,7 @@ const priorityColors = {
 };
 
 export default function InsightCard({ insight }) {
+  const { lang } = useLanguage();
   const Icon = categoryIcons[insight.categorie] || Sparkles;
 
   return (
@@ -47,7 +53,7 @@ export default function InsightCard({ insight }) {
             </div>
             <div>
               <Badge className={categoryColors[insight.categorie]}>
-                {categoryLabels[insight.categorie]}
+                {t(lang, CATEGORY_LABEL_KEYS[insight.categorie] || 'network.catMarketTrend')}
               </Badge>
               {insight.priority && (
                 <Badge className={`ml-2 ${priorityColors[insight.priority]}`}>
@@ -59,29 +65,29 @@ export default function InsightCard({ insight }) {
           {insight.confiance && (
             <div className="text-right">
               <div className="text-sm font-bold text-slate-900">{insight.confiance}%</div>
-              <div className="text-xs text-slate-500">Confiance</div>
+              <div className="text-xs text-slate-500">{t(lang, 'network.confidence')}</div>
             </div>
           )}
         </div>
 
         <h3 className="text-xl font-bold text-slate-900 mb-3">{insight.titre}</h3>
-        
+
         <p className="text-slate-700 whitespace-pre-line mb-3">{insight.contenu}</p>
 
         {insight.donnees_source && (
           <div className="bg-slate-50 rounded-lg p-3 mb-3">
-            <p className="text-xs text-slate-500 mb-1">Sources de données:</p>
+            <p className="text-xs text-slate-500 mb-1">{t(lang, 'network.dataSources')}</p>
             <p className="text-sm text-slate-600">{insight.donnees_source}</p>
           </div>
         )}
 
         <div className="flex items-center justify-between pt-3 border-t border-slate-200">
           <span className="text-xs text-slate-500">
-            Généré le {format(new Date(insight.created_date), "dd/MM/yyyy 'à' HH:mm")}
+            {t(lang, 'network.generatedAt', { date: format(new Date(insight.created_date), "dd/MM/yyyy HH:mm", { locale: DATE_LOCALES[lang] || fr }) })}
           </span>
           <Badge variant="outline" className="text-xs">
             <Sparkles className="w-3 h-3 mr-1" />
-            Agent IA
+            {t(lang, 'network.agentIA')}
           </Badge>
         </div>
       </CardContent>

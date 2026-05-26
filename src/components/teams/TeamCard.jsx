@@ -4,8 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Users, Trophy, TrendingUp, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../../utils";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 export default function TeamCard({ team, playersCount, onDelete }) {
+  const { lang } = useLanguage();
   const navigate = useNavigate();
   const points = (team.victoires || 0) * 3 + (team.nuls || 0);
   const goalDiff = (team.buts_pour || 0) - (team.buts_contre || 0);
@@ -48,7 +51,7 @@ export default function TeamCard({ team, playersCount, onDelete }) {
         {/* Players count bar */}
         <div>
           <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-            <span>Effectif</span>
+            <span>{t(lang, 'teams.squad')}</span>
             <span className="font-semibold text-slate-700">{playersCount || 0} / 11</span>
           </div>
           <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -63,17 +66,17 @@ export default function TeamCard({ team, playersCount, onDelete }) {
           <div className="grid grid-cols-3 gap-2 pt-1">
             <div className="text-center bg-slate-50 rounded-lg py-1.5">
               <div className="text-base font-bold text-yellow-600">{points}</div>
-              <div className="text-[10px] text-slate-500">Points</div>
+              <div className="text-[10px] text-slate-500">{t(lang, 'teamDetail.points')}</div>
             </div>
             <div className="text-center bg-slate-50 rounded-lg py-1.5">
               <div className="text-xs font-bold text-slate-700">{team.victoires}V {team.nuls}N {team.defaites}D</div>
-              <div className="text-[10px] text-slate-500">{team.matchs_joues} matchs</div>
+              <div className="text-[10px] text-slate-500">{t(lang, 'teams.matchCount', { count: team.matchs_joues })}</div>
             </div>
             <div className="text-center bg-slate-50 rounded-lg py-1.5">
               <div className={`text-base font-bold ${goalDiff >= 0 ? 'text-green-600' : 'text-red-500'}`}>
                 {goalDiff >= 0 ? '+' : ''}{goalDiff}
               </div>
-              <div className="text-[10px] text-slate-500">Diff.</div>
+              <div className="text-[10px] text-slate-500">{t(lang, 'teamDetail.diff')}</div>
             </div>
           </div>
         )}

@@ -1,5 +1,7 @@
 import React from "react";
 import { TrendingUp, AlertCircle, Sparkles, ArrowRightLeft } from "lucide-react";
+import { useLanguage } from "../../../lib/LanguageContext";
+import { t } from "../../../i18n/translations";
 
 function KpiCard({ icon: Icon, label, value, sub, color }) {
   const colors = {
@@ -23,6 +25,7 @@ function KpiCard({ icon: Icon, label, value, sub, color }) {
 }
 
 export default function PredictiveKPIs({ players }) {
+  const { lang } = useLanguage();
   const today = new Date();
 
   const emergingCount = players.filter(p => {
@@ -55,10 +58,10 @@ export default function PredictiveKPIs({ players }) {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <KpiCard icon={Sparkles} label="Talents émergents" value={emergingCount} sub="Joueurs ≤23 ans à fort potentiel" color="purple" />
-      <KpiCard icon={AlertCircle} label="Risques départs" value={transferRiskCount} sub="Contrats < 12 mois restants" color="orange" />
-      <KpiCard icon={TrendingUp} label="Plus-value potentielle" value={`${Math.round(growthPotential)} M€`} sub="Sur les joueurs ≤25 ans en forme" color="green" />
-      <KpiCard icon={ArrowRightLeft} label="Au pic de valeur" value={risingPlayers} sub="Joueurs à leur valeur max" color="blue" />
+      <KpiCard icon={Sparkles} label={t(lang, 'predictive.kpiEmerging')} value={emergingCount} sub={t(lang, 'predictive.kpiEmergingSub')} color="purple" />
+      <KpiCard icon={AlertCircle} label={t(lang, 'predictive.kpiRisks')} value={transferRiskCount} sub={t(lang, 'predictive.kpiRisksSub')} color="orange" />
+      <KpiCard icon={TrendingUp} label={t(lang, 'predictive.kpiGrowth')} value={`${Math.round(growthPotential)} M€`} sub={t(lang, 'predictive.kpiGrowthSub')} color="green" />
+      <KpiCard icon={ArrowRightLeft} label={t(lang, 'predictive.kpiPeak')} value={risingPlayers} sub={t(lang, 'predictive.kpiPeakSub')} color="blue" />
     </div>
   );
 }

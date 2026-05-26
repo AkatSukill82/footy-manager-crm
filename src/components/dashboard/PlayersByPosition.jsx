@@ -1,10 +1,13 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 export default function PlayersByPosition({ players }) {
+  const { lang } = useLanguage();
   const positionCounts = players.reduce((acc, player) => {
-    const poste = player.poste || "Non défini";
+    const poste = player.poste || t(lang, 'dashboardCharts.undefined');
     acc[poste] = (acc[poste] || 0) + 1;
     return acc;
   }, {});
@@ -22,7 +25,7 @@ export default function PlayersByPosition({ players }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Répartition par poste</CardTitle>
+        <CardTitle>{t(lang, 'dashboard.byPosition')}</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>

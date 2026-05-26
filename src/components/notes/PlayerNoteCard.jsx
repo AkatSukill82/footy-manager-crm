@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Edit2, Save, X, Calendar, PlusCircle, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 const interetColors = {
   "Très élevé": "bg-red-100 text-red-800 border-red-300",
@@ -24,6 +26,7 @@ const empty = {
 };
 
 export default function PlayerNoteCard({ note, onUpdate }) {
+  const { lang } = useLanguage();
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState(note || empty);
@@ -53,10 +56,10 @@ export default function PlayerNoteCard({ note, onUpdate }) {
       <Card className="border-2 border-blue-400">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between text-base">
-            <span>Mes notes et évaluation</span>
+            <span>{t(lang, 'notes.title')}</span>
             <Button variant="ghost" size="icon" onClick={() => {
               setIsEditing(false);
-              if (note) setFormData(note); // restore on cancel
+              if (note) setFormData(note);
             }}>
               <X className="w-4 h-4" />
             </Button>
@@ -64,11 +67,11 @@ export default function PlayerNoteCard({ note, onUpdate }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label className="text-xs text-slate-500 mb-1 block">Notes et observations</Label>
+            <Label className="text-xs text-slate-500 mb-1 block">{t(lang, 'notes.sectionTitle')}</Label>
             <Textarea
               value={formData.note}
               onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-              placeholder="Vos observations sur le joueur…"
+              placeholder={t(lang, 'notes.placeholder')}
               rows={5}
               className="resize-none"
             />
@@ -76,7 +79,7 @@ export default function PlayerNoteCard({ note, onUpdate }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs text-slate-500 mb-1 block">Évaluation (/10)</Label>
+              <Label className="text-xs text-slate-500 mb-1 block">{t(lang, 'notes.evaluation')}</Label>
               <Input
                 type="number"
                 min="0"
@@ -88,21 +91,21 @@ export default function PlayerNoteCard({ note, onUpdate }) {
               />
             </div>
             <div>
-              <Label className="text-xs text-slate-500 mb-1 block">Niveau d'intérêt</Label>
+              <Label className="text-xs text-slate-500 mb-1 block">{t(lang, 'notes.interest')}</Label>
               <Select value={formData.interet} onValueChange={(v) => setFormData({ ...formData, interet: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Très élevé">Très élevé</SelectItem>
-                  <SelectItem value="Élevé">Élevé</SelectItem>
-                  <SelectItem value="Moyen">Moyen</SelectItem>
-                  <SelectItem value="Faible">Faible</SelectItem>
+                  <SelectItem value="Très élevé">{t(lang, 'notes.veryHigh')}</SelectItem>
+                  <SelectItem value="Élevé">{t(lang, 'notes.high')}</SelectItem>
+                  <SelectItem value="Moyen">{t(lang, 'notes.medium')}</SelectItem>
+                  <SelectItem value="Faible">{t(lang, 'notes.low')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div>
-            <Label className="text-xs text-slate-500 mb-1 block">Date d'observation</Label>
+            <Label className="text-xs text-slate-500 mb-1 block">{t(lang, 'notes.obsDate')}</Label>
             <Input
               type="date"
               value={formData.date_observation}
@@ -112,8 +115,8 @@ export default function PlayerNoteCard({ note, onUpdate }) {
 
           <Button onClick={handleSubmit} disabled={saving} className="w-full bg-blue-600 hover:bg-blue-700">
             {saving
-              ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Enregistrement…</>
-              : <><Save className="w-4 h-4 mr-2" />Enregistrer</>}
+              ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t(lang, 'notes.saving')}</>
+              : <><Save className="w-4 h-4 mr-2" />{t(lang, 'notes.save')}</>}
           </Button>
         </CardContent>
       </Card>
@@ -126,7 +129,7 @@ export default function PlayerNoteCard({ note, onUpdate }) {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between text-base">
-            <span>Mes notes et évaluation</span>
+            <span>{t(lang, 'notes.title')}</span>
             <Button variant="ghost" size="icon" onClick={() => { setFormData(note); setIsEditing(true); }}>
               <Edit2 className="w-4 h-4" />
             </Button>
@@ -142,8 +145,8 @@ export default function PlayerNoteCard({ note, onUpdate }) {
           <div className="flex items-center gap-3 flex-wrap">
             {note.evaluation != null && note.evaluation !== "" && (
               <div className="flex items-center gap-1">
-                <span className="text-xs text-slate-500">Évaluation</span>
-                <span className="text-xl font-bold text-blue-600">{note.evaluation}<span className="text-sm font-normal text-slate-400">/10</span></span>
+                <span className="text-xs text-slate-500">{t(lang, 'notes.evalLabel')}</span>
+                <span className="text-xl font-bold text-blue-600">{note.evaluation}<span className="text-sm font-normal text-slate-400">{t(lang, 'notes.slash10')}</span></span>
               </div>
             )}
             {note.interet && (
@@ -156,7 +159,7 @@ export default function PlayerNoteCard({ note, onUpdate }) {
           {note.date_observation && (
             <div className="flex items-center gap-1.5 text-xs text-slate-400">
               <Calendar className="w-3 h-3" />
-              <span>Observé le {format(new Date(note.date_observation), "dd/MM/yyyy")}</span>
+              <span>{t(lang, 'notes.observedOn', { date: format(new Date(note.date_observation), "dd/MM/yyyy") })}</span>
             </div>
           )}
         </CardContent>
@@ -168,7 +171,7 @@ export default function PlayerNoteCard({ note, onUpdate }) {
   return (
     <Card className="border-dashed border-slate-200">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base text-slate-600">Mes notes et évaluation</CardTitle>
+        <CardTitle className="text-base text-slate-600">{t(lang, 'notes.title')}</CardTitle>
       </CardHeader>
       <CardContent>
         <button
@@ -176,7 +179,7 @@ export default function PlayerNoteCard({ note, onUpdate }) {
           className="w-full flex items-center justify-center gap-2 py-6 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors border border-dashed border-slate-200 hover:border-blue-300"
         >
           <PlusCircle className="w-5 h-5" />
-          <span className="text-sm font-medium">Ajouter une note</span>
+          <span className="text-sm font-medium">{t(lang, 'notes.addNote')}</span>
         </button>
       </CardContent>
     </Card>

@@ -14,8 +14,12 @@ import {
   LogOut, Check
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr, es, enUS } from "date-fns/locale";
 import GoogleCalendarService from "../services/googleCalendar";
+import { useLanguage } from "../lib/LanguageContext";
+import { t } from "../i18n/translations";
+
+const DATE_LOCALES = { fr, es, en: enUS };
 
 const GCAL_COLORS = {
   '1':  'bg-blue-100 text-blue-800 border-blue-200',
@@ -40,6 +44,7 @@ function CalDot({ backgroundColor }) {
 }
 
 function EventCard({ event, onDelete }) {
+  const { lang } = useLanguage();
   const colorClass = GCAL_COLORS[event.colorId] || GCAL_COLORS.default;
   const allDay  = GoogleCalendarService.isAllDay(event);
   const dateStr = GoogleCalendarService.formatEventDate(event);
@@ -50,7 +55,7 @@ function EventCard({ event, onDelete }) {
         <p className="font-semibold text-sm truncate">{event.summary}</p>
         <div className="flex items-center gap-1.5 mt-0.5">
           <Clock className="w-3 h-3 opacity-60 flex-shrink-0" />
-          <p className="text-xs opacity-70">{dateStr}{allDay ? ' · Journée entière' : ''}</p>
+          <p className="text-xs opacity-70">{dateStr}{allDay ? ` · ${t(lang,'calendar.allDay')}` : ''}</p>
         </div>
         {event.description && (
           <p className="text-xs opacity-60 mt-1 line-clamp-1">{event.description}</p>
@@ -68,6 +73,7 @@ function EventCard({ event, onDelete }) {
 
 // Modal sélection calendrier — affiché juste après l'OAuth
 function CalendarPickerModal({ onSelected, userInfo }) {
+  const { lang } = useLanguage();
   const [calendars, setCalendars] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState('');
@@ -116,8 +122,8 @@ function CalendarPickerModal({ onSelected, userInfo }) {
           )}
 
           <div>
-            <h2 className="text-lg font-bold text-slate-900">Choisir un calendrier</h2>
-            <p className="text-sm text-slate-500 mt-0.5">Sélectionne le calendrier à synchroniser avec FDM.</p>
+            <h2 className="text-lg font-bold text-slate-900">{t(lang,'calendar.chooseCalTitle')}</h2>
+            <p className="text-sm text-slate-500 mt-0.5">{t(lang,'calendar.chooseCalDesc')}</p>
           </div>
 
           {loading ? (
@@ -134,7 +140,7 @@ function CalendarPickerModal({ onSelected, userInfo }) {
                   <CalDot backgroundColor={cal.backgroundColor} />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm text-slate-900 truncate">{cal.summary}</p>
-                    {cal.primary && <Badge variant="outline" className="text-[10px] mt-0.5">Principal</Badge>}
+                    {cal.primary && <Badge variant="outline" className="text-[10px] mt-0.5">{t(lang,'calendar.primaryBadge')}</Badge>}
                   </div>
                   {selected?.id === cal.id && <Check className="w-4 h-4 text-green-600 flex-shrink-0" />}
                 </button>
@@ -144,8 +150,8 @@ function CalendarPickerModal({ onSelected, userInfo }) {
 
           <Button onClick={handleConfirm} disabled={!selected || saving} className="w-full bg-green-600 hover:bg-green-700">
             {saving
-              ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Synchronisation…</>
-              : <><CheckCircle2 className="w-4 h-4 mr-2" />Synchroniser ce calendrier</>
+              ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />{t(lang,'calendar.synchronizing')}</>
+              : <><CheckCircle2 className="w-4 h-4 mr-2" />{t(lang,'calendar.synchronize')}</>
             }
           </Button>
         </div>
@@ -155,15 +161,16 @@ function CalendarPickerModal({ onSelected, userInfo }) {
 }
 
 const EVENT_TEMPLATES = [
-  { icon: FileText,     label: "Expiration contrat",  color: "text-red-500",    colorId: '11' },
-  { icon: User,         label: "RDV joueur",           color: "text-blue-500",   colorId: '1'  },
-  { icon: User,         label: "RDV agent",            color: "text-purple-500", colorId: '3'  },
-  { icon: Trophy,       label: "Match à surveiller",   color: "text-green-500",  colorId: '10' },
-  { icon: CalendarDays, label: "Mercato",              color: "text-orange-500", colorId: '6'  },
-  { icon: Zap,          label: "Autre",                color: "text-slate-500",  colorId: '7'  },
+  { key: 'contract',    icon: FileText,     color: "text-red-500",    colorId: '11' },
+  { key: 'playerAppt',  icon: User,         color: "text-blue-500",   colorId: '1'  },
+  { key: 'agentAppt',   icon: User,         color: "text-purple-500", colorId: '3'  },
+  { key: 'matchWatch',  icon: Trophy,       color: "text-green-500",  colorId: '10' },
+  { key: 'mercato',     icon: CalendarDays, color: "text-orange-500", colorId: '6'  },
+  { key: 'other',       icon: Zap,          color: "text-slate-500",  colorId: '7'  },
 ];
 
 function NewEventModal({ onClose, onCreated, players }) {
+  const { lang } = useLanguage();
   const [title, setTitle]           = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate]             = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -176,10 +183,10 @@ function NewEventModal({ onClose, onCreated, players }) {
   const [error, setError]           = useState('');
 
   const applyTemplate = (tpl) => {
-    setTitle(tpl.label);
+    setTitle(t(lang, `calendar.tpl_${tpl.key}`));
     setColorId(tpl.colorId);
-    if (tpl.label === 'Match à surveiller') setDuration(105);
-    if (tpl.label === 'Expiration contrat') setAllDay(true);
+    if (tpl.key === 'matchWatch') setDuration(105);
+    if (tpl.key === 'contract') setAllDay(true);
   };
 
   const handleCreate = async () => {
@@ -216,19 +223,19 @@ function NewEventModal({ onClose, onCreated, players }) {
         <div className="h-1.5 bg-gradient-to-r from-green-500 to-emerald-400 rounded-t-2xl" />
         <div className="p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-bold text-slate-900 text-lg">Nouvel événement</h2>
+            <h2 className="font-bold text-slate-900 text-lg">{t(lang,'calendar.newEventTitle')}</h2>
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100"><X className="w-4 h-4" /></button>
           </div>
 
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase mb-2">Modèle rapide</p>
+            <p className="text-xs font-semibold text-slate-400 uppercase mb-2">{t(lang,'calendar.quickTemplate')}</p>
             <div className="flex flex-wrap gap-2">
               {EVENT_TEMPLATES.map(tpl => {
                 const Icon = tpl.icon;
                 return (
-                  <button key={tpl.label} onClick={() => applyTemplate(tpl)}
+                  <button key={tpl.key} onClick={() => applyTemplate(tpl)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-green-300 hover:bg-green-50 text-xs font-medium transition-all">
-                    <Icon className={`w-3.5 h-3.5 ${tpl.color}`} /> {tpl.label}
+                    <Icon className={`w-3.5 h-3.5 ${tpl.color}`} /> {t(lang, `calendar.tpl_${tpl.key}`)}
                   </button>
                 );
               })}
@@ -236,34 +243,34 @@ function NewEventModal({ onClose, onCreated, players }) {
           </div>
 
           <div>
-            <Label>Titre *</Label>
-            <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="RDV joueur…" className="mt-1.5" />
+            <Label>{t(lang,'calendar.titleLabel')}</Label>
+            <Input value={title} onChange={e => setTitle(e.target.value)} placeholder={t(lang,'calendar.titlePlh')} className="mt-1.5" />
           </div>
 
           {players.length > 0 && (
             <div>
-              <Label>Joueur concerné (optionnel)</Label>
+              <Label>{t(lang,'calendar.playerLabel')}</Label>
               <select value={selectedPlayer} onChange={e => setSelectedPlayer(e.target.value)}
                 className="mt-1.5 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
-                <option value="">— Aucun —</option>
+                <option value="">{t(lang,'calendar.noPlayer')}</option>
                 {players.map(p => <option key={p.id} value={p.nom}>{p.nom}{p.club_actuel ? ` (${p.club_actuel})` : ''}</option>)}
               </select>
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            <div><Label>Date *</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} className="mt-1.5" /></div>
-            <div><Label>Heure</Label><Input type="time" value={time} onChange={e => setTime(e.target.value)} disabled={allDay} className="mt-1.5" /></div>
+            <div><Label>{t(lang,'calendar.dateLabel')}</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} className="mt-1.5" /></div>
+            <div><Label>{t(lang,'calendar.timeLabel')}</Label><Input type="time" value={time} onChange={e => setTime(e.target.value)} disabled={allDay} className="mt-1.5" /></div>
           </div>
 
           <div className="flex items-center gap-5">
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input type="checkbox" checked={allDay} onChange={e => setAllDay(e.target.checked)} className="rounded" />
-              Journée entière
+              {t(lang,'calendar.allDayLabel')}
             </label>
             {!allDay && (
               <div className="flex items-center gap-2">
-                <Label className="whitespace-nowrap">Durée</Label>
+                <Label className="whitespace-nowrap">{t(lang,'calendar.durationLabel')}</Label>
                 <select value={duration} onChange={e => setDuration(Number(e.target.value))} className="border border-slate-200 rounded-lg px-2 py-1 text-sm">
                   {[30, 45, 60, 90, 105, 120, 180].map(d => (
                     <option key={d} value={d}>{d < 60 ? `${d} min` : `${Math.floor(d/60)}h${d%60 || ''}`}</option>
@@ -273,10 +280,10 @@ function NewEventModal({ onClose, onCreated, players }) {
             )}
           </div>
 
-          <div><Label>Description (optionnel)</Label><Textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} className="mt-1.5" /></div>
+          <div><Label>{t(lang,'calendar.descLabel')}</Label><Textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} className="mt-1.5" /></div>
 
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase mb-2">Couleur</p>
+            <p className="text-xs font-semibold text-slate-400 uppercase mb-2">{t(lang,'calendar.colorLabel')}</p>
             <div className="flex gap-2 flex-wrap">
               {[{id:'1',bg:'bg-blue-500'},{id:'2',bg:'bg-green-400'},{id:'3',bg:'bg-purple-500'},
                 {id:'6',bg:'bg-orange-400'},{id:'10',bg:'bg-green-700'},{id:'11',bg:'bg-red-500'},{id:'7',bg:'bg-cyan-500'}].map(c => (
@@ -289,10 +296,10 @@ function NewEventModal({ onClose, onCreated, players }) {
           {error && <p className="text-red-600 text-sm bg-red-50 rounded-lg px-3 py-2">{error}</p>}
 
           <div className="flex gap-3 pt-2">
-            <Button variant="outline" onClick={onClose} className="flex-1">Annuler</Button>
+            <Button variant="outline" onClick={onClose} className="flex-1">{t(lang,'common.cancel')}</Button>
             <Button onClick={handleCreate} disabled={!title.trim() || !date || loading} className="flex-1 bg-green-600 hover:bg-green-700">
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-              Créer l'événement
+              {t(lang,'calendar.createEventBtn')}
             </Button>
           </div>
         </div>
@@ -302,6 +309,8 @@ function NewEventModal({ onClose, onCreated, players }) {
 }
 
 export default function CalendarPage() {
+  const { lang } = useLanguage();
+  const dateLocale = DATE_LOCALES[lang] || enUS;
   const [connected, setConnected]     = useState(GoogleCalendarService.isConnected());
   const [selectedCal, setSelectedCal] = useState(GoogleCalendarService.getSelectedCalendar());
   const [userInfo, setUserInfo]       = useState(GoogleCalendarService.getUserInfoCache());
@@ -372,7 +381,7 @@ export default function CalendarPage() {
   };
 
   const handleDelete = async (event) => {
-    if (!confirm(`Supprimer "${event.summary}" ?`)) return;
+    if (!confirm(t(lang, 'calendar.deleteConfirm', { title: event.summary }))) return;
     setDeletingId(event.id);
     try {
       await GoogleCalendarService.deleteEvent(event.id);
@@ -396,9 +405,9 @@ export default function CalendarPage() {
   const tomorrow = format(new Date(Date.now() + 86400000), 'yyyy-MM-dd');
 
   const dayLabel = (day) => {
-    if (day === today)    return "Aujourd'hui";
-    if (day === tomorrow) return 'Demain';
-    try { return format(parseISO(day), 'EEEE d MMMM', { locale: fr }); }
+    if (day === today)    return t(lang, 'calendar.today');
+    if (day === tomorrow) return t(lang, 'calendar.tomorrow');
+    try { return format(parseISO(day), 'EEEE d MMMM', { locale: dateLocale }); }
     catch { return day; }
   };
 
@@ -423,14 +432,14 @@ export default function CalendarPage() {
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-2">
-              <Calendar className="w-7 h-7 text-green-500" /> Calendrier
+              <Calendar className="w-7 h-7 text-green-500" /> {t(lang,'calendar.title')}
             </h1>
-            <p className="text-slate-500 text-sm mt-0.5">Synchronisé avec Google Calendar</p>
+            <p className="text-slate-500 text-sm mt-0.5">{t(lang,'calendar.subtitle')}</p>
           </div>
           {connected && (
             <div className="flex items-center gap-2">
               <Button onClick={() => setShowNewEvent(true)} size="sm" className="bg-green-600 hover:bg-green-700 gap-1.5">
-                <Plus className="w-4 h-4" /> Événement
+                <Plus className="w-4 h-4" /> {t(lang,'calendar.newEventBtn')}
               </Button>
               <Button onClick={loadEvents} variant="outline" size="sm" disabled={loading}>
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -467,16 +476,16 @@ export default function CalendarPage() {
               </div>
 
               <div className="text-center max-w-sm">
-                <h2 className="text-xl font-bold text-slate-900">Connecter Google Calendar</h2>
+                <h2 className="text-xl font-bold text-slate-900">{t(lang,'calendar.connectTitle')}</h2>
                 <p className="text-slate-500 text-sm mt-2 leading-relaxed">
-                  Synchronise ton agenda Google avec FDM pour gérer rendez-vous, expirations de contrat et événements.
+                  {t(lang,'calendar.connectDesc')}
                 </p>
               </div>
 
               <Button onClick={handleConnect} disabled={connecting} size="lg"
                 className="bg-white border-2 border-slate-200 hover:border-green-400 text-slate-900 hover:bg-green-50 gap-3 px-8 shadow-sm transition-all">
                 {connecting ? (
-                  <><Loader2 className="w-5 h-5 animate-spin" /> Connexion…</>
+                  <><Loader2 className="w-5 h-5 animate-spin" /> {t(lang,'calendar.connecting')}</>
                 ) : (
                   <>
                     <svg viewBox="0 0 48 48" className="w-5 h-5 flex-shrink-0">
@@ -485,11 +494,11 @@ export default function CalendarPage() {
                       <path fill="#FBBC05" d="M10.93 28.44A14.48 14.48 0 0 1 9.93 24c0-1.54.266-3.04.737-4.44v-6.24H3A24.02 24.02 0 0 0 .48 24c0 3.87.928 7.53 2.52 10.68l7.93-6.24z"/>
                       <path fill="#EA4335" d="M24.48 9.583c3.55 0 6.73 1.22 9.24 3.62l6.93-6.93C36.41 2.37 30.96 0 24.48 0 15.1 0 6.97 4.86 3 12.32l7.93 6.24c1.91-5.72 7.25-8.977 13.55-8.977z"/>
                     </svg>
-                    Se connecter avec Google
+                    {t(lang,'calendar.connectBtn')}
                   </>
                 )}
               </Button>
-              <p className="text-xs text-slate-400">Accès limité au calendrier uniquement</p>
+              <p className="text-xs text-slate-400">{t(lang,'calendar.accessNote')}</p>
             </CardContent>
           </Card>
         )}
@@ -504,7 +513,7 @@ export default function CalendarPage() {
                 )}
                 <div className="flex items-center gap-2 text-sm text-green-700">
                   <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                  <span className="font-medium">{userInfo?.name ? `${userInfo.name} · ` : ''}Google Calendar connecté</span>
+                  <span className="font-medium">{userInfo?.name ? `${userInfo.name} · ` : ''}{t(lang,'calendar.connectedLabel')}</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-green-600 bg-white rounded-lg px-2 py-1 border border-green-200">
                   <CalDot backgroundColor={selectedCal.backgroundColor} />
@@ -515,9 +524,9 @@ export default function CalendarPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-green-500">{events.length} événement{events.length !== 1 ? 's' : ''}</span>
+                <span className="text-xs text-green-500">{t(lang,'calendar.eventCount', { count: events.length })}</span>
                 <button onClick={handleDisconnect} className="text-xs text-green-500 hover:text-red-500 underline transition-colors flex items-center gap-1">
-                  <LogOut className="w-3 h-3" /> Déconnecter
+                  <LogOut className="w-3 h-3" /> {t(lang,'calendar.disconnect')}
                 </button>
               </div>
             </div>
@@ -532,9 +541,9 @@ export default function CalendarPage() {
                   <Card>
                     <CardContent className="flex flex-col items-center py-12 gap-3 text-center">
                       <CalendarDays className="w-10 h-10 text-slate-300" />
-                      <p className="text-slate-500">Aucun événement à venir.</p>
+                      <p className="text-slate-500">{t(lang,'calendar.noEvents')}</p>
                       <Button onClick={() => setShowNewEvent(true)} size="sm" className="bg-green-600 hover:bg-green-700 gap-1.5">
-                        <Plus className="w-4 h-4" /> Créer un événement
+                        <Plus className="w-4 h-4" /> {t(lang,'calendar.createEvent')}
                       </Button>
                     </CardContent>
                   </Card>
@@ -560,7 +569,7 @@ export default function CalendarPage() {
                   <Card>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm flex items-center gap-2 text-orange-600">
-                        <AlertCircle className="w-4 h-4" /> Contrats qui expirent
+                        <AlertCircle className="w-4 h-4" /> {t(lang,'calendar.expiringContracts')}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
@@ -581,15 +590,15 @@ export default function CalendarPage() {
                 )}
 
                 <Card>
-                  <CardHeader className="pb-2"><CardTitle className="text-sm">Actions rapides</CardTitle></CardHeader>
+                  <CardHeader className="pb-2"><CardTitle className="text-sm">{t(lang,'calendar.quickActions')}</CardTitle></CardHeader>
                   <CardContent className="space-y-2">
                     {EVENT_TEMPLATES.slice(0, 5).map(tpl => {
                       const Icon = tpl.icon;
                       return (
-                        <button key={tpl.label} onClick={() => setShowNewEvent(true)}
+                        <button key={tpl.key} onClick={() => setShowNewEvent(true)}
                           className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors text-sm text-left">
                           <Icon className={`w-4 h-4 flex-shrink-0 ${tpl.color}`} />
-                          <span className="text-slate-700">{tpl.label}</span>
+                          <span className="text-slate-700">{t(lang, `calendar.tpl_${tpl.key}`)}</span>
                           <ChevronRight className="w-3.5 h-3.5 text-slate-300 ml-auto" />
                         </button>
                       );
@@ -599,7 +608,7 @@ export default function CalendarPage() {
 
                 <a href="https://calendar.google.com" target="_blank" rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 w-full py-2.5 border border-slate-200 rounded-xl text-sm text-slate-500 hover:border-green-300 hover:text-green-700 hover:bg-green-50 transition-all">
-                  <ExternalLink className="w-4 h-4" /> Ouvrir Google Calendar
+                  <ExternalLink className="w-4 h-4" /> {t(lang,'calendar.openGCal')}
                 </a>
               </div>
             </div>
@@ -610,9 +619,9 @@ export default function CalendarPage() {
           <Card>
             <CardContent className="flex flex-col items-center py-12 gap-4 text-center">
               <CalendarDays className="w-10 h-10 text-green-400" />
-              <p className="font-semibold text-slate-800">Choisis un calendrier à synchroniser</p>
+              <p className="font-semibold text-slate-800">{t(lang,'calendar.chooseSyncTitle')}</p>
               <Button onClick={() => setShowCalPicker(true)} className="bg-green-600 hover:bg-green-700">
-                Choisir un calendrier
+                {t(lang,'calendar.chooseCalTitle')}
               </Button>
             </CardContent>
           </Card>

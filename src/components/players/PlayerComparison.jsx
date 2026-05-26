@@ -9,6 +9,8 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend
 } from "recharts";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 const COLORS = ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"];
 
@@ -19,24 +21,16 @@ function normalizeVal(val, max) {
 
 function buildRadarData(players) {
   const maxVal = Math.max(...players.map(p => p.valeur_marchande || 0));
-  const maxAge = Math.max(...players.map(p => p.age || 0));
 
   return [
-    { attribute: "Valeur", ...Object.fromEntries(players.map(p => [p.nom, normalizeVal(p.valeur_marchande, maxVal)])) },
-    { attribute: "Âge inv.", ...Object.fromEntries(players.map(p => [p.nom, p.age ? Math.round((1 - p.age / 40) * 100) : 0])) },
-    { attribute: "Taille", ...Object.fromEntries(players.map(p => [p.nom, p.taille ? normalizeVal(p.taille, 210) : 50])) },
-  ];
-}
-
-function buildBarData(players) {
-  return [
-    { label: "Valeur (M€)", ...Object.fromEntries(players.map(p => [p.nom, p.valeur_marchande || 0])) },
-    { label: "Âge", ...Object.fromEntries(players.map(p => [p.nom, p.age || 0])) },
-    { label: "Taille (cm)", ...Object.fromEntries(players.map(p => [p.nom, p.taille || 0])) },
+    { attribute: "Value", ...Object.fromEntries(players.map(p => [p.nom, normalizeVal(p.valeur_marchande, maxVal)])) },
+    { attribute: "Age inv.", ...Object.fromEntries(players.map(p => [p.nom, p.age ? Math.round((1 - p.age / 40) * 100) : 0])) },
+    { attribute: "Height", ...Object.fromEntries(players.map(p => [p.nom, p.taille ? normalizeVal(p.taille, 210) : 50])) },
   ];
 }
 
 export default function PlayerComparison({ currentPlayer, allPlayers }) {
+  const { lang } = useLanguage();
   const [selectedIds, setSelectedIds] = useState([]);
   const [filterMode, setFilterMode] = useState("poste");
   const [loadingAI, setLoadingAI] = useState(false);
@@ -68,8 +62,8 @@ export default function PlayerComparison({ currentPlayer, allPlayers }) {
       `${p.nom} (${p.poste}, ${p.age} ans, ${p.club_actuel || "?"}, ${p.valeur_marchande || "?"}M€)`
     ).join(" | ");
     const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `Analyse comparative football de ces joueurs : ${playersList}. 
-      Pour chaque joueur, donne une analyse concise de ses points forts, points faibles, et son profil par rapport aux autres. 
+      prompt: `Analyse comparative football de ces joueurs : ${playersList}.
+      Pour chaque joueur, donne une analyse concise de ses points forts, points faibles, et son profil par rapport aux autres.
       Puis donne une conclusion sur qui offre le meilleur rapport qualité/prix et quel profil est le plus adapté pour un recruteur.
       Réponds en français, de façon structurée et professionnelle.`,
       add_context_from_internet: true,
@@ -79,28 +73,39 @@ export default function PlayerComparison({ currentPlayer, allPlayers }) {
   };
 
   const radarData = allComparePlayers.length >= 2 ? buildRadarData(allComparePlayers) : [];
-  const barData = allComparePlayers.length >= 2 ? buildBarData(allComparePlayers) : [];
+
+  const filters = [
+    { value: "poste", labelKey: "comparison.filterPosition" },
+    { value: "age", labelKey: "comparison.filterAge" },
+    { value: "club", labelKey: "comparison.filterClub" },
+    { value: "tous", labelKey: "comparison.filterAll" },
+  ];
+
+  const tableRows = [
+    [t(lang, 'filters.position'), p => p.poste || "—"],
+    [t(lang, 'playerDetail.age'), p => p.age ? `${p.age} ${t(lang, 'common.ageUnit')}` : "—"],
+    [t(lang, 'playerDetail.nationality'), p => p.nationalite || "—"],
+    [t(lang, 'playerDetail.club'), p => p.club_actuel || "—"],
+    [t(lang, 'playerDetail.value'), p => p.valeur_marchande ? `${p.valeur_marchande} M€` : "—"],
+    [t(lang, 'playerDetail.height'), p => p.taille ? `${p.taille} cm` : "—"],
+    [t(lang, 'comparison.attrFoot'), p => p.pied_fort || "—"],
+    [t(lang, 'comparison.attrContractEnd'), p => p.contrat_fin || "—"],
+  ];
 
   return (
     <Card className="border-2 border-slate-200">
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <GitCompare className="w-5 h-5 text-indigo-500" />
-          Analyse comparative
+          {t(lang, 'comparison.title')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
 
-        {/* Filter + select */}
         <div className="space-y-3">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm text-slate-500 font-medium">Filtrer par :</span>
-            {[
-              { value: "poste", label: "Même poste" },
-              { value: "age", label: "Même tranche d'âge" },
-              { value: "club", label: "Même club" },
-              { value: "tous", label: "Tous" },
-            ].map(f => (
+            <span className="text-sm text-slate-500 font-medium">{t(lang, 'comparison.filterBy')}</span>
+            {filters.map(f => (
               <Button
                 key={f.value}
                 size="sm"
@@ -108,7 +113,7 @@ export default function PlayerComparison({ currentPlayer, allPlayers }) {
                 className={filterMode === f.value ? "bg-indigo-600 hover:bg-indigo-700 h-7 text-xs" : "h-7 text-xs"}
                 onClick={() => setFilterMode(f.value)}
               >
-                {f.label}
+                {t(lang, f.labelKey)}
               </Button>
             ))}
           </div>
@@ -116,25 +121,24 @@ export default function PlayerComparison({ currentPlayer, allPlayers }) {
           <div className="flex gap-2 items-center">
             <Select onValueChange={addPlayer} disabled={selectedIds.length >= 3}>
               <SelectTrigger className="flex-1 h-9 text-sm">
-                <SelectValue placeholder={selectedIds.length >= 3 ? "Max 3 joueurs" : "Ajouter un joueur à comparer..."} />
+                <SelectValue placeholder={selectedIds.length >= 3 ? t(lang, 'comparison.maxPlayers') : t(lang, 'comparison.addPlayerPlh')} />
               </SelectTrigger>
               <SelectContent>
                 {candidates.filter(p => !selectedIds.includes(p.id)).map(p => (
                   <SelectItem key={p.id} value={p.id}>
-                    {p.nom} — {p.poste} {p.age ? `(${p.age} ans)` : ""} {p.valeur_marchande ? `| ${p.valeur_marchande}M€` : ""}
+                    {p.nom} — {p.poste} {p.age ? `(${p.age} ${t(lang, 'common.ageUnit')})` : ""} {p.valeur_marchande ? `| ${p.valeur_marchande}M€` : ""}
                   </SelectItem>
                 ))}
                 {candidates.filter(p => !selectedIds.includes(p.id)).length === 0 && (
-                  <SelectItem value="none" disabled>Aucun joueur disponible</SelectItem>
+                  <SelectItem value="none" disabled>{t(lang, 'comparison.noPlayers')}</SelectItem>
                 )}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Selected tags */}
           <div className="flex flex-wrap gap-2">
             <Badge className="bg-green-100 text-green-800 border border-green-200 flex items-center gap-1">
-              <User className="w-3 h-3" /> {currentPlayer.nom} <span className="text-green-500 text-xs">(référence)</span>
+              <User className="w-3 h-3" /> {currentPlayer.nom} <span className="text-green-500 text-xs">({t(lang, 'comparison.reference')})</span>
             </Badge>
             {selectedPlayers.map(p => (
               <Badge key={p.id} className="bg-blue-100 text-blue-800 border border-blue-200 flex items-center gap-1">
@@ -145,22 +149,20 @@ export default function PlayerComparison({ currentPlayer, allPlayers }) {
               </Badge>
             ))}
             {selectedIds.length === 0 && (
-              <span className="text-xs text-slate-400 italic">Sélectionnez au moins un joueur à comparer</span>
+              <span className="text-xs text-slate-400 italic">{t(lang, 'comparison.selectAtLeast')}</span>
             )}
           </div>
         </div>
 
-        {/* Charts */}
         {allComparePlayers.length >= 2 && (
           <div className="space-y-5">
-            {/* Tableau comparatif */}
             <div>
-              <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Tableau comparatif</h4>
+              <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{t(lang, 'comparison.compareTable')}</h4>
               <div className="overflow-x-auto rounded-xl border border-slate-100">
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50">
                     <tr>
-                      <th className="text-left px-4 py-2.5 text-xs text-slate-500 font-medium">Attribut</th>
+                      <th className="text-left px-4 py-2.5 text-xs text-slate-500 font-medium">{t(lang, 'common.select')}</th>
                       {allComparePlayers.map((p, i) => (
                         <th key={p.id} className="text-center px-3 py-2.5 text-xs font-medium" style={{ color: COLORS[i] }}>
                           {p.nom}
@@ -169,19 +171,10 @@ export default function PlayerComparison({ currentPlayer, allPlayers }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      ["Poste", p => p.poste || "—"],
-                      ["Âge", p => p.age ? `${p.age} ans` : "—"],
-                      ["Nationalité", p => p.nationalite || "—"],
-                      ["Club", p => p.club_actuel || "—"],
-                      ["Valeur", p => p.valeur_marchande ? `${p.valeur_marchande} M€` : "—"],
-                      ["Taille", p => p.taille ? `${p.taille} cm` : "—"],
-                      ["Pied fort", p => p.pied_fort || "—"],
-                      ["Fin contrat", p => p.contrat_fin || "—"],
-                    ].map(([label, getter]) => (
+                    {tableRows.map(([label, getter]) => (
                       <tr key={label} className="border-t border-slate-50 hover:bg-slate-50/50">
                         <td className="px-4 py-2.5 text-slate-500 font-medium text-xs">{label}</td>
-                        {allComparePlayers.map((p, i) => (
+                        {allComparePlayers.map((p) => (
                           <td key={p.id} className="px-3 py-2.5 text-center font-medium text-slate-800 text-xs">
                             {getter(p)}
                           </td>
@@ -193,14 +186,13 @@ export default function PlayerComparison({ currentPlayer, allPlayers }) {
               </div>
             </div>
 
-            {/* Bar chart valeur */}
             <div>
-              <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Valeur marchande (M€)</h4>
+              <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{t(lang, 'comparison.valueTitle')}</h4>
               <ResponsiveContainer width="100%" height={160}>
-                <BarChart data={[{ label: "Valeur", ...Object.fromEntries(allComparePlayers.map(p => [p.nom, p.valeur_marchande || 0])) }]} layout="vertical">
+                <BarChart data={[{ label: "M€", ...Object.fromEntries(allComparePlayers.map(p => [p.nom, p.valeur_marchande || 0])) }]} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis type="number" tick={{ fontSize: 11 }} unit="M€" />
-                  <YAxis type="category" dataKey="label" tick={{ fontSize: 11 }} width={50} />
+                  <YAxis type="category" dataKey="label" tick={{ fontSize: 11 }} width={30} />
                   <Tooltip formatter={(v) => `${v} M€`} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                   {allComparePlayers.map((p, i) => (
@@ -210,10 +202,9 @@ export default function PlayerComparison({ currentPlayer, allPlayers }) {
               </ResponsiveContainer>
             </div>
 
-            {/* Radar chart */}
             {radarData.length > 0 && (
               <div>
-                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Profil radar (normalisé)</h4>
+                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{t(lang, 'comparison.radarTitle')}</h4>
                 <ResponsiveContainer width="100%" height={220}>
                   <RadarChart data={radarData}>
                     <PolarGrid stroke="#e2e8f0" />
@@ -236,7 +227,6 @@ export default function PlayerComparison({ currentPlayer, allPlayers }) {
               </div>
             )}
 
-            {/* AI Analysis */}
             <div className="border-t border-slate-100 pt-4">
               <Button
                 onClick={handleAIAnalysis}
@@ -245,15 +235,15 @@ export default function PlayerComparison({ currentPlayer, allPlayers }) {
                 size="sm"
               >
                 {loadingAI ? (
-                  <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Analyse en cours…</>
+                  <><Loader2 className="w-4 h-4 animate-spin mr-2" /> {t(lang, 'comparison.aiAnalyzing')}</>
                 ) : (
-                  <><TrendingUp className="w-4 h-4 mr-2" /> Analyse IA comparative</>
+                  <><TrendingUp className="w-4 h-4 mr-2" /> {t(lang, 'comparison.aiBtn')}</>
                 )}
               </Button>
 
               {aiAnalysis && (
                 <div className="mt-3 p-4 bg-indigo-50 rounded-xl border border-indigo-100">
-                  <p className="text-xs font-semibold text-indigo-700 mb-2 uppercase tracking-wider">Analyse IA</p>
+                  <p className="text-xs font-semibold text-indigo-700 mb-2 uppercase tracking-wider">{t(lang, 'comparison.aiResult')}</p>
                   <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">{aiAnalysis}</p>
                 </div>
               )}

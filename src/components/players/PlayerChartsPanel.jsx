@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   TrendingUp, BarChart2, MapPin, Activity, Target, Shield, Zap, Clock
 } from "lucide-react";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -23,6 +25,7 @@ function SectionTitle({ icon: Icon, children, color = "text-slate-700" }) {
 }
 
 export default function PlayerChartsPanel({ playerId, player }) {
+  const { lang } = useLanguage();
   const [activeSeasonTab, setActiveSeasonTab] = useState("buts");
 
   const { data: marketValues = [] } = useQuery({
@@ -62,12 +65,12 @@ export default function PlayerChartsPanel({ playerId, player }) {
   ] : [];
 
   const seasonTabsConfig = [
-    { key: "buts", label: "Buts", color: "#22c55e" },
-    { key: "passes_decisives", label: "Passes D.", color: "#3b82f6" },
-    { key: "matchs", label: "Matchs", color: "#8b5cf6" },
-    { key: "note_sofascore", label: "Note", color: "#f59e0b" },
+    { key: "buts", label: t(lang,'players.goals'), color: "#22c55e" },
+    { key: "passes_decisives", label: t(lang,'players.assists'), color: "#3b82f6" },
+    { key: "matchs", label: t(lang,'players.matches'), color: "#8b5cf6" },
+    { key: "note_sofascore", label: t(lang,'players.rating'), color: "#f59e0b" },
     { key: "xg", label: "xG", color: "#10b981" },
-    { key: "minutes", label: "Minutes", color: "#6366f1" },
+    { key: "minutes", label: t(lang,'fullProfile.minutes'), color: "#6366f1" },
   ];
 
   const activeTabConfig = seasonTabsConfig.find(t => t.key === activeSeasonTab);
@@ -85,10 +88,10 @@ export default function PlayerChartsPanel({ playerId, player }) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-green-500" />
-              Évolution valeur marchande — Transfermarkt
+              {t(lang,'charts.marketValueTitle')}
               {player?.valeur_marchande_peak && (
                 <Badge className="bg-green-100 text-green-800 border-0 text-xs">
-                  Peak: {player.valeur_marchande_peak} M€
+                  {t(lang,'charts.peak', { value: player.valeur_marchande_peak })}
                 </Badge>
               )}
             </CardTitle>
@@ -105,7 +108,7 @@ export default function PlayerChartsPanel({ playerId, player }) {
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} unit="M" />
-                <Tooltip formatter={v => [`${v} M€`, "Valeur marchande"]} />
+                <Tooltip formatter={v => [`${v} ${t(lang,'charts.mEuro')}`, t(lang,'charts.marketValueTitle')]} />
                 <Area type="monotone" dataKey="valeur" stroke="#22c55e" strokeWidth={2.5} fill="url(#valGradDetail)" dot={{ r: 3, fill: "#22c55e" }} />
               </AreaChart>
             </ResponsiveContainer>
@@ -119,7 +122,7 @@ export default function PlayerChartsPanel({ playerId, player }) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <BarChart2 className="w-4 h-4 text-indigo-500" />
-              Évolution statistiques saison par saison
+              {t(lang,'charts.statsEvolution')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -147,7 +150,7 @@ export default function PlayerChartsPanel({ playerId, player }) {
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip
                   formatter={v => [v, activeTabConfig?.label]}
-                  labelFormatter={l => `Saison ${l}`}
+                  labelFormatter={l => t(lang,'charts.season', { label: l })}
                 />
                 <Bar dataKey={activeSeasonTab} fill={activeTabConfig?.color || "#6366f1"} radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -162,7 +165,7 @@ export default function PlayerChartsPanel({ playerId, player }) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <Clock className="w-4 h-4 text-purple-500" />
-              Statistiques détaillées par saison
+              {t(lang,'charts.statsTable')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -170,18 +173,18 @@ export default function PlayerChartsPanel({ playerId, player }) {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="text-slate-400 border-b border-slate-100 text-left">
-                    <th className="pb-2 pr-3 font-medium">Saison</th>
-                    <th className="pb-2 pr-3 font-medium">Club</th>
-                    <th className="pb-2 text-center font-medium">MJ</th>
-                    <th className="pb-2 text-center font-medium">Tit.</th>
-                    <th className="pb-2 text-center font-medium">Min.</th>
-                    <th className="pb-2 text-center font-medium">Buts</th>
-                    <th className="pb-2 text-center font-medium">PD</th>
-                    <th className="pb-2 text-center font-medium">⚡ Note</th>
-                    <th className="pb-2 text-center font-medium">xG</th>
-                    <th className="pb-2 text-center font-medium">xA</th>
-                    <th className="pb-2 text-center font-medium">Jaunes</th>
-                    <th className="pb-2 text-center font-medium">Rouges</th>
+                    <th className="pb-2 pr-3 font-medium">{t(lang,'charts.seasonCol')}</th>
+                    <th className="pb-2 pr-3 font-medium">{t(lang,'charts.clubCol')}</th>
+                    <th className="pb-2 text-center font-medium">{t(lang,'charts.mj')}</th>
+                    <th className="pb-2 text-center font-medium">{t(lang,'charts.starter')}</th>
+                    <th className="pb-2 text-center font-medium">{t(lang,'charts.minutes')}</th>
+                    <th className="pb-2 text-center font-medium">{t(lang,'charts.goals')}</th>
+                    <th className="pb-2 text-center font-medium">{t(lang,'charts.assists')}</th>
+                    <th className="pb-2 text-center font-medium">{t(lang,'charts.rating')}</th>
+                    <th className="pb-2 text-center font-medium">{t(lang,'charts.xg')}</th>
+                    <th className="pb-2 text-center font-medium">{t(lang,'charts.xa')}</th>
+                    <th className="pb-2 text-center font-medium">{t(lang,'charts.yellows')}</th>
+                    <th className="pb-2 text-center font-medium">{t(lang,'charts.reds')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -214,7 +217,7 @@ export default function PlayerChartsPanel({ playerId, player }) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <Target className="w-4 h-4 text-orange-500" />
-              Profil de performance — Saison actuelle
+              {t(lang,'charts.radarTitle')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -236,7 +239,7 @@ export default function PlayerChartsPanel({ playerId, player }) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <MapPin className="w-4 h-4 text-red-500" />
-              Parcours en carrière — Transfermarkt
+              {t(lang,'charts.careerPath')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -253,7 +256,7 @@ export default function PlayerChartsPanel({ playerId, player }) {
                           <p className="font-semibold text-sm text-slate-900">{club.club}</p>
                           <p className="text-xs text-slate-500">
                             {club.debut && club.debut.substring(0, 4)}
-                            {club.fin ? ` → ${club.fin.substring(0, 4)}` : " → maintenant"}
+                            {club.fin ? ` → ${club.fin.substring(0, 4)}` : ` ${t(lang,'charts.toPresent')}`}
                             {club.ligue && <span className="ml-2 text-slate-400">· {club.ligue}</span>}
                             {club.type_passage && club.type_passage !== "Transfert" && (
                               <Badge className="ml-2 text-[10px] bg-blue-50 text-blue-700 border-0 py-0">{club.type_passage}</Badge>
@@ -267,19 +270,19 @@ export default function PlayerChartsPanel({ playerId, player }) {
                           {club.matchs != null && (
                             <div className="text-center">
                               <div className="font-bold text-slate-700">{club.matchs}</div>
-                              <div className="text-slate-400">MJ</div>
+                              <div className="text-slate-400">{t(lang,'charts.mj')}</div>
                             </div>
                           )}
                           {club.buts != null && (
                             <div className="text-center">
                               <div className="font-bold text-green-600">{club.buts}</div>
-                              <div className="text-slate-400">buts</div>
+                              <div className="text-slate-400">{t(lang,'charts.butsPer90')}</div>
                             </div>
                           )}
                           {club.passes != null && (
                             <div className="text-center">
                               <div className="font-bold text-blue-600">{club.passes}</div>
-                              <div className="text-slate-400">PD</div>
+                              <div className="text-slate-400">{t(lang,'charts.pdPer90')}</div>
                             </div>
                           )}
                         </div>
@@ -297,19 +300,19 @@ export default function PlayerChartsPanel({ playerId, player }) {
                   <div className="font-bold text-lg text-slate-900">
                     {careerHistory.reduce((s, c) => s + (c.matchs || 0), 0)}
                   </div>
-                  <div className="text-xs text-slate-400">Matchs totaux</div>
+                  <div className="text-xs text-slate-400">{t(lang,'charts.totalMatches')}</div>
                 </div>
                 <div className="text-center">
                   <div className="font-bold text-lg text-green-600">
                     {careerHistory.reduce((s, c) => s + (c.buts || 0), 0)}
                   </div>
-                  <div className="text-xs text-slate-400">Buts totaux</div>
+                  <div className="text-xs text-slate-400">{t(lang,'charts.totalGoals')}</div>
                 </div>
                 <div className="text-center">
                   <div className="font-bold text-lg text-blue-600">
                     {careerHistory.reduce((s, c) => s + (c.passes || 0), 0)}
                   </div>
-                  <div className="text-xs text-slate-400">Passes totales</div>
+                  <div className="text-xs text-slate-400">{t(lang,'charts.totalAssists')}</div>
                 </div>
               </div>
             )}
@@ -325,7 +328,7 @@ export default function PlayerChartsPanel({ playerId, player }) {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-orange-500" /> Stats offensives avancées
+                  <Zap className="w-4 h-4 text-orange-500" /> {t(lang,'charts.offensiveStats')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -335,9 +338,9 @@ export default function PlayerChartsPanel({ playerId, player }) {
                     data={[
                       { name: "xG", valeur: player.xg },
                       { name: "xA", valeur: player.xa },
-                      { name: "Tirs/match", valeur: player.tirs && player.matchs_joues ? +(player.tirs / player.matchs_joues).toFixed(1) : null },
-                      { name: "Passes clés/m.", valeur: player.passes_cles },
-                      { name: "Grandes chances", valeur: player.grandes_chances },
+                      { name: t(lang,'charts.shotsPerMatch'), valeur: player.tirs && player.matchs_joues ? +(player.tirs / player.matchs_joues).toFixed(1) : null },
+                      { name: t(lang,'charts.keyPassesPM'), valeur: player.passes_cles },
+                      { name: t(lang,'charts.bigChances'), valeur: player.grandes_chances },
                     ].filter(d => d.valeur != null)}
                     margin={{ left: 80, right: 20, top: 5, bottom: 5 }}
                   >
@@ -357,7 +360,7 @@ export default function PlayerChartsPanel({ playerId, player }) {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-blue-500" /> Stats défensives avancées
+                  <Shield className="w-4 h-4 text-blue-500" /> {t(lang,'charts.defensiveStats')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -365,11 +368,11 @@ export default function PlayerChartsPanel({ playerId, player }) {
                   <BarChart
                     layout="vertical"
                     data={[
-                      { name: "% duels", valeur: player.duels_gagnes_pct },
-                      { name: "% duels aériens", valeur: player.duels_aeriens_pct },
-                      { name: "% dribbles", valeur: player.dribbles_pct },
-                      { name: "% passes", valeur: player.passes_reussies_pct },
-                      { name: "% tirs cadrés", valeur: player.tirs_cadres_pct },
+                      { name: t(lang,'charts.duelsPct'), valeur: player.duels_gagnes_pct },
+                      { name: t(lang,'charts.aerialDuelsPct'), valeur: player.duels_aeriens_pct },
+                      { name: t(lang,'players.dribbles'), valeur: player.dribbles_pct },
+                      { name: t(lang,'charts.passesPct'), valeur: player.passes_reussies_pct },
+                      { name: t(lang,'charts.shotsOnTargetPct'), valeur: player.tirs_cadres_pct },
                     ].filter(d => d.valeur != null)}
                     margin={{ left: 100, right: 20, top: 5, bottom: 5 }}
                   >

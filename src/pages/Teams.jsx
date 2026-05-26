@@ -7,8 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Plus, Users, Search, Shield } from "lucide-react";
 import TeamCard from "../components/teams/TeamCard";
 import TeamForm from "../components/teams/TeamForm";
+import { useLanguage } from "../lib/LanguageContext";
+import { t } from "../i18n/translations";
 
 export default function TeamsPage() {
+  const { lang } = useLanguage();
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState("");
   const queryClient = useQueryClient();
@@ -69,14 +72,14 @@ export default function TeamsPage() {
           <div className="min-w-0">
             <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-2">
               <Shield className="w-7 h-7 text-blue-600 flex-shrink-0" />
-              <span className="truncate">Mes équipes</span>
+              <span className="truncate">{t(lang, 'teams.title')}</span>
             </h1>
-            <p className="text-slate-500 mt-0.5 text-sm">{teams.length} équipe{teams.length > 1 ? 's' : ''} créée{teams.length > 1 ? 's' : ''}</p>
+            <p className="text-slate-500 mt-0.5 text-sm">{t(lang, 'teams.count', { count: teams.length })}</p>
           </div>
           <Button onClick={() => setShowForm(!showForm)} className="bg-blue-600 hover:bg-blue-700 flex-shrink-0">
             <Plus className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">Nouvelle équipe</span>
-            <span className="sm:hidden">Nouvelle</span>
+            <span className="hidden sm:inline">{t(lang, 'teams.newTeam')}</span>
+            <span className="sm:hidden">{t(lang, 'common.create')}</span>
           </Button>
         </div>
 
@@ -101,7 +104,7 @@ export default function TeamsPage() {
           <div className="relative max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
-              placeholder="Rechercher une équipe..."
+              placeholder={t(lang, 'teams.searchPlh')}
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="pl-9 bg-white"
@@ -113,14 +116,14 @@ export default function TeamsPage() {
         {teams.length === 0 ? (
           <div className="text-center py-24 bg-white rounded-2xl border border-slate-200">
             <Shield className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-            <h3 className="text-xl font-semibold text-slate-700 mb-2">Aucune équipe créée</h3>
-            <p className="text-slate-500 mb-6 text-sm">Créez votre première équipe pour commencer à gérer vos joueurs</p>
+            <h3 className="text-xl font-semibold text-slate-700 mb-2">{t(lang, 'teams.noTeams')}</h3>
+            <p className="text-slate-500 mb-6 text-sm">{t(lang, 'teams.noTeamsHint')}</p>
             <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="w-4 h-4 mr-2" /> Créer une équipe
+              <Plus className="w-4 h-4 mr-2" /> {t(lang, 'teams.createFirst')}
             </Button>
           </div>
         ) : filteredTeams.length === 0 ? (
-          <div className="text-center py-16 text-slate-400">Aucune équipe ne correspond à la recherche</div>
+          <div className="text-center py-16 text-slate-400">{t(lang, 'teams.noSearchResults')}</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredTeams.map((team) => (
@@ -129,7 +132,7 @@ export default function TeamsPage() {
                 team={team}
                 playersCount={getPlayerCount(team.id)}
                 onDelete={() => {
-                  if (confirm(`Supprimer l'équipe "${team.nom}" ?`)) deleteTeamMutation.mutate(team.id);
+                  if (confirm(t(lang, 'teams.deleteConfirm', { name: team.nom }))) deleteTeamMutation.mutate(team.id);
                 }}
               />
             ))}

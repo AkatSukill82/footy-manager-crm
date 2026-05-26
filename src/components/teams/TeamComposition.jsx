@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Users, Trash2 } from "lucide-react";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 const positionColors = {
   "Gardien": "bg-yellow-100 text-yellow-800",
@@ -12,6 +14,7 @@ const positionColors = {
 };
 
 export default function TeamComposition({ teamPlayers, players, onRemovePlayer }) {
+  const { lang } = useLanguage();
   const getPlayerById = (playerId) => players.find(p => p.id === playerId);
 
   const groupedByPosition = {
@@ -39,10 +42,10 @@ export default function TeamComposition({ teamPlayers, players, onRemovePlayer }
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Users className="w-5 h-5" />
-            Composition ({teamPlayers.length}/11)
+            {t(lang, 'teams.composition', { count: teamPlayers.length })}
           </CardTitle>
           <Badge className="bg-green-100 text-green-800">
-            Valeur: {totalValue.toFixed(1)}M€
+            {t(lang, 'teams.totalValue', { value: totalValue.toFixed(1) })}
           </Badge>
         </div>
       </CardHeader>
@@ -55,7 +58,7 @@ export default function TeamComposition({ teamPlayers, players, onRemovePlayer }
             </h4>
             <div className="space-y-2">
               {playersInPos.length === 0 ? (
-                <p className="text-sm text-slate-500 italic">Aucun joueur</p>
+                <p className="text-sm text-slate-500 italic">{t(lang, 'teams.noPlayer')}</p>
               ) : (
                 playersInPos.map((tp) => (
                   <div
@@ -71,7 +74,7 @@ export default function TeamComposition({ teamPlayers, players, onRemovePlayer }
                       <div>
                         <div className="font-medium text-slate-900">{tp.player.nom}</div>
                         <div className="text-sm text-slate-600">
-                          {tp.player.poste} • {tp.player.age} ans
+                          {tp.player.poste} • {tp.player.age} {t(lang, 'common.ageUnit')}
                           {tp.player.valeur_marchande && ` • ${tp.player.valeur_marchande}M€`}
                         </div>
                       </div>

@@ -8,6 +8,8 @@ import {
   Users, Target, Eye, Phone, ShoppingCart, TrendingUp, Shield
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLanguage } from "../lib/LanguageContext";
+import { t } from "../i18n/translations";
 
 const POSTES = [
   "Gardien", "Défenseur central", "Latéral droit", "Latéral gauche",
@@ -17,14 +19,18 @@ const POSTES = [
 
 const SYSTEMES = ["4-3-3", "4-4-2", "3-5-2", "4-2-3-1", "3-4-3", "5-3-2"];
 
-const PRIORITES = [
-  "Performance", "Potentiel", "Rapport qualité/prix", "Expérience", "Polyvalence"
+const PRIORITES_CONFIG = [
+  { value: "Performance",          labelKey: "scouting.prioritePerformance" },
+  { value: "Potentiel",            labelKey: "scouting.prioritePotential" },
+  { value: "Rapport qualité/prix", labelKey: "scouting.prioriteValue" },
+  { value: "Expérience",           labelKey: "scouting.prioriteExperience" },
+  { value: "Polyvalence",          labelKey: "scouting.prioriteVersatility" },
 ];
 
 const RECO_CONFIG = {
-  "Observer": { color: "bg-slate-700 text-slate-100", icon: Eye },
-  "Contacter agent": { color: "bg-amber-500 text-white", icon: Phone },
-  "Faire offre": { color: "bg-emerald-500 text-white", icon: ShoppingCart },
+  "Observer":        { labelKey: "scouting.recoWatch",   color: "bg-slate-700 text-slate-100", icon: Eye },
+  "Contacter agent": { labelKey: "scouting.recoContact", color: "bg-amber-500 text-white",     icon: Phone },
+  "Faire offre":     { labelKey: "scouting.recoOffer",   color: "bg-emerald-500 text-white",   icon: ShoppingCart },
 };
 
 function ScoreBar({ score }) {
@@ -41,6 +47,7 @@ function ScoreBar({ score }) {
 }
 
 function PlayerResultCard({ player, onWatchlist, watchlisted }) {
+  const { lang } = useLanguage();
   const reco = RECO_CONFIG[player.recommandation] || RECO_CONFIG["Observer"];
   const RecoIcon = reco.icon;
 
@@ -53,31 +60,31 @@ function PlayerResultCard({ player, onWatchlist, watchlisted }) {
           <div className="flex flex-wrap gap-1.5 mt-1">
             <Badge className="bg-slate-700 text-slate-300 text-xs">{player.poste}</Badge>
             {player.club && <Badge className="bg-emerald-900/50 text-emerald-400 border border-emerald-700/50 text-xs">{player.club}</Badge>}
-            {player.age && <Badge className="bg-slate-700 text-slate-400 text-xs">{player.age} ans</Badge>}
+            {player.age && <Badge className="bg-slate-700 text-slate-400 text-xs">{player.age} {t(lang, 'common.ageUnit')}</Badge>}
             {player.valeur && <Badge className="bg-slate-700 text-emerald-400 text-xs">{player.valeur} M€</Badge>}
           </div>
         </div>
         <Badge className={`${reco.color} flex items-center gap-1.5 flex-shrink-0 text-xs px-2.5 py-1`}>
           <RecoIcon className="w-3 h-3" />
-          {player.recommandation}
+          {t(lang, reco.labelKey)}
         </Badge>
       </div>
 
       {/* Score */}
       <div>
-        <p className="text-xs text-slate-400 uppercase font-semibold mb-2">Score de compatibilité</p>
+        <p className="text-xs text-slate-400 uppercase font-semibold mb-2">{t(lang, 'scouting.compatScore')}</p>
         <ScoreBar score={player.score_compatibilite} />
       </div>
 
       {/* Points forts */}
       {player.points_forts?.length > 0 && (
         <div>
-          <p className="text-xs text-slate-400 uppercase font-semibold mb-2">Points forts</p>
+          <p className="text-xs text-slate-400 uppercase font-semibold mb-2">{t(lang, 'scouting.strengths')}</p>
           <ul className="space-y-1">
-            {player.points_forts.map((p, i) => (
+            {player.points_forts.map((pt, i) => (
               <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 flex-shrink-0" />
-                {p}
+                {pt}
               </li>
             ))}
           </ul>
@@ -105,13 +112,14 @@ function PlayerResultCard({ player, onWatchlist, watchlisted }) {
         className={`w-full ${watchlisted ? "bg-emerald-800 text-emerald-300" : "bg-emerald-600 hover:bg-emerald-500 text-white"}`}
       >
         <Star className={`w-3.5 h-3.5 mr-1.5 ${watchlisted ? "fill-current" : ""}`} />
-        {watchlisted ? "Ajouté à la WatchList" : "Ajouter à la WatchList"}
+        {watchlisted ? t(lang, 'scouting.addedToWatch') : t(lang, 'scouting.addToWatch')}
       </Button>
     </div>
   );
 }
 
 export default function ScoutingIAPage() {
+  const { lang } = useLanguage();
   const [criteria, setCriteria] = useState({
     poste: "Attaquant",
     systeme: "4-3-3",
@@ -137,31 +145,31 @@ export default function ScoutingIAPage() {
     const players = await base44.entities.Player.list();
 
     if (!players || players.length === 0) {
-      setError("Aucun joueur dans la base — ajoutez des joueurs d'abord.");
+      setError(t(lang, 'scouting.noPlayers'));
       setLoading(false);
       return;
     }
 
-    const playersContext = players.map(p => ({
-      id: p.id,
-      nom: p.nom,
-      poste: p.poste,
-      poste_secondaire: p.poste_secondaire,
-      age: p.age,
-      club: p.club_actuel,
-      ligue: p.ligue,
-      valeur: p.valeur_marchande,
-      note: p.note_moyenne,
-      buts: p.buts,
-      passes: p.passes_decisives,
-      xg: p.xg,
-      minutes: p.minutes_jouees,
-      matchs: p.matchs_joues,
-      contrat_fin: p.contrat_fin,
-      forces: p.forces,
-      note_scout: p.note_globale_scout,
-      nationalite: p.nationalite,
-      pied_fort: p.pied_fort,
+    const playersContext = players.map(pl => ({
+      id: pl.id,
+      nom: pl.nom,
+      poste: pl.poste,
+      poste_secondaire: pl.poste_secondaire,
+      age: pl.age,
+      club: pl.club_actuel,
+      ligue: pl.ligue,
+      valeur: pl.valeur_marchande,
+      note: pl.note_moyenne,
+      buts: pl.buts,
+      passes: pl.passes_decisives,
+      xg: pl.xg,
+      minutes: pl.minutes_jouees,
+      matchs: pl.matchs_joues,
+      contrat_fin: pl.contrat_fin,
+      forces: pl.forces,
+      note_scout: pl.note_globale_scout,
+      nationalite: pl.nationalite,
+      pied_fort: pl.pied_fort,
     }));
 
     const prompt = `Tu es un directeur sportif expert. Voici les critères du manager :
@@ -260,8 +268,8 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks. Format exact:
             <Sparkles className="w-5 h-5 text-emerald-400" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-white">Scouting IA</h1>
-            <p className="text-xs text-slate-500">Analyse intelligente de vos joueurs par Claude</p>
+            <h1 className="text-lg font-bold text-white">{t(lang, 'scouting.title')}</h1>
+            <p className="text-xs text-slate-500">{t(lang, 'scouting.subtitle')}</p>
           </div>
         </div>
       </div>
@@ -274,18 +282,18 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks. Format exact:
             <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-6 space-y-5 sticky top-24">
               <div className="flex items-center gap-2 mb-2">
                 <Target className="w-4 h-4 text-emerald-400" />
-                <h2 className="text-sm font-bold text-slate-200">Critères de scouting</h2>
+                <h2 className="text-sm font-bold text-slate-200">{t(lang, 'scouting.criteria')}</h2>
               </div>
 
               <div>
-                <label className={LabelClass}>Poste recherché</label>
+                <label className={LabelClass}>{t(lang, 'scouting.position')}</label>
                 <select value={criteria.poste} onChange={set("poste")} className={InputClass}>
-                  {POSTES.map(p => <option key={p} value={p}>{p}</option>)}
+                  {POSTES.map(pos => <option key={pos} value={pos}>{pos}</option>)}
                 </select>
               </div>
 
               <div>
-                <label className={LabelClass}>Système de jeu</label>
+                <label className={LabelClass}>{t(lang, 'scouting.system')}</label>
                 <select value={criteria.systeme} onChange={set("systeme")} className={InputClass}>
                   {SYSTEMES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
@@ -293,28 +301,28 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks. Format exact:
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={LabelClass}>Âge max</label>
+                  <label className={LabelClass}>{t(lang, 'scouting.ageMax')}</label>
                   <input type="number" min={16} max={45} value={criteria.age_max}
                     onChange={set("age_max")} className={InputClass} />
                 </div>
                 <div>
-                  <label className={LabelClass}>Budget (M€)</label>
+                  <label className={LabelClass}>{t(lang, 'scouting.budget')}</label>
                   <input type="number" min={0} value={criteria.budget_max}
                     onChange={set("budget_max")} className={InputClass} />
                 </div>
               </div>
 
               <div>
-                <label className={LabelClass}>Priorité principale</label>
+                <label className={LabelClass}>{t(lang, 'scouting.priority')}</label>
                 <select value={criteria.priorite} onChange={set("priorite")} className={InputClass}>
-                  {PRIORITES.map(p => <option key={p} value={p}>{p}</option>)}
+                  {PRIORITES_CONFIG.map(pr => <option key={pr.value} value={pr.value}>{t(lang, pr.labelKey)}</option>)}
                 </select>
               </div>
 
               <div>
-                <label className={LabelClass}>Ligue préférée <span className="normal-case text-slate-600 font-normal">(optionnel)</span></label>
+                <label className={LabelClass}>{t(lang, 'scouting.league')} <span className="normal-case text-slate-600 font-normal">{t(lang, 'scouting.optional')}</span></label>
                 <input type="text" value={criteria.ligue} onChange={set("ligue")}
-                  placeholder="ex: Ligue 1, Premier League…" className={InputClass} />
+                  placeholder={t(lang, 'scouting.leaguePlh')} className={InputClass} />
               </div>
 
               <Button
@@ -326,7 +334,7 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks. Format exact:
                   ? <Loader2 className="w-4 h-4 animate-spin" />
                   : <Sparkles className="w-4 h-4" />
                 }
-                {loading ? "Analyse en cours..." : "Lancer l'analyse IA ✦"}
+                {loading ? t(lang, 'scouting.analysingBtn') : t(lang, 'scouting.analyseBtn')}
               </Button>
             </div>
           </div>
@@ -341,11 +349,16 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks. Format exact:
                   <Sparkles className="w-10 h-10 text-emerald-500/60" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-slate-400 mb-2">Prêt pour l'analyse</h2>
-                  <p className="text-sm text-slate-600 max-w-sm">Configurez vos critères et lancez l'analyse IA pour obtenir les meilleurs profils de votre base de données.</p>
+                  <h2 className="text-xl font-bold text-slate-400 mb-2">{t(lang, 'scouting.readyTitle')}</h2>
+                  <p className="text-sm text-slate-600 max-w-sm">{t(lang, 'scouting.readyDesc')}</p>
                 </div>
                 <div className="flex flex-wrap gap-2 justify-center">
-                  {["Score de compatibilité", "Points forts / faibles", "Recommandations", "Ajout WatchList"].map(f => (
+                  {[
+                    t(lang, 'scouting.featScore'),
+                    t(lang, 'scouting.featStrengths'),
+                    t(lang, 'scouting.featReco'),
+                    t(lang, 'scouting.featWatchlist'),
+                  ].map(f => (
                     <Badge key={f} className="bg-slate-800 text-slate-400 border border-slate-700 text-xs">{f}</Badge>
                   ))}
                 </div>
@@ -362,8 +375,8 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks. Format exact:
                   </div>
                 </div>
                 <div className="text-center">
-                  <p className="text-slate-300 font-semibold mb-1">Analyse en cours…</p>
-                  <p className="text-slate-500 text-sm">Claude analyse vos joueurs selon vos critères</p>
+                  <p className="text-slate-300 font-semibold mb-1">{t(lang, 'scouting.analysingLabel')}</p>
+                  <p className="text-slate-500 text-sm">{t(lang, 'scouting.analysingDesc')}</p>
                 </div>
                 <div className="flex gap-1">
                   {[0, 1, 2].map(i => (
@@ -386,31 +399,28 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks. Format exact:
             {/* Results */}
             {results && !loading && (
               <div className="space-y-5">
-                {/* Analyse globale */}
                 {results.analyse_globale && (
                   <div className="bg-emerald-900/20 border border-emerald-700/30 rounded-2xl p-5">
                     <div className="flex items-center gap-2 mb-2">
                       <TrendingUp className="w-4 h-4 text-emerald-400" />
-                      <p className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Analyse de marché</p>
+                      <p className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">{t(lang, 'scouting.marketAnalysis')}</p>
                     </div>
                     <p className="text-slate-300 text-sm leading-relaxed">{results.analyse_globale}</p>
                   </div>
                 )}
 
-                {/* Summary badges */}
                 <div className="flex items-center gap-3 flex-wrap">
-                  <span className="text-slate-400 text-sm">{results.joueurs?.length || 0} profil{results.joueurs?.length > 1 ? "s" : ""} sélectionné{results.joueurs?.length > 1 ? "s" : ""}</span>
+                  <span className="text-slate-400 text-sm">{t(lang, 'scouting.profilesCount', { count: results.joueurs?.length || 0 })}</span>
                   <div className="flex gap-2">
                     {["Faire offre", "Contacter agent", "Observer"].map(r => {
                       const count = results.joueurs?.filter(j => j.recommandation === r).length || 0;
                       if (!count) return null;
                       const cfg = RECO_CONFIG[r];
-                      return <Badge key={r} className={`${cfg.color} text-xs`}>{count} {r}</Badge>;
+                      return <Badge key={r} className={`${cfg.color} text-xs`}>{count} {t(lang, cfg.labelKey)}</Badge>;
                     })}
                   </div>
                 </div>
 
-                {/* Player cards */}
                 <div className="grid gap-4">
                   {results.joueurs?.map((player, i) => (
                     <PlayerResultCard

@@ -10,8 +10,11 @@ import RemindersList from "../components/contacts/RemindersList";
 import ReminderForm from "../components/contacts/ReminderForm";
 import ContractCalendar from "../components/contacts/ContractCalendar";
 import { useCurrentUser } from "../lib/useCurrentUser";
+import { useLanguage } from "../lib/LanguageContext";
+import { t } from "../i18n/translations";
 
 export default function ContactsPage() {
+  const { lang } = useLanguage();
   const [selectedPlayerId, setSelectedPlayerId] = useState("");
   const [activeTab, setActiveTab] = useState("contacts");
   const queryClient = useQueryClient();
@@ -78,9 +81,9 @@ export default function ContactsPage() {
       <div>
         <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
           <Phone className="w-8 h-8 text-blue-600" />
-          Gestion des contacts
+          {t(lang, 'contacts.title')}
         </h1>
-        <p className="text-slate-600 mt-1">Historique, rappels et suivi des contacts</p>
+        <p className="text-slate-600 mt-1">{t(lang, 'contacts.subtitle')}</p>
       </div>
 
       <div className="flex gap-2 border-b border-slate-200">
@@ -93,7 +96,7 @@ export default function ContactsPage() {
           }`}
         >
           <Phone className="w-4 h-4 inline mr-2" />
-          Contacts
+          {t(lang, 'contacts.tabContacts')}
         </button>
         <button
           onClick={() => setActiveTab("reminders")}
@@ -104,7 +107,7 @@ export default function ContactsPage() {
           }`}
         >
           <Bell className="w-4 h-4 inline mr-2" />
-          Rappels
+          {t(lang, 'contacts.tabReminders')}
         </button>
         <button
           onClick={() => setActiveTab("calendar")}
@@ -115,16 +118,16 @@ export default function ContactsPage() {
           }`}
         >
           <Calendar className="w-4 h-4 inline mr-2" />
-          Calendrier
+          {t(lang, 'contacts.tabCalendar')}
         </button>
       </div>
 
       {activeTab !== "calendar" && (
         <div className="flex items-center gap-4">
-          <label className="font-medium text-slate-700">Sélectionner un joueur:</label>
+          <label className="font-medium text-slate-700">{t(lang, 'contacts.selectPlayer')}</label>
           <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
             <SelectTrigger className="w-[300px]">
-              <SelectValue placeholder="Choisir un joueur..." />
+              <SelectValue placeholder={t(lang, 'contacts.selectPlayerPlh')} />
             </SelectTrigger>
             <SelectContent>
               {players.map((player) => (
@@ -136,7 +139,7 @@ export default function ContactsPage() {
           </Select>
           {selectedPlayer && (
             <div className="text-sm text-slate-600">
-              {selectedPlayer.club_actuel || "Sans club"}
+              {selectedPlayer.club_actuel || t(lang, 'players.noClub')}
             </div>
           )}
         </div>
@@ -147,7 +150,7 @@ export default function ContactsPage() {
           {!selectedPlayerId ? (
             <div className="text-center py-20 bg-slate-50 rounded-lg">
               <Users className="w-12 h-12 mx-auto text-slate-400 mb-3" />
-              <p className="text-slate-600">Sélectionnez un joueur pour voir ses contacts</p>
+              <p className="text-slate-600">{t(lang, 'contacts.emptySelect')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -170,9 +173,9 @@ export default function ContactsPage() {
           {!selectedPlayerId ? (
             <div className="space-y-6">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-semibold text-blue-900 mb-2">Prochains rappels</h3>
+                <h3 className="font-semibold text-blue-900 mb-2">{t(lang, 'contacts.upcomingReminders')}</h3>
                 {upcomingReminders.length === 0 ? (
-                  <p className="text-blue-700">Aucun rappel à venir</p>
+                  <p className="text-blue-700">{t(lang, 'contacts.noReminders')}</p>
                 ) : (
                   <div className="space-y-2">
                     {upcomingReminders.map(reminder => (
@@ -188,7 +191,7 @@ export default function ContactsPage() {
               </div>
               <div className="text-center py-10 bg-slate-50 rounded-lg">
                 <Bell className="w-12 h-12 mx-auto text-slate-400 mb-3" />
-                <p className="text-slate-600">Sélectionnez un joueur pour gérer ses rappels</p>
+                <p className="text-slate-600">{t(lang, 'contacts.emptyReminders')}</p>
               </div>
             </div>
           ) : (

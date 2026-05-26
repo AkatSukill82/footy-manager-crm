@@ -4,6 +4,8 @@ import { Upload, FileSpreadsheet, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 // Normalise une clé de colonne : minuscules, sans accents, espaces → _
 const normalizeKey = (k) =>
@@ -81,6 +83,7 @@ const parseExcelFile = (file) =>
   });
 
 export default function ImportDropzone({ onExtracted }) {
+  const { lang } = useLanguage();
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -90,7 +93,7 @@ export default function ImportDropzone({ onExtracted }) {
   const processFile = async (file) => {
     setError(null);
     setLoading(true);
-    setStatus("Lecture du fichier...");
+    setStatus(t(lang, 'import.reading'));
 
     try {
       // 1. Parser le fichier localement avec SheetJS
@@ -161,7 +164,7 @@ export default function ImportDropzone({ onExtracted }) {
 
       // 5. Si des joueurs ont été trouvés, enrichir via l'IA Base44
       if (joueurs.length > 0) {
-        setStatus(`Enrichissement IA pour ${joueurs.length} joueur(s)...`);
+        setStatus(t(lang, 'import.processing', { count: joueurs.length }));
         try {
           const enriched = await base44.integrations.Core.InvokeLLM({
             prompt: `Voici une liste de joueurs de football extraite d'un fichier Excel. Pour chaque joueur, complète les informations manquantes (nationalité, poste normalisé, valeur marchande, date de naissance, contrat, agent...) en te basant sur les données publiques disponibles. Retourne exactement le même nombre d'objets dans le même ordre.
@@ -247,19 +250,19 @@ Joueurs: ${JSON.stringify(joueurs.map(j => ({ nom: j.nom, club: j.club_actuel ||
         {loading ? (
           <>
             <Loader2 className="w-14 h-14 text-green-500 animate-spin mb-4" />
-            <h3 className="text-lg font-semibold text-slate-700">Analyse du fichier en cours...</h3>
-            <p className="text-slate-400 mt-1">{status || "Lecture des données..."}</p>
+            <h3 className="text-lg font-semibold text-slate-700">{t(lang, 'import.analyzing')}</h3>
+            <p className="text-slate-400 mt-1">{status || t(lang, 'import.reading')}</p>
           </>
         ) : (
           <>
             <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mb-4">
               <FileSpreadsheet className="w-8 h-8 text-green-600" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-700">Glissez votre fichier ici</h3>
-            <p className="text-slate-400 mt-1 mb-4">Excel (.xlsx, .xls) ou CSV — toute structure acceptée</p>
+            <h3 className="text-lg font-semibold text-slate-700">{t(lang, 'import.dropzoneTitle')}</h3>
+            <p className="text-slate-400 mt-1 mb-4">{t(lang, 'import.dropzoneHint')}</p>
             <Button variant="outline" className="gap-2">
               <Upload className="w-4 h-4" />
-              Choisir un fichier
+              {t(lang, 'import.chooseFile')}
             </Button>
           </>
         )}

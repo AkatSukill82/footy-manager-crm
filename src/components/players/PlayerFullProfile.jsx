@@ -6,6 +6,8 @@ import {
   Shield, Target, Dumbbell, BarChart2, Phone, Mail, MessageCircle,
   Instagram, Twitter, Linkedin, MapPin
 } from "lucide-react";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 function InfoRow({ label, value }) {
   if (value == null || value === "") return null;
@@ -36,6 +38,7 @@ function SectionTitle({ icon: Icon, label, color = "text-slate-700" }) {
 }
 
 export default function PlayerFullProfile({ player }) {
+  const { lang } = useLanguage();
   if (!player) return null;
 
   const hasContacts = player.email || player.telephone || player.whatsapp || player.instagram || player.twitter || player.linkedin;
@@ -58,43 +61,43 @@ export default function PlayerFullProfile({ player }) {
       <div className="grid md:grid-cols-2 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2"><User className="w-4 h-4 text-blue-500" />Identité</CardTitle>
+            <CardTitle className="text-sm flex items-center gap-2"><User className="w-4 h-4 text-blue-500" />{t(lang,'fullProfile.identity')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <InfoRow label="Nom complet" value={player.nom} />
-            <InfoRow label="Date de naissance" value={player.date_naissance} />
-            <InfoRow label="Lieu de naissance" value={player.lieu_naissance} />
-            <InfoRow label="Nationalité" value={player.nationalite} />
-            <InfoRow label="2ème nationalité" value={player.nationalite_secondaire} />
-            <InfoRow label="Âge" value={player.age ? `${player.age} ans` : null} />
-            <InfoRow label="Taille" value={player.taille ? `${player.taille} cm` : null} />
-            <InfoRow label="Poids" value={player.poids ? `${player.poids} kg` : null} />
-            <InfoRow label="Pied fort" value={player.pied_fort} />
-            <InfoRow label="Poste secondaire" value={player.poste_secondaire} />
+            <InfoRow label={t(lang,'fullProfile.fullName')} value={player.nom} />
+            <InfoRow label={t(lang,'fullProfile.dob')} value={player.date_naissance} />
+            <InfoRow label={t(lang,'fullProfile.birthplace')} value={player.lieu_naissance} />
+            <InfoRow label={t(lang,'fullProfile.nationality')} value={player.nationalite} />
+            <InfoRow label={t(lang,'fullProfile.nationality2')} value={player.nationalite_secondaire} />
+            <InfoRow label={t(lang,'fullProfile.age')} value={player.age ? `${player.age} ${t(lang,'common.ageUnit')}` : null} />
+            <InfoRow label={t(lang,'fullProfile.height')} value={player.taille ? `${player.taille} cm` : null} />
+            <InfoRow label={t(lang,'fullProfile.weight')} value={player.poids ? `${player.poids} kg` : null} />
+            <InfoRow label={t(lang,'fullProfile.foot')} value={player.pied_fort} />
+            <InfoRow label={t(lang,'fullProfile.positionSec')} value={player.poste_secondaire} />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2"><Clock className="w-4 h-4 text-orange-500" />Contrat & Club</CardTitle>
+            <CardTitle className="text-sm flex items-center gap-2"><Clock className="w-4 h-4 text-orange-500" />{t(lang,'fullProfile.contract')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <InfoRow label="Club actuel" value={player.club_actuel} />
-            <InfoRow label="Ligue" value={player.ligue} />
-            <InfoRow label="Pays ligue" value={player.pays_ligue} />
-            <InfoRow label="Stade" value={player.stade} />
-            <InfoRow label="N° maillot" value={player.numero_maillot ? `#${player.numero_maillot}` : null} />
-            <InfoRow label="Fin de contrat" value={player.contrat_fin} />
-            <InfoRow label="Salaire annuel" value={player.salaire ? `${player.salaire} M€` : null} />
-            <InfoRow label="Salaire / semaine" value={player.salaire_semaine ? `${player.salaire_semaine} k€` : null} />
-            <InfoRow label="Agent" value={player.agent} />
-            <InfoRow label="Agence" value={player.agence} />
-            <InfoRow label="Email agent" value={player.agent_email} />
-            <InfoRow label="Tél. agent" value={player.agent_telephone} />
-            <InfoRow label="Entraîneur" value={player.coach} />
-            <InfoRow label="Directeur sportif" value={player.manager} />
-            <InfoRow label="ID Transfermarkt" value={player.transfermarkt_id} />
-            <InfoRow label="ID SofaScore" value={player.sofascore_id} />
+            <InfoRow label={t(lang,'fullProfile.currentClub')} value={player.club_actuel} />
+            <InfoRow label={t(lang,'fullProfile.league')} value={player.ligue} />
+            <InfoRow label={t(lang,'fullProfile.leagueCountry')} value={player.pays_ligue} />
+            <InfoRow label={t(lang,'fullProfile.stadium')} value={player.stade} />
+            <InfoRow label={t(lang,'fullProfile.shirtNo')} value={player.numero_maillot ? `${t(lang,'fullProfile.shirtSymbol')}${player.numero_maillot}` : null} />
+            <InfoRow label={t(lang,'fullProfile.contractEnd')} value={player.contrat_fin} />
+            <InfoRow label={t(lang,'fullProfile.salary')} value={player.salaire ? `${player.salaire} M€` : null} />
+            <InfoRow label={t(lang,'fullProfile.salaryWeek')} value={player.salaire_semaine ? `${player.salaire_semaine} k€` : null} />
+            <InfoRow label={t(lang,'fullProfile.agent')} value={player.agent} />
+            <InfoRow label={t(lang,'fullProfile.agency')} value={player.agence} />
+            <InfoRow label={t(lang,'fullProfile.agentEmail')} value={player.agent_email} />
+            <InfoRow label={t(lang,'fullProfile.agentPhone')} value={player.agent_telephone} />
+            <InfoRow label={t(lang,'fullProfile.coach')} value={player.coach} />
+            <InfoRow label={t(lang,'fullProfile.sportingDirector')} value={player.manager} />
+            <InfoRow label={t(lang,'fullProfile.tmId')} value={player.transfermarkt_id} />
+            <InfoRow label={t(lang,'fullProfile.sofaId')} value={player.sofascore_id} />
           </CardContent>
         </Card>
       </div>
@@ -103,7 +106,7 @@ export default function PlayerFullProfile({ player }) {
       {(hasContacts || hasAddress) && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2"><Phone className="w-4 h-4 text-green-500" />Contacts & Réseaux</CardTitle>
+            <CardTitle className="text-sm flex items-center gap-2"><Phone className="w-4 h-4 text-green-500" />{t(lang,'fullProfile.contactsTitle')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -113,7 +116,7 @@ export default function PlayerFullProfile({ player }) {
                     <Phone className="w-3.5 h-3.5 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-400">Téléphone</p>
+                    <p className="text-[10px] text-slate-400">{t(lang,'fullProfile.phone')}</p>
                     <p className="text-xs font-medium text-slate-900">{player.telephone}</p>
                   </div>
                 </a>
@@ -124,7 +127,7 @@ export default function PlayerFullProfile({ player }) {
                     <Mail className="w-3.5 h-3.5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-400">Email</p>
+                    <p className="text-[10px] text-slate-400">{t(lang,'fullProfile.email')}</p>
                     <p className="text-xs font-medium text-slate-900">{player.email}</p>
                   </div>
                 </a>
@@ -135,7 +138,7 @@ export default function PlayerFullProfile({ player }) {
                     <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-400">WhatsApp</p>
+                    <p className="text-[10px] text-slate-400">{t(lang,'fullProfile.whatsapp')}</p>
                     <p className="text-xs font-medium text-slate-900">{player.whatsapp}</p>
                   </div>
                 </a>
@@ -146,7 +149,7 @@ export default function PlayerFullProfile({ player }) {
                     <Instagram className="w-3.5 h-3.5 text-pink-600" />
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-400">Instagram</p>
+                    <p className="text-[10px] text-slate-400">{t(lang,'fullProfile.instagram')}</p>
                     <p className="text-xs font-medium text-slate-900">{player.instagram}</p>
                   </div>
                 </a>
@@ -157,7 +160,7 @@ export default function PlayerFullProfile({ player }) {
                     <Twitter className="w-3.5 h-3.5 text-sky-600" />
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-400">Twitter / X</p>
+                    <p className="text-[10px] text-slate-400">{t(lang,'fullProfile.twitter')}</p>
                     <p className="text-xs font-medium text-slate-900">{player.twitter}</p>
                   </div>
                 </a>
@@ -168,7 +171,7 @@ export default function PlayerFullProfile({ player }) {
                     <Linkedin className="w-3.5 h-3.5 text-blue-700" />
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-400">LinkedIn</p>
+                    <p className="text-[10px] text-slate-400">{t(lang,'fullProfile.linkedin')}</p>
                     <p className="text-xs font-medium text-slate-900">{player.linkedin}</p>
                   </div>
                 </a>
@@ -179,7 +182,7 @@ export default function PlayerFullProfile({ player }) {
                     <MapPin className="w-3.5 h-3.5 text-slate-600" />
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-400">Résidence</p>
+                    <p className="text-[10px] text-slate-400">{t(lang,'fullProfile.residence')}</p>
                     <p className="text-xs font-medium text-slate-900">
                       {[player.adresse, player.ville_residence, player.pays_residence].filter(Boolean).join(', ')}
                     </p>
@@ -194,10 +197,10 @@ export default function PlayerFullProfile({ player }) {
       {/* ── Valeur marchande ── */}
       {(player.valeur_marchande != null || player.valeur_marchande_peak != null) && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatBox label="Valeur marchande" value={player.valeur_marchande ? `${player.valeur_marchande} M€` : null} color="bg-green-50" textColor="text-green-700" />
-          <StatBox label="Valeur max carrière" value={player.valeur_marchande_peak ? `${player.valeur_marchande_peak} M€` : null} color="bg-emerald-50" textColor="text-emerald-700" />
-          <StatBox label="Note scout" value={player.note_globale_scout ? `${player.note_globale_scout}/100` : null} color="bg-amber-50" textColor="text-amber-700" />
-          <StatBox label="Saisons pro" value={player.saisons_pro} />
+          <StatBox label={t(lang,'fullProfile.marketValue')} value={player.valeur_marchande ? `${player.valeur_marchande} M€` : null} color="bg-green-50" textColor="text-green-700" />
+          <StatBox label={t(lang,'fullProfile.peakValue')} value={player.valeur_marchande_peak ? `${player.valeur_marchande_peak} M€` : null} color="bg-emerald-50" textColor="text-emerald-700" />
+          <StatBox label={t(lang,'fullProfile.scoutRating')} value={player.note_globale_scout ? `${player.note_globale_scout}/100` : null} color="bg-amber-50" textColor="text-amber-700" />
+          <StatBox label={t(lang,'fullProfile.proSeasons')} value={player.saisons_pro} />
         </div>
       )}
 
@@ -207,41 +210,41 @@ export default function PlayerFullProfile({ player }) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <BarChart2 className="w-4 h-4 text-purple-500" />
-              Stats saison en cours — SofaScore
+              {t(lang,'fullProfile.statsTitle')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Général */}
             <div>
-              <SectionTitle icon={Activity} label="Général" />
+              <SectionTitle icon={Activity} label={t(lang,'fullProfile.general')} />
               <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
-                <StatBox label="Matchs" value={player.matchs_joues} />
-                <StatBox label="Titulaire" value={player.titularisations} />
-                <StatBox label="Minutes" value={player.minutes_jouees} />
-                <StatBox label="Buts" value={player.buts} color="bg-green-50" textColor="text-green-700" />
-                <StatBox label="Passes D." value={player.passes_decisives} color="bg-blue-50" textColor="text-blue-700" />
-                <StatBox label="Jaunes" value={player.cartons_jaunes} color="bg-yellow-50" />
-                <StatBox label="Note" value={player.note_moyenne} color="bg-indigo-50" textColor="text-indigo-700" />
+                <StatBox label={t(lang,'fullProfile.matches')} value={player.matchs_joues} />
+                <StatBox label={t(lang,'fullProfile.starter')} value={player.titularisations} />
+                <StatBox label={t(lang,'fullProfile.minutes')} value={player.minutes_jouees} />
+                <StatBox label={t(lang,'players.goals')} value={player.buts} color="bg-green-50" textColor="text-green-700" />
+                <StatBox label={t(lang,'players.assists')} value={player.passes_decisives} color="bg-blue-50" textColor="text-blue-700" />
+                <StatBox label={t(lang,'fullProfile.yellows')} value={player.cartons_jaunes} color="bg-yellow-50" />
+                <StatBox label={t(lang,'players.rating')} value={player.note_moyenne} color="bg-indigo-50" textColor="text-indigo-700" />
               </div>
             </div>
 
             {/* Offensif */}
             {hasOffStats && (
               <div>
-                <SectionTitle icon={Target} label="Offensif" color="text-green-700" />
+                <SectionTitle icon={Target} label={t(lang,'fullProfile.offensive')} color="text-green-700" />
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                  <StatBox label="xG" value={player.xg} color="bg-green-50" textColor="text-green-700" />
-                  <StatBox label="xA" value={player.xa} color="bg-blue-50" textColor="text-blue-700" />
-                  <StatBox label="xG/90min" value={player.xg_par_90} />
-                  <StatBox label="Tirs" value={player.tirs} />
-                  <StatBox label="Tirs cadrés" value={player.tirs_cadres} />
-                  <StatBox label="% cadrés" value={player.tirs_cadres_pct != null ? `${player.tirs_cadres_pct}%` : null} />
-                  <StatBox label="Gdes chances" value={player.grandes_chances} />
-                  <StatBox label="Gdes ch. manq." value={player.grandes_chances_manquees} />
-                  <StatBox label="Buts tête" value={player.buts_tete} />
-                  <StatBox label="Buts pied D" value={player.buts_pied_droit} />
-                  <StatBox label="Buts pied G" value={player.buts_pied_gauche} />
-                  <StatBox label="Penaltys" value={player.penaltys_marques != null ? `${player.penaltys_marques}/${player.penaltys_tires ?? "?"}` : null} />
+                  <StatBox label={t(lang,'fullProfile.xg')} value={player.xg} color="bg-green-50" textColor="text-green-700" />
+                  <StatBox label={t(lang,'fullProfile.xa')} value={player.xa} color="bg-blue-50" textColor="text-blue-700" />
+                  <StatBox label={t(lang,'fullProfile.xgPer90')} value={player.xg_par_90} />
+                  <StatBox label={t(lang,'fullProfile.shots')} value={player.tirs} />
+                  <StatBox label={t(lang,'fullProfile.shotsOnTarget')} value={player.tirs_cadres} />
+                  <StatBox label={t(lang,'fullProfile.shotsPct')} value={player.tirs_cadres_pct != null ? `${player.tirs_cadres_pct}%` : null} />
+                  <StatBox label={t(lang,'fullProfile.bigChances')} value={player.grandes_chances} />
+                  <StatBox label={t(lang,'fullProfile.bigChancesMissed')} value={player.grandes_chances_manquees} />
+                  <StatBox label={t(lang,'fullProfile.headGoals')} value={player.buts_tete} />
+                  <StatBox label={t(lang,'fullProfile.rightGoals')} value={player.buts_pied_droit} />
+                  <StatBox label={t(lang,'fullProfile.leftGoals')} value={player.buts_pied_gauche} />
+                  <StatBox label={t(lang,'fullProfile.penalties')} value={player.penaltys_marques != null ? `${player.penaltys_marques}/${player.penaltys_tires ?? "?"}` : null} />
                 </div>
               </div>
             )}
@@ -249,13 +252,13 @@ export default function PlayerFullProfile({ player }) {
             {/* Passes */}
             {hasPassStats && (
               <div>
-                <SectionTitle icon={Zap} label="Passes & création" color="text-blue-700" />
+                <SectionTitle icon={Zap} label={t(lang,'fullProfile.passingTitle')} color="text-blue-700" />
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                  <StatBox label="% passes" value={player.passes_reussies_pct != null ? `${player.passes_reussies_pct}%` : null} />
-                  <StatBox label="% passes longues" value={player.passes_longues_pct != null ? `${player.passes_longues_pct}%` : null} />
-                  <StatBox label="Passes clés/m." value={player.passes_cles} />
-                  <StatBox label="Centres" value={player.centres} />
-                  <StatBox label="% centres" value={player.centres_reussis_pct != null ? `${player.centres_reussis_pct}%` : null} />
+                  <StatBox label={t(lang,'fullProfile.passPct')} value={player.passes_reussies_pct != null ? `${player.passes_reussies_pct}%` : null} />
+                  <StatBox label={t(lang,'fullProfile.longPassPct')} value={player.passes_longues_pct != null ? `${player.passes_longues_pct}%` : null} />
+                  <StatBox label={t(lang,'fullProfile.keyPassesPM')} value={player.passes_cles} />
+                  <StatBox label={t(lang,'fullProfile.crosses')} value={player.centres} />
+                  <StatBox label={t(lang,'fullProfile.crossesPct')} value={player.centres_reussis_pct != null ? `${player.centres_reussis_pct}%` : null} />
                 </div>
               </div>
             )}
@@ -263,16 +266,16 @@ export default function PlayerFullProfile({ player }) {
             {/* Dribbles & physique */}
             {hasDribbleStats && (
               <div>
-                <SectionTitle icon={Dumbbell} label="Dribbles & physique" color="text-orange-700" />
+                <SectionTitle icon={Dumbbell} label={t(lang,'fullProfile.dribblesTitle')} color="text-orange-700" />
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                  <StatBox label="Dribbles réussis" value={player.dribbles_reussis} />
-                  <StatBox label="Dribbles tentés" value={player.dribbles_tentes} />
-                  <StatBox label="% dribbles" value={player.dribbles_pct != null ? `${player.dribbles_pct}%` : null} />
-                  <StatBox label="Touches/match" value={player.touches_balle} />
-                  <StatBox label="Pertes balle/m." value={player.pertes_balle} />
-                  <StatBox label="Distance km/m." value={player.distance_course} />
-                  <StatBox label="Sprints/match" value={player.sprints} />
-                  <StatBox label="Vitesse max" value={player.vitesse_max ? `${player.vitesse_max} km/h` : null} />
+                  <StatBox label={t(lang,'fullProfile.dribblesWon')} value={player.dribbles_reussis} />
+                  <StatBox label={t(lang,'fullProfile.dribblesAttempted')} value={player.dribbles_tentes} />
+                  <StatBox label={t(lang,'fullProfile.dribblesPct')} value={player.dribbles_pct != null ? `${player.dribbles_pct}%` : null} />
+                  <StatBox label={t(lang,'fullProfile.touchesPM')} value={player.touches_balle} />
+                  <StatBox label={t(lang,'fullProfile.ballLossesPM')} value={player.pertes_balle} />
+                  <StatBox label={t(lang,'fullProfile.distKmPM')} value={player.distance_course} />
+                  <StatBox label={t(lang,'fullProfile.sprintsPM')} value={player.sprints} />
+                  <StatBox label={t(lang,'fullProfile.topSpeed')} value={player.vitesse_max ? `${player.vitesse_max} ${t(lang,'fullProfile.kmh')}` : null} />
                 </div>
               </div>
             )}
@@ -280,18 +283,18 @@ export default function PlayerFullProfile({ player }) {
             {/* Défense */}
             {hasDefStats && (
               <div>
-                <SectionTitle icon={Shield} label="Défense & duels" color="text-slate-700" />
+                <SectionTitle icon={Shield} label={t(lang,'fullProfile.defenceTitle')} color="text-slate-700" />
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                  <StatBox label="Interceptions" value={player.interceptions} />
-                  <StatBox label="Tacles réussis" value={player.tacles} />
-                  <StatBox label="% tacles" value={player.tacles_reussis_pct != null ? `${player.tacles_reussis_pct}%` : null} />
-                  <StatBox label="Dégagements" value={player.degagements} />
-                  <StatBox label="% duels" value={player.duels_gagnes_pct != null ? `${player.duels_gagnes_pct}%` : null} />
-                  <StatBox label="% duels aériens" value={player.duels_aeriens_pct != null ? `${player.duels_aeriens_pct}%` : null} />
-                  <StatBox label="Récupérations" value={player.recuperations} />
-                  <StatBox label="Fautes commises" value={player.fautes_commises} />
-                  <StatBox label="Fautes subies" value={player.fautes_subies} />
-                  <StatBox label="Hors-jeu" value={player.hors_jeu} />
+                  <StatBox label={t(lang,'fullProfile.interceptions')} value={player.interceptions} />
+                  <StatBox label={t(lang,'fullProfile.tacklesWon')} value={player.tacles} />
+                  <StatBox label={t(lang,'fullProfile.tacklesPct')} value={player.tacles_reussis_pct != null ? `${player.tacles_reussis_pct}%` : null} />
+                  <StatBox label={t(lang,'fullProfile.clearances')} value={player.degagements} />
+                  <StatBox label={t(lang,'fullProfile.duelsPct')} value={player.duels_gagnes_pct != null ? `${player.duels_gagnes_pct}%` : null} />
+                  <StatBox label={t(lang,'fullProfile.aerialDuelsPct')} value={player.duels_aeriens_pct != null ? `${player.duels_aeriens_pct}%` : null} />
+                  <StatBox label={t(lang,'fullProfile.recoveries')} value={player.recuperations} />
+                  <StatBox label={t(lang,'fullProfile.foulsMade')} value={player.fautes_commises} />
+                  <StatBox label={t(lang,'fullProfile.foulsDrawn')} value={player.fautes_subies} />
+                  <StatBox label={t(lang,'fullProfile.offside')} value={player.hors_jeu} />
                 </div>
               </div>
             )}
@@ -299,14 +302,14 @@ export default function PlayerFullProfile({ player }) {
             {/* Gardien */}
             {hasGKStats && (
               <div>
-                <SectionTitle icon={Shield} label="Gardien" color="text-yellow-700" />
+                <SectionTitle icon={Shield} label={t(lang,'fullProfile.gkTitle')} color="text-yellow-700" />
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                  <StatBox label="Arrêts" value={player.arrets} />
-                  <StatBox label="% arrêts" value={player.arrets_pct != null ? `${player.arrets_pct}%` : null} />
-                  <StatBox label="Clean sheets" value={player.clean_sheets} color="bg-green-50" textColor="text-green-700" />
-                  <StatBox label="Buts encaissés" value={player.buts_encaisses} />
-                  <StatBox label="xG encaissés" value={player.xg_contre} />
-                  <StatBox label="Sorties réussies" value={player.sorties_reussies} />
+                  <StatBox label={t(lang,'fullProfile.saves')} value={player.arrets} />
+                  <StatBox label={t(lang,'fullProfile.savesPct')} value={player.arrets_pct != null ? `${player.arrets_pct}%` : null} />
+                  <StatBox label={t(lang,'fullProfile.cleanSheets')} value={player.clean_sheets} color="bg-green-50" textColor="text-green-700" />
+                  <StatBox label={t(lang,'fullProfile.goalsConceded')} value={player.buts_encaisses} />
+                  <StatBox label={t(lang,'fullProfile.xgConceded')} value={player.xg_contre} />
+                  <StatBox label={t(lang,'fullProfile.successfulExits')} value={player.sorties_reussies} />
                 </div>
               </div>
             )}
@@ -319,14 +322,14 @@ export default function PlayerFullProfile({ player }) {
         {hasSelection && (
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2"><Globe className="w-4 h-4 text-blue-500" />Sélection nationale</CardTitle>
+              <CardTitle className="text-sm flex items-center gap-2"><Globe className="w-4 h-4 text-blue-500" />{t(lang,'fullProfile.nationalTeam')}</CardTitle>
             </CardHeader>
             <CardContent>
-              <InfoRow label="Matchs" value={player.matchs_international} />
-              <InfoRow label="Buts" value={player.buts_international} />
-              <InfoRow label="Passes déc." value={player.passes_international} />
-              <InfoRow label="1ère sélection" value={player.premier_match_selection} />
-              <InfoRow label="U21" value={player.selection_u21 != null ? (player.selection_u21 ? "Oui" : "Non") : null} />
+              <InfoRow label={t(lang,'fullProfile.ntMatches')} value={player.matchs_international} />
+              <InfoRow label={t(lang,'players.goals')} value={player.buts_international} />
+              <InfoRow label={t(lang,'fullProfile.ntAssists')} value={player.passes_international} />
+              <InfoRow label={t(lang,'fullProfile.firstCap')} value={player.premier_match_selection} />
+              <InfoRow label={t(lang,'fullProfile.u21')} value={player.selection_u21 != null ? (player.selection_u21 ? t(lang,'common.yes') : t(lang,'common.no')) : null} />
             </CardContent>
           </Card>
         )}
@@ -334,12 +337,12 @@ export default function PlayerFullProfile({ player }) {
         {hasBlessures && (
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2"><Heart className="w-4 h-4 text-red-500" />Blessures (carrière)</CardTitle>
+              <CardTitle className="text-sm flex items-center gap-2"><Heart className="w-4 h-4 text-red-500" />{t(lang,'fullProfile.injuriesTitle')}</CardTitle>
             </CardHeader>
             <CardContent>
-              <InfoRow label="Nombre de blessures" value={player.blessures} />
-              <InfoRow label="Jours manqués" value={player.jours_blesses} />
-              <InfoRow label="Types" value={player.type_blessures} />
+              <InfoRow label={t(lang,'fullProfile.injuriesCount')} value={player.blessures} />
+              <InfoRow label={t(lang,'fullProfile.daysMissed')} value={player.jours_blesses} />
+              <InfoRow label={t(lang,'fullProfile.injuryTypes')} value={player.type_blessures} />
             </CardContent>
           </Card>
         )}
@@ -347,14 +350,14 @@ export default function PlayerFullProfile({ player }) {
         {hasCarriere && (
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2"><Activity className="w-4 h-4 text-slate-500" />Carrière complète</CardTitle>
+              <CardTitle className="text-sm flex items-center gap-2"><Activity className="w-4 h-4 text-slate-500" />{t(lang,'fullProfile.careerTitle')}</CardTitle>
             </CardHeader>
             <CardContent>
-              <InfoRow label="Matchs (carrière)" value={player.matchs_carriere} />
-              <InfoRow label="Buts (carrière)" value={player.buts_carriere} />
-              <InfoRow label="Passes (carrière)" value={player.passes_carriere} />
-              <InfoRow label="Clubs différents" value={player.nb_clubs} />
-              <InfoRow label="Saisons pro" value={player.saisons_pro} />
+              <InfoRow label={t(lang,'players.matches')} value={player.matchs_carriere} />
+              <InfoRow label={t(lang,'players.goals')} value={player.buts_carriere} />
+              <InfoRow label={t(lang,'players.assists')} value={player.passes_carriere} />
+              <InfoRow label={t(lang,'fullProfile.differentClubs')} value={player.nb_clubs} />
+              <InfoRow label={t(lang,'fullProfile.proSeasons')} value={player.saisons_pro} />
             </CardContent>
           </Card>
         )}
@@ -364,30 +367,30 @@ export default function PlayerFullProfile({ player }) {
       {hasScout && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2"><Star className="w-4 h-4 text-amber-500" />Profil scout</CardTitle>
+            <CardTitle className="text-sm flex items-center gap-2"><Star className="w-4 h-4 text-amber-500" />{t(lang,'fullProfile.scoutTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {player.style_jeu && (
               <div>
-                <p className="text-xs font-semibold text-slate-400 uppercase mb-1">Style de jeu</p>
+                <p className="text-xs font-semibold text-slate-400 uppercase mb-1">{t(lang,'fullProfile.playStyle')}</p>
                 <p className="text-sm text-slate-700">{player.style_jeu}</p>
               </div>
             )}
             {player.forces && (
               <div>
-                <p className="text-xs font-semibold text-green-600 uppercase mb-1">Points forts</p>
+                <p className="text-xs font-semibold text-green-600 uppercase mb-1">{t(lang,'fullProfile.strengths')}</p>
                 <p className="text-sm text-slate-700">{player.forces}</p>
               </div>
             )}
             {player.faiblesses && (
               <div>
-                <p className="text-xs font-semibold text-red-500 uppercase mb-1">Points faibles</p>
+                <p className="text-xs font-semibold text-red-500 uppercase mb-1">{t(lang,'fullProfile.weaknesses')}</p>
                 <p className="text-sm text-slate-700">{player.faiblesses}</p>
               </div>
             )}
             {player.stats_resume && (
               <div>
-                <p className="text-xs font-semibold text-slate-400 uppercase mb-1">Résumé carrière</p>
+                <p className="text-xs font-semibold text-slate-400 uppercase mb-1">{t(lang,'fullProfile.careerSummary')}</p>
                 <p className="text-sm text-slate-600 bg-slate-50 rounded-lg p-3 leading-relaxed">{player.stats_resume}</p>
               </div>
             )}
@@ -395,7 +398,7 @@ export default function PlayerFullProfile({ player }) {
               <div className="flex items-center gap-2 pt-1">
                 <Star className="w-4 h-4 text-amber-400" />
                 <span className="font-bold text-xl text-slate-900">{player.note_globale_scout}/100</span>
-                <span className="text-xs text-slate-500">Note globale scout</span>
+                <span className="text-xs text-slate-500">{t(lang,'fullProfile.globalRating')}</span>
               </div>
             )}
           </CardContent>
@@ -408,7 +411,7 @@ export default function PlayerFullProfile({ player }) {
           {player.palmares && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2"><Trophy className="w-4 h-4 text-amber-500" />Palmarès</CardTitle>
+                <CardTitle className="text-sm flex items-center gap-2"><Trophy className="w-4 h-4 text-amber-500" />{t(lang,'fullProfile.trophies')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
@@ -422,7 +425,7 @@ export default function PlayerFullProfile({ player }) {
           {player.distinctions && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2"><Zap className="w-4 h-4 text-purple-500" />Distinctions individuelles</CardTitle>
+                <CardTitle className="text-sm flex items-center gap-2"><Zap className="w-4 h-4 text-purple-500" />{t(lang,'fullProfile.awards')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-slate-700">{player.distinctions}</p>

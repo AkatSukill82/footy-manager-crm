@@ -3,16 +3,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from "recharts";
 import { TrendingUp, Users, DollarSign, Activity } from "lucide-react";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export default function EnhancedCharts({ players, transfers, watchList, teams }) {
+  const { lang } = useLanguage();
   const [chartType, setChartType] = useState("bar");
   const [timeRange, setTimeRange] = useState("all");
 
   // Données par position
   const positionData = players.reduce((acc, player) => {
-    const poste = player.poste || "Non défini";
+    const poste = player.poste || t(lang, 'dashboardCharts.undefined');
     if (!acc[poste]) {
       acc[poste] = { position: poste, count: 0, totalValue: 0 };
     }
@@ -81,10 +84,10 @@ export default function EnhancedCharts({ players, transfers, watchList, teams })
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="bar">Graphique à barres</SelectItem>
-            <SelectItem value="line">Graphique linéaire</SelectItem>
-            <SelectItem value="area">Graphique en aires</SelectItem>
-            <SelectItem value="pie">Graphique circulaire</SelectItem>
+            <SelectItem value="bar">{t(lang,'dashboardCharts.barChart')}</SelectItem>
+            <SelectItem value="line">{t(lang,'dashboardCharts.lineChart')}</SelectItem>
+            <SelectItem value="area">{t(lang,'dashboardCharts.areaChart')}</SelectItem>
+            <SelectItem value="pie">{t(lang,'dashboardCharts.pieChart')}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={timeRange} onValueChange={setTimeRange}>
@@ -92,9 +95,9 @@ export default function EnhancedCharts({ players, transfers, watchList, teams })
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Toutes périodes</SelectItem>
-            <SelectItem value="6m">6 derniers mois</SelectItem>
-            <SelectItem value="1y">Dernière année</SelectItem>
+            <SelectItem value="all">{t(lang,'dashboardCharts.allPeriods')}</SelectItem>
+            <SelectItem value="6m">{t(lang,'dashboardCharts.last6Months')}</SelectItem>
+            <SelectItem value="1y">{t(lang,'dashboardCharts.lastYear')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -105,7 +108,7 @@ export default function EnhancedCharts({ players, transfers, watchList, teams })
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="w-5 h-5" />
-              Distribution par position
+              {t(lang,'dashboardCharts.distributionByPosition')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -165,7 +168,7 @@ export default function EnhancedCharts({ players, transfers, watchList, teams })
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="w-5 h-5" />
-              Valeur marchande par position
+              {t(lang,'dashboardCharts.valueByPosition')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -226,7 +229,7 @@ export default function EnhancedCharts({ players, transfers, watchList, teams })
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5" />
-                Évolution des transferts
+                {t(lang,'dashboardCharts.transfersEvolution')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -275,7 +278,7 @@ export default function EnhancedCharts({ players, transfers, watchList, teams })
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Activity className="w-5 h-5" />
-              Distribution par âge
+              {t(lang,'dashboardCharts.distributionByAge')}
             </CardTitle>
           </CardHeader>
           <CardContent>

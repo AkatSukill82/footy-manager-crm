@@ -11,15 +11,20 @@ import {
   PolarGrid, PolarAngleAxis, Radar
 } from "recharts";
 import { format, differenceInMonths } from "date-fns";
+import { fr, es, enUS } from "date-fns/locale";
+import { useLanguage } from "../../../lib/LanguageContext";
+import { t } from "../../../i18n/translations";
+
+const DATE_LOCALES = { fr, es, en: enUS };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function getAgeCategory(age) {
-  if (age <= 20) return { label: "Espoir", color: "text-blue-600", bg: "bg-blue-50" };
-  if (age <= 23) return { label: "En développement", color: "text-purple-600", bg: "bg-purple-50" };
-  if (age <= 27) return { label: "Prime", color: "text-green-600", bg: "bg-green-50" };
-  if (age <= 30) return { label: "Expérimenté", color: "text-yellow-600", bg: "bg-yellow-50" };
-  return { label: "Vétéran", color: "text-orange-600", bg: "bg-orange-50" };
+  if (age <= 20) return { key: "ageCatHope", color: "text-blue-600", bg: "bg-blue-50" };
+  if (age <= 23) return { key: "ageCatDev",  color: "text-purple-600", bg: "bg-purple-50" };
+  if (age <= 27) return { key: "ageCatPrime", color: "text-green-600", bg: "bg-green-50" };
+  if (age <= 30) return { key: "ageCatExp",  color: "text-yellow-600", bg: "bg-yellow-50" };
+  return { key: "ageCatVet", color: "text-orange-600", bg: "bg-orange-50" };
 }
 
 function projectValue(player) {
@@ -41,7 +46,6 @@ function projectValue(player) {
     } else if (futureAge <= 24) {
       mult = 1 + i * 0.15;
     } else if (futureAge <= 27) {
-      // Pic de carrière
       const perfBonus = note >= 7.5 ? 0.05 : note >= 7 ? 0.02 : -0.02;
       mult = 1 + i * (0.04 + perfBonus);
     } else if (futureAge <= 30) {
@@ -72,30 +76,30 @@ function predictTransfer(player) {
   const positive = [];
 
   if (monthsLeft !== null) {
-    if (monthsLeft < 6) { score += 40; reasons.push("Contrat expire dans < 6 mois"); }
-    else if (monthsLeft < 12) { score += 25; reasons.push("Contrat < 1 an"); }
-    else if (monthsLeft < 18) { score += 12; reasons.push("Contrat < 18 mois"); }
-    else positive.push(`Contrat jusqu'en ${format(contractEnd, "MM/yyyy")}`);
+    if (monthsLeft < 6) { score += 40; reasons.push("predictive.reasonContract6m"); }
+    else if (monthsLeft < 12) { score += 25; reasons.push("predictive.reasonContract12m"); }
+    else if (monthsLeft < 18) { score += 12; reasons.push("predictive.reasonContract18m"); }
+    else positive.push({ key: "contractUntil", contractEnd });
   }
 
   const age = player.age || 25;
-  if (age >= 32) { score += 20; reasons.push("32 ans ou plus"); }
-  else if (age >= 30) { score += 12; reasons.push("30+ ans"); }
-  else if (age <= 22) { score += 15; reasons.push("Jeune talent convoité"); }
-  else positive.push("Âge idéal pour un contrat long");
+  if (age >= 32) { score += 20; reasons.push("predictive.reason32plus"); }
+  else if (age >= 30) { score += 12; reasons.push("predictive.reason30plus"); }
+  else if (age <= 22) { score += 15; reasons.push("predictive.reasonYoungCoveted2"); }
+  else positive.push({ key: "contractIdealAge" });
 
   if (player.valeur_marchande && player.valeur_marchande_peak) {
     const ratio = player.valeur_marchande / player.valeur_marchande_peak;
-    if (ratio >= 0.92) { score += 18; reasons.push("Au sommet de sa valeur marchande"); }
+    if (ratio >= 0.92) { score += 18; reasons.push("predictive.reasonAtPeak"); }
     else if (ratio >= 0.75) { score += 8; }
-    else { positive.push("Valeur en dessous du pic — club peut négocier"); }
+    else { positive.push({ key: "contractValueNeg" }); }
   }
 
-  if (player.note_moyenne >= 7.5) { score += 12; reasons.push("Excellente forme récente"); }
-  else if (player.note_moyenne < 6.5) { positive.push("Forme décevante — club moins enclin à vendre"); }
+  if (player.note_moyenne >= 7.5) { score += 12; reasons.push("predictive.reasonExcForm"); }
+  else if (player.note_moyenne < 6.5) { positive.push({ key: "contractPoorForm" }); }
 
   if ((player.buts || 0) + (player.passes_decisives || 0) >= 15) {
-    score += 10; reasons.push("15+ contributions cette saison");
+    score += 10; reasons.push("predictive.reasonContrib15b");
   }
 
   const transferPct = Math.min(95, Math.max(5, score));
@@ -105,60 +109,45 @@ function predictTransfer(player) {
 }
 
 function estimatePerformanceScore(player) {
-  const data = [
+  return [
+    { subjectKey: "radarForm",       value: Math.min(100, ((player.note_moyenne || 6.5) / 10) * 100) },
+    { subjectKey: "radarContrib",    value: Math.min(100, ((player.buts || 0) + (player.passes_decisives || 0)) * 4) },
+    { subjectKey: "radarPhysique",   value: player.minutes_jouees ? Math.min(100, (player.minutes_jouees / 3000) * 100) : 50 },
+    { subjectKey: "radarRegularity", value: player.matchs_joues ? Math.min(100, (player.matchs_joues / 38) * 100) : 50 },
     {
-      subject: "Forme",
-      value: Math.min(100, ((player.note_moyenne || 6.5) / 10) * 100),
+      subjectKey: "radarEfficiency",
+      value: player.xg > 0 && player.buts > 0 ? Math.min(100, (player.buts / player.xg) * 70) : 50,
     },
-    {
-      subject: "Contribution",
-      value: Math.min(100, ((player.buts || 0) + (player.passes_decisives || 0)) * 4),
-    },
-    {
-      subject: "Physique",
-      value: player.minutes_jouees ? Math.min(100, (player.minutes_jouees / 3000) * 100) : 50,
-    },
-    {
-      subject: "Régularité",
-      value: player.matchs_joues ? Math.min(100, (player.matchs_joues / 38) * 100) : 50,
-    },
-    {
-      subject: "Efficacité",
-      value: player.xg > 0 && player.buts > 0
-        ? Math.min(100, (player.buts / player.xg) * 70)
-        : 50,
-    },
-    {
-      subject: "Défense",
-      value: Math.min(100, ((player.interceptions || 0) + (player.tacles || 0)) * 5),
-    },
+    { subjectKey: "radarDefense",    value: Math.min(100, ((player.interceptions || 0) + (player.tacles || 0)) * 5) },
   ];
-  return data;
 }
 
 // ─── Composant principal ─────────────────────────────────────────────────────
 
 export default function PlayerPredictionDetail({ player, allPlayers }) {
+  const { lang } = useLanguage();
+  const dateLocale = DATE_LOCALES[lang] || fr;
+
   const age = player.age || 25;
   const ageCategory = getAgeCategory(age);
   const projData = projectValue(player);
   const transfer = predictTransfer(player);
-  const radarData = estimatePerformanceScore(player);
+  const radarDataRaw = estimatePerformanceScore(player);
+  const radarData = radarDataRaw.map(d => ({ ...d, subject: t(lang, `predictive.${d.subjectKey}`) }));
   const currentYear = new Date().getFullYear();
 
-  // Comparables : même poste, âge proche
   const comparables = allPlayers
     .filter(p => p.id !== player.id && p.poste === player.poste && Math.abs((p.age || 25) - age) <= 3 && p.valeur_marchande > 0)
     .sort((a, b) => b.valeur_marchande - a.valeur_marchande)
     .slice(0, 3);
 
-  const peakProjection = projData.reduce((max, p) => p.valeur > max.valeur ? p : max, projData[0]);
+  const peakProjection = projData.reduce((max, pd) => pd.valeur > max.valeur ? pd : max, projData[0]);
   const proj3ans = projData.find(d => d.annee === currentYear + 3);
 
   return (
     <div className="space-y-5">
 
-      {/* Carte identité + score global */}
+      {/* Identity card */}
       <Card className="border-purple-100 bg-gradient-to-r from-purple-50/50 to-white">
         <CardContent className="pt-5">
           <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -174,7 +163,9 @@ export default function PlayerPredictionDetail({ player, allPlayers }) {
                 <h2 className="text-xl font-bold text-slate-900">{player.nom}</h2>
                 <p className="text-sm text-slate-500">{player.poste}{player.club_actuel ? ` · ${player.club_actuel}` : ""}{player.ligue ? ` · ${player.ligue}` : ""}</p>
                 <div className="flex items-center gap-2 mt-1.5">
-                  <Badge className={`${ageCategory.bg} ${ageCategory.color} border-0`}>{age} ans — {ageCategory.label}</Badge>
+                  <Badge className={`${ageCategory.bg} ${ageCategory.color} border-0`}>
+                    {age} {t(lang, 'common.ageUnit')} — {t(lang, `predictive.${ageCategory.key}`)}
+                  </Badge>
                   {player.note_moyenne && (
                     <Badge className="bg-blue-50 text-blue-700 border-0">⭐ {player.note_moyenne}/10</Badge>
                   )}
@@ -186,9 +177,9 @@ export default function PlayerPredictionDetail({ player, allPlayers }) {
             </div>
             <div className="grid grid-cols-3 gap-3 text-center">
               {[
-                { label: "Buts", value: player.buts ?? "—" },
-                { label: "Passes D.", value: player.passes_decisives ?? "—" },
-                { label: "Minutes", value: player.minutes_jouees ? `${player.minutes_jouees}'` : "—" },
+                { label: t(lang, 'players.goals'), value: player.buts ?? "—" },
+                { label: t(lang, 'players.assists'), value: player.passes_decisives ?? "—" },
+                { label: t(lang, 'players.matches'), value: player.minutes_jouees ? `${player.minutes_jouees}'` : "—" },
               ].map(s => (
                 <div key={s.label} className="bg-white rounded-xl p-3 border border-slate-100">
                   <p className="text-lg font-bold text-slate-900">{s.value}</p>
@@ -202,14 +193,14 @@ export default function PlayerPredictionDetail({ player, allPlayers }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-        {/* Projection valeur marchande */}
+        {/* Market value projection */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-green-600" />
-              Projection valeur marchande (6 ans)
+              {t(lang, 'predictive.projTitle')}
             </CardTitle>
-            <p className="text-xs text-slate-500">Basée sur l'âge, la note, les stats et la valeur actuelle</p>
+            <p className="text-xs text-slate-500">{t(lang, 'predictive.projDesc')}</p>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={180}>
@@ -218,13 +209,18 @@ export default function PlayerPredictionDetail({ player, allPlayers }) {
                 <XAxis dataKey="annee" tick={{ fontSize: 10 }} tickLine={false} />
                 <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={v => `${v}M`} />
                 <Tooltip
-                  formatter={(v) => [`${v} M€`, "Valeur marchande"]}
+                  formatter={(v) => [`${v} M€`, t(lang, 'predictive.statValue')]}
                   labelFormatter={(l) => {
                     const pt = projData.find(d => d.annee === l);
-                    return `${l} (${pt?.age} ans)`;
+                    return `${l} (${pt?.age} ${t(lang, 'common.ageUnit')})`;
                   }}
                 />
-                <ReferenceLine x={currentYear} stroke="#a855f7" strokeDasharray="4 4" label={{ value: "Aujourd'hui", fontSize: 9, fill: "#a855f7" }} />
+                <ReferenceLine
+                  x={currentYear}
+                  stroke="#a855f7"
+                  strokeDasharray="4 4"
+                  label={{ value: t(lang, 'predictive.today'), fontSize: 9, fill: "#a855f7" }}
+                />
                 <Line
                   type="monotone"
                   dataKey="valeur"
@@ -248,31 +244,32 @@ export default function PlayerPredictionDetail({ player, allPlayers }) {
             </ResponsiveContainer>
             <div className="grid grid-cols-2 gap-2 mt-3">
               <div className="bg-green-50 rounded-lg p-2.5 text-center">
-                <p className="text-xs text-slate-500">Pic estimé</p>
+                <p className="text-xs text-slate-500">{t(lang, 'predictive.peakEstimate')}</p>
                 <p className="font-bold text-green-700">{peakProjection?.valeur} M€</p>
-                <p className="text-[10px] text-slate-400">en {peakProjection?.annee} ({peakProjection?.age} ans)</p>
+                <p className="text-[10px] text-slate-400">
+                  {peakProjection?.annee} ({t(lang, 'predictive.atAge', { age: peakProjection?.age })})
+                </p>
               </div>
               <div className="bg-purple-50 rounded-lg p-2.5 text-center">
-                <p className="text-xs text-slate-500">Dans 3 ans</p>
+                <p className="text-xs text-slate-500">{t(lang, 'predictive.in3years')}</p>
                 <p className="font-bold text-purple-700">{proj3ans?.valeur ?? "—"} M€</p>
-                <p className="text-[10px] text-slate-400">à {proj3ans?.age} ans</p>
+                <p className="text-[10px] text-slate-400">{t(lang, 'predictive.atAge', { age: proj3ans?.age })}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Probabilité transfert/renouvellement */}
+        {/* Transfer / renewal probability */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <ArrowRightLeft className="w-4 h-4 text-orange-500" />
-              Probabilité transfert / renouvellement
+              {t(lang, 'predictive.transferTitle2')}
             </CardTitle>
-            <p className="text-xs text-slate-500">Basée sur le contrat, l'âge, la valeur et la forme</p>
+            <p className="text-xs text-slate-500">{t(lang, 'predictive.transferDesc2')}</p>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-center gap-6 my-4">
-              {/* Jauge circulaire simple */}
               <div className="text-center">
                 <div className="relative w-24 h-24">
                   <svg viewBox="0 0 36 36" className="w-24 h-24 -rotate-90">
@@ -288,7 +285,7 @@ export default function PlayerPredictionDetail({ player, allPlayers }) {
                     {transfer.transferPct}%
                   </span>
                 </div>
-                <p className="text-xs font-medium text-orange-600 mt-1">Transfert</p>
+                <p className="text-xs font-medium text-orange-600 mt-1">{t(lang, 'predictive.transferLabel')}</p>
               </div>
 
               <div className="text-center">
@@ -306,16 +303,18 @@ export default function PlayerPredictionDetail({ player, allPlayers }) {
                     {transfer.renewalPct}%
                   </span>
                 </div>
-                <p className="text-xs font-medium text-green-600 mt-1">Renouvellement</p>
+                <p className="text-xs font-medium text-green-600 mt-1">{t(lang, 'predictive.renewalLabel')}</p>
               </div>
             </div>
 
             {transfer.contractEnd && (
               <div className="text-center text-xs text-slate-500 mb-3">
-                Contrat jusqu'au <strong>{format(transfer.contractEnd, "dd/MM/yyyy")}</strong>
+                {t(lang, 'predictive.contractUntil', {
+                  date: format(transfer.contractEnd, "dd/MM/yyyy", { locale: dateLocale }),
+                })}
                 {transfer.monthsLeft !== null && (
                   <span className={`ml-2 font-semibold ${transfer.monthsLeft < 12 ? "text-red-600" : "text-slate-600"}`}>
-                    ({transfer.monthsLeft} mois restants)
+                    {t(lang, 'predictive.monthsRemaining', { count: transfer.monthsLeft })}
                   </span>
                 )}
               </div>
@@ -324,14 +323,19 @@ export default function PlayerPredictionDetail({ player, allPlayers }) {
             <div className="space-y-1.5">
               {transfer.reasons.map((r, i) => (
                 <div key={i} className="flex items-center gap-2 text-xs text-orange-700 bg-orange-50 rounded-lg px-2 py-1">
-                  <AlertCircle className="w-3 h-3 flex-shrink-0" />{r}
+                  <AlertCircle className="w-3 h-3 flex-shrink-0" />{t(lang, r)}
                 </div>
               ))}
-              {transfer.positive.map((r, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs text-green-700 bg-green-50 rounded-lg px-2 py-1">
-                  <RefreshCw className="w-3 h-3 flex-shrink-0" />{r}
-                </div>
-              ))}
+              {transfer.positive.map((item, i) => {
+                const text = item.key === "contractUntil"
+                  ? t(lang, 'predictive.contractUntil', { date: format(item.contractEnd, "dd/MM/yyyy", { locale: dateLocale }) })
+                  : t(lang, `predictive.${item.key}`);
+                return (
+                  <div key={i} className="flex items-center gap-2 text-xs text-green-700 bg-green-50 rounded-lg px-2 py-1">
+                    <RefreshCw className="w-3 h-3 flex-shrink-0" />{text}
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
@@ -339,12 +343,12 @@ export default function PlayerPredictionDetail({ player, allPlayers }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-        {/* Radar de performance */}
+        {/* Performance radar */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Activity className="w-4 h-4 text-blue-600" />
-              Profil de performance (saison en cours)
+              {t(lang, 'predictive.perfProfile')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -371,48 +375,47 @@ export default function PlayerPredictionDetail({ player, allPlayers }) {
           </CardContent>
         </Card>
 
-        {/* Comparaison avec joueurs similaires */}
+        {/* Comparable players */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Target className="w-4 h-4 text-slate-600" />
-              Comparaison — joueurs similaires
+              {t(lang, 'predictive.comparablesTitle')}
             </CardTitle>
-            <p className="text-xs text-slate-500">Même poste · âge proche (±3 ans)</p>
+            <p className="text-xs text-slate-500">{t(lang, 'predictive.comparablesDesc')}</p>
           </CardHeader>
           <CardContent>
             {comparables.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-8">Pas de joueurs comparables dans la base</p>
+              <p className="text-sm text-slate-400 text-center py-8">{t(lang, 'predictive.noComparables')}</p>
             ) : (
               <div className="space-y-3">
-                {[player, ...comparables].map((p, i) => (
-                  <div key={p.id} className={`flex items-center justify-between p-2.5 rounded-xl text-sm ${i === 0 ? "bg-purple-50 border border-purple-200" : "bg-slate-50 border border-slate-100"}`}>
+                {[player, ...comparables].map((pl, i) => (
+                  <div key={pl.id} className={`flex items-center justify-between p-2.5 rounded-xl text-sm ${i === 0 ? "bg-purple-50 border border-purple-200" : "bg-slate-50 border border-slate-100"}`}>
                     <div className="flex items-center gap-2">
                       {i === 0 && <Zap className="w-3.5 h-3.5 text-purple-500" />}
-                      <span className={`font-semibold ${i === 0 ? "text-purple-800" : "text-slate-700"}`}>{p.nom}</span>
-                      <span className="text-xs text-slate-400">{p.age} ans</span>
+                      <span className={`font-semibold ${i === 0 ? "text-purple-800" : "text-slate-700"}`}>{pl.nom}</span>
+                      <span className="text-xs text-slate-400">{pl.age} {t(lang, 'common.ageUnit')}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      {p.note_moyenne && <span className="text-xs text-slate-500">⭐ {p.note_moyenne}</span>}
-                      <span className={`font-bold text-xs ${i === 0 ? "text-purple-700" : "text-slate-700"}`}>{p.valeur_marchande} M€</span>
+                      {pl.note_moyenne && <span className="text-xs text-slate-500">⭐ {pl.note_moyenne}</span>}
+                      <span className={`font-bold text-xs ${i === 0 ? "text-purple-700" : "text-slate-700"}`}>{pl.valeur_marchande} M€</span>
                     </div>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Stats clés vs comparables */}
             {comparables.length > 0 && (
               <div className="mt-4 pt-4 border-t border-slate-100">
-                <p className="text-xs font-semibold text-slate-600 mb-2">Valeur marchande comparée</p>
+                <p className="text-xs font-semibold text-slate-600 mb-2">{t(lang, 'predictive.comparedValue')}</p>
                 <ResponsiveContainer width="100%" height={100}>
-                  <BarChart data={[player, ...comparables].map(p => ({ nom: p.nom.split(" ").slice(-1)[0], valeur: p.valeur_marchande || 0, isSelected: p.id === player.id }))}>
+                  <BarChart data={[player, ...comparables].map(pl => ({ nom: pl.nom.split(" ").slice(-1)[0], valeur: pl.valeur_marchande || 0, isSelected: pl.id === player.id }))}>
                     <XAxis dataKey="nom" tick={{ fontSize: 10 }} tickLine={false} />
                     <YAxis hide />
-                    <Tooltip formatter={v => [`${v} M€`, "Valeur"]} />
+                    <Tooltip formatter={v => [`${v} M€`, t(lang, 'predictive.statValue')]} />
                     <Bar dataKey="valeur" radius={[4, 4, 0, 0]}>
-                      {[player, ...comparables].map((p, i) => (
-                        <Cell key={i} fill={p.id === player.id ? "#8b5cf6" : "#cbd5e1"} />
+                      {[player, ...comparables].map((pl, i) => (
+                        <Cell key={i} fill={pl.id === player.id ? "#8b5cf6" : "#cbd5e1"} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -423,60 +426,57 @@ export default function PlayerPredictionDetail({ player, allPlayers }) {
         </Card>
       </div>
 
-      {/* Recommandations IA */}
+      {/* Recommendations */}
       <Card className="border-purple-100">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-purple-500" />
-            Recommandations & conclusions
+            {t(lang, 'predictive.recoTitle')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {/* Recommandation transfert */}
             <div className={`rounded-xl p-4 ${transfer.transferPct >= 60 ? "bg-orange-50 border border-orange-200" : "bg-green-50 border border-green-200"}`}>
               <p className="text-xs font-semibold mb-1.5 flex items-center gap-1.5">
                 <ArrowRightLeft className={`w-3.5 h-3.5 ${transfer.transferPct >= 60 ? "text-orange-600" : "text-green-600"}`} />
                 <span className={transfer.transferPct >= 60 ? "text-orange-700" : "text-green-700"}>
-                  {transfer.transferPct >= 60 ? "Risque de départ" : "Stabilité probable"}
+                  {transfer.transferPct >= 60 ? t(lang, 'predictive.riskLabel') : t(lang, 'predictive.stableLabel')}
                 </span>
               </p>
               <p className="text-xs text-slate-600">
                 {transfer.transferPct >= 60
-                  ? `Probabilité de transfert élevée (${transfer.transferPct}%). Agir rapidement si renouvellement souhaité.`
-                  : `Le joueur devrait rester au club (${transfer.renewalPct}% de probabilité de renouvellement).`}
+                  ? t(lang, 'predictive.riskDesc', { pct: transfer.transferPct })
+                  : t(lang, 'predictive.stableDesc', { pct: transfer.renewalPct })}
               </p>
             </div>
 
-            {/* Recommandation valeur */}
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
               <p className="text-xs font-semibold text-blue-700 mb-1.5 flex items-center gap-1.5">
                 <DollarSign className="w-3.5 h-3.5 text-blue-600" />
-                Valeur marchande
+                {t(lang, 'predictive.valueSectionLabel')}
               </p>
               <p className="text-xs text-slate-600">
                 {age <= 24
-                  ? `Joueur en développement. Valeur attendue en forte hausse dans 2-3 ans (pic estimé à ${peakProjection?.valeur} M€ en ${peakProjection?.annee}).`
+                  ? t(lang, 'predictive.valueDevDesc', { peak: peakProjection?.valeur, year: peakProjection?.annee })
                   : age <= 27
-                    ? `En prime de carrière. C'est le moment idéal pour maximiser sa valeur ou le vendre.`
-                    : `Phase de déclin progressif. La valeur de ${player.valeur_marchande} M€ est susceptible de baisser.`}
+                    ? t(lang, 'predictive.valuePrimeDesc')
+                    : t(lang, 'predictive.valueDeclineDesc', { value: player.valeur_marchande })}
               </p>
             </div>
 
-            {/* Recommandation scouting */}
             <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
               <p className="text-xs font-semibold text-purple-700 mb-1.5 flex items-center gap-1.5">
                 <Shield className="w-3.5 h-3.5 text-purple-600" />
-                Avis scout
+                {t(lang, 'predictive.scoutOpinion')}
               </p>
               <p className="text-xs text-slate-600">
                 {(player.note_moyenne || 0) >= 7.5
-                  ? "Excellente forme. Joueur à cibler en priorité ou à conserver absolument."
+                  ? t(lang, 'predictive.scoutExcellent')
                   : (player.note_moyenne || 0) >= 7.0
-                    ? "Bon niveau. À suivre de près, peut encore progresser."
+                    ? t(lang, 'predictive.scoutGood')
                     : player.note_moyenne
-                      ? "Forme décevante. Analyse plus approfondie recommandée avant décision."
-                      : "Données de performance insuffisantes pour un avis complet."}
+                      ? t(lang, 'predictive.scoutPoor')
+                      : t(lang, 'predictive.scoutNoData')}
               </p>
             </div>
           </div>

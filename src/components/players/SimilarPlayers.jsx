@@ -4,8 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../../utils";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 export default function SimilarPlayers({ currentPlayer, allPlayers }) {
+  const { lang } = useLanguage();
   const navigate = useNavigate();
 
   const getSimilarPlayers = () => {
@@ -55,7 +58,7 @@ export default function SimilarPlayers({ currentPlayer, allPlayers }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="w-5 h-5 text-blue-600" />
-          Joueurs similaires
+          {t(lang,'players.similarPlayers')}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -81,7 +84,7 @@ export default function SimilarPlayers({ currentPlayer, allPlayers }) {
                 <div>
                   <div className="font-medium text-slate-900">{player.nom}</div>
                   <div className="text-sm text-slate-500">
-                    {player.age} ans • {player.club_actuel || "Sans club"}
+                    {player.age} {t(lang,'common.ageUnit')} • {player.club_actuel || t(lang,'players.noClub')}
                   </div>
                 </div>
               </div>

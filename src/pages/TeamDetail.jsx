@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "../lib/useCurrentUser";
+import { useLanguage } from "../lib/LanguageContext";
+import { t } from "../i18n/translations";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -113,7 +115,7 @@ export default function TeamDetailPage() {
       await base44.entities.Team.update(matchData.team1_id, team1Updates);
       
       // Update opponent stats
-      const opponent = teams.find(t => t.id === matchData.team2_id);
+      const opponent = teams.find(tm => tm.id === matchData.team2_id);
       if (opponent) {
         if (matchData.score_team2 > matchData.score_team1) {
           team2Updates.victoires = (opponent.victoires || 0) + 1;
@@ -137,6 +139,10 @@ export default function TeamDetailPage() {
     },
   });
 
+  const { lang } = useLanguage();
+  const LOCALE_MAP = { fr: 'fr-FR', es: 'es-ES', en: 'en-GB' };
+  const dateLocale = LOCALE_MAP[lang] || 'fr-FR';
+
   if (!team) return null;
 
   if (isEditing) {
@@ -144,7 +150,7 @@ export default function TeamDetailPage() {
       <div className="max-w-4xl mx-auto p-6">
         <Button variant="ghost" onClick={() => setIsEditing(false)} className="mb-4">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Annuler
+          {t(lang,'common.cancel')}
         </Button>
         <TeamForm
           team={team}
@@ -162,7 +168,7 @@ export default function TeamDetailPage() {
     <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
       <Button variant="ghost" onClick={() => navigate(createPageUrl("Teams"))} size="sm">
         <ArrowLeft className="w-4 h-4 mr-2" />
-        Retour
+        {t(lang,'common.back')}
       </Button>
 
       <Card>
@@ -174,7 +180,7 @@ export default function TeamDetailPage() {
                 <Badge variant="outline">{team.formation}</Badge>
                 {team.budget && (
                   <Badge className="bg-green-100 text-green-800">
-                    Budget: {team.budget}M€
+                    {t(lang,'teamDetail.budget')}: {team.budget}M€
                   </Badge>
                 )}
               </div>
@@ -190,7 +196,7 @@ export default function TeamDetailPage() {
                 variant="outline"
                 size="icon"
                 onClick={() => {
-                  if (confirm("Supprimer cette équipe ?")) {
+                  if (confirm(t(lang,'teamDetail.deleteConfirm'))) {
                     deleteTeamMutation.mutate();
                   }
                 }}
@@ -204,23 +210,23 @@ export default function TeamDetailPage() {
           <div className="grid grid-cols-4 gap-2 md:gap-6">
             <div className="text-center">
               <div className="text-xl md:text-3xl font-bold text-blue-600">{team.matchs_joues || 0}</div>
-              <div className="text-xs md:text-sm text-slate-600">Matchs</div>
+              <div className="text-xs md:text-sm text-slate-600">{t(lang,'teamDetail.matches')}</div>
             </div>
             <div className="text-center">
               <div className="text-xl md:text-3xl font-bold text-yellow-600">{points}</div>
-              <div className="text-xs md:text-sm text-slate-600">Points</div>
+              <div className="text-xs md:text-sm text-slate-600">{t(lang,'teamDetail.points')}</div>
             </div>
             <div className="text-center">
               <div className="text-lg md:text-3xl font-bold text-green-600">
                 {team.victoires || 0}-{team.nuls || 0}-{team.defaites || 0}
               </div>
-              <div className="text-xs md:text-sm text-slate-600">V-N-D</div>
+              <div className="text-xs md:text-sm text-slate-600">{t(lang,'teamDetail.vnd')}</div>
             </div>
             <div className="text-center">
               <div className="text-xl md:text-3xl font-bold text-purple-600">
                 {goalDiff >= 0 ? '+' : ''}{goalDiff}
               </div>
-              <div className="text-xs md:text-sm text-slate-600">Diff.</div>
+              <div className="text-xs md:text-sm text-slate-600">{t(lang,'teamDetail.diff')}</div>
             </div>
           </div>
         </CardContent>
@@ -228,8 +234,8 @@ export default function TeamDetailPage() {
 
       <Tabs defaultValue="builder" className="space-y-4 md:space-y-6">
         <TabsList className="grid w-full max-w-xs grid-cols-2">
-          <TabsTrigger value="builder">🏟️ Terrain</TabsTrigger>
-          <TabsTrigger value="manage">⚙️ Gestion</TabsTrigger>
+          <TabsTrigger value="builder">🏟️ {t(lang,'teamDetail.terrainTab')}</TabsTrigger>
+          <TabsTrigger value="manage">⚙️ {t(lang,'teamDetail.manageTab')}</TabsTrigger>
         </TabsList>
 
         {/* Builder FIFA-style */}
@@ -255,7 +261,7 @@ export default function TeamDetailPage() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Trophy className="w-5 h-5" />
-                      Historique des matchs
+                      {t(lang,'teamDetail.matchHistory')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -265,17 +271,17 @@ export default function TeamDetailPage() {
                         const teamScore = isTeam1 ? match.score_team1 : match.score_team2;
                         const opponentScore = isTeam1 ? match.score_team2 : match.score_team1;
                         const opponentId = isTeam1 ? match.team2_id : match.team1_id;
-                        const opponent = teams.find(t => t.id === opponentId);
+                        const opponent = teams.find(tm => tm.id === opponentId);
                         const result = teamScore > opponentScore ? "V" : teamScore < opponentScore ? "D" : "N";
                         const resultColor = result === "V" ? "text-green-600" : result === "D" ? "text-red-600" : "text-slate-600";
                         return (
                           <div key={match.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                             <div className="flex items-center gap-4">
                               <Badge className={resultColor}>{result}</Badge>
-                              <span className="font-medium">vs {opponent?.nom || "Équipe supprimée"}</span>
+                              <span className="font-medium">vs {opponent?.nom || t(lang,'teamDetail.deletedTeam')}</span>
                             </div>
                             <div className="flex items-center gap-4">
-                              <span className="text-sm text-slate-600">{new Date(match.date_match).toLocaleDateString("fr-FR")}</span>
+                              <span className="text-sm text-slate-600">{new Date(match.date_match).toLocaleDateString(dateLocale)}</span>
                               <Badge variant="outline" className="font-bold">{teamScore} - {opponentScore}</Badge>
                             </div>
                           </div>

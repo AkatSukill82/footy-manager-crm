@@ -13,8 +13,11 @@ import EnhancedCharts from "../components/dashboard/EnhancedCharts";
 import NotificationSystem from "../components/notifications/NotificationSystem";
 import ContractTimeline from "../components/dashboard/ContractTimeline";
 import { useCurrentUser } from "../lib/useCurrentUser";
+import { useLanguage } from "../lib/LanguageContext";
+import { t } from "../i18n/translations";
 
 export default function Dashboard() {
+  const { lang } = useLanguage();
   const [activeView, setActiveView] = useState("personalized");
   const user = useCurrentUser();
   const userEmail = user?.email;
@@ -66,7 +69,7 @@ export default function Dashboard() {
   if (loadingPlayers || loadingWatchList) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-slate-500">Chargement des statistiques...</div>
+        <div className="text-slate-500">{t(lang, 'dashboard.loading')}</div>
       </div>);
 
   }
@@ -84,7 +87,7 @@ export default function Dashboard() {
       <NotificationSystem user={user} />
       
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Tableau de bord</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">{t(lang, 'dashboard.title')}</h1>
         
       </div>
 
@@ -92,11 +95,11 @@ export default function Dashboard() {
         <TabsList className="grid w-full max-w-xs grid-cols-2">
           <TabsTrigger value="personalized" className="flex items-center gap-2">
             <LayoutDashboard className="w-4 h-4" />
-            Personnalisé
+            {t(lang, 'dashboard.personalised')}
           </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart3 className="w-4 h-4" />
-            Analyses
+            {t(lang, 'dashboard.analysis')}
           </TabsTrigger>
         </TabsList>
 
@@ -112,27 +115,27 @@ export default function Dashboard() {
         <TabsContent value="analytics" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatsCard
-              title="Total joueurs"
+              title={t(lang, 'dashboard.totalPlayers')}
               value={totalPlayers}
-              subtitle="Dans la base de données"
+              subtitle={t(lang, 'dashboard.totalPlayersDesc')}
               color="blue" />
 
             <StatsCard
-              title="Ma liste"
+              title={t(lang, 'dashboard.myList')}
               value={watchedPlayers}
-              subtitle="Joueurs suivis"
+              subtitle={t(lang, 'dashboard.myListDesc')}
               color="purple" />
 
             <StatsCard
-              title="Valeur totale"
+              title={t(lang, 'dashboard.totalValue')}
               value={`${totalValue.toFixed(1)}M €`}
-              subtitle="Base de données complète"
+              subtitle={t(lang, 'dashboard.totalValueDesc')}
               color="green" />
 
             <StatsCard
-              title="Valeur ma liste"
+              title={t(lang, 'dashboard.myListValue')}
               value={`${watchListValue.toFixed(1)}M €`}
-              subtitle="Joueurs suivis"
+              subtitle={t(lang, 'dashboard.myListDesc')}
               color="orange" />
 
           </div>

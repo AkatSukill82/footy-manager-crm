@@ -6,6 +6,8 @@ import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../../utils";
 import TransfermarktImage from "../ui/TransfermarktImage";
 import { statutConfig } from "./PlayerStatusModal";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 const posteColors = {
   "Gardien": "bg-yellow-100 text-yellow-800",
@@ -31,6 +33,7 @@ function StatBox({ label, value, color = "bg-slate-50", textColor = "text-slate-
 }
 
 export default function PlayerCard({ player, inWatchList, watchlistItem, onAddToWatchlist }) {
+  const { lang } = useLanguage();
   const navigate = useNavigate();
   const sc = watchlistItem ? statutConfig(watchlistItem.statut) : null;
 
@@ -67,7 +70,7 @@ export default function PlayerCard({ player, inWatchList, watchlistItem, onAddTo
                   type="button"
                   onClick={e => { e.stopPropagation(); onAddToWatchlist(player); }}
                   className="flex-shrink-0 p-1 rounded-lg text-slate-300 hover:text-green-600 hover:bg-green-50 transition-colors"
-                  title="Ajouter au suivi"
+                  title={t(lang, 'players.addToWatch')}
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -96,23 +99,23 @@ export default function PlayerCard({ player, inWatchList, watchlistItem, onAddTo
 
         {/* ── Infos clés ── */}
         <div className="grid grid-cols-3 gap-1.5">
-          <StatBox label="Âge" value={player.age ? `${player.age} ans` : null} />
-          <StatBox label="Taille" value={player.taille ? `${player.taille} cm` : null} />
-          <StatBox label="Pied fort" value={player.pied_fort} />
-          <StatBox label="Valeur" value={player.valeur_marchande ? `${player.valeur_marchande} M€` : null} color="bg-green-50" textColor="text-green-700" />
-          <StatBox label="Fin contrat" value={player.contrat_fin ? player.contrat_fin.substring(0, 7) : null} color="bg-orange-50" textColor="text-orange-700" />
-          <StatBox label="Ligue" value={player.ligue} />
+          <StatBox label={t(lang,'playerDetail.age')} value={player.age ? `${player.age}` : null} />
+          <StatBox label={t(lang,'playerDetail.height')} value={player.taille ? `${player.taille} cm` : null} />
+          <StatBox label={t(lang,'filters.foot')} value={player.pied_fort} />
+          <StatBox label={t(lang,'playerDetail.value')} value={player.valeur_marchande ? `${player.valeur_marchande} M€` : null} color="bg-green-50" textColor="text-green-700" />
+          <StatBox label={t(lang,'playerDetail.contractEnd')} value={player.contrat_fin ? player.contrat_fin.substring(0, 7) : null} color="bg-orange-50" textColor="text-orange-700" />
+          <StatBox label={t(lang,'fullProfile.league')} value={player.ligue} />
         </div>
 
         {/* ── Stats saison ── */}
         {(player.buts != null || player.passes_decisives != null || player.note_moyenne != null || player.matchs_joues != null) && (
           <div>
-            <p className="text-[10px] font-semibold text-slate-400 uppercase mb-1.5">Stats saison</p>
+            <p className="text-[10px] font-semibold text-slate-400 uppercase mb-1.5">{t(lang,'players.statsTitle')}</p>
             <div className="grid grid-cols-4 gap-1">
-              <StatBox label="MJ" value={player.matchs_joues} />
-              <StatBox label="Buts" value={player.buts} color="bg-green-50" textColor="text-green-700" />
-              <StatBox label="Passes D." value={player.passes_decisives} color="bg-blue-50" textColor="text-blue-700" />
-              <StatBox label="Note" value={player.note_moyenne} color="bg-indigo-50" textColor="text-indigo-700" />
+              <StatBox label={t(lang,'players.matches')} value={player.matchs_joues} />
+              <StatBox label={t(lang,'players.goals')} value={player.buts} color="bg-green-50" textColor="text-green-700" />
+              <StatBox label={t(lang,'players.assists')} value={player.passes_decisives} color="bg-blue-50" textColor="text-blue-700" />
+              <StatBox label={t(lang,'players.rating')} value={player.note_moyenne} color="bg-indigo-50" textColor="text-indigo-700" />
             </div>
           </div>
         )}
@@ -120,12 +123,12 @@ export default function PlayerCard({ player, inWatchList, watchlistItem, onAddTo
         {/* ── Stats avancées ── */}
         {(player.xg != null || player.duels_gagnes_pct != null || player.dribbles_pct != null) && (
           <div className="grid grid-cols-3 gap-1">
-            {player.xg != null && <StatBox label="xG" value={player.xg} color="bg-purple-50" textColor="text-purple-700" />}
-            {player.xa != null && <StatBox label="xA" value={player.xa} color="bg-purple-50" textColor="text-purple-700" />}
-            {player.duels_gagnes_pct != null && <StatBox label="% duels" value={`${player.duels_gagnes_pct}%`} />}
-            {player.dribbles_pct != null && <StatBox label="% dribbles" value={`${player.dribbles_pct}%`} />}
-            {player.passes_reussies_pct != null && <StatBox label="% passes" value={`${player.passes_reussies_pct}%`} />}
-            {player.interceptions != null && <StatBox label="Interceptions" value={player.interceptions} />}
+            {player.xg != null && <StatBox label={t(lang,'players.xg')} value={player.xg} color="bg-purple-50" textColor="text-purple-700" />}
+            {player.xa != null && <StatBox label={t(lang,'players.xa')} value={player.xa} color="bg-purple-50" textColor="text-purple-700" />}
+            {player.duels_gagnes_pct != null && <StatBox label={t(lang,'players.duels')} value={`${player.duels_gagnes_pct}%`} />}
+            {player.dribbles_pct != null && <StatBox label={t(lang,'players.dribbles')} value={`${player.dribbles_pct}%`} />}
+            {player.passes_reussies_pct != null && <StatBox label={t(lang,'players.passes')} value={`${player.passes_reussies_pct}%`} />}
+            {player.interceptions != null && <StatBox label={t(lang,'players.interceptions')} value={player.interceptions} />}
           </div>
         )}
 
@@ -140,7 +143,7 @@ export default function PlayerCard({ player, inWatchList, watchlistItem, onAddTo
         {/* ── Palmarès / distinctions ── */}
         {player.palmares && (
           <div className="border-t border-slate-100 pt-2">
-            <p className="text-[10px] font-semibold text-amber-600 uppercase mb-1">Palmarès</p>
+            <p className="text-[10px] font-semibold text-amber-600 uppercase mb-1">{t(lang,'players.trophies')}</p>
             <p className="text-[11px] text-slate-600 line-clamp-2">{player.palmares}</p>
           </div>
         )}

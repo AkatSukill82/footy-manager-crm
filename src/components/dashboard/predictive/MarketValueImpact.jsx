@@ -1,10 +1,12 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
+import { DollarSign } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
 } from "recharts";
+import { useLanguage } from "../../../lib/LanguageContext";
+import { t } from "../../../i18n/translations";
 
 function estimateDevelopmentImpact(player) {
   const age = player.age || 25;
@@ -17,25 +19,23 @@ function estimateDevelopmentImpact(player) {
   let impactPct = 0;
   const factors = [];
 
-  // Âge = potentiel de progression
-  if (age <= 20) { impactPct += 30; factors.push({ label: "Jeune (≤20 ans)", delta: "+30%" }); }
-  else if (age <= 23) { impactPct += 20; factors.push({ label: "Âge développement", delta: "+20%" }); }
-  else if (age <= 26) { impactPct += 8; factors.push({ label: "Prime de carrière", delta: "+8%" }); }
-  else if (age <= 29) { impactPct -= 5; factors.push({ label: "Phase déclin", delta: "-5%" }); }
-  else { impactPct -= 15; factors.push({ label: "30+ ans", delta: "-15%" }); }
+  if (age <= 20)      { impactPct += 30; factors.push({ labelKey: "predictive.factorYoung20", delta: "+30%" }); }
+  else if (age <= 23) { impactPct += 20; factors.push({ labelKey: "predictive.factorDevAge",  delta: "+20%" }); }
+  else if (age <= 26) { impactPct +=  8; factors.push({ labelKey: "predictive.factorPrime",   delta: "+8%"  }); }
+  else if (age <= 29) { impactPct -=  5; factors.push({ labelKey: "predictive.factorDecline", delta: "-5%"  }); }
+  else                { impactPct -= 15; factors.push({ labelKey: "predictive.factorOver30",  delta: "-15%" }); }
 
-  // Performance récente
-  if (note >= 7.5) { impactPct += 15; factors.push({ label: "Excellente note", delta: "+15%" }); }
-  else if (note >= 7.0) { impactPct += 5; factors.push({ label: "Bonne note", delta: "+5%" }); }
-  else if (note < 6.5) { impactPct -= 10; factors.push({ label: "Forme décevante", delta: "-10%" }); }
+  if (note >= 7.5)    { impactPct += 15; factors.push({ labelKey: "predictive.factorExcellentRating", delta: "+15%" }); }
+  else if (note >= 7.0){ impactPct +=  5; factors.push({ labelKey: "predictive.factorGoodRating",    delta: "+5%"  }); }
+  else if (note < 6.5){ impactPct -= 10; factors.push({ labelKey: "predictive.factorPoorForm",       delta: "-10%" }); }
 
   if (xg > 0 && goals > 0) {
     const ratio = goals / xg;
-    if (ratio > 1.2) { impactPct += 10; factors.push({ label: "Sur-performance xG", delta: "+10%" }); }
-    else if (ratio < 0.7) { impactPct -= 5; factors.push({ label: "Sous-performance xG", delta: "-5%" }); }
+    if (ratio > 1.2) { impactPct += 10; factors.push({ labelKey: "predictive.factorOverXG",  delta: "+10%" }); }
+    else if (ratio < 0.7) { impactPct -= 5; factors.push({ labelKey: "predictive.factorUnderXG", delta: "-5%" }); }
   }
 
-  if (goals + assists >= 15) { impactPct += 10; factors.push({ label: "15+ contributions", delta: "+10%" }); }
+  if (goals + assists >= 15) { impactPct += 10; factors.push({ labelKey: "predictive.factorContrib15", delta: "+10%" }); }
 
   const projectedValue = currentValue * (1 + impactPct / 100);
   const delta = projectedValue - currentValue;
@@ -44,6 +44,8 @@ function estimateDevelopmentImpact(player) {
 }
 
 export default function MarketValueImpact({ players }) {
+  const { lang } = useLanguage();
+
   const data = players
     .filter(p => p.valeur_marchande > 0 && p.age)
     .sort((a, b) => b.valeur_marchande - a.valeur_marchande)
@@ -51,7 +53,7 @@ export default function MarketValueImpact({ players }) {
     .map(p => {
       const { impactPct, projectedValue, delta, factors } = estimateDevelopmentImpact(p);
       return {
-        nom: p.nom.split(" ").pop(), // Nom de famille
+        nom: p.nom.split(" ").pop(),
         fullName: p.nom,
         actuelle: p.valeur_marchande,
         projetee: Math.round(projectedValue * 10) / 10,
@@ -70,9 +72,9 @@ export default function MarketValueImpact({ players }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <DollarSign className="w-4 h-4 text-emerald-600" />
-          Impact développement sur la valeur marchande
+          {t(lang, 'predictive.impactTitle')}
         </CardTitle>
-        <p className="text-xs text-slate-500">Estimation de l'évolution de la valeur selon la performance, l'âge et le potentiel</p>
+        <p className="text-xs text-slate-500">{t(lang, 'predictive.impactDesc')}</p>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={220}>
@@ -81,7 +83,7 @@ export default function MarketValueImpact({ players }) {
             <XAxis dataKey="nom" tick={{ fontSize: 10 }} tickLine={false} />
             <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={v => `${v}M`} />
             <Tooltip
-              formatter={(v, name) => [`${v} M€`, name === "actuelle" ? "Actuelle" : "Projetée"]}
+              formatter={(v, name) => [`${v} M€`, name === "actuelle" ? t(lang, 'predictive.current') : t(lang, 'predictive.projected')]}
               labelFormatter={l => {
                 const item = data.find(d => d.nom === l);
                 return item?.fullName || l;
@@ -105,7 +107,7 @@ export default function MarketValueImpact({ players }) {
             >
               <div className="flex items-center gap-2">
                 <span className="text-slate-800 font-medium">{item.fullName}</span>
-                <span className="text-xs text-slate-400">{item.age} ans</span>
+                <span className="text-xs text-slate-400">{item.age} {t(lang, 'common.ageUnit')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-slate-500 text-xs">{item.actuelle} M€</span>
@@ -121,11 +123,11 @@ export default function MarketValueImpact({ players }) {
 
         {selected && (
           <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
-            <p className="text-xs font-semibold text-slate-700 mb-2">Facteurs pour {selected.fullName}</p>
+            <p className="text-xs font-semibold text-slate-700 mb-2">{t(lang, 'predictive.factorsFor', { name: selected.fullName })}</p>
             <div className="flex flex-wrap gap-1.5">
               {selected.factors.map((f, i) => (
                 <Badge key={i} className={`border-0 text-xs ${f.delta.startsWith("+") ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
-                  {f.label} {f.delta}
+                  {t(lang, f.labelKey)} {f.delta}
                 </Badge>
               ))}
             </div>

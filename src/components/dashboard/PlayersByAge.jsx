@@ -1,8 +1,11 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 export default function PlayersByAge({ players }) {
+  const { lang } = useLanguage();
   const ageRanges = {
     "16-20": 0,
     "21-25": 0,
@@ -30,7 +33,7 @@ export default function PlayersByAge({ players }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Répartition par âge</CardTitle>
+        <CardTitle>{t(lang, 'dashboard.byAge')}</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>

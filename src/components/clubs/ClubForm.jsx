@@ -6,8 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Building2, Phone, Mail, Globe, User, Instagram, Twitter, ChevronDown, ChevronUp } from "lucide-react";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 export default function ClubForm({ club, onSubmit, onCancel }) {
+  const { lang } = useLanguage();
   const [formData, setFormData] = useState(club || {
     nom: "", pays: "", ville: "", ligue: "", stade: "", capacite_stade: "",
     annee_fondation: "", couleurs: "", president: "", president_email: "",
@@ -55,158 +58,158 @@ export default function ClubForm({ club, onSubmit, onCancel }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{club ? "Modifier le club" : "Nouveau club"}</CardTitle>
+        <CardTitle>{club ? t(lang,'clubForm.titleEdit') : t(lang,'clubForm.titleNew')}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
 
           {/* Identité */}
-          <Section title="Identité" icon={Building2}>
+          <Section title={t(lang,'clubForm.identity')} icon={Building2}>
             <div className="grid grid-cols-2 gap-4">
-              <F label="Nom du club *">
+              <F label={t(lang,'clubForm.name')}>
                 <Input value={formData.nom} onChange={set("nom")} required />
               </F>
-              <F label="Catégorie">
+              <F label={t(lang,'clubForm.category')}>
                 <Select value={formData.categorie} onValueChange={(v) => setFormData({ ...formData, categorie: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Elite">Elite</SelectItem>
-                    <SelectItem value="Premier plan">Premier plan</SelectItem>
-                    <SelectItem value="Intermédiaire">Intermédiaire</SelectItem>
-                    <SelectItem value="En développement">En développement</SelectItem>
+                    <SelectItem value="Premier plan">{t(lang,'clubs.topLevel')}</SelectItem>
+                    <SelectItem value="Intermédiaire">{t(lang,'clubs.intermediate')}</SelectItem>
+                    <SelectItem value="En développement">{t(lang,'clubs.developing')}</SelectItem>
                   </SelectContent>
                 </Select>
               </F>
             </div>
             <div className="grid grid-cols-3 gap-4">
-              <F label="Pays *">
+              <F label={t(lang,'clubForm.country')}>
                 <Input value={formData.pays} onChange={set("pays")} required />
               </F>
-              <F label="Ville">
+              <F label={t(lang,'clubForm.city')}>
                 <Input value={formData.ville} onChange={set("ville")} />
               </F>
-              <F label="Ligue / Championnat">
-                <Input value={formData.ligue} onChange={set("ligue")} placeholder="ex: Ligue 1" />
+              <F label={t(lang,'clubForm.league')}>
+                <Input value={formData.ligue} onChange={set("ligue")} placeholder={t(lang,'clubForm.leaguePlh')} />
               </F>
             </div>
             <div className="grid grid-cols-3 gap-4">
-              <F label="Stade">
+              <F label={t(lang,'clubForm.stadium')}>
                 <Input value={formData.stade} onChange={set("stade")} />
               </F>
-              <F label="Capacité">
+              <F label={t(lang,'clubForm.capacity')}>
                 <Input type="number" value={formData.capacite_stade} onChange={set("capacite_stade")} />
               </F>
-              <F label="Année de fondation">
+              <F label={t(lang,'clubForm.founded')}>
                 <Input type="number" value={formData.annee_fondation} onChange={set("annee_fondation")} />
               </F>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <F label="Couleurs du club">
-                <Input value={formData.couleurs} onChange={set("couleurs")} placeholder="ex: Rouge et Blanc" />
+              <F label={t(lang,'clubForm.colors')}>
+                <Input value={formData.couleurs} onChange={set("couleurs")} placeholder={t(lang,'clubForm.colorsPlh')} />
               </F>
-              <F label="URL du logo">
+              <F label={t(lang,'clubForm.logoUrl')}>
                 <Input value={formData.logo_url} onChange={set("logo_url")} placeholder="https://..." />
               </F>
             </div>
             {formData.logo_url && (
               <div className="flex items-center gap-3">
                 <img src={formData.logo_url} alt="Logo" className="h-16 w-16 object-contain rounded border bg-slate-50 p-1" referrerPolicy="no-referrer" onError={e => e.target.style.display='none'} />
-                <span className="text-xs text-slate-400">Aperçu du logo</span>
+                <span className="text-xs text-slate-400">{t(lang,'clubForm.logoPreview')}</span>
               </div>
             )}
-            <F label="Adresse du siège">
-              <Input value={formData.adresse} onChange={set("adresse")} placeholder="ex: 24 Rue du Comandant Guilbaud, Paris" />
+            <F label={t(lang,'clubForm.headquarters')}>
+              <Input value={formData.adresse} onChange={set("adresse")} placeholder={t(lang,'clubForm.headquartersPlh')} />
             </F>
           </Section>
 
           {/* Direction */}
-          <Section title="Direction" icon={User}>
+          <Section title={t(lang,'clubForm.management')} icon={User}>
             <div className="grid grid-cols-3 gap-4">
-              <F label="Président">
+              <F label={t(lang,'clubForm.president')}>
                 <Input value={formData.president} onChange={set("president")} />
               </F>
-              <F label="Email président">
-                <Input type="email" value={formData.president_email} onChange={set("president_email")} placeholder="president@club.com" />
+              <F label={t(lang,'clubForm.presidentEmail')}>
+                <Input type="email" value={formData.president_email} onChange={set("president_email")} placeholder={t(lang,'clubForm.presidentEmailPlh')} />
               </F>
-              <F label="Tél. président">
-                <Input value={formData.president_telephone} onChange={set("president_telephone")} placeholder="+33 6..." />
+              <F label={t(lang,'clubForm.presidentPhone')}>
+                <Input value={formData.president_telephone} onChange={set("president_telephone")} placeholder={t(lang,'clubForm.presidentPhonePlh')} />
               </F>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <F label="Entraîneur">
+              <F label={t(lang,'clubForm.coach')}>
                 <Input value={formData.entraineur} onChange={set("entraineur")} />
               </F>
-              <F label="Email entraîneur">
-                <Input type="email" value={formData.entraineur_email} onChange={set("entraineur_email")} placeholder="coach@club.com" />
+              <F label={t(lang,'clubForm.coachEmail')}>
+                <Input type="email" value={formData.entraineur_email} onChange={set("entraineur_email")} placeholder={t(lang,'clubForm.coachEmailPlh')} />
               </F>
             </div>
             <div className="grid grid-cols-3 gap-4">
-              <F label="Directeur sportif">
+              <F label={t(lang,'clubForm.sportingDirector')}>
                 <Input value={formData.directeur_sportif} onChange={set("directeur_sportif")} />
               </F>
-              <F label="Email DS">
-                <Input type="email" value={formData.directeur_sportif_email} onChange={set("directeur_sportif_email")} placeholder="ds@club.com" />
+              <F label={t(lang,'clubForm.dsEmail')}>
+                <Input type="email" value={formData.directeur_sportif_email} onChange={set("directeur_sportif_email")} placeholder={t(lang,'clubForm.dsEmailPlh')} />
               </F>
-              <F label="Tél. DS">
-                <Input value={formData.directeur_sportif_telephone} onChange={set("directeur_sportif_telephone")} placeholder="+33 6..." />
+              <F label={t(lang,'clubForm.dsPhone')}>
+                <Input value={formData.directeur_sportif_telephone} onChange={set("directeur_sportif_telephone")} placeholder={t(lang,'clubForm.presidentPhonePlh')} />
               </F>
             </div>
           </Section>
 
           {/* Contact club */}
-          <Section title="Contact du club" icon={Phone}>
+          <Section title={t(lang,'clubForm.contact')} icon={Phone}>
             <div className="grid grid-cols-3 gap-4">
-              <F label="Téléphone général">
-                <Input value={formData.telephone} onChange={set("telephone")} placeholder="+33 1 23 45 67 89" />
+              <F label={t(lang,'clubForm.generalPhone')}>
+                <Input value={formData.telephone} onChange={set("telephone")} placeholder={t(lang,'clubForm.generalPhonePlh')} />
               </F>
-              <F label="Email général">
-                <Input type="email" value={formData.email} onChange={set("email")} placeholder="contact@club.com" />
+              <F label={t(lang,'clubForm.generalEmail')}>
+                <Input type="email" value={formData.email} onChange={set("email")} placeholder={t(lang,'clubForm.generalEmailPlh')} />
               </F>
-              <F label="Site web">
-                <Input value={formData.site_web} onChange={set("site_web")} placeholder="https://www.club.com" />
+              <F label={t(lang,'clubForm.website')}>
+                <Input value={formData.site_web} onChange={set("site_web")} placeholder={t(lang,'clubForm.websitePlh')} />
               </F>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <F label="Instagram (@handle)">
-                <Input value={formData.instagram} onChange={set("instagram")} placeholder="@clubfc" />
+              <F label={t(lang,'clubForm.instagram')}>
+                <Input value={formData.instagram} onChange={set("instagram")} placeholder={t(lang,'clubForm.instagramPlh')} />
               </F>
-              <F label="Twitter/X (@handle)">
-                <Input value={formData.twitter} onChange={set("twitter")} placeholder="@clubfc" />
+              <F label={t(lang,'clubForm.twitter')}>
+                <Input value={formData.twitter} onChange={set("twitter")} placeholder={t(lang,'clubForm.instagramPlh')} />
               </F>
             </div>
           </Section>
 
           {/* Contact personne */}
-          <Section title="Personne de contact" icon={Mail}>
+          <Section title={t(lang,'clubForm.contactPerson')} icon={Mail}>
             <div className="grid grid-cols-2 gap-4">
-              <F label="Nom">
-                <Input value={formData.contact_nom} onChange={set("contact_nom")} placeholder="Jean Dupont" />
+              <F label={t(lang,'clubForm.contactName')}>
+                <Input value={formData.contact_nom} onChange={set("contact_nom")} placeholder={t(lang,'clubForm.contactNamePlh')} />
               </F>
-              <F label="Poste">
-                <Input value={formData.contact_poste} onChange={set("contact_poste")} placeholder="Responsable transferts" />
+              <F label={t(lang,'clubForm.contactRole')}>
+                <Input value={formData.contact_poste} onChange={set("contact_poste")} placeholder={t(lang,'clubForm.contactRolePlh')} />
               </F>
-              <F label="Email direct">
-                <Input type="email" value={formData.contact_email} onChange={set("contact_email")} placeholder="jean.dupont@club.com" />
+              <F label={t(lang,'clubForm.contactEmail')}>
+                <Input type="email" value={formData.contact_email} onChange={set("contact_email")} placeholder={t(lang,'clubForm.contactEmailPlh')} />
               </F>
-              <F label="Téléphone direct">
-                <Input value={formData.contact_telephone} onChange={set("contact_telephone")} placeholder="+33 6 12 34 56 78" />
+              <F label={t(lang,'clubForm.contactPhone')}>
+                <Input value={formData.contact_telephone} onChange={set("contact_telephone")} placeholder={t(lang,'clubForm.contactPhonePlh')} />
               </F>
             </div>
           </Section>
 
           {/* Finances */}
-          <Section title="Finances" icon={Globe}>
+          <Section title={t(lang,'clubForm.finances')} icon={Globe}>
             <div className="grid grid-cols-4 gap-4">
-              <F label="Budget annuel (M€)">
+              <F label={t(lang,'clubForm.annualBudget')}>
                 <Input type="number" step="0.1" value={formData.budget_annuel} onChange={set("budget_annuel")} />
               </F>
-              <F label="Budget transfert (M€)">
+              <F label={t(lang,'clubForm.transferBudget')}>
                 <Input type="number" step="0.1" value={formData.budget_transfert} onChange={set("budget_transfert")} />
               </F>
-              <F label="Dette (M€)">
+              <F label={t(lang,'clubForm.debt')}>
                 <Input type="number" step="0.1" value={formData.dette} onChange={set("dette")} />
               </F>
-              <F label="Valeur effectif (M€)">
+              <F label={t(lang,'clubForm.squadValue')}>
                 <Input type="number" step="0.1" value={formData.valeur_effectif} onChange={set("valeur_effectif")} />
               </F>
             </div>
@@ -214,18 +217,18 @@ export default function ClubForm({ club, onSubmit, onCancel }) {
 
           {/* Autres */}
           <div className="space-y-3">
-            <F label="Palmarès (séparés par virgules)">
-              <Textarea value={formData.palmares} onChange={set("palmares")} rows={2} placeholder="Ligue 1 (2020, 2021), Coupe de France (2019)..." />
+            <F label={t(lang,'clubForm.trophies')}>
+              <Textarea value={formData.palmares} onChange={set("palmares")} rows={2} placeholder={t(lang,'clubForm.tropheesPlh')} />
             </F>
-            <F label="Historique">
-              <Textarea value={formData.historique} onChange={set("historique")} rows={4} placeholder="Histoire et description du club..." />
+            <F label={t(lang,'clubForm.history')}>
+              <Textarea value={formData.historique} onChange={set("historique")} rows={4} placeholder={t(lang,'clubForm.historyPlh')} />
             </F>
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onCancel} className="flex-1">Annuler</Button>
+            <Button type="button" variant="outline" onClick={onCancel} className="flex-1">{t(lang,'common.cancel')}</Button>
             <Button type="submit" className="flex-1 bg-slate-900 hover:bg-slate-800">
-              {club ? "Mettre à jour" : "Créer"}
+              {club ? t(lang,'clubForm.updateBtn') : t(lang,'clubForm.createBtn')}
             </Button>
           </div>
         </form>

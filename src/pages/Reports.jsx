@@ -8,8 +8,11 @@ import PlayerPerformanceReport from "../components/reports/PlayerPerformanceRepo
 import TransferTrendsReport from "../components/reports/TransferTrendsReport";
 import TeamEfficiencyReport from "../components/reports/TeamEfficiencyReport";
 import { useCurrentUser } from "../lib/useCurrentUser";
+import { useLanguage } from "../lib/LanguageContext";
+import { t } from "../i18n/translations";
 
 export default function ReportsPage() {
+  const { lang } = useLanguage();
   const [activeTab, setActiveTab] = useState("players");
   const [filters, setFilters] = useState({
     dateDebut: "",
@@ -77,7 +80,7 @@ export default function ReportsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-slate-500">Chargement des rapports...</div>
+        <div className="text-slate-500">{t(lang, 'reports.loading')}</div>
       </div>
     );
   }
@@ -86,8 +89,8 @@ export default function ReportsPage() {
     <div className="p-8 space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-slate-900">Rapports</h1>
-          <p className="text-slate-500 mt-2">Analyse des performances et tendances</p>
+          <h1 className="text-4xl font-bold text-slate-900">{t(lang, 'reports.title')}</h1>
+          <p className="text-slate-500 mt-2">{t(lang, 'reports.subtitle')}</p>
         </div>
         <Button 
           onClick={handleExportPDF} 
@@ -95,7 +98,7 @@ export default function ReportsPage() {
           className="bg-slate-900 hover:bg-slate-800 shadow-lg"
         >
           <Download className="w-4 h-4 mr-2" />
-          {isExporting ? "Export..." : "Exporter PDF"}
+          {isExporting ? t(lang, 'reports.exporting') : t(lang, 'reports.exportPDF')}
         </Button>
       </div>
 
@@ -112,7 +115,7 @@ export default function ReportsPage() {
             }`}
           >
             <BarChart3 className="w-4 h-4 inline mr-2" />
-            Joueurs
+            {t(lang, 'reports.tabPlayers')}
           </button>
           <button
             onClick={() => setActiveTab("transfers")}
@@ -123,7 +126,7 @@ export default function ReportsPage() {
             }`}
           >
             <TrendingUp className="w-4 h-4 inline mr-2" />
-            Transferts
+            {t(lang, 'reports.tabTransfers')}
           </button>
           <button
             onClick={() => setActiveTab("teams")}
@@ -134,7 +137,7 @@ export default function ReportsPage() {
             }`}
           >
             <Users className="w-4 h-4 inline mr-2" />
-            Équipes
+            {t(lang, 'reports.tabTeams')}
           </button>
         </div>
       </div>

@@ -1,22 +1,23 @@
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, LineChart, Line } from "recharts";
-import { Badge } from "@/components/ui/badge";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 export default function TeamEfficiencyReport({ teams, teamPlayers, matches, players }) {
-  // Calculate team statistics
+  const { lang } = useLanguage();
+
   const teamsWithStats = teams.map(team => {
-    const playerCount = teamPlayers.filter(tp => tp.team_id === team.id).length;
     const teamPlayersList = teamPlayers.filter(tp => tp.team_id === team.id);
+    const playerCount = teamPlayersList.length;
     const totalValue = teamPlayersList.reduce((sum, tp) => {
-      const player = players.find(p => p.id === tp.player_id);
-      return sum + (player?.valeur_marchande || 0);
+      const pl = players.find(p => p.id === tp.player_id);
+      return sum + (pl?.valeur_marchande || 0);
     }, 0);
-    
+
     const points = (team.victoires || 0) * 3 + (team.nuls || 0);
     const goalDiff = (team.buts_pour || 0) - (team.buts_contre || 0);
     const winRate = team.matchs_joues > 0 ? ((team.victoires || 0) / team.matchs_joues * 100) : 0;
-    
+
     return {
       ...team,
       playerCount,
@@ -29,62 +30,49 @@ export default function TeamEfficiencyReport({ teams, teamPlayers, matches, play
     };
   });
 
-  // Rankings
   const rankingData = [...teamsWithStats]
-    .filter(t => t.matchs_joues > 0)
+    .filter(tm => tm.matchs_joues > 0)
     .sort((a, b) => b.points - a.points || b.goalDiff - a.goalDiff)
     .slice(0, 10)
-    .map((t, i) => ({
+    .map((tm, i) => ({
       rang: i + 1,
-      nom: t.nom.length > 12 ? t.nom.substring(0, 10) + "..." : t.nom,
-      points: t.points,
-      victoires: t.victoires,
-      nuls: t.nuls,
-      defaites: t.defaites
+      nom: tm.nom.length > 12 ? tm.nom.substring(0, 10) + "..." : tm.nom,
+      points: tm.points,
+      victoires: tm.victoires,
+      nuls: tm.nuls,
+      defaites: tm.defaites
     }));
 
-  // Team value comparison
   const valueComparison = [...teamsWithStats]
     .sort((a, b) => b.totalValue - a.totalValue)
     .slice(0, 8)
-    .map(t => ({
-      nom: t.nom.length > 10 ? t.nom.substring(0, 8) + "..." : t.nom,
-      valeur: t.totalValue.toFixed(1)
+    .map(tm => ({
+      nom: tm.nom.length > 10 ? tm.nom.substring(0, 8) + "..." : tm.nom,
+      valeur: tm.totalValue.toFixed(1)
     }));
 
-  // Win rate comparison
   const winRateData = [...teamsWithStats]
-    .filter(t => t.matchs_joues > 0)
+    .filter(tm => tm.matchs_joues > 0)
     .sort((a, b) => b.winRate - a.winRate)
     .slice(0, 8)
-    .map(t => ({
-      nom: t.nom.length > 10 ? t.nom.substring(0, 8) + "..." : t.nom,
-      taux: t.winRate.toFixed(1)
+    .map(tm => ({
+      nom: tm.nom.length > 10 ? tm.nom.substring(0, 8) + "..." : tm.nom,
+      taux: tm.winRate.toFixed(1)
     }));
 
-  // Team performance radar (top 5 teams)
   const topTeams = [...teamsWithStats]
-    .filter(t => t.matchs_joues > 0)
+    .filter(tm => tm.matchs_joues > 0)
     .sort((a, b) => b.points - a.points)
     .slice(0, 5);
 
   const radarData = [
-    {
-      metric: "Victoires",
-      ...Object.fromEntries(topTeams.map(t => [t.nom, t.victoires || 0]))
-    },
-    {
-      metric: "Buts pour",
-      ...Object.fromEntries(topTeams.map(t => [t.nom, t.buts_pour || 0]))
-    },
-    {
-      metric: "Diff. buts",
-      ...Object.fromEntries(topTeams.map(t => [t.nom, Math.max(0, t.goalDiff)]))
-    }
+    { metric: t(lang, 'reports.wins'),     ...Object.fromEntries(topTeams.map(tm => [tm.nom, tm.victoires || 0])) },
+    { metric: t(lang, 'reports.goalsFor'), ...Object.fromEntries(topTeams.map(tm => [tm.nom, tm.buts_pour || 0])) },
+    { metric: t(lang, 'reports.goalDiff'), ...Object.fromEntries(topTeams.map(tm => [tm.nom, Math.max(0, tm.goalDiff)])) },
   ];
 
   const totalTeams = teams.length;
-  const activeTeams = teams.filter(t => t.matchs_joues > 0).length;
+  const activeTeams = teams.filter(tm => tm.matchs_joues > 0).length;
   const totalMatches = matches.length;
 
   return (
@@ -93,28 +81,28 @@ export default function TeamEfficiencyReport({ teams, teamPlayers, matches, play
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
           <div className="text-center">
             <div className="text-5xl font-bold text-slate-900">{totalTeams}</div>
-            <div className="text-sm text-slate-500 mt-2">Équipes créées</div>
+            <div className="text-sm text-slate-500 mt-2">{t(lang, 'reports.teamsCreated')}</div>
           </div>
         </div>
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
           <div className="text-center">
             <div className="text-5xl font-bold text-slate-900">{activeTeams}</div>
-            <div className="text-sm text-slate-500 mt-2">Équipes actives</div>
+            <div className="text-sm text-slate-500 mt-2">{t(lang, 'reports.activeTeams')}</div>
           </div>
         </div>
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
           <div className="text-center">
             <div className="text-5xl font-bold text-slate-900">{totalMatches}</div>
-            <div className="text-sm text-slate-500 mt-2">Matchs joués</div>
+            <div className="text-sm text-slate-500 mt-2">{t(lang, 'reports.matchesPlayed')}</div>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Classement des équipes</h3>
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">{t(lang, 'reports.teamsRanking')}</h3>
           {rankingData.length === 0 ? (
-            <p className="text-center text-slate-500 py-8">Aucun match joué</p>
+            <p className="text-center text-slate-500 py-8">{t(lang, 'reports.noMatchPlayed')}</p>
           ) : (
             <div className="space-y-2">
               {rankingData.map((team) => (
@@ -130,7 +118,7 @@ export default function TeamEfficiencyReport({ teams, teamPlayers, matches, play
                       {team.victoires}V-{team.nuls}N-{team.defaites}D
                     </span>
                     <div className="bg-slate-900 text-white px-3 py-1 rounded-lg font-bold text-sm">
-                      {team.points} pts
+                      {team.points} {t(lang, 'reports.pts')}
                     </div>
                   </div>
                 </div>
@@ -140,34 +128,34 @@ export default function TeamEfficiencyReport({ teams, teamPlayers, matches, play
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Valeur des équipes</h3>
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">{t(lang, 'reports.teamsValue')}</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={valueComparison}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis dataKey="nom" angle={-45} textAnchor="end" height={80} stroke="#64748b" />
               <YAxis stroke="#64748b" />
               <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-              <Bar dataKey="valeur" fill="#0f172a" radius={[8, 8, 0, 0]} name="Valeur (M€)" />
+              <Bar dataKey="valeur" fill="#0f172a" radius={[8, 8, 0, 0]} name={t(lang, 'reports.valueMEur')} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Taux de victoire</h3>
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">{t(lang, 'reports.winRate')}</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={winRateData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis dataKey="nom" angle={-45} textAnchor="end" height={80} stroke="#64748b" />
               <YAxis stroke="#64748b" />
               <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-              <Bar dataKey="taux" fill="#0f172a" radius={[8, 8, 0, 0]} name="Taux de victoire (%)" />
+              <Bar dataKey="taux" fill="#0f172a" radius={[8, 8, 0, 0]} name={t(lang, 'reports.winRatePct')} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {topTeams.length > 0 && (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 lg:col-span-2">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">Performance globale (Top 5)</h3>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">{t(lang, 'reports.globalPerf')}</h3>
             <ResponsiveContainer width="100%" height={300}>
               <RadarChart data={radarData}>
                 <PolarGrid stroke="#e2e8f0" />

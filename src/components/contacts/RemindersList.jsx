@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Bell, Check, Clock } from "lucide-react";
 import { format } from "date-fns";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 const priorityColors = {
   "Haute": "bg-red-100 text-red-800 border-red-200",
@@ -18,17 +20,18 @@ const statusColors = {
 };
 
 export default function RemindersList({ reminders, onUpdateStatus }) {
+  const { lang } = useLanguage();
   if (!reminders || reminders.length === 0) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bell className="w-5 h-5" />
-            Rappels
+            {t(lang,'contacts.remindersTitle')}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-slate-500 text-center py-4">Aucun rappel programmé</p>
+          <p className="text-slate-500 text-center py-4">{t(lang,'contacts.noRemindersAll')}</p>
         </CardContent>
       </Card>
     );
@@ -48,13 +51,13 @@ export default function RemindersList({ reminders, onUpdateStatus }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Bell className="w-5 h-5" />
-          Rappels ({activeReminders.length} actifs)
+          {t(lang,'contacts.remindersCount', { count: activeReminders.length })}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {sortedActive.length > 0 && (
           <div className="space-y-2">
-            <h4 className="font-semibold text-sm text-slate-700">À faire</h4>
+            <h4 className="font-semibold text-sm text-slate-700">{t(lang,'contacts.todo')}</h4>
             {sortedActive.map((reminder) => (
               <div
                 key={reminder.id}
@@ -81,7 +84,7 @@ export default function RemindersList({ reminders, onUpdateStatus }) {
                     <Clock className="w-4 h-4" />
                     <span className={isOverdue(reminder.date_rappel) ? "text-red-600 font-semibold" : "text-slate-600"}>
                       {format(new Date(reminder.date_rappel), "dd/MM/yyyy")}
-                      {isOverdue(reminder.date_rappel) && " - En retard"}
+                      {isOverdue(reminder.date_rappel) && ` - ${t(lang,'alerts.overdue')}`}
                     </span>
                   </div>
                   <Button
@@ -90,7 +93,7 @@ export default function RemindersList({ reminders, onUpdateStatus }) {
                     onClick={() => onUpdateStatus(reminder.id, "Terminé")}
                   >
                     <Check className="w-4 h-4 mr-1" />
-                    Marquer terminé
+                    {t(lang,'contacts.markDone')}
                   </Button>
                 </div>
               </div>
@@ -100,7 +103,7 @@ export default function RemindersList({ reminders, onUpdateStatus }) {
 
         {completedReminders.length > 0 && (
           <div className="space-y-2 pt-4 border-t">
-            <h4 className="font-semibold text-sm text-slate-700">Terminés</h4>
+            <h4 className="font-semibold text-sm text-slate-700">{t(lang,'contacts.done')}</h4>
             {completedReminders.slice(0, 3).map((reminder) => (
               <div key={reminder.id} className="p-3 rounded-lg bg-slate-50 opacity-60">
                 <div className="flex items-center justify-between">

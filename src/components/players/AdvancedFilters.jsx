@@ -4,6 +4,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, X, Filter, ChevronDown, ChevronUp } from "lucide-react";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 const POSTES = [
   "Gardien", "Défenseur central", "Latéral droit", "Latéral gauche",
@@ -18,6 +20,7 @@ const EMPTY = {
 };
 
 export default function AdvancedFilters({ onFiltersChange, players = [] }) {
+  const { lang } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const [filters, setFilters] = useState(EMPTY);
 
@@ -46,7 +49,7 @@ export default function AdvancedFilters({ onFiltersChange, players = [] }) {
         <div className="relative flex-1 min-w-[180px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
-            placeholder="Rechercher un joueur ou un club..."
+            placeholder={t(lang, 'filters.searchPlaceholder')}
             value={filters.search}
             onChange={e => handle("search", e.target.value)}
             className="pl-9 h-9 bg-slate-50 border-slate-200"
@@ -59,7 +62,7 @@ export default function AdvancedFilters({ onFiltersChange, players = [] }) {
             <SelectValue placeholder="Poste" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tous les postes</SelectItem>
+            <SelectItem value="all">{t(lang, 'filters.allPositions')}</SelectItem>
             {POSTES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
           </SelectContent>
         </Select>
@@ -67,7 +70,7 @@ export default function AdvancedFilters({ onFiltersChange, players = [] }) {
         {/* Valeur marchande max */}
         <div className="flex items-center gap-1">
           <Input
-            placeholder="Valeur min (M€)"
+            placeholder={t(lang, 'filters.valueMin')}
             type="number"
             value={filters.valeurMin}
             onChange={e => handle("valeurMin", e.target.value)}
@@ -75,7 +78,7 @@ export default function AdvancedFilters({ onFiltersChange, players = [] }) {
           />
           <span className="text-slate-400 text-sm">—</span>
           <Input
-            placeholder="max (M€)"
+            placeholder={t(lang, 'filters.valueMax')}
             type="number"
             value={filters.valeurMax}
             onChange={e => handle("valeurMax", e.target.value)}
@@ -87,7 +90,7 @@ export default function AdvancedFilters({ onFiltersChange, players = [] }) {
         <div className="flex items-center gap-2 ml-auto">
           {activeCount > 0 && (
             <button onClick={clear} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded-lg hover:bg-red-50 transition-colors">
-              <X className="w-3 h-3" /> Effacer
+              <X className="w-3 h-3" /> {t(lang, 'filters.clear')}
               <Badge className="bg-red-100 text-red-700 border-0 text-[10px] px-1.5 py-0">{activeCount}</Badge>
             </button>
           )}
@@ -96,7 +99,7 @@ export default function AdvancedFilters({ onFiltersChange, players = [] }) {
             className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <Filter className="w-3 h-3" />
-            {expanded ? "Moins" : "Plus de filtres"}
+            {expanded ? t(lang, 'filters.lessFilters') : t(lang, 'filters.moreFilters')}
             {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           </button>
         </div>
@@ -111,7 +114,7 @@ export default function AdvancedFilters({ onFiltersChange, players = [] }) {
               <SelectValue placeholder="Nationalité" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__all__">Toutes nationalités</SelectItem>
+              <SelectItem value="__all__">{t(lang, 'filters.allNationalities')}</SelectItem>
               {nationalites.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -122,7 +125,7 @@ export default function AdvancedFilters({ onFiltersChange, players = [] }) {
               <SelectValue placeholder="Club actuel" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__all__">Tous les clubs</SelectItem>
+              <SelectItem value="__all__">{t(lang, 'filters.allClubs')}</SelectItem>
               {clubs.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -130,7 +133,7 @@ export default function AdvancedFilters({ onFiltersChange, players = [] }) {
           {/* Age */}
           <div className="flex items-center gap-1">
             <Input
-              placeholder="Âge min"
+              placeholder={t(lang, 'filters.ageMin')}
               type="number"
               value={filters.ageMin}
               onChange={e => handle("ageMin", e.target.value)}
@@ -138,7 +141,7 @@ export default function AdvancedFilters({ onFiltersChange, players = [] }) {
             />
             <span className="text-slate-400 text-sm">—</span>
             <Input
-              placeholder="max"
+              placeholder={t(lang, 'filters.ageMax')}
               type="number"
               value={filters.ageMax}
               onChange={e => handle("ageMax", e.target.value)}
@@ -152,10 +155,10 @@ export default function AdvancedFilters({ onFiltersChange, players = [] }) {
               <SelectValue placeholder="Pied fort" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Pied fort</SelectItem>
-              <SelectItem value="Droit">Droit</SelectItem>
-              <SelectItem value="Gauche">Gauche</SelectItem>
-              <SelectItem value="Les deux">Les deux</SelectItem>
+              <SelectItem value="all">{t(lang, 'filters.foot')}</SelectItem>
+              <SelectItem value="Droit">{t(lang, 'filters.right')}</SelectItem>
+              <SelectItem value="Gauche">{t(lang, 'filters.left')}</SelectItem>
+              <SelectItem value="Les deux">{t(lang, 'filters.both')}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -165,10 +168,10 @@ export default function AdvancedFilters({ onFiltersChange, players = [] }) {
               <SelectValue placeholder="Fin de contrat" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous contrats</SelectItem>
-              <SelectItem value="6months">Expire dans 6 mois</SelectItem>
-              <SelectItem value="1year">Expire dans 1 an</SelectItem>
-              <SelectItem value="expired">Expiré</SelectItem>
+              <SelectItem value="all">{t(lang, 'filters.allContracts')}</SelectItem>
+              <SelectItem value="6months">{t(lang, 'filters.expiring6m')}</SelectItem>
+              <SelectItem value="1year">{t(lang, 'filters.expiring1y')}</SelectItem>
+              <SelectItem value="expired">{t(lang, 'filters.expired')}</SelectItem>
             </SelectContent>
           </Select>
         </div>

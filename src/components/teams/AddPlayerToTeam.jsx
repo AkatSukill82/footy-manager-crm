@@ -5,8 +5,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UserPlus } from "lucide-react";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 export default function AddPlayerToTeam({ players, teamId, existingPlayerIds, onAdd }) {
+  const { lang } = useLanguage();
   const [selectedPlayerId, setSelectedPlayerId] = useState("");
   const [position, setPosition] = useState("Défenseur");
   const [numero, setNumero] = useState("");
@@ -15,7 +18,6 @@ export default function AddPlayerToTeam({ players, teamId, existingPlayerIds, on
 
   const handleAdd = () => {
     if (!selectedPlayerId) return;
-    
     onAdd({
       team_id: teamId,
       player_id: selectedPlayerId,
@@ -23,7 +25,6 @@ export default function AddPlayerToTeam({ players, teamId, existingPlayerIds, on
       numero_maillot: numero ? parseInt(numero) : null,
       titulaire: true
     });
-
     setSelectedPlayerId("");
     setNumero("");
   };
@@ -33,15 +34,15 @@ export default function AddPlayerToTeam({ players, teamId, existingPlayerIds, on
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <UserPlus className="w-5 h-5" />
-          Ajouter un joueur
+          {t(lang, 'teams.addPlayerTitle')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <Label>Joueur</Label>
+          <Label>{t(lang, 'transfers.player')}</Label>
           <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
             <SelectTrigger>
-              <SelectValue placeholder="Sélectionner un joueur..." />
+              <SelectValue placeholder={t(lang, 'teams.selectPlayerPlh')} />
             </SelectTrigger>
             <SelectContent>
               {availablePlayers.map(player => (
@@ -56,22 +57,22 @@ export default function AddPlayerToTeam({ players, teamId, existingPlayerIds, on
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label>Position</Label>
+            <Label>{t(lang, 'teams.positionLabel')}</Label>
             <Select value={position} onValueChange={setPosition}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Gardien">Gardien</SelectItem>
-                <SelectItem value="Défenseur">Défenseur</SelectItem>
-                <SelectItem value="Milieu">Milieu</SelectItem>
-                <SelectItem value="Attaquant">Attaquant</SelectItem>
+                <SelectItem value="Gardien">{t(lang, 'teams.posGardien')}</SelectItem>
+                <SelectItem value="Défenseur">{t(lang, 'teams.posDef')}</SelectItem>
+                <SelectItem value="Milieu">{t(lang, 'teams.posMil')}</SelectItem>
+                <SelectItem value="Attaquant">{t(lang, 'teams.posAtt')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div>
-            <Label>N° maillot</Label>
+            <Label>{t(lang, 'teams.jerseyNum')}</Label>
             <Input
               type="number"
               value={numero}
@@ -84,7 +85,7 @@ export default function AddPlayerToTeam({ players, teamId, existingPlayerIds, on
         </div>
 
         <Button onClick={handleAdd} className="w-full" disabled={!selectedPlayerId}>
-          Ajouter à l'équipe
+          {t(lang, 'teams.addToTeam')}
         </Button>
       </CardContent>
     </Card>

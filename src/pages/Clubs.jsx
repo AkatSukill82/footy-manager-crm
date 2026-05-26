@@ -8,8 +8,11 @@ import { Building2, Plus, Search, Filter, Globe } from "lucide-react";
 import ClubCard from "../components/clubs/ClubCard";
 import ClubForm from "../components/clubs/ClubForm";
 import ClubSearch from "../components/clubs/ClubSearch";
+import { useLanguage } from "../lib/LanguageContext";
+import { t } from "../i18n/translations";
 
 export default function ClubsPage() {
+  const { lang } = useLanguage();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -40,7 +43,7 @@ export default function ClubsPage() {
     return (
       <div className="p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
-          <Button variant="ghost" onClick={() => setShowForm(false)} className="mb-4">← Retour</Button>
+          <Button variant="ghost" onClick={() => setShowForm(false)} className="mb-4">← {t(lang, 'common.back')}</Button>
           <ClubForm onSubmit={(data) => createClubMutation.mutate(data)} onCancel={() => setShowForm(false)} />
         </div>
       </div>
@@ -51,7 +54,7 @@ export default function ClubsPage() {
     return (
       <div className="p-4 md:p-8">
         <div className="max-w-3xl mx-auto">
-          <Button variant="ghost" onClick={() => setShowSearch(false)} className="mb-4">← Retour</Button>
+          <Button variant="ghost" onClick={() => setShowSearch(false)} className="mb-4">← {t(lang, 'common.back')}</Button>
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-slate-900">Rechercher un club</h2>
             <p className="text-slate-500 text-sm mt-1">Données récupérées depuis Transfermarkt & Sofascore</p>
@@ -67,8 +70,8 @@ export default function ClubsPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-2xl md:text-4xl font-bold text-slate-900 truncate">Clubs</h1>
-          <p className="text-slate-500 text-sm mt-0.5 hidden md:block">Gérez votre base de données des clubs</p>
+          <h1 className="text-2xl md:text-4xl font-bold text-slate-900 truncate">{t(lang, 'clubs.title')}</h1>
+          <p className="text-slate-500 text-sm mt-0.5 hidden md:block">{t(lang, 'clubs.subtitle')}</p>
         </div>
         <div className="flex gap-2 flex-shrink-0">
           <Button
@@ -78,7 +81,7 @@ export default function ClubsPage() {
             className="border-green-300 text-green-700 hover:bg-green-50"
           >
             <Globe className="w-4 h-4 md:mr-2" />
-            <span className="hidden md:inline">Rechercher en ligne</span>
+            <span className="hidden md:inline">{t(lang, 'clubs.searchOnline')}</span>
           </Button>
           <Button 
             onClick={() => setShowForm(true)}
@@ -86,8 +89,8 @@ export default function ClubsPage() {
             size="sm"
           >
             <Plus className="w-4 h-4 md:mr-2" />
-            <span className="hidden md:inline">Ajouter manuellement</span>
-            <span className="md:hidden">Ajouter</span>
+            <span className="hidden md:inline">{t(lang, 'clubs.addManual')}</span>
+            <span className="md:hidden">{t(lang, 'common.add')}</span>
           </Button>
         </div>
       </div>
@@ -100,7 +103,7 @@ export default function ClubsPage() {
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Rechercher un club..."
+              placeholder={t(lang, 'clubs.searchPlh')}
               className="pl-9"
             />
           </div>
@@ -111,11 +114,11 @@ export default function ClubsPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Toutes catégories</SelectItem>
-                <SelectItem value="Elite">Elite</SelectItem>
-                <SelectItem value="Premier plan">Premier plan</SelectItem>
-                <SelectItem value="Intermédiaire">Intermédiaire</SelectItem>
-                <SelectItem value="En développement">En développement</SelectItem>
+                <SelectItem value="all">{t(lang, 'clubs.allCategories')}</SelectItem>
+                <SelectItem value="Elite">{t(lang, 'clubs.elite')}</SelectItem>
+                <SelectItem value="Premier plan">{t(lang, 'clubs.topLevel')}</SelectItem>
+                <SelectItem value="Intermédiaire">{t(lang, 'clubs.intermediate')}</SelectItem>
+                <SelectItem value="En développement">{t(lang, 'clubs.developing')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -123,11 +126,11 @@ export default function ClubsPage() {
       </div>
 
       {isLoading ? (
-        <div className="text-center py-12 text-slate-500">Chargement...</div>
+        <div className="text-center py-12 text-slate-500">{t(lang, 'common.loading')}</div>
       ) : filteredClubs.length === 0 ? (
         <div className="text-center py-12">
           <Building2 className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <p className="text-slate-500">Aucun club trouvé</p>
+          <p className="text-slate-500">{t(lang, 'clubs.noResults')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

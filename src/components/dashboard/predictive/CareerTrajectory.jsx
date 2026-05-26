@@ -5,15 +5,15 @@ import { TrendingUp, TrendingDown, Minus, Star } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine
 } from "recharts";
+import { useLanguage } from "../../../lib/LanguageContext";
+import { t } from "../../../i18n/translations";
 
 function getTrend(player) {
   const age = player.age || 25;
   const value = player.valeur_marchande || 0;
   const peakValue = player.valeur_marchande_peak || value;
   const note = player.note_moyenne || 7;
-  const saisons = player.saisons_pro || 3;
 
-  // Score de trajectoire : positif = en montée, négatif = en déclin
   let score = 0;
   if (age <= 23) score += 3;
   else if (age <= 26) score += 1;
@@ -60,12 +60,14 @@ function projectValue(player) {
 }
 
 const TREND_CONFIG = {
-  ascendante: { label: "En progression", color: "text-green-600", bg: "bg-green-100", icon: TrendingUp },
-  stable: { label: "Stable", color: "text-blue-600", bg: "bg-blue-100", icon: Minus },
-  déclinante: { label: "En déclin", color: "text-red-600", bg: "bg-red-100", icon: TrendingDown },
+  ascendante: { labelKey: "predictive.trajUp", color: "text-green-600", bg: "bg-green-100", icon: TrendingUp },
+  stable:     { labelKey: "predictive.trajStable", color: "text-blue-600", bg: "bg-blue-100", icon: Minus },
+  déclinante: { labelKey: "predictive.trajDown", color: "text-red-600", bg: "bg-red-100", icon: TrendingDown },
 };
 
 export default function CareerTrajectory({ players }) {
+  const { lang } = useLanguage();
+
   const topPlayers = players
     .filter(p => p.valeur_marchande > 0 && p.age)
     .sort((a, b) => (b.valeur_marchande || 0) - (a.valeur_marchande || 0))
@@ -76,9 +78,9 @@ export default function CareerTrajectory({ players }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <TrendingUp className="w-4 h-4 text-green-600" />
-          Trajectoires de carrière prédites
+          {t(lang, 'predictive.trajTitle')}
         </CardTitle>
-        <p className="text-xs text-slate-500">Projection de la valeur marchande sur 5 ans basée sur l'âge, la forme et les stats</p>
+        <p className="text-xs text-slate-500">{t(lang, 'predictive.trajDesc')}</p>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
@@ -101,11 +103,11 @@ export default function CareerTrajectory({ players }) {
                     )}
                     <div>
                       <p className="font-semibold text-sm text-slate-900">{player.nom}</p>
-                      <p className="text-xs text-slate-500">{player.poste} · {player.age} ans · {player.club_actuel || "—"}</p>
+                      <p className="text-xs text-slate-500">{player.poste} · {player.age} {t(lang, 'common.ageUnit')} · {player.club_actuel || "—"}</p>
                     </div>
                   </div>
                   <Badge className={`${config.bg} ${config.color} border-0 flex items-center gap-1`}>
-                    <Icon className="w-3 h-3" />{config.label}
+                    <Icon className="w-3 h-3" />{t(lang, config.labelKey)}
                   </Badge>
                 </div>
                 <ResponsiveContainer width="100%" height={90}>
@@ -113,20 +115,20 @@ export default function CareerTrajectory({ players }) {
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                     <XAxis dataKey="year" tick={{ fontSize: 10 }} tickLine={false} />
                     <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={v => `${v}M`} />
-                    <Tooltip formatter={v => [`${v} M€`, "Valeur"]} labelFormatter={l => `Année ${l}`} />
-                    <ReferenceLine x={2025} stroke="#94a3b8" strokeDasharray="4 4" label={{ value: "Maintenant", fontSize: 9 }} />
-                    <Line type="monotone" dataKey="valeur" stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} strokeDasharray={(_, i) => i > 0 ? "none" : "none"} />
+                    <Tooltip formatter={v => [`${v} M€`, t(lang, 'predictive.tooltipValue')]} labelFormatter={l => `${l}`} />
+                    <ReferenceLine x={2025} stroke="#94a3b8" strokeDasharray="4 4" label={{ value: t(lang, 'predictive.now'), fontSize: 9 }} />
+                    <Line type="monotone" dataKey="valeur" stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} />
                   </LineChart>
                 </ResponsiveContainer>
                 <div className="flex gap-4 mt-2 text-xs text-slate-500">
-                  <span>Actuel : <strong className="text-slate-800">{player.valeur_marchande} M€</strong></span>
-                  <span>Projection 3 ans : <strong className="text-green-700">{data.find(d => d.year === 2028)?.valeur ?? "—"} M€</strong></span>
+                  <span>{t(lang, 'predictive.currentValueLabel', { value: player.valeur_marchande })}</span>
+                  <span>{t(lang, 'predictive.proj3y', { value: data.find(d => d.year === 2028)?.valeur ?? "—" })}</span>
                 </div>
               </div>
             );
           })}
           {topPlayers.length === 0 && (
-            <p className="text-sm text-slate-400 text-center py-8">Ajoutez des joueurs avec leur âge et valeur marchande pour voir les projections.</p>
+            <p className="text-sm text-slate-400 text-center py-8">{t(lang, 'predictive.noTrajData')}</p>
           )}
         </div>
       </CardContent>

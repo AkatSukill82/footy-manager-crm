@@ -6,6 +6,8 @@ import { TrendingUp, AlertCircle, Sparkles, Clock, ArrowRight } from "lucide-rea
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../../utils";
 import { format } from "date-fns";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 export default function PersonalizedDashboard({ 
   negociations = [], 
@@ -13,6 +15,7 @@ export default function PersonalizedDashboard({
   reminders = [],
   sharedContent = []
 }) {
+  const { lang } = useLanguage();
   const navigate = useNavigate();
 
   const activeNegociations = negociations.filter(n => 
@@ -60,7 +63,7 @@ export default function PersonalizedDashboard({
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-red-900">
               <AlertCircle className="w-5 h-5" />
-              Actions prioritaires
+              {t(lang,'dashboard.priorityActions')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -87,19 +90,19 @@ export default function PersonalizedDashboard({
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
-              Négociations en cours
+              {t(lang,'dashboard.negotiations')}
             </CardTitle>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="sm"
               onClick={() => navigate(createPageUrl("TransferManagement"))}
             >
-              Voir tout
+              {t(lang,'common.seeAll')}
             </Button>
           </CardHeader>
           <CardContent>
             {activeNegociations.length === 0 ? (
-              <p className="text-center text-slate-500 py-4">Aucune négociation active</p>
+              <p className="text-center text-slate-500 py-4">{t(lang,'dashboard.noNegotiations')}</p>
             ) : (
               <div className="space-y-3">
                 {activeNegociations.map(neg => (
@@ -134,19 +137,19 @@ export default function PersonalizedDashboard({
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Clock className="w-5 h-5" />
-              Rappels à venir
+              {t(lang,'dashboard.reminders')}
             </CardTitle>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="sm"
               onClick={() => navigate(createPageUrl("Contacts"))}
             >
-              Voir tout
+              {t(lang,'common.seeAll')}
             </Button>
           </CardHeader>
           <CardContent>
             {upcomingReminders.length === 0 ? (
-              <p className="text-center text-slate-500 py-4">Aucun rappel</p>
+              <p className="text-center text-slate-500 py-4">{t(lang,'dashboard.noReminders')}</p>
             ) : (
               <div className="space-y-3">
                 {upcomingReminders.map(reminder => {
@@ -162,7 +165,7 @@ export default function PersonalizedDashboard({
                     >
                       <div className="flex items-start justify-between mb-1">
                         <span className="font-medium text-slate-900">{reminder.titre}</span>
-                        {isUrgent && <Badge className="bg-red-100 text-red-800">Urgent</Badge>}
+                        {isUrgent && <Badge className="bg-red-100 text-red-800">{t(lang,'dashboard.urgent')}</Badge>}
                       </div>
                       <div className="text-sm text-slate-600">
                         {format(new Date(reminder.date_rappel), "dd/MM/yyyy")} • {reminder.type}
@@ -181,19 +184,19 @@ export default function PersonalizedDashboard({
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="w-5 h-5" />
-            Insights IA récents
+            {t(lang,'dashboard.aiInsights')}
           </CardTitle>
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="sm"
             onClick={() => navigate(createPageUrl("AgentNetwork"))}
           >
-            Voir tout
+            {t(lang,'common.seeAll')}
           </Button>
         </CardHeader>
         <CardContent>
           {recentInsights.length === 0 ? (
-            <p className="text-center text-slate-500 py-4">Aucun insight disponible</p>
+            <p className="text-center text-slate-500 py-4">{t(lang,'dashboard.noInsights')}</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {recentInsights.map(insight => (
@@ -207,7 +210,7 @@ export default function PersonalizedDashboard({
                       {insight.categorie.replace(/_/g, ' ')}
                     </Badge>
                     {insight.priority === "haute" && (
-                      <Badge className="bg-red-100 text-red-800">Priorité haute</Badge>
+                      <Badge className="bg-red-100 text-red-800">{t(lang,'dashboard.highPriority')}</Badge>
                     )}
                   </div>
                   <h4 className="font-semibold text-slate-900 mb-1">{insight.titre}</h4>
@@ -223,13 +226,13 @@ export default function PersonalizedDashboard({
       {recentSharedContent.length > 0 && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Contenu partagé récent</CardTitle>
-            <Button 
-              variant="ghost" 
+            <CardTitle>{t(lang,'dashboard.recentShared')}</CardTitle>
+            <Button
+              variant="ghost"
               size="sm"
               onClick={() => navigate(createPageUrl("AgentNetwork"))}
             >
-              Voir tout
+              {t(lang,'common.seeAll')}
             </Button>
           </CardHeader>
           <CardContent>

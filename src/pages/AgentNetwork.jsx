@@ -10,8 +10,11 @@ import ShareContentModal from "../components/network/ShareContentModal";
 import SharedContentCard from "../components/network/SharedContentCard";
 import InsightCard from "../components/network/InsightCard";
 import AgentInsightGenerator from "../components/network/AgentInsightGenerator";
+import { useLanguage } from "../lib/LanguageContext";
+import { t } from "../i18n/translations";
 
 export default function AgentNetworkPage() {
+  const { lang } = useLanguage();
   const queryClient = useQueryClient();
   const [showShareModal, setShowShareModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -78,15 +81,15 @@ export default function AgentNetworkPage() {
     <div className="p-8 space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-slate-900">Réseau des Agents</h1>
-          <p className="text-slate-500 mt-2">Partagez et découvrez des insights avec la communauté</p>
+          <h1 className="text-4xl font-bold text-slate-900">{t(lang, 'network.title')}</h1>
+          <p className="text-slate-500 mt-2">{t(lang, 'network.subtitle')}</p>
         </div>
         <Button 
           onClick={() => setShowShareModal(true)}
           className="bg-slate-900 hover:bg-slate-800 shadow-lg"
         >
           <Share2 className="w-4 h-4 mr-2" />
-          Partager du contenu
+          {t(lang, 'network.shareBtn')}
         </Button>
       </div>
 
@@ -97,7 +100,7 @@ export default function AgentNetworkPage() {
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Rechercher du contenu ou des insights..."
+              placeholder={t(lang, 'network.searchPlh')}
               className="pl-10"
             />
           </div>
@@ -109,11 +112,11 @@ export default function AgentNetworkPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tous les types</SelectItem>
-                  <SelectItem value="player_profile">Profils joueurs</SelectItem>
-                  <SelectItem value="team_analysis">Analyses d'équipe</SelectItem>
-                  <SelectItem value="market_insight">Insights marché</SelectItem>
-                  <SelectItem value="transfer_opportunity">Opportunités</SelectItem>
+                  <SelectItem value="all">{t(lang, 'network.filterAll')}</SelectItem>
+                  <SelectItem value="player_profile">{t(lang, 'network.filterPlayerProfiles')}</SelectItem>
+                  <SelectItem value="team_analysis">{t(lang, 'network.filterTeamAnalysis')}</SelectItem>
+                  <SelectItem value="market_insight">{t(lang, 'network.filterMarketInsight')}</SelectItem>
+                  <SelectItem value="transfer_opportunity">{t(lang, 'network.filterOpportunities')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -132,7 +135,7 @@ export default function AgentNetworkPage() {
             }`}
           >
             <Share2 className="w-4 h-4 inline mr-2" />
-            Contenus partagés ({filteredSharedContents.length})
+            {t(lang, 'network.tabShared', { count: filteredSharedContents.length })}
           </button>
           <button
             onClick={() => setActiveTab("insights")}
@@ -143,7 +146,7 @@ export default function AgentNetworkPage() {
             }`}
           >
             <Sparkles className="w-4 h-4 inline mr-2" />
-            Insights IA ({filteredInsights.length})
+            {t(lang, 'network.tabInsights', { count: filteredInsights.length })}
           </button>
         </div>
       </div>
@@ -152,7 +155,7 @@ export default function AgentNetworkPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {filteredSharedContents.map(content => {
             const player = content.player_id ? players.find(p => p.id === content.player_id) : null;
-            const team = content.team_id ? teams.find(t => t.id === content.team_id) : null;
+            const team = content.team_id ? teams.find(tm => tm.id === content.team_id) : null;
             return (
               <SharedContentCard
                 key={content.id}
@@ -182,8 +185,8 @@ export default function AgentNetworkPage() {
           {filteredInsights.length === 0 && !searchQuery && (
             <div className="text-center py-12">
               <Sparkles className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-              <p className="text-slate-500">Aucun insight généré pour le moment</p>
-              <p className="text-sm text-slate-400 mt-1">Utilisez le générateur ci-dessus pour commencer</p>
+              <p className="text-slate-500">{t(lang, 'network.noInsights')}</p>
+              <p className="text-sm text-slate-400 mt-1">{t(lang, 'network.noInsightsHint')}</p>
             </div>
           )}
         </div>

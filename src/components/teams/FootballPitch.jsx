@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Plus } from "lucide-react";
 import PlayerPickerModal from "./PlayerPickerModal";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 const FORMATIONS = {
   "4-3-3": [
@@ -148,6 +150,7 @@ function PlayerCard({ slot, player, onClick, cardW, photoH }) {
 }
 
 export default function FootballPitch({ formation = "4-3-3", players = [], initialLineup = {}, onLineupChange }) {
+  const { lang } = useLanguage();
   const slots = FORMATIONS[formation] || FORMATIONS["4-3-3"];
   const [lineup, setLineup] = useState(initialLineup);
   const [pickerSlot, setPickerSlot] = useState(null);
@@ -244,7 +247,7 @@ export default function FootballPitch({ formation = "4-3-3", players = [], initi
       {/* Bench */}
       <div className="bg-slate-900 rounded-2xl p-3">
         <div className="text-slate-400 text-xs font-semibold mb-2 uppercase tracking-wider">
-          Banc de touche
+          {t(lang, 'teams.bench')}
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
           {BENCH_SLOTS.map(slot => (

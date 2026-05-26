@@ -8,8 +8,11 @@ import TransferRenewalPredictor from "../components/dashboard/predictive/Transfe
 import MarketValueImpact from "../components/dashboard/predictive/MarketValueImpact";
 import EmergingTalents from "../components/dashboard/predictive/EmergingTalents";
 import PlayerComparisonTool from "../components/dashboard/predictive/PlayerComparisonTool";
+import { useLanguage } from "../lib/LanguageContext";
+import { t } from "../i18n/translations";
 
 export default function PredictiveDashboard() {
+  const { lang } = useLanguage();
   const { data: players = [], isLoading } = useQuery({
     queryKey: ['players'],
     queryFn: () => base44.entities.Player.list(),
@@ -20,7 +23,7 @@ export default function PredictiveDashboard() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex items-center gap-3 text-slate-500">
           <Sparkles className="w-5 h-5 animate-pulse text-purple-500" />
-          Chargement de l'analyse prédictive…
+          {t(lang, 'predictive.loading')}
         </div>
       </div>
     );
@@ -35,15 +38,13 @@ export default function PredictiveDashboard() {
             <div className="w-9 h-9 bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl flex items-center justify-center shadow">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
-            Analyse Prédictive
+            {t(lang, 'predictive.title')}
           </h1>
-          <p className="text-slate-500 mt-1 text-sm">
-            Projections IA · Trajectoires de carrière · Risques de transfert · Talents émergents
-          </p>
+          <p className="text-slate-500 mt-1 text-sm">{t(lang, 'predictive.subtitle')}</p>
         </div>
         <div className="hidden md:flex items-center gap-2 text-xs text-slate-400 bg-purple-50 border border-purple-100 rounded-lg px-3 py-2">
           <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-          Basé sur {players.length} joueur{players.length !== 1 ? "s" : ""} dans la base
+          {t(lang, 'predictive.basedOn', { count: players.length, s: players.length !== 1 ? "s" : "" })}
         </div>
       </div>
 
@@ -67,11 +68,11 @@ export default function PredictiveDashboard() {
 
       {/* Légende méthodologie */}
       <div className="border border-slate-200 rounded-xl p-4 bg-slate-50 text-xs text-slate-500 space-y-1">
-        <p className="font-semibold text-slate-700">📌 Méthodologie</p>
-        <p>• <strong>Trajectoires</strong> : projection mathématique basée sur la courbe âge/valeur type (pic entre 24-27 ans, déclin progressif après 29 ans)</p>
-        <p>• <strong>Transfert/Renouvellement</strong> : scoring pondéré (contrat restant, âge, forme récente, ratio valeur/peak)</p>
-        <p>• <strong>Impact développement</strong> : facteurs multiplicatifs (âge, note SofaScore, ratio buts/xG, contributions)</p>
-        <p>• <strong>Talents émergents</strong> : algorithme multi-critères sur joueurs ≤23 ans (âge, note, xG, contributions, valeur)</p>
+        <p className="font-semibold text-slate-700">📌 {t(lang, 'predictive.methodTitle')}</p>
+        <p>• {t(lang, 'predictive.methodTrajectory')}</p>
+        <p>• {t(lang, 'predictive.methodTransfer')}</p>
+        <p>• {t(lang, 'predictive.methodDev')}</p>
+        <p>• {t(lang, 'predictive.methodTalent')}</p>
       </div>
     </div>
   );

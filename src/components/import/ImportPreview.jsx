@@ -3,6 +3,8 @@ import { Users, Building2, ChevronDown, ChevronUp, ArrowLeft, Play, UserCheck } 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 const PLAYER_LABELS = {
   nom: "Nom", prenom: "Prénom", poste: "Poste", club_actuel: "Club",
@@ -28,6 +30,7 @@ const CONTACT_LABELS = {
 };
 
 function DataTable({ items, labels, title, icon: Icon, color }) {
+  const { lang } = useLanguage();
   const [expanded, setExpanded] = useState(true);
   if (!items || items.length === 0) return null;
 
@@ -42,7 +45,7 @@ function DataTable({ items, labels, title, icon: Icon, color }) {
               <Icon className="w-4 h-4 text-white" />
             </div>
             <CardTitle className="text-base">{title}</CardTitle>
-            <Badge variant="secondary">{items.length} entrée{items.length > 1 ? "s" : ""}</Badge>
+            <Badge variant="secondary">{t(lang, 'import.entries', { count: items.length, s: items.length > 1 ? "s" : "" })}</Badge>
           </div>
           {expanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
         </div>
@@ -78,6 +81,7 @@ function DataTable({ items, labels, title, icon: Icon, color }) {
 }
 
 export default function ImportPreview({ data, onConfirm, onBack }) {
+  const { lang } = useLanguage();
   const joueurs = data?.joueurs || [];
   const clubs = data?.clubs || [];
   const contacts = data?.contacts || [];
@@ -87,15 +91,17 @@ export default function ImportPreview({ data, onConfirm, onBack }) {
     <div>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-lg font-bold text-slate-800">Aperçu des données extraites</h2>
-          <p className="text-slate-500 text-sm">{total} enregistrement{total > 1 ? "s" : ""} détecté{total > 1 ? "s" : ""} dans <strong>{data.nom_fichier}</strong></p>
+          <h2 className="text-lg font-bold text-slate-800">{t(lang, 'import.previewTitle')}</h2>
+          <p className="text-slate-500 text-sm">
+            {t(lang, 'import.previewRecords', { count: total, s: total > 1 ? "s" : "", file: data.nom_fichier })}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onBack} className="gap-2">
-            <ArrowLeft className="w-4 h-4" /> Retour
+            <ArrowLeft className="w-4 h-4" /> {t(lang, 'import.backBtn')}
           </Button>
           <Button onClick={onConfirm} className="gap-2 bg-green-600 hover:bg-green-700 text-white" disabled={total === 0}>
-            <Play className="w-4 h-4" /> Lancer l'import
+            <Play className="w-4 h-4" /> {t(lang, 'import.launchImport')}
           </Button>
         </div>
       </div>
@@ -103,28 +109,28 @@ export default function ImportPreview({ data, onConfirm, onBack }) {
       <DataTable
         items={joueurs}
         labels={PLAYER_LABELS}
-        title="Joueurs"
+        title={t(lang, 'import.previewPlayers')}
         icon={Users}
         color="bg-blue-500"
       />
       <DataTable
         items={clubs}
         labels={CLUB_LABELS}
-        title="Clubs"
+        title={t(lang, 'import.previewClubs')}
         icon={Building2}
         color="bg-purple-500"
       />
       <DataTable
         items={contacts}
         labels={CONTACT_LABELS}
-        title="Contacts de clubs"
+        title={t(lang, 'import.previewContacts')}
         icon={UserCheck}
         color="bg-orange-500"
       />
 
       {total === 0 && (
         <div className="text-center py-12 text-slate-400">
-          Aucune donnée reconnue dans ce fichier.
+          {t(lang, 'import.noData')}
         </div>
       )}
     </div>

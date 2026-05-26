@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Phone, Mail, Users, Eye, Calendar } from "lucide-react";
 import { format } from "date-fns";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 const typeIcons = {
   "Appel téléphonique": Phone,
@@ -20,14 +22,15 @@ const resultatColors = {
 };
 
 export default function ContactHistory({ contacts }) {
+  const { lang } = useLanguage();
   if (!contacts || contacts.length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Historique des contacts</CardTitle>
+          <CardTitle>{t(lang,'contacts.historyTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-slate-500 text-center py-4">Aucun contact enregistré</p>
+          <p className="text-slate-500 text-center py-4">{t(lang,'contacts.noHistory')}</p>
         </CardContent>
       </Card>
     );
@@ -40,7 +43,7 @@ export default function ContactHistory({ contacts }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Historique des contacts ({contacts.length})</CardTitle>
+        <CardTitle>{t(lang,'contacts.historyCount', { count: contacts.length })}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">

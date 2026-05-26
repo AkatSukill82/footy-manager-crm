@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { User, UserCheck, Zap, FileText, Eye, Loader2 } from "lucide-react";
 import TransfermarktImage from "../ui/TransfermarktImage";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 export const STATUTS = [
   {
@@ -49,6 +51,7 @@ export function statutConfig(statut) {
 }
 
 export default function PlayerStatusModal({ player, existingItem, open, onClose, onConfirm }) {
+  const { lang } = useLanguage();
   const [selected, setSelected] = useState(existingItem?.statut || "Prospect");
   const [saving, setSaving] = useState(false);
 
@@ -69,7 +72,7 @@ export default function PlayerStatusModal({ player, existingItem, open, onClose,
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="text-center text-base">
-            {isEdit ? "Modifier le statut" : "Ajouter un joueur"}
+            {isEdit ? t(lang,'status.modalTitleEdit') : t(lang,'status.modalTitleAdd')}
           </DialogTitle>
         </DialogHeader>
 
@@ -100,9 +103,13 @@ export default function PlayerStatusModal({ player, existingItem, open, onClose,
         {/* Status selection */}
         <div className="space-y-2">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-            Statut du Joueur
+            {t(lang,'status.subtitle')}
           </p>
-          {STATUTS.map(({ value, label, description, Icon, bg, text }) => (
+          {STATUTS.map(({ value, Icon, bg, text }) => {
+            const labelKey = value === "Client" ? 'client' : value === "Prospect" ? 'prospect' : value === "Mandaté" ? 'mandated' : 'watching';
+            const label = t(lang, `status.${labelKey}`);
+            const description = t(lang, `status.${labelKey}Desc`);
+            return (
             <button
               key={value}
               type="button"
@@ -130,13 +137,13 @@ export default function PlayerStatusModal({ player, existingItem, open, onClose,
                 </div>
               )}
             </button>
-          ))}
+          );})}
         </div>
 
         {/* Actions */}
         <div className="flex gap-2 pt-1">
           <Button variant="outline" onClick={onClose} className="flex-1">
-            Annuler
+            {t(lang, 'common.cancel')}
           </Button>
           <Button
             onClick={handleConfirm}
@@ -145,7 +152,7 @@ export default function PlayerStatusModal({ player, existingItem, open, onClose,
           >
             {saving
               ? <Loader2 className="w-4 h-4 animate-spin" />
-              : isEdit ? "Enregistrer" : "Ajouter un joueur"}
+              : isEdit ? t(lang, 'status.save') : t(lang, 'status.modalTitleAdd')}
           </Button>
         </div>
       </DialogContent>
