@@ -1,9 +1,9 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { User, Star, Plus, ChevronRight } from "lucide-react";
+import { Star, Plus, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../../utils";
-import TransfermarktImage from "../ui/TransfermarktImage";
+import PlayerAvatar from "../ui/PlayerAvatar";
 import { statutConfig } from "./PlayerStatusModal";
 import { useLanguage } from "../../lib/LanguageContext";
 import { t } from "../../i18n/translations";
@@ -59,14 +59,16 @@ export default function PlayerCard({ player, inWatchList, watchlistItem, onAddTo
       <div className="flex items-center gap-4 px-4 py-3">
 
         {/* Avatar */}
-        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-slate-100">
-          <TransfermarktImage
-            src={player.photo_url}
-            alt={player.nom}
-            className="w-full h-full object-cover"
-            fallback={<User className="w-6 h-6 text-slate-400" />}
-          />
-        </div>
+        <PlayerAvatar
+          src={player.photo_url}
+          name={player.nom}
+          type="player"
+          club={player.club_actuel}
+          entityId={player.id}
+          entityType="Player"
+          className="w-12 h-12"
+          textClassName="text-sm"
+        />
 
         {/* Name + position + club */}
         <div className="flex-1 min-w-0">
