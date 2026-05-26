@@ -94,21 +94,49 @@ export default function ImportExcel() {
         {/* Info box */}
         {step === "upload" && (
           <Card className="mb-6 border-blue-200 bg-blue-50">
-            <CardContent className="pt-4 pb-4">
+            <CardContent className="pt-4 pb-5">
               <div className="flex gap-3">
                 <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-blue-800">
-                  <p className="font-semibold mb-1">{t(lang, 'import.infoTitle')}</p>
-                  <p className="text-blue-700">
-                    <strong>{t(lang, 'import.infoPlayers')}</strong> nom, prénom, poste (ex: Attaquant, Gardien…), club, nationalité, date_naissance, valeur_marchande, contrat_fin, email, téléphone, agent, buts, passes, matchs, ligue…
-                  </p>
-                  <p className="text-blue-700 mt-1">
-                    <strong>{t(lang, 'import.infoClubs')}</strong> nom_club, pays, ville, président, directeur_sportif, email_club, téléphone_club, budget, stade…
-                  </p>
-                  <p className="text-blue-700 mt-1">
-                    <strong>Contacts (staff / agents / dirigeants) :</strong> nom (ou prénom + nom), club, poste (CEO, Agent, Directeur sportif…), email, téléphone, pays. Toute ligne sans poste footballistique est importée comme contact.
-                  </p>
-                  <p className="text-blue-700 mt-1 italic">{t(lang, 'import.infoAI')}</p>
+                <div className="w-full">
+                  <p className="font-semibold text-blue-900 mb-3 text-sm">{t(lang, 'import.infoTitle')}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+
+                    {/* JOUEURS */}
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <p className="font-bold text-green-800 text-xs uppercase tracking-wide mb-2">⚽ Joueurs</p>
+                      <p className="text-[11px] text-green-700 mb-1.5 italic">Détecté si le poste est terrain (Attaquant, Milieu, Défenseur, Gardien…)</p>
+                      <div className="flex flex-wrap gap-1">
+                        {["nom", "prénom", "poste ⚽", "club_actuel", "nationalité", "date_naissance", "taille", "poids", "pied_fort", "valeur_marchande", "contrat_fin", "ligue", "buts", "passes_déc", "matchs_joués", "note_SofaScore", "agent", "email_joueur", "tél_joueur"].map(f => (
+                          <span key={f} className="bg-green-100 text-green-800 text-[10px] px-1.5 py-0.5 rounded font-mono">{f}</span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* CONTACTS */}
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                      <p className="font-bold text-orange-800 text-xs uppercase tracking-wide mb-2">👔 Contacts (staff / agents)</p>
+                      <p className="text-[11px] text-orange-700 mb-1.5 italic">Détecté si le poste est non-footballistique (CEO, Coach, Agent, Scout, Directeur…)</p>
+                      <div className="flex flex-wrap gap-1">
+                        {["nom", "prénom", "poste_fonction 👔", "club_employeur", "pays_club", "email_contact", "tél_contact", "lien_profil"].map(f => (
+                          <span key={f} className="bg-orange-100 text-orange-800 text-[10px] px-1.5 py-0.5 rounded font-mono">{f}</span>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-orange-600 mt-2 font-medium">⚠️ Noms de colonnes différents des joueurs pour éviter toute confusion</p>
+                    </div>
+
+                    {/* CLUBS */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <p className="font-bold text-blue-800 text-xs uppercase tracking-wide mb-2">🏟️ Clubs</p>
+                      <p className="text-[11px] text-blue-700 mb-1.5 italic">Onglet ou colonnes dédiés aux clubs</p>
+                      <div className="flex flex-wrap gap-1">
+                        {["nom_club", "pays_club", "ville_club", "président", "directeur_sportif", "entraîneur", "email_club", "tél_club", "stade", "capacité", "budget", "ligue_club"].map(f => (
+                          <span key={f} className="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.5 rounded font-mono">{f}</span>
+                        ))}
+                      </div>
+                    </div>
+
+                  </div>
+                  <p className="text-blue-600 text-[11px] mt-2.5 italic">{t(lang, 'import.infoAI')}</p>
                 </div>
               </div>
             </CardContent>
