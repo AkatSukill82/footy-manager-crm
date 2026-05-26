@@ -30,9 +30,6 @@ export default function SyncPlayerButton({ player, onApply }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
-  const [apiKey, setApiKey] = useState(localStorage.getItem("apifootball_key") || "");
-  const [showKeyInput, setShowKeyInput] = useState(false);
-
   async function handleSync() {
     setState("loading");
     setError(null);
@@ -40,7 +37,6 @@ export default function SyncPlayerButton({ player, onApply }) {
     try {
       const res = await base44.functions.invoke("enrichPlayerFromAPI", {
         playerName: player.nom,
-        ...(apiKey ? { apiFootballKey: apiKey } : {}),
       });
       if (res?.data && Object.keys(res.data).length > 0) {
         const toApply = {};
@@ -69,11 +65,6 @@ export default function SyncPlayerButton({ player, onApply }) {
     }
   }
 
-  function saveApiKey(k) {
-    setApiKey(k);
-    localStorage.setItem("apifootball_key", k);
-  }
-
   const newFieldsCount = result ? Object.keys(result.toApply).length : 0;
   const s = newFieldsCount > 1 ? "s" : "";
   const x = newFieldsCount > 1 ? "x" : "";
@@ -95,7 +86,7 @@ export default function SyncPlayerButton({ player, onApply }) {
         </Button>
 
         {state === "loading" && (
-          <span className="text-xs text-slate-400 italic">TheSportsDB{apiKey ? " + API-Football" : ""}…</span>
+          <span className="text-xs text-slate-400 italic">TheSportsDB + API-Football…</span>
         )}
 
         {state === "done" && result && (
@@ -128,27 +119,7 @@ export default function SyncPlayerButton({ player, onApply }) {
           </span>
         )}
 
-        <button
-          className="text-xs text-slate-300 hover:text-slate-500 ml-auto"
-          onClick={() => setShowKeyInput(!showKeyInput)}
-          title={t(lang, 'playerDetail.apiKeyConfig')}
-        >
-          ⚙
-        </button>
       </div>
-
-      {showKeyInput && (
-        <div className="flex items-center gap-2">
-          <input
-            type="password"
-            value={apiKey}
-            onChange={e => saveApiKey(e.target.value)}
-            placeholder={t(lang, 'playerDetail.apiKeyPlh')}
-            className="text-xs border border-slate-200 rounded px-2 py-1 flex-1 bg-white"
-          />
-          <span className="text-[10px] text-slate-400">{t(lang, 'playerDetail.apiKeyNote')}</span>
-        </div>
-      )}
 
       {showDetail && result && newFieldsCount > 0 && (
         <div className="bg-slate-50 rounded-lg border border-slate-200 p-2 max-h-48 overflow-y-auto">

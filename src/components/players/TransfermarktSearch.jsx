@@ -183,6 +183,12 @@ export default function TransfermarktSearch() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  // Map positions API-Football → notre enum
+  const mapPosteAF = (pos) => {
+    const m = { Goalkeeper: "Gardien", Defender: "Défenseur central", Midfielder: "Milieu central", Attacker: "Attaquant" };
+    return m[pos] || null;
+  };
+
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -193,35 +199,57 @@ export default function TransfermarktSearch() {
     setError(null);
 
     try {
-      const data = await base44.integrations.Core.InvokeLLM({
-        prompt: `Recherche le joueur de football professionnel "${query.trim()}" sur Transfermarkt et les sources sportives.
-Retourne jusqu'à 5 joueurs correspondants. Si le nom est unique, retourne 1 seul joueur.
-Inclus pour chaque joueur : nom exact, club actuel, poste, nationalité, âge, valeur marchande en millions €, ID Transfermarkt si connu, URL photo (Wikipedia ou site officiel de préférence, PAS Transfermarkt qui bloque les images).`,
-        add_context_from_internet: true,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            candidats: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  nom:               { type: "string" },
-                  club:              { type: "string" },
-                  poste:             { type: "string" },
-                  nationalite:       { type: "string" },
-                  age:               { type: "number" },
-                  valeur_marchande:  { type: "number" },
-                  transfermarkt_id:  { type: "string" },
-                  photo_url:         { type: "string" },
+      // ── Source 1 : API-Football (données réelles, photos fiables) ──
+      let list = [];
+      try {
+        const afRes = await base44.functions.invoke("apiFootballProxy", {
+          action: "searchPlayer",
+          name: query.trim(),
+        });
+        if (afRes?.players?.length > 0) {
+          list = afRes.players.map(p => ({
+            id_apifootball: p.id,
+            nom:            p.nom,
+            club:           p.club_actuel || "",
+            poste:          p.poste || "",
+            nationalite:    p.nationalite || "",
+            age:            p.age,
+            valeur_marchande: null,
+            photo_url:      p.photo_url,   // URL fiable API-Football
+          }));
+        }
+      } catch (_) { /* fallback ci-dessous */ }
+
+      // ── Source 2 : LLM (si API-Football ne trouve rien) ─────────────
+      if (list.length === 0) {
+        const data = await base44.integrations.Core.InvokeLLM({
+          prompt: `Recherche le joueur de football professionnel "${query.trim()}".
+Retourne jusqu'à 5 joueurs correspondants avec : nom exact, club actuel, poste, nationalité, âge, valeur marchande en millions €, URL photo (Wikipedia ou site officiel — PAS Transfermarkt).`,
+          add_context_from_internet: true,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              candidats: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    nom:              { type: "string" },
+                    club:             { type: "string" },
+                    poste:            { type: "string" },
+                    nationalite:      { type: "string" },
+                    age:              { type: "number" },
+                    valeur_marchande: { type: "number" },
+                    photo_url:        { type: "string" },
+                  },
                 },
               },
             },
           },
-        },
-      });
+        });
+        list = data?.candidats || [];
+      }
 
-      const list = data?.candidats || [];
       if (list.length === 0) {
         setError(t(lang, 'playerSearch.noPlayerFound', { query: query.trim() }));
         setLoading(false);
@@ -250,47 +278,127 @@ Inclus pour chaque joueur : nom exact, club actuel, poste, nationalité, âge, v
     const playerClub = candidate.club || "";
 
     try {
-      let photoFromTSDB = candidate.photo_url || null;
-      try {
-        const tsdbRes = await base44.functions.invoke("enrichPlayerFromAPI", { playerName });
-        if (tsdbRes?.data?.photo_url) photoFromTSDB = tsdbRes.data.photo_url;
-      } catch (_) { /* optional */ }
+      // ── Source 1 : API-Football (stats réelles si on a l'ID) ────────
+      let afPlayer = null;
+      if (candidate.id_apifootball) {
+        setLoadingStatus(t(lang, 'playerSearch.loadingLine1'));
+        try {
+          const afRes = await base44.functions.invoke("apiFootballProxy", {
+            action: "getPlayer",
+            id: candidate.id_apifootball,
+          });
+          if (afRes?.ok && afRes?.player) afPlayer = afRes.player;
+        } catch (_) { /* optional */ }
+      }
 
+      // ── Source 2 : TheSportsDB (photo + social si AF n'a pas de photo) ─
+      let photoUrl = candidate.photo_url || afPlayer?.photo_url || null;
+      if (!photoUrl) {
+        try {
+          const tsdbRes = await base44.functions.invoke("enrichPlayerFromAPI", { playerName });
+          if (tsdbRes?.data?.photo_url) photoUrl = tsdbRes.data.photo_url;
+        } catch (_) { /* optional */ }
+      }
+
+      // ── Source 3 : LLM pour les gaps (agent, palmarès, valeur, scout) ─
       setLoadingStatus(t(lang, 'playerSearch.loadingProfile'));
+
+      // Prépare le contexte AF pour le prompt LLM
+      const afContext = afPlayer ? `
+Données déjà récupérées depuis API-Football (fiables, ne pas réinventer) :
+- Nom : ${afPlayer.nom}
+- Âge : ${afPlayer.age}
+- Nationalité : ${afPlayer.nationalite}
+- Club actuel : ${afPlayer.club_actuel}
+- Ligue : ${afPlayer.ligue} (${afPlayer.pays_ligue})
+- Taille : ${afPlayer.taille} cm, Poids : ${afPlayer.poids} kg
+- Stats saison ${afPlayer.stats_saison?.saison || '2024'} : ${afPlayer.stats_saison ? JSON.stringify(afPlayer.stats_saison) : 'non disponible'}
+
+Complète UNIQUEMENT les informations manquantes (agent, valeur marchande, historique valeur, palmarès, distinctions, profil scout, fin de contrat, salaire, historique clubs, sélection nationale, stats par saison).` : `Recherche le profil complet de ${playerName}${playerClub ? ` (${playerClub})` : ""}.`;
+
       const data = await base44.integrations.Core.InvokeLLM({
         prompt: `Profil complet du joueur de football professionnel : ${playerName}${playerClub ? ` (${playerClub})` : ""}.
 
-Cherche sur Transfermarkt, SofaScore, WhoScored, L'Équipe et toutes les sources sportives disponibles.
+${afContext}
 
-Données à retourner :
-- Identité complète : date/lieu naissance, nationalités, taille, poids, pied fort, numéro maillot
-- Club : club actuel, ligue, pays, fin de contrat, salaire, agent, entraîneur
-- IDs : Transfermarkt ID, SofaScore ID
-- Photo : URL d'une image accessible (Wikipedia https://upload.wikimedia.org/... ou site officiel — PAS Transfermarkt)
-- Valeur marchande actuelle (millions €) et valeur peak historique
-- Historique valeur marchande (date YYYY-MM et valeur en millions €)
-- Stats saison 2024/2025 : matchs, buts, passes déc., minutes, note, xG, xA, tirs, dribbles
-- Stats par saison (toute la carrière)
-- Historique transferts (clubs, dates, montants en millions €, type)
+Données à retourner si non déjà connues :
+- Valeur marchande actuelle (millions €), valeur peak
+- Historique valeur marchande (date YYYY-MM, valeur en millions €)
+- Fin de contrat, salaire annuel, agent, agence
 - Sélection nationale : équipe, matchs, buts, passes
 - Palmarès, distinctions individuelles
 - Profil scout : style de jeu, forces, faiblesses, note /100
-- Blessures et carrière complète
+- Historique clubs (clubs, dates, montants en millions €, type)
+- Stats par saison (carrière complète)
+- IDs : Transfermarkt, SofaScore
 
-Si une info est inconnue = null. Ne PAS inventer de chiffres.`,
+Ne PAS réinventer les stats déjà fournies. null si inconnu.`,
         add_context_from_internet: true,
         response_json_schema: FULL_PROFILE_SCHEMA,
       });
 
-      if (!data || !data.nom) {
-        throw new Error(t(lang, 'playerSearch.profileNotFound'));
+      if (!data || !data.nom) throw new Error(t(lang, 'playerSearch.profileNotFound'));
+
+      // ── Merge : API-Football (fiable) > LLM (gaps) ───────────────────
+      const merged = { ...data };
+
+      if (afPlayer) {
+        // Les champs AF sont toujours prioritaires (données réelles)
+        if (afPlayer.nom)          merged.nom          = afPlayer.nom;
+        if (afPlayer.age)          merged.age          = afPlayer.age;
+        if (afPlayer.date_naissance) merged.date_naissance = afPlayer.date_naissance;
+        if (afPlayer.lieu_naissance) merged.lieu_naissance = afPlayer.lieu_naissance;
+        if (afPlayer.nationalite)  merged.nationalite  = afPlayer.nationalite;
+        if (afPlayer.taille)       merged.taille       = afPlayer.taille;
+        if (afPlayer.poids)        merged.poids        = afPlayer.poids;
+        if (afPlayer.poste)        merged.poste        = afPlayer.poste;
+        if (afPlayer.club_actuel)  merged.club_actuel  = afPlayer.club_actuel;
+        if (afPlayer.ligue)        merged.ligue        = afPlayer.ligue;
+        if (afPlayer.pays_ligue)   merged.pays_ligue   = afPlayer.pays_ligue;
+        if (afPlayer.numero_maillot) merged.numero_maillot = afPlayer.numero_maillot;
+
+        // Stats saison AF → champs stats_saison du profil LLM
+        if (afPlayer.stats_saison) {
+          const s = afPlayer.stats_saison;
+          merged.stats_saison = {
+            ...(merged.stats_saison || {}),
+            saison:           s.saison || merged.stats_saison?.saison,
+            matchs:           s.matchs ?? merged.stats_saison?.matchs,
+            titulaire:        s.titulaire ?? merged.stats_saison?.titulaire,
+            minutes:          s.minutes ?? merged.stats_saison?.minutes,
+            buts:             s.buts ?? merged.stats_saison?.buts,
+            passes_decisives: s.passes_decisives ?? merged.stats_saison?.passes_decisives,
+            cartons_jaunes:   s.cartons_jaunes ?? merged.stats_saison?.cartons_jaunes,
+            cartons_rouges:   s.cartons_rouges ?? merged.stats_saison?.cartons_rouges,
+            tirs:             s.tirs ?? merged.stats_saison?.tirs,
+            tirs_cadres:      s.tirs_cadres ?? merged.stats_saison?.tirs_cadres,
+            passes_cles:      s.passes_cles ?? merged.stats_saison?.passes_cles,
+            dribbles_reussis: s.dribbles_reussis ?? merged.stats_saison?.dribbles_reussis,
+            tacles:           s.tacles ?? merged.stats_saison?.tacles,
+            interceptions:    s.interceptions ?? merged.stats_saison?.interceptions,
+          };
+        }
+
+        // Historique multi-saisons AF si disponible
+        if (afPlayer.toutes_stats?.length > 1 && (!merged.stats_par_saison || merged.stats_par_saison.length < 2)) {
+          merged.stats_par_saison = afPlayer.toutes_stats.map(s => ({
+            saison: s.saison,
+            club:   s.club,
+            ligue:  s.ligue,
+            matchs: s.matchs,
+            buts:   s.buts,
+            passes: s.passes,
+            minutes: s.minutes,
+          }));
+        }
       }
 
-      if (photoFromTSDB && (!data.photo_url || data.photo_url.includes('transfermarkt'))) {
-        data.photo_url = photoFromTSDB;
-      }
+      // Photo : priorité API-Football → TheSportsDB → LLM
+      merged.photo_url = photoUrl
+        || (merged.photo_url && !merged.photo_url.includes('transfermarkt') ? merged.photo_url : null)
+        || null;
 
-      setResult(data);
+      setResult(merged);
     } catch (err) {
       setError(err.message || t(lang, 'playerSearch.loadError'));
     } finally {
