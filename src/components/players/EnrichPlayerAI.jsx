@@ -124,14 +124,37 @@ export default function EnrichPlayerAI({ player, onApply }) {
     setResult(null);
     setApplied(false);
 
-    const data = await base44.integrations.Core.InvokeLLM({
-      prompt: `Tu es un expert en données football. Recherche TOUTES les informations disponibles sur le joueur "${player.nom}"${player.club_actuel ? ` évoluant à ${player.club_actuel}` : ""}${player.nationalite ? `, nationalité ${player.nationalite}` : ""}.
+    const knownInfo = [
+      player.nom,
+      player.club_actuel && `club: ${player.club_actuel}`,
+      player.nationalite && `nationalité: ${player.nationalite}`,
+      player.date_naissance && `né le: ${player.date_naissance}`,
+      player.age && `âge: ${player.age} ans`,
+      player.poste && `poste: ${player.poste}`,
+      player.transfermarkt_id && `Transfermarkt ID: ${player.transfermarkt_id}`,
+      player.ligue && `ligue: ${player.ligue}`,
+    ].filter(Boolean).join(", ");
 
-Consulte impérativement :
-- Transfermarkt.fr (profil, valeur marchande, contrat, historique clubs, agent, historique valeurs)
-- SofaScore (stats saison en cours, notes, stats avancées xG/xA, physique, duels)
-- Wikipedia / presse sportive (biographie, palmarès, distinctions)
-- TheSportsDB ou tout site officiel pour trouver une URL de photo du joueur
+    const data = await base44.integrations.Core.InvokeLLM({
+      prompt: `Tu es un expert en données football. Recherche TOUTES les informations disponibles sur ce joueur de football.
+
+INFORMATIONS CONNUES : ${knownInfo}
+
+INSTRUCTIONS DE RECHERCHE :
+1. Cherche d'abord sur Transfermarkt (transfermarkt.com / transfermarkt.fr) avec le nom exact ET des variantes orthographiques possibles (accents manquants, noms composés, etc.)
+2. Si le joueur est en prêt, renseigne OBLIGATOIREMENT : club_actuel = club d'accueil du prêt, et note le club propriétaire dans les notes
+3. Cherche sur SofaScore les stats de la saison en cours (notes, xG, xA, duels, etc.)
+4. Cherche une photo publique sur Transfermarkt, Wikipedia ou site officiel du club
+5. Si le joueur est peu connu ou joue dans une division inférieure, fais quand même de ton mieux
+
+DONNÉES À RENSEIGNER OBLIGATOIREMENT si disponibles :
+- date_naissance, lieu_naissance, nationalite, nationalite_secondaire
+- taille, poids, pied_fort
+- club_actuel, ligue, pays_ligue, contrat_fin
+- valeur_marchande (en millions €, ex: 0.45 pour 450K€)
+- agent, agence
+- transfermarkt_id (numéro uniquement)
+- photo_url
 
 Retourne UN JSON COMPLET avec TOUTES les données disponibles. Si une donnée est inconnue, mets null.
 
@@ -156,6 +179,7 @@ RÈGLES DE FORMAT STRICTES :
 - vitesse_max : en km/h (ex: 36.5)
 - distance_course : km par match (ex: 11.2)`,
       add_context_from_internet: true,
+      model: "gemini_3_1_pro",
       response_json_schema: {
         type: "object",
         properties: {
