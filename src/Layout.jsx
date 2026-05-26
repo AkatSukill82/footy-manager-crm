@@ -29,7 +29,8 @@ const navItems = (lang) => [
   { name: "ScoutingIA",          key: "scouting",   icon: Sparkles },
   { name: "ImportExcel",         key: "import",     icon: FileSpreadsheet },
   { name: "Organization",        key: "organization", icon: Building2 },
-].map(item => ({ ...item, label: t(lang, `nav.${item.key}`) }));
+  { name: "ClubContacts",        key: "clubcontacts", icon: Phone, label: lang === "en" ? "Club Contacts" : lang === "es" ? "Contactos clubes" : "Contacts clubs" },
+].map(item => ({ ...item, label: item.label || t(lang, `nav.${item.key}`) }));
 
 const bottomPrimary = ["Dashboard", "Players", "Teams", "TransferManagement", "Clubs"];
 

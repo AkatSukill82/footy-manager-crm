@@ -12,6 +12,7 @@ import ScoutingIA from './pages/ScoutingIA';
 import ImportExcel from './pages/ImportExcel';
 import Calendar from './pages/Calendar';
 import Organization from './pages/Organization';
+import ClubContacts from './pages/ClubContacts';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -67,6 +68,7 @@ const AuthenticatedApp = () => {
       <Route path="/ImportExcel" element={<LayoutWrapper currentPageName="ImportExcel"><ImportExcel /></LayoutWrapper>} />
       <Route path="/Calendar" element={<LayoutWrapper currentPageName="Calendar"><Calendar /></LayoutWrapper>} />
       <Route path="/Organization" element={<LayoutWrapper currentPageName="Organization"><Organization /></LayoutWrapper>} />
+      <Route path="/ClubContacts" element={<LayoutWrapper currentPageName="ClubContacts"><ClubContacts /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

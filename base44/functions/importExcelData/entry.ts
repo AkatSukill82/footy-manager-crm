@@ -258,8 +258,8 @@ Retourne toutes les informations disponibles. Si tu ne trouves pas ce joueur, re
   for (const raw of contacts) {
     // Combine prenom + nom into full name
     const nom = combineName(raw);
-    const club = raw.club?.trim() || raw.club_actuel?.trim();
-    if (!nom || !club) continue;
+    const club = (raw.club?.trim() || raw.club_actuel?.trim()) || "";
+    if (!nom) continue;
 
     try {
       const payload: Record<string,unknown> = {};
