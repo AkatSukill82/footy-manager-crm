@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Users, TrendingUp, ArrowRightLeft, Star } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { X, Plus, Users, TrendingUp, ArrowRightLeft, Star, Sparkles, Loader2 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, RadarChart, Radar,
@@ -9,6 +10,7 @@ import {
 } from "recharts";
 import { useLanguage } from "../../../lib/LanguageContext";
 import { t } from "../../../i18n/translations";
+import { base44 } from "@/api/base44Client";
 
 const PLAYER_COLORS = ["#8b5cf6", "#22c55e", "#f59e0b", "#ef4444"];
 
@@ -177,9 +179,60 @@ function StatRow({ label, players, field, format = v => v ?? "—", higherIsBett
 export default function PlayerComparisonTool({ allPlayers }) {
   const { lang } = useLanguage();
   const [selected, setSelected] = useState([]);
+  const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [loadingAI, setLoadingAI] = useState(false);
 
-  const onSelect = (p) => setSelected(prev => prev.length < 4 ? [...prev, p] : prev);
-  const onRemove = (id) => setSelected(prev => prev.filter(p => p.id !== id));
+  const onSelect = (p) => { setSelected(prev => prev.length < 4 ? [...prev, p] : prev); setAiAnalysis(null); };
+  const onRemove = (id) => { setSelected(prev => prev.filter(p => p.id !== id)); setAiAnalysis(null); };
+
+  const runAIAnalysis = async () => {
+    setLoadingAI(true);
+    setAiAnalysis(null);
+    try {
+      const playersInfo = selected.map(p => ({
+        nom: p.nom,
+        age: p.age,
+        poste: p.poste,
+        club: p.club_actuel,
+        valeur: p.valeur_marchande,
+        note: p.note_moyenne,
+        buts: p.buts,
+        passes: p.passes_decisives,
+        xg: p.xg,
+        contrat_fin: p.contrat_fin,
+        dribbles: p.dribbles_reussis,
+        interceptions: p.interceptions,
+        duels_pct: p.duels_gagnes_pct,
+      }));
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Tu es un expert en analyse football. Compare ces ${selected.length} joueurs en détail :\n\n${JSON.stringify(playersInfo, null, 2)}\n\nFais une analyse comparative approfondie : points forts/faibles de chacun, qui est le meilleur dans quels domaines, recommandations de recrutement, potentiel futur. Sois précis et concis.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            resume: { type: "string" },
+            meilleur_global: { type: "string" },
+            analyses: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  joueur: { type: "string" },
+                  points_forts: { type: "string" },
+                  points_faibles: { type: "string" },
+                  recommandation: { type: "string" },
+                }
+              }
+            },
+            conclusion: { type: "string" },
+          }
+        }
+      });
+      setAiAnalysis(result);
+    } catch (e) {
+      setAiAnalysis({ error: "Erreur lors de l'analyse IA : " + e.message });
+    }
+    setLoadingAI(false);
+  };
 
   const projections = useMemo(() => selected.map(projectValue), [selected]);
   const projYears = projections[0] || [];
@@ -242,6 +295,50 @@ export default function PlayerComparisonTool({ allPlayers }) {
 
         {selected.length >= 2 && (
           <>
+            {/* AI Analysis Button */}
+            <div className="flex justify-center">
+              <Button
+                onClick={runAIAnalysis}
+                disabled={loadingAI}
+                className="bg-purple-600 hover:bg-purple-700 text-white gap-2"
+              >
+                {loadingAI ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                {loadingAI ? "Analyse en cours…" : "Lancer l'analyse IA"}
+              </Button>
+            </div>
+
+            {/* AI Analysis Result */}
+            {aiAnalysis && !aiAnalysis.error && (
+              <div className="bg-purple-50 border border-purple-100 rounded-xl p-4 space-y-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Sparkles className="w-4 h-4 text-purple-600" />
+                  <p className="text-sm font-semibold text-purple-800">Analyse IA</p>
+                  {aiAnalysis.meilleur_global && (
+                    <Badge className="bg-purple-200 text-purple-800 border-0 ml-auto">
+                      🏆 Meilleur : {aiAnalysis.meilleur_global}
+                    </Badge>
+                  )}
+                </div>
+                {aiAnalysis.resume && <p className="text-sm text-slate-700">{aiAnalysis.resume}</p>}
+                {aiAnalysis.analyses?.length > 0 && (
+                  <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(selected.length, 2)}, 1fr)` }}>
+                    {aiAnalysis.analyses.map((a, i) => (
+                      <div key={i} className="bg-white rounded-lg p-3 border border-purple-100">
+                        <p className="font-semibold text-xs text-slate-800 mb-1.5" style={{ color: PLAYER_COLORS[i] }}>{a.joueur}</p>
+                        {a.points_forts && <p className="text-xs text-slate-600"><span className="font-medium text-green-700">✓ </span>{a.points_forts}</p>}
+                        {a.points_faibles && <p className="text-xs text-slate-600 mt-1"><span className="font-medium text-red-600">✗ </span>{a.points_faibles}</p>}
+                        {a.recommandation && <p className="text-xs text-purple-700 mt-1.5 italic">{a.recommandation}</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {aiAnalysis.conclusion && <p className="text-xs text-slate-500 border-t border-purple-100 pt-3">{aiAnalysis.conclusion}</p>}
+              </div>
+            )}
+            {aiAnalysis?.error && (
+              <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-sm text-red-600">{aiAnalysis.error}</div>
+            )}
+
             {/* Player headers */}
             <div className="grid gap-3" style={{ gridTemplateColumns: `140px repeat(${selected.length}, 1fr)` }}>
               <div />
