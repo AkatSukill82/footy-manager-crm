@@ -28,6 +28,7 @@ const navItems = (lang) => [
   { name: "News",                key: "news",       icon: Newspaper },
   { name: "ScoutingIA",          key: "scouting",   icon: Sparkles },
   { name: "ImportExcel",         key: "import",     icon: FileSpreadsheet },
+  { name: "Organization",        key: "organization", icon: Building2 },
 ].map(item => ({ ...item, label: t(lang, `nav.${item.key}`) }));
 
 const bottomPrimary = ["Dashboard", "Players", "Teams", "TransferManagement", "Clubs"];
@@ -103,7 +104,7 @@ export default function Layout({ children, currentPageName }) {
           </Link>
 
           <button
-            onClick={() => base44.auth.logout()}
+            onClick={() => base44.auth.logout("/login")}
             className="w-full flex items-center gap-3 px-3 py-2.5 text-slate-500 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
           >
             <LogOut className="w-4 h-4 flex-shrink-0" />
@@ -215,7 +216,7 @@ export default function Layout({ children, currentPageName }) {
 
             <div className="px-4 pb-6">
               <button
-                onClick={() => { base44.auth.logout(); setDrawerOpen(false); }}
+                onClick={() => { base44.auth.logout("/login"); setDrawerOpen(false); }}
                 className="w-full flex items-center justify-center gap-2 py-3 text-red-500 bg-red-50 rounded-xl font-medium"
               >
                 <LogOut className="w-5 h-5" />

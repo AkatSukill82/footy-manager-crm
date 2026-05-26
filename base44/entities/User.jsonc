@@ -1,0 +1,26 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "user"
+      ],
+      "default": "user"
+    },
+    "organisation": {
+      "type": "string",
+      "description": "Nom de l'organisation / agence pour laquelle travaille l'utilisateur"
+    },
+    "poste": {
+      "type": "string",
+      "description": "Poste / titre de l'utilisateur (ex: Scout, Directeur sportif...)"
+    },
+    "organization_id": {
+      "type": "string",
+      "description": "ID de l'organisation li\u00e9e"
+    }
+  }
+}

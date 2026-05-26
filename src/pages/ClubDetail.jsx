@@ -15,6 +15,7 @@ import { createPageUrl } from "../utils";
 import ClubForm from "../components/clubs/ClubForm";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
+import ActivityLogList from "../components/activity/ActivityLogList";
 
 function Row({ label, value, valueClass = "font-medium text-slate-900" }) {
   if (!value) return null;
@@ -63,6 +64,12 @@ export default function ClubDetailPage() {
   const clubId = urlParams.get('id');
   const [isEditing, setIsEditing] = useState(false);
 
+  const { data: currentUser } = useQuery({
+    queryKey: ["currentUser"],
+    queryFn: () => base44.auth.me(),
+    staleTime: 5 * 60 * 1000,
+  });
+
   const { data: club } = useQuery({
     queryKey: ['club', clubId],
     queryFn: async () => {
@@ -88,10 +95,25 @@ export default function ClubDetailPage() {
   });
 
   const updateClubMutation = useMutation({
-    mutationFn: (data) => base44.entities.Club.update(clubId, data),
+    mutationFn: async (data) => {
+      await base44.entities.Club.update(clubId, data);
+      const changedFields = Object.keys(data).filter(k => club && data[k] !== club[k]);
+      if (currentUser && changedFields.length > 0) {
+        base44.entities.ActivityLog.create({
+          entity_type: "Club",
+          entity_id: clubId,
+          entity_name: club?.nom || "",
+          action: "update",
+          champs_modifies: JSON.stringify(changedFields),
+          user_email: currentUser.email,
+          user_name: currentUser.full_name || currentUser.email,
+        });
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['club', clubId] });
       queryClient.invalidateQueries({ queryKey: ['clubs'] });
+      queryClient.invalidateQueries({ queryKey: ['activityLogs', 'Club', clubId] });
       setIsEditing(false);
     },
   });
@@ -428,6 +450,9 @@ export default function ClubDetailPage() {
           </Card>
         )}
       </div>
+
+      {/* Historique des modifications */}
+      <ActivityLogList entityId={clubId} entityType="Club" />
 
       {/* Transferts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

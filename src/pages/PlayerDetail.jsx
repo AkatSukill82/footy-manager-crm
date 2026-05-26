@@ -27,6 +27,7 @@ import TransfermarktImage from "../components/ui/TransfermarktImage";
 import { exportPlayerPDF } from "../lib/exportPlayerPDF";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
+import ActivityLogList from "../components/activity/ActivityLogList";
 
 const posteColors = {
   "Gardien": "bg-yellow-100 text-yellow-800",
@@ -115,10 +116,26 @@ export default function PlayerDetailPage() {
   });
 
   const updatePlayerMutation = useMutation({
-    mutationFn: (data) => base44.entities.Player.update(playerId, data),
+    mutationFn: async (data) => {
+      await base44.entities.Player.update(playerId, data);
+      // Log the change
+      const changedFields = Object.keys(data).filter(k => player && data[k] !== player[k]);
+      if (currentUser && changedFields.length > 0) {
+        base44.entities.ActivityLog.create({
+          entity_type: "Player",
+          entity_id: playerId,
+          entity_name: player?.nom || "",
+          action: "update",
+          champs_modifies: JSON.stringify(changedFields),
+          user_email: currentUser.email,
+          user_name: currentUser.full_name || currentUser.email,
+        });
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['player', playerId] });
       queryClient.invalidateQueries({ queryKey: ['players'] });
+      queryClient.invalidateQueries({ queryKey: ['activityLogs', 'Player', playerId] });
       setIsEditing(false);
     },
   });
@@ -413,6 +430,8 @@ export default function PlayerDetailPage() {
               player={player}
               onApply={(data) => updatePlayerMutation.mutate(data)}
             />
+
+            <ActivityLogList entityId={playerId} entityType="Player" />
           </div>
 
           {/* Comparison section - full width below */}

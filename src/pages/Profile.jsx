@@ -1,10 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Check, Globe } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { User, Check, Globe, Briefcase, Building2 } from "lucide-react";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
+import { extraTranslations } from "../i18n/extra";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const LANGUAGES = [
   { code: "fr", label: "Français", flag: "🇫🇷", native: "Français" },
@@ -12,24 +15,63 @@ const LANGUAGES = [
   { code: "en", label: "English",  flag: "🇬🇧", native: "English" },
 ];
 
+function te(lang, key) {
+  const keys = key.split(".");
+  let val = extraTranslations[lang] || extraTranslations["fr"];
+  for (const k of keys) val = val?.[k];
+  return val || key;
+}
+
 export default function ProfilePage() {
   const { lang, setLang } = useLanguage();
+  const queryClient = useQueryClient();
   const [saved, setSaved] = useState(false);
+  const [orgSaved, setOrgSaved] = useState(false);
+  const [orgForm, setOrgForm] = useState({ organisation: "", poste: "" });
+  const [orgFormLoaded, setOrgFormLoaded] = useState(false);
 
   const { data: user } = useQuery({
     queryKey: ["currentUser"],
     queryFn: () => base44.auth.me(),
     staleTime: 5 * 60 * 1000,
+    onSuccess: (data) => {
+      if (!orgFormLoaded) {
+        setOrgForm({
+          organisation: data?.organisation || "",
+          poste: data?.poste || "",
+        });
+        setOrgFormLoaded(true);
+      }
+    },
   });
 
-  const initials = user?.email
-    ? user.email.slice(0, 2).toUpperCase()
-    : "??";
+  // Initialize form once user is loaded
+  React.useEffect(() => {
+    if (user && !orgFormLoaded) {
+      setOrgForm({
+        organisation: user.organisation || "",
+        poste: user.poste || "",
+      });
+      setOrgFormLoaded(true);
+    }
+  }, [user, orgFormLoaded]);
+
+  const initials = user?.email ? user.email.slice(0, 2).toUpperCase() : "??";
 
   const handleSelectLang = (code) => {
     setLang(code);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleSaveOrg = async () => {
+    await base44.auth.updateMe({
+      organisation: orgForm.organisation,
+      poste: orgForm.poste,
+    });
+    queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+    setOrgSaved(true);
+    setTimeout(() => setOrgSaved(false), 2000);
   };
 
   return (
@@ -56,13 +98,53 @@ export default function ProfilePage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
+            <div className="flex items-center justify-between py-3 border-b border-slate-100">
               <span className="text-sm text-slate-500">{t(lang, "profile.email")}</span>
               <span className="text-sm font-medium text-slate-900">{user?.email || "—"}</span>
             </div>
             <div className="flex items-center justify-between py-3">
               <span className="text-sm text-slate-500">{t(lang, "profile.role")}</span>
               <span className="text-sm font-medium text-slate-900">{t(lang, "profile.roleValue")}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Organisation & Poste */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Briefcase className="w-4 h-4 text-blue-500" />
+              {te(lang, "profile.orgSection")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm text-slate-500 mb-1 block">{te(lang, "profile.organisation")}</label>
+              <Input
+                placeholder={te(lang, "profile.organisationPlh")}
+                value={orgForm.organisation}
+                onChange={e => setOrgForm(f => ({ ...f, organisation: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="text-sm text-slate-500 mb-1 block">{te(lang, "profile.poste")}</label>
+              <Input
+                placeholder={te(lang, "profile.postePlh")}
+                value={orgForm.poste}
+                onChange={e => setOrgForm(f => ({ ...f, poste: e.target.value }))}
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={handleSaveOrg}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {t(lang, "common.save")}
+              </Button>
+              <span className={`flex items-center gap-1.5 text-sm text-green-600 transition-all duration-300 ${orgSaved ? "opacity-100" : "opacity-0"}`}>
+                <Check className="w-4 h-4" />
+                {te(lang, "profile.orgSaved")}
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -106,8 +188,6 @@ export default function ProfilePage() {
                 );
               })}
             </div>
-
-            {/* Saved feedback */}
             <div className={`mt-4 flex items-center gap-2 text-sm text-green-600 transition-all duration-300 ${saved ? "opacity-100" : "opacity-0"}`}>
               <Check className="w-4 h-4" />
               {t(lang, "profile.saved")}
