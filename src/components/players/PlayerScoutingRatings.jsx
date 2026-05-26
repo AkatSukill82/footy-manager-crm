@@ -16,7 +16,7 @@ const CATEGORIES = [
 function RatingBar({ value, onChange, color }) {
   return (
     <div className="flex items-center gap-2">
-      {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+      {Array.from({ length: 5 }, (_, i) => i + 1).map((n) => (
         <button
           key={n}
           type="button"
@@ -28,11 +28,11 @@ function RatingBar({ value, onChange, color }) {
               : "bg-slate-100 hover:bg-slate-200"
             }
           `}
-          title={`${n}/10`}
+          title={`${n}/5`}
         />
       ))}
       <span className="w-8 text-right text-sm font-bold text-slate-700">
-        {value ? `${value}/10` : "—"}
+        {value ? `${value}/5` : "—"}
       </span>
     </div>
   );
@@ -84,7 +84,7 @@ export default function PlayerScoutingRatings({ player, onSave }) {
           </CardTitle>
           {avg && (
             <span className="text-sm font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full">
-              {t(lang,'scoutingRatings.avg', { avg })}
+              {`Moy. ${avg}/5`}
             </span>
           )}
         </div>

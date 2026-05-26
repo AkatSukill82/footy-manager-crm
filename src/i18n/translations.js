@@ -289,7 +289,7 @@ export const translations = {
       technique: "Technique", physical: "Physique",
       gameIQ: "Intelligence de jeu", mental: "Mental / Caractère",
       attitude: "Personalité",
-      title: "Notes Scout", avg: "Moy. {avg}/10", saving: "Enregistrement…",
+      title: "Notes Scout", avg: "Moy. {avg}/5", saving: "Enregistrement…",
     },
     watchlist: {
       title: "Ma liste de suivi",
@@ -1221,7 +1221,7 @@ export const translations = {
       technique: "Técnica", physical: "Físico",
       gameIQ: "Inteligencia de juego", mental: "Mental / Carácter",
       attitude: "Personalidad",
-      title: "Notas Scout", avg: "Med. {avg}/10", saving: "Guardando…",
+      title: "Notas Scout", avg: "Med. {avg}/5", saving: "Guardando…",
     },
     watchlist: {
       title: "Mi lista de seguimiento",
@@ -2147,7 +2147,7 @@ export const translations = {
       technique: "Technique", physical: "Physical",
       gameIQ: "Game intelligence", mental: "Mental / Character",
       attitude: "Personality",
-      title: "Scout Ratings", avg: "Avg {avg}/10", saving: "Saving…",
+      title: "Scout Ratings", avg: "Avg {avg}/5", saving: "Saving…",
     },
     watchlist: {
       title: "My watchlist",
