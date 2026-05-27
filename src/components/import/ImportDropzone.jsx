@@ -104,30 +104,42 @@ const parseExcelFile = (file) =>
     reader.readAsArrayBuffer(file);
   });
 
-// Détecte un champ canonique à partir d'une clé non mappée
+// Détecte un champ canonique en découpant la clé par "_" et en testant chaque mot
+// Ex: "telephone_club" → ["telephone","club"] → "telephone"
+// Ex: "email_club"     → ["email","club"]     → "email"
+const PHONE_WORDS   = new Set(["tel","telephone","phone","mobile","portable","gsm","cell","cellular"]);
+const WA_WORDS      = new Set(["whatsapp","wapp","whats"]);
+const EMAIL_WORDS   = new Set(["email","mail","courriel"]);
+const INSTA_WORDS   = new Set(["instagram","insta"]);
+const TWITTER_WORDS = new Set(["twitter","x"]);
+const LI_WORDS      = new Set(["linkedin"]);
+
 const guessCanonical = (key) => {
-  if (/\bportable\b|\btelephone\b|\btel\b|\bphone\b|\bmobile\b|\bgsm\b/.test(key)) return "telephone";
-  if (/\bwhatsapp\b|\bwapp\b/.test(key)) return "whatsapp";
-  if (/\bemail\b|\bmail\b|\bcourriel\b/.test(key)) return "email";
-  if (/\binstagram\b|\binsta\b/.test(key)) return "instagram";
-  if (/\btwitter\b/.test(key)) return "twitter";
-  if (/\blinkedin\b/.test(key)) return "linkedin";
+  const parts = key.split("_");
+  if (parts.some(p => WA_WORDS.has(p)))      return "whatsapp";
+  if (parts.some(p => PHONE_WORDS.has(p)))   return "telephone";
+  if (parts.some(p => EMAIL_WORDS.has(p)))   return "email";
+  if (parts.some(p => INSTA_WORDS.has(p)))   return "instagram";
+  if (parts.some(p => TWITTER_WORDS.has(p))) return "twitter";
+  if (parts.some(p => LI_WORDS.has(p)))      return "linkedin";
   return null;
 };
 
-const normalizeRow = (rawRow) => {
+const normalizeRow = (rawRow, type = "contacts") => {
   const lowered = {};
   for (const [k, v] of Object.entries(rawRow)) {
     lowered[normalizeKey(k)] = normalizeValue(v);
   }
   const normalized = { ...lowered };
+
   // Passe 1 : mapping exact via FIELD_MAP
   for (const [alias, canonical] of Object.entries(FIELD_MAP)) {
     if (lowered[alias] !== undefined && normalized[canonical] === undefined) {
       normalized[canonical] = lowered[alias];
     }
   }
-  // Passe 2 : détection par mot-clé pour les colonnes non reconnues
+
+  // Passe 2 : détection par mots-clés pour les colonnes non encore mappées
   for (const [key, val] of Object.entries(lowered)) {
     if (val == null || String(val).trim() === "") continue;
     const canonical = guessCanonical(key);
@@ -135,6 +147,13 @@ const normalizeRow = (rawRow) => {
       normalized[canonical] = val;
     }
   }
+
+  // Passe 3 : pour les contacts, les champs "général" du club sont les champs perso
+  if (type === "contacts") {
+    if (!normalized.telephone && normalized.telephone_general) normalized.telephone = normalized.telephone_general;
+    if (!normalized.email     && normalized.email_general)     normalized.email     = normalized.email_general;
+  }
+
   return normalized;
 };
 
@@ -166,7 +185,7 @@ export default function ImportDropzone({ onExtracted }) {
         const rawRows = sheets[sheetName];
         if (rawRows.length === 0) continue;
 
-        const rows = rawRows.map(normalizeRow);
+        const rows = rawRows.map(r => normalizeRow(r, dataType));
 
         if (dataType === "clubs") {
           const validRows = rows.filter((r) => {
