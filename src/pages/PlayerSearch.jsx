@@ -115,35 +115,28 @@ export default function PlayerSearchPage() {
 
       const crmData = TransfermarktAPI.buildCRMPlayer(profile, stats, marketValue, transfers);
 
-      // 2. Stats officielles API-Football (données réelles, pas de LLM)
-      setLoadingStatus("Chargement stats officielles…");
-      let afPlayer = null;
-      try {
-        const afResult = await base44.functions.invoke("apiFootballProxy", {
+      // 2 + 3. API-Football ET LLM en parallèle (gain ~10s vs séquentiel)
+      setLoadingStatus("Chargement stats et analyse scout…");
+      const [afResult, llmResult] = await Promise.allSettled([
+        // Stats officielles API-Football
+        base44.functions.invoke("apiFootballProxy", {
           action: "searchPlayer",
           name: profile.name,
-        });
-        if (afResult?.players?.[0]) afPlayer = afResult.players[0];
-      } catch (_) { /* source optionnelle */ }
-
-      // 3. Enrichissement LLM : UNIQUEMENT qualitatif (style, forces, palmarès)
-      // Les statistiques numériques viennent exclusivement de l'API-Football ci-dessus
-      setLoadingStatus(t(lang, 'playerSearch.loadingScout'));
-      let llmEnrichment = {};
-      try {
-        const llm = await base44.integrations.Core.InvokeLLM({
+        }),
+        // Analyse qualitative LLM (uniquement description/style/forces/faiblesses/palmarès)
+        base44.integrations.Core.InvokeLLM({
           prompt: `Profil scout qualitatif pour ${profile.name} (football professionnel, club : ${profile.club?.name || 'inconnu'}).
 
-Retourne UNIQUEMENT des données qualitatives — NE PAS inclure de statistiques numériques (gérées par les APIs officielles).
+Retourne UNIQUEMENT des données qualitatives — NE PAS inclure de statistiques numériques.
 - Description biographique courte (2-3 phrases)
 - Style de jeu
 - Points forts (forces)
 - Points faibles (faiblesses)
-- Palmarès (liste des titres remportés)
+- Palmarès (titres remportés)
 - Distinctions individuelles
-- Note globale scout estimée (0-100, basée sur réputation et niveau de jeu)
+- Note globale scout estimée (0-100)
 
-Si une info est inconnue = null. NE PAS INVENTER.`,
+Si inconnu = null. NE PAS INVENTER.`,
           add_context_from_internet: true,
           response_json_schema: {
             type: "object",
@@ -157,9 +150,11 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
               palmares:           { type: "array", items: { type: "string" } },
             },
           },
-        });
-        llmEnrichment = llm || {};
-      } catch (_) { /* enrichissement optionnel */ }
+        }),
+      ]);
+
+      const afPlayer = afResult.status === "fulfilled" ? afResult.value?.players?.[0] ?? null : null;
+      const llmEnrichment = llmResult.status === "fulfilled" ? (llmResult.value || {}) : {};
 
       // 4. Fusion TM + API-Football + LLM qualitatif
       const afS = afPlayer?.stats_saison;

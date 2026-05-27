@@ -1,9 +1,3 @@
-/**
- * Avatar intelligent pour joueurs et clubs.
- * - Affiche la photo avec referrerPolicy="no-referrer" (obligatoire pour les URLs Transfermarkt)
- * - Si la photo échoue, tente fetchEntityPhoto automatiquement et sauvegarde le résultat
- * - Fallback : initiales colorées
- */
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Camera, Loader2 } from "lucide-react";
@@ -43,36 +37,16 @@ export default function PlayerAvatar({
   showFetchButton = true,
   onPhotoFetched,
 }) {
-  const [localSrc, setLocalSrc] = useState(src || null);
-  const [imgFailed, setImgFailed]     = useState(false);
-  const [fetching, setFetching]       = useState(false);
-  const [fetchError, setFetchError]   = useState(false);
+  const [localSrc, setLocalSrc]   = useState(src || null);
+  const [imgFailed, setImgFailed] = useState(false);
+  const [fetching, setFetching]   = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
-  // Sync when parent passes a new src (e.g. after a mutation)
+  // Sync when parent passes a new src
   useEffect(() => { setLocalSrc(src || null); setImgFailed(false); }, [src]);
 
-  // Auto-fetch a working URL when the stored URL fails to load
-  useEffect(() => {
-    if (!imgFailed || !entityId || !entityType || fetching) return;
-    setFetching(true);
-    base44.functions.invoke("fetchEntityPhoto", { type, name, club })
-      .then(res => {
-        const url = res?.data?.photo_url;
-        if (url) {
-          setLocalSrc(url);
-          setImgFailed(false);
-          const field = entityType === "Club" ? "logo_url" : "photo_url";
-          base44.entities[entityType].update(entityId, { [field]: url }).catch(() => {});
-          if (onPhotoFetched) onPhotoFetched(url);
-        } else {
-          setFetchError(true);
-        }
-      })
-      .catch(() => setFetchError(true))
-      .finally(() => setFetching(false));
-  }, [imgFailed]);
-
-  // Manual fetch button (hover overlay)
+  // Bouton fetch MANUEL uniquement — pas d'auto-fetch au chargement
+  // (l'auto-fetch sur tous les joueurs d'une page serait trop lourd)
   const handleFetch = async (e) => {
     e.stopPropagation();
     e.preventDefault();
@@ -104,7 +78,6 @@ export default function PlayerAvatar({
   const initials = type === "club"
     ? (name?.substring(0, 3).toUpperCase() || "?")
     : getInitials(name);
-
   const hasPhoto = localSrc && localSrc !== "null" && localSrc !== "" && !imgFailed;
 
   return (
@@ -127,7 +100,7 @@ export default function PlayerAvatar({
         </div>
       )}
 
-      {/* Bouton fetch manuel (visible au hover quand pas de photo) */}
+      {/* Bouton fetch manuel : visible au hover quand pas de photo */}
       {showFetchButton && !hasPhoto && !fetching && (
         <button
           onClick={handleFetch}
