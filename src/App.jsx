@@ -1,6 +1,6 @@
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster"
-import { QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider, useQueryClient } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
@@ -9,6 +9,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { LanguageProvider } from '@/lib/LanguageContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import { base44 } from '@/api/base44Client';
 
 const ScoutingIA   = lazy(() => import('./pages/ScoutingIA'));
 const ImportExcel  = lazy(() => import('./pages/ImportExcel'));
@@ -24,6 +25,28 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const queryClient = useQueryClient();
+
+  // Dès que l'auth est confirmée, prefetch les données les plus utilisées
+  useEffect(() => {
+    if (isLoadingAuth || isLoadingPublicSettings || authError) return;
+    // Prefetch silencieux — remplit le cache avant que l'utilisateur navigue
+    queryClient.prefetchQuery({
+      queryKey: ['currentUser'],
+      queryFn: () => base44.auth.me(),
+      staleTime: Infinity,
+    });
+    queryClient.prefetchQuery({
+      queryKey: ['clubs'],
+      queryFn: () => base44.entities.Club.list('-created_date'),
+      staleTime: 3 * 60 * 1000,
+    });
+    queryClient.prefetchQuery({
+      queryKey: ['club-contacts'],
+      queryFn: () => base44.entities.ClubContact.list(),
+      staleTime: 3 * 60 * 1000,
+    });
+  }, [isLoadingAuth, isLoadingPublicSettings, authError]);
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {

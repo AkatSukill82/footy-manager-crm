@@ -167,12 +167,6 @@ export default function AlertsPage() {
     annule: t(lang,'alerts.statutCancelled'),
   };
 
-  if (loadingPlayers) return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="text-slate-500">{t(lang,'alerts.loadingAlerts')}</div>
-    </div>
-  );
-
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
       {/* Header */}

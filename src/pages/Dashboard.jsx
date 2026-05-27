@@ -67,14 +67,6 @@ export default function Dashboard() {
     enabled: !!userEmail,
   });
 
-  if (loadingPlayers || loadingWatchList) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-slate-500">{t(lang, 'dashboard.loading')}</div>
-      </div>);
-
-  }
-
   const totalPlayers = players.length;
   const watchedPlayers = watchList.length;
   const totalValue = players.reduce((sum, p) => sum + (p.valeur_marchande || 0), 0);
