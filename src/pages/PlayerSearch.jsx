@@ -115,124 +115,94 @@ export default function PlayerSearchPage() {
 
       const crmData = TransfermarktAPI.buildCRMPlayer(profile, stats, marketValue, transfers);
 
-      // 2. Enrichissement LLM : description, style, forces, palmarès, SofaScore stats
+      // 2. Stats officielles API-Football (données réelles, pas de LLM)
+      setLoadingStatus("Chargement stats officielles…");
+      let afPlayer = null;
+      try {
+        const afResult = await base44.functions.invoke("apiFootballProxy", {
+          action: "searchPlayer",
+          name: profile.name,
+        });
+        if (afResult?.players?.[0]) afPlayer = afResult.players[0];
+      } catch (_) { /* source optionnelle */ }
+
+      // 3. Enrichissement LLM : UNIQUEMENT qualitatif (style, forces, palmarès)
+      // Les statistiques numériques viennent exclusivement de l'API-Football ci-dessus
       setLoadingStatus(t(lang, 'playerSearch.loadingScout'));
       let llmEnrichment = {};
       try {
         const llm = await base44.integrations.Core.InvokeLLM({
-          prompt: `Données complémentaires pour ${profile.name} (joueur de football professionnel, club actuel: ${profile.club?.name || 'inconnu'}).
+          prompt: `Profil scout qualitatif pour ${profile.name} (football professionnel, club : ${profile.club?.name || 'inconnu'}).
 
-Retourne uniquement les infos NON disponibles sur Transfermarkt :
+Retourne UNIQUEMENT des données qualitatives — NE PAS inclure de statistiques numériques (gérées par les APIs officielles).
 - Description biographique courte (2-3 phrases)
 - Style de jeu
 - Points forts (forces)
 - Points faibles (faiblesses)
-- Stats SofaScore saison en cours (xG, xA, note, tirs, passes clés, dribbles, duels, interceptions)
-- Sélection nationale (matchs, buts, passes)
 - Palmarès (liste des titres remportés)
 - Distinctions individuelles
-- Note globale scout (0-100)
+- Note globale scout estimée (0-100, basée sur réputation et niveau de jeu)
 
 Si une info est inconnue = null. NE PAS INVENTER.`,
           add_context_from_internet: true,
           response_json_schema: {
             type: "object",
             properties: {
-              description: { type: "string" },
-              style_jeu: { type: "string" },
-              forces: { type: "string" },
-              faiblesses: { type: "string" },
+              description:        { type: "string" },
+              style_jeu:          { type: "string" },
+              forces:             { type: "string" },
+              faiblesses:         { type: "string" },
               note_globale_scout: { type: "number" },
-              distinctions: { type: "string" },
-              palmares: { type: "array", items: { type: "string" } },
-              poids: { type: "number" },
-              salaire_annuel: { type: "number" },
-              salaire_semaine: { type: "number" },
-              coach: { type: "string" },
-              sofascore_id: { type: "string" },
-              blessures_total: { type: "number" },
-              jours_blesses: { type: "number" },
-              type_blessures: { type: "string" },
-              matchs_carriere: { type: "number" },
-              buts_carriere: { type: "number" },
-              passes_carriere: { type: "number" },
-              selection_nationale: {
-                type: "object",
-                properties: {
-                  equipe: { type: "string" },
-                  matchs: { type: "number" },
-                  buts: { type: "number" },
-                  passes: { type: "number" },
-                  premiere_selection: { type: "string" },
-                },
-              },
-              stats_sofascore: {
-                type: "object",
-                properties: {
-                  matchs: { type: "number" },
-                  titulaire: { type: "number" },
-                  minutes: { type: "number" },
-                  buts: { type: "number" },
-                  passes_decisives: { type: "number" },
-                  cartons_jaunes: { type: "number" },
-                  cartons_rouges: { type: "number" },
-                  note_sofascore: { type: "number" },
-                  xg: { type: "number" },
-                  xa: { type: "number" },
-                  tirs: { type: "number" },
-                  tirs_cadres: { type: "number" },
-                  passes_cles: { type: "number" },
-                  dribbles_reussis: { type: "number" },
-                  interceptions: { type: "number" },
-                  tacles: { type: "number" },
-                  duels_gagnes_pct: { type: "number" },
-                  distance_course: { type: "number" },
-                  vitesse_max: { type: "number" },
-                },
-              },
+              distinctions:       { type: "string" },
+              palmares:           { type: "array", items: { type: "string" } },
             },
           },
         });
         llmEnrichment = llm || {};
       } catch (_) { /* enrichissement optionnel */ }
 
-      // 3. Fusionner TM + LLM
+      // 4. Fusion TM + API-Football + LLM qualitatif
+      const afS = afPlayer?.stats_saison;
       const merged = {
         ...crmData,
-        // Identité
         nom_complet: profile.name,
-        description: llmEnrichment.description,
-        style_jeu: llmEnrichment.style_jeu,
-        forces: llmEnrichment.forces,
-        faiblesses: llmEnrichment.faiblesses,
+        // Physique depuis API-Football (plus fiable que LLM)
+        poids: afPlayer?.poids || null,
+        taille: crmData.taille || afPlayer?.taille || null,
+        // Qualitatif LLM uniquement
+        description:        llmEnrichment.description,
+        style_jeu:          llmEnrichment.style_jeu,
+        forces:             llmEnrichment.forces,
+        faiblesses:         llmEnrichment.faiblesses,
         note_globale_scout: llmEnrichment.note_globale_scout,
-        distinctions: llmEnrichment.distinctions,
-        palmares: llmEnrichment.palmares || [],
-        poids: llmEnrichment.poids || null,
-        salaire_annuel: llmEnrichment.salaire_annuel || null,
-        salaire_semaine: llmEnrichment.salaire_semaine || null,
-        coach: llmEnrichment.coach || null,
-        sofascore_id: llmEnrichment.sofascore_id || null,
-        // Blessures & carrière
-        blessures_total: llmEnrichment.blessures_total || null,
-        jours_blesses: llmEnrichment.jours_blesses || null,
-        type_blessures: llmEnrichment.type_blessures || null,
-        matchs_carriere: llmEnrichment.matchs_carriere || null,
-        buts_carriere: llmEnrichment.buts_carriere || null,
-        passes_carriere: llmEnrichment.passes_carriere || null,
-        selection_nationale: llmEnrichment.selection_nationale || null,
-        // Stats SofaScore (priorité sur TM pour la saison en cours)
-        stats_saison: llmEnrichment.stats_sofascore
+        distinctions:       llmEnrichment.distinctions,
+        palmares:           llmEnrichment.palmares || [],
+        // Stats saison : API-Football en priorité, Transfermarkt en fallback
+        stats_saison: afS
           ? {
-              ...llmEnrichment.stats_sofascore,
-              saison: "2024/2025",
+              saison:           afS.saison || "2024/2025",
+              matchs:           afS.matchs,
+              titulaire:        afS.titulaire,
+              minutes:          afS.minutes,
+              buts:             afS.buts,
+              passes_decisives: afS.passes_decisives,
+              cartons_jaunes:   afS.cartons_jaunes,
+              cartons_rouges:   afS.cartons_rouges,
+              tirs:             afS.tirs,
+              tirs_cadres:      afS.tirs_cadres,
+              passes_cles:      afS.passes_cles,
+              dribbles_reussis: afS.dribbles_reussis,
+              tacles:           afS.tacles,
+              interceptions:    afS.interceptions,
+              source:           "API-Football",
             }
           : {
-              saison: "2024/2025",
-              matchs: crmData.matchs_joues,
-              buts: crmData.buts,
+              saison:           "2024/2025",
+              matchs:           crmData.matchs_joues,
+              buts:             crmData.buts,
               passes_decisives: crmData.passes_decisives,
-              minutes: crmData.minutes_jouees,
+              minutes:          crmData.minutes_jouees,
+              source:           "Transfermarkt",
             },
       };
 
@@ -284,50 +254,33 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
         pays_ligue: result.pays_ligue,
         numero_maillot: result.numero_maillot,
         contrat_fin: result.contrat_fin,
-        salaire: result.salaire_annuel,
-        salaire_semaine: result.salaire_semaine,
         agent: result.agent,
-        coach: result.coach,
         transfermarkt_id: result.transfermarkt_id,
-        sofascore_id: result.sofascore_id,
         valeur_marchande: result.valeur_marchande,
         valeur_marchande_peak: result.valeur_marchande_peak,
-        matchs_joues: s?.matchs,
-        buts: s?.buts,
-        passes_decisives: s?.passes_decisives,
-        minutes_jouees: s?.minutes,
-        note_moyenne: s?.note_sofascore,
-        xg: s?.xg,
-        xa: s?.xa,
-        tirs: s?.tirs,
-        tirs_cadres: s?.tirs_cadres,
-        passes_cles: s?.passes_cles,
-        dribbles_reussis: s?.dribbles_reussis,
-        interceptions: s?.interceptions,
-        tacles: s?.tacles,
-        duels_gagnes_pct: s?.duels_gagnes_pct,
-        cartons_jaunes: s?.cartons_jaunes,
-        cartons_rouges: s?.cartons_rouges,
-        distance_course: s?.distance_course,
-        vitesse_max: s?.vitesse_max,
-        matchs_international: result.selection_nationale?.matchs,
-        buts_international: result.selection_nationale?.buts,
-        passes_international: result.selection_nationale?.passes,
-        premier_match_selection: result.selection_nationale?.premiere_selection,
-        matchs_carriere: result.matchs_carriere,
-        buts_carriere: result.buts_carriere,
-        passes_carriere: result.passes_carriere,
-        blessures: result.blessures_total,
-        jours_blesses: result.jours_blesses,
-        type_blessures: result.type_blessures,
-        palmares: Array.isArray(result.palmares) ? result.palmares.join(", ") : result.palmares,
-        distinctions: result.distinctions,
-        style_jeu: result.style_jeu,
-        forces: result.forces,
-        faiblesses: result.faiblesses,
-        stats_resume: result.description,
+        // Stats saison depuis API-Football (ou TM en fallback)
+        matchs_joues:       s?.matchs,
+        titularisations:    s?.titulaire,
+        minutes_jouees:     s?.minutes,
+        buts:               s?.buts,
+        passes_decisives:   s?.passes_decisives,
+        cartons_jaunes:     s?.cartons_jaunes,
+        cartons_rouges:     s?.cartons_rouges,
+        tirs:               s?.tirs,
+        tirs_cadres:        s?.tirs_cadres,
+        passes_cles:        s?.passes_cles,
+        dribbles_reussis:   s?.dribbles_reussis,
+        interceptions:      s?.interceptions,
+        tacles:             s?.tacles,
+        // Qualitatif LLM
+        palmares:           Array.isArray(result.palmares) ? result.palmares.join(", ") : result.palmares,
+        distinctions:       result.distinctions,
+        style_jeu:          result.style_jeu,
+        forces:             result.forces,
+        faiblesses:         result.faiblesses,
+        stats_resume:       result.description,
         note_globale_scout: result.note_globale_scout,
-        nb_clubs: result.historique_clubs?.length,
+        nb_clubs:           result.historique_clubs?.length,
       };
       Object.keys(playerData).forEach(k => (playerData[k] == null || playerData[k] === "") && delete playerData[k]);
 
@@ -575,6 +528,11 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
                   <CardTitle className="text-sm flex items-center gap-2">
                     <BarChart2 className="w-4 h-4 text-purple-500" />
                     {t(lang,'playerSearch.statsSeason')} {s.saison || "2024/2025"}
+                    {s.source && (
+                      <span className={`ml-auto text-[10px] font-normal px-1.5 py-0.5 rounded-full ${s.source === "API-Football" ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
+                        {s.source}
+                      </span>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

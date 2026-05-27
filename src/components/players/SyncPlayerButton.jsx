@@ -2,9 +2,18 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, CheckCircle2, AlertCircle, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { RefreshCw, CheckCircle2, AlertCircle, Loader2, ChevronDown, ChevronUp, Zap } from "lucide-react";
 import { useLanguage } from "../../lib/LanguageContext";
 import { t } from "../../i18n/translations";
+
+// Champs de stats purs — appliqués automatiquement sans confirmation
+const STATS_FIELDS = new Set([
+  'matchs_joues', 'titularisations', 'minutes_jouees', 'buts', 'passes_decisives',
+  'cartons_jaunes', 'cartons_rouges', 'tirs', 'tirs_cadres', 'passes_cles',
+  'dribbles_reussis', 'dribbles_tentes', 'tacles', 'interceptions',
+  'fautes_commises', 'fautes_subies', 'buts_encaisses', 'arrets',
+  'penaltys_marques', 'club_actuel', 'ligue', 'pays_ligue', 'poste',
+]);
 
 const POS_MAP = {
   "Goalkeeper": "Gardien", "Goalie": "Gardien",
@@ -30,27 +39,60 @@ export default function SyncPlayerButton({ player, onApply }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
-  async function handleSync() {
+  const [autoApplied, setAutoApplied] = useState(false);
+
+  async function fetchData() {
+    const res = await base44.functions.invoke("enrichPlayerFromAPI", {
+      playerName: player.nom,
+    });
+    if (!res?.data || Object.keys(res.data).length === 0) {
+      throw new Error("Aucune donnée trouvée pour ce joueur sur les APIs disponibles.");
+    }
+    const toApply = {};
+    Object.entries(res.data).forEach(([k, v]) => {
+      if (v !== null && v !== undefined && v !== "" && String(v) !== String(player[k] ?? "")) {
+        toApply[k] = v;
+      }
+    });
+    return { raw: res.data, toApply, sources: res.sources || [], fieldsFound: res.fieldsFound || 0 };
+  }
+
+  // Bouton 1 : actualiser les stats en 1 clic (auto-applique les champs stats)
+  async function handleQuickStats() {
     setState("loading");
     setError(null);
     setResult(null);
+    setAutoApplied(false);
     try {
-      const res = await base44.functions.invoke("enrichPlayerFromAPI", {
-        playerName: player.nom,
-      });
-      if (res?.data && Object.keys(res.data).length > 0) {
-        const toApply = {};
-        Object.entries(res.data).forEach(([k, v]) => {
-          if (v !== null && v !== undefined && v !== "" && String(v) !== String(player[k] ?? "")) {
-            toApply[k] = v;
-          }
-        });
-        setResult({ raw: res.data, toApply, sources: res.sources || [], fieldsFound: res.fieldsFound || 0 });
+      const data = await fetchData();
+      const statsOnly = Object.fromEntries(
+        Object.entries(data.toApply).filter(([k]) => STATS_FIELDS.has(k))
+      );
+      if (Object.keys(statsOnly).length > 0) {
+        onApply(statsOnly);
+        setAutoApplied(true);
         setState("done");
+        setResult({ ...data, toApply: statsOnly });
       } else {
-        setError("Aucune donnée trouvée pour ce joueur sur les APIs disponibles.");
-        setState("error");
+        setState("done");
+        setResult({ ...data, toApply: {} });
       }
+    } catch (e) {
+      setError(e.message || "Erreur de synchronisation");
+      setState("error");
+    }
+  }
+
+  // Bouton 2 : sync complète avec confirmation (identité + stats)
+  async function handleFullSync() {
+    setState("loading");
+    setError(null);
+    setResult(null);
+    setAutoApplied(false);
+    try {
+      const data = await fetchData();
+      setResult(data);
+      setState("done");
     } catch (e) {
       setError(e.message || "Erreur de synchronisation");
       setState("error");
@@ -72,17 +114,31 @@ export default function SyncPlayerButton({ player, onApply }) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2 flex-wrap">
+
+        {/* Bouton principal : stats en 1 clic */}
         <Button
           variant="outline"
           size="sm"
-          onClick={handleSync}
+          onClick={handleQuickStats}
           disabled={state === "loading"}
-          className="flex items-center gap-1.5 text-xs border-blue-200 text-blue-700 hover:bg-blue-50"
+          className="flex items-center gap-1.5 text-xs border-green-200 text-green-700 hover:bg-green-50 font-semibold"
         >
           {state === "loading"
             ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            : <RefreshCw className="w-3.5 h-3.5" />}
-          {state === "loading" ? t(lang, 'playerDetail.syncing') : t(lang, 'playerDetail.syncBtn')}
+            : <Zap className="w-3.5 h-3.5" />}
+          Actualiser les stats
+        </Button>
+
+        {/* Bouton secondaire : sync complète */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleFullSync}
+          disabled={state === "loading"}
+          className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-blue-600 px-2"
+        >
+          <RefreshCw className="w-3 h-3" />
+          {t(lang, 'playerDetail.syncBtn')}
         </Button>
 
         {state === "loading" && (
@@ -91,7 +147,12 @@ export default function SyncPlayerButton({ player, onApply }) {
 
         {state === "done" && result && (
           <>
-            {newFieldsCount > 0 ? (
+            {autoApplied ? (
+              <Badge className="bg-green-100 text-green-700 border-0 text-xs">
+                <CheckCircle2 className="w-3 h-3 mr-1" />
+                {newFieldsCount} stat{s} appliquée{s}
+              </Badge>
+            ) : newFieldsCount > 0 ? (
               <>
                 <Badge className="bg-green-100 text-green-700 border-0 text-xs">
                   {t(lang, 'playerDetail.newFields', { count: newFieldsCount, s, x })}
@@ -118,10 +179,9 @@ export default function SyncPlayerButton({ player, onApply }) {
             <AlertCircle className="w-3.5 h-3.5" />{error}
           </span>
         )}
-
       </div>
 
-      {showDetail && result && newFieldsCount > 0 && (
+      {showDetail && result && newFieldsCount > 0 && !autoApplied && (
         <div className="bg-slate-50 rounded-lg border border-slate-200 p-2 max-h-48 overflow-y-auto">
           <p className="text-[10px] text-slate-400 mb-1.5 font-semibold uppercase">
             {t(lang, 'playerDetail.sourcesLabel')} {result.sources.join(", ")}
