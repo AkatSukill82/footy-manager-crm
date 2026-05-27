@@ -102,7 +102,7 @@ Si le club n'existe pas ou n'est pas trouvé, retourne null pour tous les champs
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
                 {result.logo_url && (
-                  <img src={result.logo_url} alt={result.nom} className="w-14 h-14 object-contain rounded-lg bg-slate-50 p-1 border" />
+                  <img src={result.logo_url} alt={result.nom} className="w-14 h-14 object-contain rounded-lg bg-slate-50 p-1 border" referrerPolicy="no-referrer" onError={e => e.target.style.display='none'} />
                 )}
                 <div>
                   <CardTitle className="text-xl">{result.nom}</CardTitle>

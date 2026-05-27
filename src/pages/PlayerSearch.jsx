@@ -166,6 +166,9 @@ Si une info est inconnue = null. NE PAS INVENTER.`,
       const merged = {
         ...crmData,
         nom_complet: profile.name,
+        // Photo : API-Football en priorité (CDN sans restriction), TM en fallback
+        // Les URLs Transfermarkt nécessitent referrerPolicy="no-referrer" côté navigateur
+        photo_url: afPlayer?.photo_url || crmData.photo_url || null,
         // Physique depuis API-Football (plus fiable que LLM)
         poids: afPlayer?.poids || null,
         taille: crmData.taille || afPlayer?.taille || null,

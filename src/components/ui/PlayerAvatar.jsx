@@ -1,12 +1,13 @@
 /**
  * Avatar intelligent pour joueurs et clubs.
- * - Affiche la photo si disponible (via TransfermarktImage)
- * - Sinon affiche des initiales colorées avec bouton "Fetch photo auto"
- * - Le bouton appelle fetchEntityPhoto et met à jour l'entité
+ * - Affiche la photo avec referrerPolicy="no-referrer" (obligatoire pour les URLs Transfermarkt)
+ * - Si la photo échoue, tente fetchEntityPhoto automatiquement et sauvegarde le résultat
+ * - Fallback : initiales colorées
  */
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Camera, Loader2 } from "lucide-react";
+
 const COLORS = [
   "from-green-400 to-green-600",
   "from-blue-400 to-blue-600",
@@ -20,8 +21,7 @@ const COLORS = [
 
 function getColor(name) {
   if (!name) return COLORS[0];
-  const idx = name.charCodeAt(0) % COLORS.length;
-  return COLORS[idx];
+  return COLORS[name.charCodeAt(0) % COLORS.length];
 }
 
 function getInitials(name) {
@@ -34,49 +34,78 @@ function getInitials(name) {
 export default function PlayerAvatar({
   src,
   name,
-  type = "player",   // "player" | "club"
-  club,              // optional, helps search for players
-  entityId,          // entity id to update after fetching
-  entityType,        // "Player" | "Club"
+  type = "player",
+  club,
+  entityId,
+  entityType,
   className = "w-12 h-12",
   textClassName = "text-sm",
   showFetchButton = true,
-  onPhotoFetched,    // callback(photo_url) — parent handles the save
+  onPhotoFetched,
 }) {
-  const [fetching, setFetching] = useState(false);
-  const [localSrc, setLocalSrc] = useState(src);
-  const [fetchError, setFetchError] = useState(false);
+  const [localSrc, setLocalSrc] = useState(src || null);
+  const [imgFailed, setImgFailed]     = useState(false);
+  const [fetching, setFetching]       = useState(false);
+  const [fetchError, setFetchError]   = useState(false);
 
-  const color = getColor(name);
-  const initials = type === "club" ? (name?.substring(0, 3).toUpperCase() || "?") : getInitials(name);
+  // Sync when parent passes a new src (e.g. after a mutation)
+  useEffect(() => { setLocalSrc(src || null); setImgFailed(false); }, [src]);
 
+  // Auto-fetch a working URL when the stored URL fails to load
+  useEffect(() => {
+    if (!imgFailed || !entityId || !entityType || fetching) return;
+    setFetching(true);
+    base44.functions.invoke("fetchEntityPhoto", { type, name, club })
+      .then(res => {
+        const url = res?.data?.photo_url;
+        if (url) {
+          setLocalSrc(url);
+          setImgFailed(false);
+          const field = entityType === "Club" ? "logo_url" : "photo_url";
+          base44.entities[entityType].update(entityId, { [field]: url }).catch(() => {});
+          if (onPhotoFetched) onPhotoFetched(url);
+        } else {
+          setFetchError(true);
+        }
+      })
+      .catch(() => setFetchError(true))
+      .finally(() => setFetching(false));
+  }, [imgFailed]);
+
+  // Manual fetch button (hover overlay)
   const handleFetch = async (e) => {
     e.stopPropagation();
     e.preventDefault();
+    if (fetching) return;
     setFetching(true);
     setFetchError(false);
     try {
       const res = await base44.functions.invoke("fetchEntityPhoto", { type, name, club });
-      const photoUrl = res?.data?.photo_url;
-      if (photoUrl) {
-        setLocalSrc(photoUrl);
+      const url = res?.data?.photo_url;
+      if (url) {
+        setLocalSrc(url);
+        setImgFailed(false);
         if (entityId && entityType) {
-          await base44.entities[entityType].update(entityId, { 
-            [entityType === "Club" ? "logo_url" : "photo_url"]: photoUrl 
-          });
+          const field = entityType === "Club" ? "logo_url" : "photo_url";
+          await base44.entities[entityType].update(entityId, { [field]: url });
         }
-        if (onPhotoFetched) onPhotoFetched(photoUrl);
+        if (onPhotoFetched) onPhotoFetched(url);
       } else {
         setFetchError(true);
       }
-    } catch (err) {
+    } catch {
       setFetchError(true);
     } finally {
       setFetching(false);
     }
   };
 
-  const hasPhoto = localSrc && localSrc !== "null" && localSrc !== "";
+  const color    = getColor(name);
+  const initials = type === "club"
+    ? (name?.substring(0, 3).toUpperCase() || "?")
+    : getInitials(name);
+
+  const hasPhoto = localSrc && localSrc !== "null" && localSrc !== "" && !imgFailed;
 
   return (
     <div className={`relative ${className} flex-shrink-0 group/avatar`}>
@@ -86,37 +115,28 @@ export default function PlayerAvatar({
             src={localSrc}
             alt={name}
             className="w-full h-full object-cover"
-            onError={(e) => {
-              e.target.style.display = "none";
-              e.target.nextSibling && (e.target.nextSibling.style.display = "flex");
-            }}
+            referrerPolicy="no-referrer"
+            onError={() => setImgFailed(true)}
           />
-          <div
-            className={`w-full h-full bg-gradient-to-br ${color} items-center justify-center hidden`}
-          >
-            <span className={`text-white font-bold ${textClassName}`}>{initials}</span>
-          </div>
         </div>
       ) : (
         <div className={`${className} rounded-full bg-gradient-to-br ${color} flex items-center justify-center border-2 border-white shadow-sm`}>
-          <span className={`text-white font-bold ${textClassName}`}>{initials}</span>
+          {fetching
+            ? <Loader2 className="w-3.5 h-3.5 text-white animate-spin" />
+            : <span className={`text-white font-bold ${textClassName}`}>{initials}</span>}
         </div>
       )}
 
-      {/* Fetch button overlay */}
-      {showFetchButton && !hasPhoto && (
+      {/* Bouton fetch manuel (visible au hover quand pas de photo) */}
+      {showFetchButton && !hasPhoto && !fetching && (
         <button
           onClick={handleFetch}
-          disabled={fetching}
           title="Chercher photo automatiquement"
           className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center shadow-md transition-all
             ${fetchError ? "bg-red-500" : "bg-white border border-slate-200 hover:bg-green-500 hover:border-green-500"}
             opacity-0 group-hover/avatar:opacity-100`}
         >
-          {fetching
-            ? <Loader2 className="w-2.5 h-2.5 text-slate-500 animate-spin" />
-            : <Camera className={`w-2.5 h-2.5 ${fetchError ? "text-white" : "text-slate-500 group-hover/avatar:text-white"}`} />
-          }
+          <Camera className={`w-2.5 h-2.5 ${fetchError ? "text-white" : "text-slate-500 group-hover/avatar:text-white"}`} />
         </button>
       )}
     </div>
