@@ -1,0 +1,103 @@
+{
+  "name": "SharedContent",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "player_profile",
+        "team_analysis",
+        "market_insight",
+        "transfer_opportunity"
+      ],
+      "description": "Type de contenu partag\u00e9"
+    },
+    "player_id": {
+      "type": "string",
+      "description": "ID du joueur (si applicable)"
+    },
+    "team_id": {
+      "type": "string",
+      "description": "ID de l'\u00e9quipe (si applicable)"
+    },
+    "titre": {
+      "type": "string",
+      "description": "Titre du partage"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description d\u00e9taill\u00e9e"
+    },
+    "insights": {
+      "type": "string",
+      "description": "Insights et analyses"
+    },
+    "tags": {
+      "type": "string",
+      "description": "Tags s\u00e9par\u00e9s par virgules"
+    },
+    "visibilite": {
+      "type": "string",
+      "enum": [
+        "public",
+        "reseau"
+      ],
+      "default": "reseau",
+      "description": "Niveau de visibilit\u00e9"
+    },
+    "likes": {
+      "type": "number",
+      "default": 0,
+      "description": "Nombre de likes"
+    }
+  },
+  "required": [
+    "type",
+    "titre",
+    "description"
+  ],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.visibilite": "public"
+        },
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}
