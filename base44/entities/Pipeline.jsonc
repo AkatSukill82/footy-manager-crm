@@ -1,0 +1,31 @@
+{
+  "name": "Pipeline",
+  "type": "object",
+  "properties": {
+    "player_id":       { "type": "string", "description": "ID du joueur (si lié à la base)" },
+    "player_nom":      { "type": "string", "description": "Nom du joueur" },
+    "player_photo":    { "type": "string", "description": "URL photo du joueur" },
+    "poste":           { "type": "string", "description": "Poste" },
+    "club_actuel":     { "type": "string", "description": "Club actuel" },
+    "nationalite":     { "type": "string", "description": "Nationalité" },
+    "age":             { "type": "number", "description": "Âge" },
+    "valeur_marchande":{ "type": "number", "description": "Valeur marchande (M€)" },
+    "budget_max":      { "type": "number", "description": "Budget max alloué (M€)" },
+    "agent":           { "type": "string", "description": "Agent / représentant" },
+    "etape": {
+      "type": "string",
+      "enum": ["Identifié", "Étudié", "Contacté", "Négociation", "Signé", "Refusé"],
+      "default": "Identifié",
+      "description": "Étape dans le pipeline de recrutement"
+    },
+    "priorite": {
+      "type": "string",
+      "enum": ["Haute", "Moyenne", "Basse"],
+      "default": "Moyenne",
+      "description": "Niveau de priorité"
+    },
+    "notes":       { "type": "string", "description": "Notes internes" },
+    "date_ajout":  { "type": "string", "description": "Date d'ajout au pipeline (YYYY-MM-DD)" }
+  },
+  "required": ["player_nom", "etape"]
+}

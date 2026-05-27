@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Bell, Calendar, Star, ArrowRightLeft, Clock, AlertTriangle,
-  CheckCircle2, ChevronRight, FileText, Shield
+  CheckCircle2, ChevronRight, FileText, Shield, Users, UserX, Phone,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
@@ -57,6 +57,11 @@ export default function AlertsPage() {
   const { data: matches = [] } = useQuery({
     queryKey: ['matches'],
     queryFn: () => base44.entities.Match.list('-date_match', 20),
+  });
+
+  const { data: clubContacts = [] } = useQuery({
+    queryKey: ['club-contacts-alerts'],
+    queryFn: () => base44.entities.ClubContact.list(),
   });
 
   const { data: teams = [] } = useQuery({
@@ -114,7 +119,35 @@ export default function AlertsPage() {
     [reminders]
   );
 
-  const totalAlerts = contractAlerts.length + upcomingMatches.length + activeNegociations.length + pendingReminders.filter(r => r.overdue || r.daysUntil <= 3).length;
+  // 5. Alertes contacts
+  const contactContractAlerts = useMemo(() => {
+    const now = new Date();
+    const limit = new Date(now.getTime() + 90 * 86400000);
+    return clubContacts
+      .filter(c => c.contrat_fin && new Date(c.contrat_fin) >= now && new Date(c.contrat_fin) <= limit)
+      .map(c => ({
+        ...c,
+        daysLeft: differenceInDays(new Date(c.contrat_fin), now),
+      }))
+      .sort((a, b) => a.daysLeft - b.daysLeft);
+  }, [clubContacts]);
+
+  const coldContacts = useMemo(() => {
+    const now = new Date();
+    const threshold = 60 * 86400000;
+    return clubContacts.filter(c => {
+      const lastActivity = c.updated_date || c.created_date;
+      if (!lastActivity) return false;
+      return now - new Date(lastActivity) > threshold;
+    }).sort((a, b) => {
+      const da = a.updated_date || a.created_date;
+      const db = b.updated_date || b.created_date;
+      return new Date(da) - new Date(db);
+    });
+  }, [clubContacts]);
+
+  const totalContactAlerts = contactContractAlerts.length + coldContacts.length;
+  const totalAlerts = contractAlerts.length + upcomingMatches.length + activeNegociations.length + pendingReminders.filter(r => r.overdue || r.daysUntil <= 3).length + totalContactAlerts;
 
   const urgencyColors = { high: "bg-red-100 text-red-800", medium: "bg-orange-100 text-orange-800", low: "bg-blue-100 text-blue-800" };
   const statutColors = {
@@ -154,7 +187,7 @@ export default function AlertsPage() {
       </div>
 
       <Tabs defaultValue="contracts">
-        <TabsList className="w-full grid grid-cols-4 h-auto">
+        <TabsList className="w-full grid grid-cols-5 h-auto">
           <TabsTrigger value="contracts" className="flex flex-col items-center gap-0.5 py-2 text-xs">
             <FileText className="w-4 h-4" />
             <span className="hidden sm:inline">{t(lang, 'alerts.tabContracts')}</span>
@@ -177,6 +210,13 @@ export default function AlertsPage() {
               <Badge className="bg-purple-500 text-white text-[10px] px-1 py-0 h-4 min-w-4">
                 {pendingReminders.filter(r => r.overdue || r.daysUntil <= 3).length}
               </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="contacts" className="flex flex-col items-center gap-0.5 py-2 text-xs">
+            <Phone className="w-4 h-4" />
+            <span className="hidden sm:inline">Contacts</span>
+            {totalContactAlerts > 0 && (
+              <Badge className="bg-teal-500 text-white text-[10px] px-1 py-0 h-4 min-w-4">{totalContactAlerts}</Badge>
             )}
           </TabsTrigger>
         </TabsList>
@@ -388,6 +428,100 @@ export default function AlertsPage() {
             </div>
           )}
         </TabsContent>
+        {/* ── CONTACTS ── */}
+        <TabsContent value="contacts" className="space-y-4 mt-4">
+
+          {/* Contrats à risque */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <FileText className="w-4 h-4 text-orange-500" />
+                Contrats expirant dans 90 jours
+                {contactContractAlerts.length > 0 && (
+                  <Badge className="bg-orange-500 text-white ml-auto">{contactContractAlerts.length}</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {contactContractAlerts.length === 0 ? (
+                <div className="py-8 text-center text-slate-500 text-sm">Aucun contrat à risque</div>
+              ) : (
+                <div className="space-y-2">
+                  {contactContractAlerts.map(c => (
+                    <div key={c.id} className="flex items-center justify-between p-3 bg-orange-50 border border-orange-200 rounded-xl">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {c.photo_url
+                          ? <img src={c.photo_url} className="w-9 h-9 rounded-full object-cover flex-shrink-0" referrerPolicy="no-referrer" />
+                          : <div className="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center flex-shrink-0">
+                              <Users className="w-4 h-4 text-slate-400" />
+                            </div>}
+                        <div className="min-w-0">
+                          <div className="font-semibold text-slate-900 text-sm truncate">{c.nom}</div>
+                          <div className="text-xs text-slate-500 truncate">{c.poste}{c.club ? ` • ${c.club}` : ''}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {c.telephone && (
+                          <span className="text-xs text-slate-500 hidden sm:block">{c.telephone}</span>
+                        )}
+                        <Badge className={c.daysLeft <= 30 ? "bg-red-100 text-red-700" : c.daysLeft <= 60 ? "bg-orange-100 text-orange-700" : "bg-yellow-100 text-yellow-700"}>
+                          <Calendar className="w-3 h-3 mr-1" />{c.daysLeft}j
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Contacts froids */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <UserX className="w-4 h-4 text-slate-400" />
+                Contacts inactifs (+60 jours)
+                {coldContacts.length > 0 && (
+                  <Badge className="bg-slate-400 text-white ml-auto">{coldContacts.length}</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {coldContacts.length === 0 ? (
+                <div className="py-8 text-center text-slate-500 text-sm">Tous vos contacts sont actifs</div>
+              ) : (
+                <div className="space-y-2">
+                  {coldContacts.slice(0, 20).map(c => {
+                    const lastDate = c.updated_date || c.created_date;
+                    const daysSince = differenceInDays(new Date(), new Date(lastDate));
+                    return (
+                      <div key={c.id} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                        <div className="flex items-center gap-3 min-w-0">
+                          {c.photo_url
+                            ? <img src={c.photo_url} className="w-9 h-9 rounded-full object-cover flex-shrink-0" referrerPolicy="no-referrer" />
+                            : <div className="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center flex-shrink-0">
+                                <Users className="w-4 h-4 text-slate-400" />
+                              </div>}
+                          <div className="min-w-0">
+                            <div className="font-semibold text-slate-900 text-sm truncate">{c.nom}</div>
+                            <div className="text-xs text-slate-500 truncate">{c.poste}{c.club ? ` • ${c.club}` : ''}</div>
+                          </div>
+                        </div>
+                        <Badge className="bg-slate-100 text-slate-600 flex-shrink-0">
+                          <Clock className="w-3 h-3 mr-1" />{daysSince}j
+                        </Badge>
+                      </div>
+                    );
+                  })}
+                  {coldContacts.length > 20 && (
+                    <p className="text-xs text-center text-slate-400 pt-1">+ {coldContacts.length - 20} autres contacts inactifs</p>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
       </Tabs>
     </div>
   );

@@ -68,6 +68,8 @@ const TransferManagement = lazy(() => import('./pages/TransferManagement'));
 const News              = lazy(() => import('./pages/News'));
 const Calendar          = lazy(() => import('./pages/Calendar'));
 const Profile           = lazy(() => import('./pages/Profile'));
+const ScoutingReports   = lazy(() => import('./pages/ScoutingReports'));
+const Pipeline          = lazy(() => import('./pages/Pipeline'));
 
 
 export const PAGES = {
@@ -89,6 +91,8 @@ export const PAGES = {
     "News": News,
     "Calendar": Calendar,
     "Profile": Profile,
+    "ScoutingReports": ScoutingReports,
+    "Pipeline": Pipeline,
 }
 
 export const pagesConfig = {

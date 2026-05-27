@@ -5,6 +5,7 @@ import {
   Users, Star, LogOut, BarChart3, Bell, Phone, Shield,
   FileText, Network, ArrowRightLeft, Menu, X, Building2,
   Sparkles, Newspaper, FileSpreadsheet, CalendarDays, UserCircle,
+  ClipboardList, Columns,
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Toaster } from "@/components/ui/sonner";
@@ -28,7 +29,9 @@ const navItems = (lang) => [
   { name: "News",                key: "news",       icon: Newspaper },
   { name: "ScoutingIA",          key: "scouting",   icon: Sparkles },
   { name: "ImportExcel",         key: "import",     icon: FileSpreadsheet },
-  { name: "Organization",        key: "organization", icon: Building2 },
+  { name: "Organization",        key: "organization",    icon: Building2 },
+  { name: "ScoutingReports",     key: "scouting_reports", icon: ClipboardList, label: "Scouting" },
+  { name: "Pipeline",            key: "pipeline",        icon: Columns,       label: "Pipeline" },
 
 ].map(item => ({ ...item, label: item.label || t(lang, `nav.${item.key}`) }));
 
