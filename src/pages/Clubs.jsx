@@ -22,9 +22,8 @@ export default function ClubsPage() {
   const [filterCategorie, setFilterCategorie] = useState("all");
 
   const { data: clubs = [], isLoading } = useQuery({
-    queryKey: ['clubs', currentUser?.id],
-    queryFn: () => base44.entities.Club.filter({ created_by_id: currentUser.id }, '-created_date'),
-    enabled: !!currentUser?.id,
+    queryKey: ['clubs'],
+    queryFn: () => base44.entities.Club.list('-created_date'),
   });
 
   const createClubMutation = useMutation({

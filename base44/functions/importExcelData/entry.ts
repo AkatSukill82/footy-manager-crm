@@ -105,13 +105,21 @@ Deno.serve(async (req) => {
       'president', 'president_email', 'president_telephone',
       'entraineur', 'entraineur_email',
       'directeur_sportif', 'directeur_sportif_email', 'directeur_sportif_telephone',
-      'email_general', 'telephone_general', 'site_web',
-      'instagram', 'twitter', 'photo_url',
+      'email', 'telephone', 'site_web',
+      'instagram', 'twitter',
     ];
     strFields.forEach(f => {
       const v = normalizeStr(raw[f]);
       if (v) payload[f] = v;
     });
+
+    // logo_url dans le front peut être stocké comme photo_url dans l'extraction
+    const logoVal = normalizeStr(raw.logo_url || raw.photo_url);
+    if (logoVal) payload.logo_url = logoVal;
+
+    // email_general / telephone_general peuvent venir du FIELD_MAP de l'extraction
+    if (!payload.email && normalizeStr(raw.email_general)) payload.email = normalizeStr(raw.email_general);
+    if (!payload.telephone && normalizeStr(raw.telephone_general)) payload.telephone = normalizeStr(raw.telephone_general);
 
     const numFields = ['budget_transfert','budget_annuel','capacite_stade','dette','valeur_effectif'];
     numFields.forEach(f => {
