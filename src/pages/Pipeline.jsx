@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, GripVertical, User } from "lucide-react";
+import { Plus, Trash2, GripVertical, User, Loader2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 // ── Colonnes du pipeline ──────────────────────────────────────────────────────
 
@@ -85,7 +86,7 @@ function PipelineCard({ card, onDelete, onEdit, onDragStart }) {
 }
 
 // ── Formulaire ajout/édition ──────────────────────────────────────────────────
-function CardForm({ initial, players, onSave, onClose }) {
+function CardForm({ initial, players, onSave, onClose, isSaving }) {
   const [form, setForm] = useState({ ...EMPTY, ...initial });
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
@@ -168,9 +169,10 @@ function CardForm({ initial, players, onSave, onClose }) {
         <Button variant="outline" onClick={onClose} className="flex-1">Annuler</Button>
         <Button
           onClick={() => onSave({ ...form, age: form.age ? +form.age : null, valeur_marchande: form.valeur_marchande ? +form.valeur_marchande : null, budget_max: form.budget_max ? +form.budget_max : null })}
-          disabled={!form.player_nom.trim()}
+          disabled={!form.player_nom.trim() || isSaving}
           className="flex-1 bg-slate-900 hover:bg-slate-800"
         >
+          {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
           {initial?.id ? "Enregistrer" : "Ajouter au pipeline"}
         </Button>
       </div>
@@ -181,6 +183,7 @@ function CardForm({ initial, players, onSave, onClose }) {
 // ── Page principale ───────────────────────────────────────────────────────────
 export default function PipelinePage() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [draggedId, setDraggedId] = useState(null);
   const [dragOverCol, setDragOverCol] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -199,12 +202,27 @@ export default function PipelinePage() {
 
   const createMutation = useMutation({
     mutationFn: data => base44.entities.Pipeline.create(data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["pipeline"] }); setModalOpen(false); setEditCard(null); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
+      setModalOpen(false);
+      setEditCard(null);
+      toast({ title: "Joueur ajouté au pipeline" });
+    },
+    onError: (err) => {
+      toast({ title: "Erreur lors de l'ajout", description: err?.message || String(err), variant: "destructive" });
+    },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, ...data }) => base44.entities.Pipeline.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["pipeline"] }); setModalOpen(false); setEditCard(null); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
+      setModalOpen(false);
+      setEditCard(null);
+    },
+    onError: (err) => {
+      toast({ title: "Erreur lors de la modification", description: err?.message || String(err), variant: "destructive" });
+    },
   });
 
   const deleteMutation = useMutation({
@@ -343,6 +361,7 @@ export default function PipelinePage() {
             players={players}
             onSave={handleSave}
             onClose={() => { setModalOpen(false); setEditCard(null); }}
+            isSaving={createMutation.isPending || updateMutation.isPending}
           />
         </DialogContent>
       </Dialog>
