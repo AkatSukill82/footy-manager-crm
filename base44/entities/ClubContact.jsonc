@@ -24,7 +24,11 @@
     },
     "telephone": {
       "type": "string",
-      "description": "Num\u00e9ro de t\u00e9l\u00e9phone / WhatsApp"
+      "description": "Numéro de téléphone"
+    },
+    "whatsapp": {
+      "type": "string",
+      "description": "Numéro WhatsApp"
     },
     "linkedin": {
       "type": "string",
@@ -32,15 +36,58 @@
     },
     "lien": {
       "type": "string",
-      "description": "Lien externe g\u00e9n\u00e9rique (Transfermarkt, site web, profil...)"
+      "description": "Lien externe générique (Transfermarkt, site web, profil...)"
+    },
+    "nationalite": {
+      "type": "string",
+      "description": "Nationalité"
+    },
+    "instagram": {
+      "type": "string",
+      "description": "Compte Instagram"
+    },
+    "twitter": {
+      "type": "string",
+      "description": "Compte Twitter / X"
+    },
+    "date_naissance": {
+      "type": "string",
+      "description": "Date de naissance (YYYY-MM-DD)"
+    },
+    "lieu_naissance": {
+      "type": "string",
+      "description": "Lieu de naissance"
+    },
+    "contrat_fin": {
+      "type": "string",
+      "description": "Date de fin de contrat (YYYY-MM-DD)"
+    },
+    "agent": {
+      "type": "string",
+      "description": "Nom de l'agent"
+    },
+    "agence": {
+      "type": "string",
+      "description": "Nom de l'agence"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "URL de la photo"
+    },
+    "valeur_marchande": {
+      "type": "number",
+      "description": "Valeur marchande (€)"
+    },
+    "salaire": {
+      "type": "number",
+      "description": "Salaire annuel (€)"
     },
     "club_id": {
       "type": "string",
-      "description": "ID du club li\u00e9 (si trouv\u00e9 en base)"
+      "description": "ID du club lié (si trouvé en base)"
     }
   },
   "required": [
-    "nom",
-    "club"
+    "nom"
   ]
 }

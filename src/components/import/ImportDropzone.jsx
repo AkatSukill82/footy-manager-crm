@@ -104,15 +104,35 @@ const parseExcelFile = (file) =>
     reader.readAsArrayBuffer(file);
   });
 
+// Détecte un champ canonique à partir d'une clé non mappée
+const guessCanonical = (key) => {
+  if (/\bportable\b|\btelephone\b|\btel\b|\bphone\b|\bmobile\b|\bgsm\b/.test(key)) return "telephone";
+  if (/\bwhatsapp\b|\bwapp\b/.test(key)) return "whatsapp";
+  if (/\bemail\b|\bmail\b|\bcourriel\b/.test(key)) return "email";
+  if (/\binstagram\b|\binsta\b/.test(key)) return "instagram";
+  if (/\btwitter\b/.test(key)) return "twitter";
+  if (/\blinkedin\b/.test(key)) return "linkedin";
+  return null;
+};
+
 const normalizeRow = (rawRow) => {
   const lowered = {};
   for (const [k, v] of Object.entries(rawRow)) {
     lowered[normalizeKey(k)] = normalizeValue(v);
   }
   const normalized = { ...lowered };
+  // Passe 1 : mapping exact via FIELD_MAP
   for (const [alias, canonical] of Object.entries(FIELD_MAP)) {
     if (lowered[alias] !== undefined && normalized[canonical] === undefined) {
       normalized[canonical] = lowered[alias];
+    }
+  }
+  // Passe 2 : détection par mot-clé pour les colonnes non reconnues
+  for (const [key, val] of Object.entries(lowered)) {
+    if (val == null || String(val).trim() === "") continue;
+    const canonical = guessCanonical(key);
+    if (canonical && normalized[canonical] === undefined) {
+      normalized[canonical] = val;
     }
   }
   return normalized;

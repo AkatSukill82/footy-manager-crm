@@ -29,6 +29,7 @@ Deno.serve(async (req) => {
 
   const normalizeNum = (val: unknown): number | null => {
     if (val == null || val === '') return null;
+    if (typeof val === 'number') return isNaN(val) ? null : val;
     const s = String(val).replace(/\s/g,'').replace(',','.').replace(/[€$£]/g,'');
     const mM = s.match(/^([\d.]+)\s*[Mm]$/);
     if (mM) return parseFloat(mM[1]) * 1_000_000;
@@ -40,12 +41,21 @@ Deno.serve(async (req) => {
     return isNaN(n) ? null : n;
   };
 
+  const normalizeStr = (val: unknown): string | null => {
+    if (val == null) return null;
+    // Si c'est un nombre (ex: téléphone stocké en entier dans Excel), convertir
+    const s = String(val).trim();
+    return s === '' ? null : s;
+  };
+
   const normalizeForCompare = (s: string) =>
     (s || '').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
 
   const combineName = (raw: Record<string,unknown>): string => {
     const prenom = raw.prenom ? String(raw.prenom).trim() : '';
     const nom    = raw.nom    ? String(raw.nom).trim()    : '';
+    // Si nom contient déjà le prénom (combiné par le front), ne pas doubler
+    if (prenom && nom.startsWith(prenom)) return nom;
     return [prenom, nom].filter(Boolean).join(' ') || nom;
   };
 
@@ -99,8 +109,8 @@ Deno.serve(async (req) => {
       'instagram', 'twitter', 'photo_url',
     ];
     strFields.forEach(f => {
-      const v = raw[f];
-      if (v != null && String(v).trim()) payload[f] = String(v).trim();
+      const v = normalizeStr(raw[f]);
+      if (v) payload[f] = v;
     });
 
     const numFields = ['budget_transfert','budget_annuel','capacite_stade','dette','valeur_effectif'];
@@ -117,7 +127,7 @@ Deno.serve(async (req) => {
       } else {
         const created = await base44.asServiceRole.entities.Club.create({
           nom,
-          pays: String(raw.pays || 'Inconnu').trim(),
+          pays: normalizeStr(raw.pays) || 'Inconnu',
           ...payload,
         });
         clubMap[key] = created;
@@ -140,14 +150,19 @@ Deno.serve(async (req) => {
     try {
       const payload: Record<string,unknown> = {};
 
+      // Champs texte — correspondent aux champs du schéma ClubContact
       const strFields = [
-        'poste', 'pays', 'nationalite', 'email', 'telephone', 'whatsapp',
-        'instagram', 'twitter', 'photo_url', 'agent', 'agence', 'lieu_naissance',
+        'poste', 'pays', 'nationalite',
+        'email', 'telephone', 'whatsapp',
+        'instagram', 'twitter', 'linkedin', 'lien',
+        'photo_url', 'agent', 'agence', 'lieu_naissance',
       ];
       strFields.forEach(f => {
-        if (raw[f] != null && String(raw[f]).trim()) payload[f] = String(raw[f]).trim();
+        const v = normalizeStr(raw[f]);
+        if (v) payload[f] = v;
       });
 
+      // Champs numériques
       const numFields: [string, unknown][] = [
         ['valeur_marchande', raw.valeur_marchande],
         ['salaire', raw.salaire],
@@ -157,11 +172,13 @@ Deno.serve(async (req) => {
         if (n != null) payload[f] = n;
       });
 
+      // Champs date
       ['date_naissance', 'contrat_fin'].forEach(f => {
         const d = normalizeDate(raw[f]);
         if (d) payload[f] = d;
       });
 
+      // Lien avec le club
       if (clubNom) {
         const linkedClub = await upsertClub(clubNom, raw.pays ? String(raw.pays) : undefined);
         payload.club_id = linkedClub.id;
@@ -176,7 +193,7 @@ Deno.serve(async (req) => {
         results.contacts_mis_a_jour++;
         results.details.push({ type: 'Contact', nom: label, action: 'mis à jour' });
       } else {
-        await base44.asServiceRole.entities.ClubContact.create({ nom, club: clubNom || '', ...payload });
+        await base44.asServiceRole.entities.ClubContact.create({ nom, club: clubNom, ...payload });
         results.contacts_crees++;
         results.details.push({ type: 'Contact', nom: label, action: 'créé' });
       }
