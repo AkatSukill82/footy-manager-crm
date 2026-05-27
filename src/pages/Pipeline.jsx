@@ -245,8 +245,11 @@ export default function PipelinePage() {
   const openEdit = card => { setEditCard(card); setDefaultEtape(card.etape); setModalOpen(true); };
 
   const handleSave = data => {
-    if (editCard?.id) updateMutation.mutate({ ...data, id: editCard.id });
-    else createMutation.mutate(data);
+    const clean = Object.fromEntries(
+      Object.entries(data).filter(([, v]) => v !== "" && v !== null && v !== undefined)
+    );
+    if (editCard?.id) updateMutation.mutate({ ...clean, id: editCard.id });
+    else createMutation.mutate(clean);
   };
 
   const totalVal = cards.reduce((a, c) => a + (c.valeur_marchande || 0), 0);
