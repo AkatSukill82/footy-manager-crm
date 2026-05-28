@@ -29,13 +29,6 @@ function buildLinks(player) {
       badge: "Via Google",
       style: "bg-orange-50 border-orange-200 hover:bg-orange-100 text-orange-900",
     },
-    {
-      label: "Soccerway",
-      description: "Résultats, effectifs, carrière détaillée",
-      href: `https://int.soccerway.com/search/players/?q=${name}`,
-      badge: "Recherche",
-      style: "bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-800",
-    },
   ];
 }
 
