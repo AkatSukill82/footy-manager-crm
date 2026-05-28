@@ -12,6 +12,7 @@
     "date-fns": "^4.3.0",
     "expo": "~56.0.4",
     "expo-auth-session": "^56.0.11",
+    "expo-av": "~15.0.0",
     "expo-constants": "~56.0.15",
     "expo-document-picker": "^56.0.4",
     "expo-file-system": "^56.0.7",
