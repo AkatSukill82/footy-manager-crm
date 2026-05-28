@@ -1,5 +1,19 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { jsPDF } from 'npm:jspdf@4.0.0';
+
+// Helper: encode text for jsPDF latin-1 (fixes accented characters)
+function enc(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/\u2019/g, "'")
+    .replace(/\u2018/g, "'")
+    .replace(/\u201C/g, '"')
+    .replace(/\u201D/g, '"')
+    .replace(/\u2013/g, '-')
+    .replace(/\u2014/g, '-')
+    .replace(/\u2026/g, '...')
+    .replace(/[^\x00-\xFF]/g, '?'); // strip anything outside latin-1
+}
 
 Deno.serve(async (req) => {
   try {
@@ -27,11 +41,11 @@ Deno.serve(async (req) => {
     doc.text('Football CRM - Rapport', pageWidth / 2, 20, { align: 'center' });
     
     doc.setFontSize(12);
-    doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, 30, { align: 'center' });
+    doc.text(enc(`Genere le: ${new Date().toLocaleDateString('fr-FR')}`), pageWidth / 2, 30, { align: 'center' });
     
     if (filters.dateDebut || filters.dateFin) {
       doc.setFontSize(10);
-      const periodText = `Période: ${filters.dateDebut || 'Début'} - ${filters.dateFin || "Aujourd'hui"}`;
+      const periodText = enc(`Periode: ${filters.dateDebut || 'Debut'} - ${filters.dateFin || "Aujourd'hui"}`);
       doc.text(periodText, pageWidth / 2, 37, { align: 'center' });
     }
 
@@ -55,11 +69,11 @@ Deno.serve(async (req) => {
       y += 8;
 
       const totalValue = filteredPlayers.reduce((sum, p) => sum + (p.valeur_marchande || 0), 0);
-      doc.text(`Valeur totale: ${totalValue.toFixed(1)}M€`, 20, y);
+      doc.text(enc(`Valeur totale: ${totalValue.toFixed(1)}M EUR`), 20, y);
       y += 8;
 
-      const avgAge = filteredPlayers.reduce((sum, p) => sum + (p.age || 0), 0) / filteredPlayers.length;
-      doc.text(`Âge moyen: ${avgAge.toFixed(1)} ans`, 20, y);
+      const avgAge = filteredPlayers.reduce((sum, p) => sum + (p.age || 0), 0) / (filteredPlayers.length || 1);
+      doc.text(enc(`Age moyen: ${avgAge.toFixed(1)} ans`), 20, y);
       y += 15;
 
       // Top players
@@ -78,7 +92,7 @@ Deno.serve(async (req) => {
           doc.addPage();
           y = 20;
         }
-        doc.text(`${index + 1}. ${player.nom} - ${player.valeur_marchande}M€ (${player.poste}, ${player.age} ans)`, 25, y);
+        doc.text(enc(`${index + 1}. ${player.nom} - ${player.valeur_marchande}M EUR (${player.poste}, ${player.age} ans)`), 25, y);
         y += 6;
       });
 
@@ -99,18 +113,18 @@ Deno.serve(async (req) => {
       y += 8;
 
       const totalValue = filteredTransfers.reduce((sum, t) => sum + (t.montant || 0), 0);
-      doc.text(`Valeur totale: ${totalValue.toFixed(1)}M€`, 20, y);
+      doc.text(enc(`Valeur totale: ${totalValue.toFixed(1)}M EUR`), 20, y);
       y += 8;
 
       const avgValue = filteredTransfers.filter(t => t.montant).length > 0
         ? totalValue / filteredTransfers.filter(t => t.montant).length
         : 0;
-      doc.text(`Valeur moyenne: ${avgValue.toFixed(1)}M€`, 20, y);
+      doc.text(enc(`Valeur moyenne: ${avgValue.toFixed(1)}M EUR`), 20, y);
       y += 15;
 
       // Transfer types
       doc.setFontSize(14);
-      doc.text('Répartition par type:', 20, y);
+      doc.text(enc('Repartition par type:'), 20, y);
       y += 8;
 
       const types = {};
@@ -120,26 +134,26 @@ Deno.serve(async (req) => {
 
       doc.setFontSize(10);
       Object.entries(types).forEach(([type, count]) => {
-        doc.text(`${type}: ${count} (${(count / filteredTransfers.length * 100).toFixed(1)}%)`, 25, y);
+        doc.text(enc(`${type}: ${count} (${(count / filteredTransfers.length * 100).toFixed(1)}%)`), 25, y);
         y += 6;
       });
 
     } else if (reportType === 'teams') {
       doc.setFontSize(16);
-      doc.text("Rapport d'Efficacité des Équipes", 20, y);
+      doc.text(enc("Rapport d'Efficacite des Equipes"), 20, y);
       y += 10;
 
       doc.setFontSize(12);
-      doc.text(`Nombre d'équipes: ${teams.length}`, 20, y);
+      doc.text(enc(`Nombre d'equipes: ${teams.length}`), 20, y);
       y += 8;
 
       const activeTeams = teams.filter(t => t.matchs_joues > 0).length;
-      doc.text(`Équipes actives: ${activeTeams}`, 20, y);
+      doc.text(enc(`Equipes actives: ${activeTeams}`), 20, y);
       y += 15;
 
       // Team rankings
       doc.setFontSize(14);
-      doc.text('Classement des équipes:', 20, y);
+      doc.text(enc('Classement des equipes:'), 20, y);
       y += 8;
 
       const rankedTeams = [...teams]
@@ -158,7 +172,7 @@ Deno.serve(async (req) => {
           y = 20;
         }
         doc.text(
-          `${index + 1}. ${team.nom} - ${team.points} pts (${team.victoires}V-${team.nuls}N-${team.defaites}D)`,
+          enc(`${index + 1}. ${team.nom} - ${team.points} pts (${team.victoires}V-${team.nuls}N-${team.defaites}D)`),
           25,
           y
         );
