@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, FlatList, RefreshControl } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { Plus, Filter, X, ChevronRight, RefreshCw } from 'lucide-react-native';
+import { Plus, Filter, X, ChevronRight } from 'lucide-react-native';
 import { base44 } from '../../src/api/base44Client';
 import { Card, CardContent } from '../../src/components/ui/Card';
 import SearchBar from '../../src/components/ui/SearchBar';
@@ -86,71 +86,17 @@ function PlayerCard({ player, inWatchList, onPress }) {
 }
 
 function AddPlayerModal({ visible, onClose, onSubmit, loading }) {
-  const [form, setForm] = useState({ nom: '', prenom: '', poste: '', age: '', club_actuel: '', nationalite: '', tm_url: '' });
-  const [fetchingTM, setFetchingTM] = useState(false);
+  const [form, setForm] = useState({ nom: '', prenom: '', poste: '', age: '', club_actuel: '', nationalite: '' });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-
-  const handleFetchFromTM = async () => {
-    if (!form.tm_url) return;
-    setFetchingTM(true);
-    try {
-      const res = await base44.functions.invoke('enrichPlayerFromAPI', {
-        playerName: '',
-        tmUrl: form.tm_url.trim(),
-      });
-      if (res?.data) {
-        const d = res.data;
-        setForm(f => ({
-          ...f,
-          nom:        d.nom        || f.nom,
-          prenom:     d.prenom     || f.prenom,
-          poste:      d.poste      || f.poste,
-          age:        d.age        ? String(d.age) : f.age,
-          club_actuel: d.club_actuel || f.club_actuel,
-          nationalite: d.nationalite || f.nationalite,
-        }));
-      }
-    } catch (e) {
-      // silently fail — user can still fill form manually
-    } finally {
-      setFetchingTM(false);
-    }
-  };
 
   const handleSubmit = () => {
     if (!form.nom || !form.poste) return;
-    const { tm_url, ...data } = form;
-    onSubmit({ ...data, age: data.age ? parseInt(data.age) : undefined, lien: tm_url || undefined });
+    onSubmit({ ...form, age: form.age ? parseInt(form.age) : undefined });
   };
 
   return (
     <Modal visible={visible} onClose={onClose} title="Ajouter un joueur">
       <View className="gap-4">
-        {/* Lien Transfermarkt — pré-remplissage automatique */}
-        <View className="gap-2">
-          <Input
-            label="Lien Transfermarkt (optionnel)"
-            value={form.tm_url}
-            onChangeText={v => set('tm_url', v)}
-            placeholder="https://www.transfermarkt.com/.../spieler/12345"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          {form.tm_url.includes('transfermarkt') && (
-            <Button
-              variant="outline"
-              size="sm"
-              onPress={handleFetchFromTM}
-              loading={fetchingTM}
-              icon={fetchingTM ? null : <RefreshCw size={13} color="#3b82f6" />}
-            >
-              Récupérer les données depuis TM
-            </Button>
-          )}
-        </View>
-
-        <View className="h-px bg-slate-100" />
-
         <View className="flex-row gap-3">
           <Input label="Prénom" value={form.prenom} onChangeText={v => set('prenom', v)} className="flex-1" />
           <Input label="Nom *" value={form.nom} onChangeText={v => set('nom', v)} className="flex-1" />

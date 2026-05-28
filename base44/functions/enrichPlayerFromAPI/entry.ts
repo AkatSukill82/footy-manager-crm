@@ -1,28 +1,13 @@
 /**
- * Enrichit un joueur.
+ * Enrichit un joueur depuis API-Football (api-sports.io).
  *
- * SOURCE ACTIVE
- * ─────────────
- *   API-Football (api-sports.io) — officielle, clé incluse, ~0.5s
- *   Retourne : nom, âge, nationalité, taille, poids, photo, club, ligue,
- *              poste, buts, passes, cartons, minutes, tirs, dribbles,
- *              tacles, interceptions, fautes, arrêts, penaltys…
- *
- * SOURCES EN RÉSERVE (commentées — non supprimées)
- * ─────────────────────────────────────────────────
- *   #2 Transfermarkt  → valeur marchande, fin de contrat, agent
- *   #3 SofaScore      → note moyenne, xG/xA
- *   #4 FotMob         → stats complémentaires
+ * Retourne : nom, âge, nationalité, taille, poids, photo, club, ligue,
+ *            poste, buts, passes, cartons, minutes, tirs, dribbles,
+ *            tacles, interceptions, fautes, arrêts, penaltys…
  *
  * Usage :
  *   base44.functions.invoke("enrichPlayerFromAPI", { playerName: "Kylian Mbappé" })
- *   base44.functions.invoke("enrichPlayerFromAPI", { playerName: "...", source: "transfermarkt" })
- *   base44.functions.invoke("enrichPlayerFromAPI", { playerName: "...", tmUrl: "https://..." })
  */
-
-// ═══════════════════════════════════════════════════════════════════
-// SOURCE 1 — API-FOOTBALL (ACTIVE)
-// ═══════════════════════════════════════════════════════════════════
 
 const AF_KEY  = "69289700a254963331e0a79b901c56da";
 const AF_BASE = "https://v3.football.api-sports.io";
@@ -111,74 +96,21 @@ function extractAFPlayer(entry: any, out: Record<string, unknown>) {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// SOURCE 2 — TRANSFERMARKT (EN RÉSERVE)
-// ═══════════════════════════════════════════════════════════════════
-// Utile pour : valeur marchande, fin de contrat, agent, photo TM
-// Décommenter et appeler si nécessaire.
-//
-// const TM_BASE = "https://transfermarkt-api.fly.dev";
-// function extractTMIdFromUrl(url: string): string | null {
-//   const m = url.match(/\/(?:spieler|trainer)\/(\d+)/) || url.match(/\/(\d+)(?:[/?#]|$)/);
-//   return m ? m[1] : null;
-// }
-// function parseTMValue(s: string | null | undefined): number | null { ... }
-// function parseTMHeight(s: string | null | undefined): number | null { ... }
-// const TM_POS: Record<string, string> = { "Goalkeeper": "Gardien", ... };
-// const tmGet = (path: string) => fetch(`${TM_BASE}${path}`, { ... });
-// function tmExtractSearch(data, out): string | null { ... }
-// function tmExtractProfile(p, out) { ... }
-// function tmExtractMarketValue(data, out) { ... }
-
-// ═══════════════════════════════════════════════════════════════════
-// SOURCE 3 — SOFASCORE (EN RÉSERVE)
-// ═══════════════════════════════════════════════════════════════════
-// Utile pour : note_moyenne (SofaScore rating), xG, xA, duels, grandes chances
-// Décommenter et appeler si nécessaire.
-//
-// const SS_BASE = "https://api.sofascore.com/api/v1";
-// const SS_POS: Record<string, string> = { G: "Gardien", D: "Défenseur central", M: "Milieu central", F: "Attaquant" };
-// const ssGet = (path: string) => fetch(`${SS_BASE}${path}`, { headers: { "Referer": "https://www.sofascore.com/", ... } });
-// function ssExtractSearch(data, out): string | null { ... }
-// function ssExtractStats(data, out) {
-//   // note_moyenne, xg, xa, xg_par_90
-//   // grandes_chances, grandes_chances_manquees
-//   // duels_gagnes_pct, duels_aeriens_pct
-//   // passes_reussies, passes_reussies_pct
-//   // hors_jeu, fautes_subies, clean_sheets
-// }
-
-// ═══════════════════════════════════════════════════════════════════
-// SOURCE 4 — FOTMOB (EN RÉSERVE)
-// ═══════════════════════════════════════════════════════════════════
-// Utile pour : stats complémentaires si SofaScore manque des données
-// Décommenter et appeler si nécessaire.
-//
-// const FM_BASE = "https://www.fotmob.com/api";
-// const FM_POS: Record<string, string> = { "Goalkeeper": "Gardien", "Striker": "Attaquant", ... };
-// const fmGet = (path: string) => fetch(`${FM_BASE}${path}`, { headers: { "Referer": "https://www.fotmob.com/", ... } });
-// function fmExtractSearch(data): string | null { ... }
-// function fmExtractPlayerData(data, out) { ... }
-
-// ═══════════════════════════════════════════════════════════════════
-// HANDLER PRINCIPAL
-// ═══════════════════════════════════════════════════════════════════
-
 const safe = async <T>(fn: () => Promise<T>, label: string, errs: string[]): Promise<T | null> => {
   try { return await fn(); } catch (e: any) { errs.push(`${label}: ${e.message}`); return null; }
 };
 
 Deno.serve(async (req) => {
   try {
-    const { playerName, source, tmUrl } = await req.json();
-    if (!playerName && !tmUrl)
-      return Response.json({ error: "playerName ou tmUrl requis" }, { status: 400 });
+    const { playerName } = await req.json();
+    if (!playerName)
+      return Response.json({ error: "playerName requis" }, { status: 400 });
 
     const out: Record<string, unknown> = {};
     const sources: string[] = [];
     const errors: string[] = [];
 
-    // ── API-Football : cherche les 3 dernières saisons disponibles ────────
+    // Cherche les 3 dernières saisons disponibles
     const q = encodeURIComponent((playerName || "").trim());
     let entry: any = null;
 
@@ -197,12 +129,6 @@ Deno.serve(async (req) => {
     if (entry) {
       extractAFPlayer(entry, out);
       sources.push("API-Football");
-    }
-
-    // ── Si tmUrl fourni, stocker le lien (valeur marchande à venir via TM) ─
-    if (tmUrl) {
-      out.lien = tmUrl;
-      // TODO: décommenter Source 2 pour récupérer valeur marchande + contrat + agent
     }
 
     const fieldsFound = Object.keys(out).filter(k => out[k] != null && out[k] !== "").length;
