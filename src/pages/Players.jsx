@@ -129,17 +129,6 @@ export default function PlayersPage() {
         {/* Tab toggle */}
         <div className="flex gap-1 p-1 bg-slate-100 rounded-xl mb-6 w-fit">
           <button
-            onClick={() => setActiveTab("liste")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === "liste"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            <List className="w-4 h-4" />
-            {t(lang, 'players.myList')}
-          </button>
-          <button
             onClick={() => setActiveTab("recherche")}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               activeTab === "recherche"
@@ -149,6 +138,17 @@ export default function PlayersPage() {
           >
             <Search className="w-4 h-4" />
             {t(lang, 'players.searchTab')}
+          </button>
+          <button
+            onClick={() => setActiveTab("liste")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === "liste"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            <List className="w-4 h-4" />
+            {t(lang, 'players.myList')}
           </button>
         </div>
 
