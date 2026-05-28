@@ -310,10 +310,20 @@ function fmExtractPlayerData(data: any, out: Record<string, unknown>) {
 // Handler principal
 // ════════════════════════════════════════════════════════════════════════════
 
+// ── Extraction d'un ID TM depuis une URL ─────────────────────────────────────
+// Supporte : /spieler/342229  /trainer/342229  /profil/spieler/342229
+function extractTMIdFromUrl(url: string): string | null {
+  if (!url) return null;
+  const m = url.match(/\/(?:spieler|trainer)\/(\d+)/) ||
+            url.match(/\/(\d+)(?:[/?#]|$)/);
+  return m ? m[1] : null;
+}
+
 Deno.serve(async (req) => {
   try {
-    const { playerName, source } = await req.json();
-    if (!playerName) return Response.json({ error: "playerName requis" }, { status: 400 });
+    const { playerName, source, tmUrl } = await req.json();
+    // tmUrl fourni seul suffit (pas besoin de playerName)
+    if (!playerName && !tmUrl) return Response.json({ error: "playerName ou tmUrl requis" }, { status: 400 });
 
     const out: Record<string, unknown> = {};
     const sources: string[] = [];
@@ -324,21 +334,35 @@ Deno.serve(async (req) => {
     const useFM = !source || source === "stats";
 
     // ── PHASE 1 : recherches en parallèle ────────────────────────────────────
-    const enc = encodeURIComponent(playerName);
+    const enc = encodeURIComponent(playerName || "");
+
+    // Si un lien TM est fourni, extraire l'ID directement — plus fiable que la recherche par nom
+    const tmIdFromUrl = tmUrl ? extractTMIdFromUrl(tmUrl) : null;
+
     const [tmSearch, ssSearch, fmSearch] = await Promise.all([
-      useTM ? safe(() => tmGet(`/players/search/${enc}`),         "TM search", errors) : Promise.resolve(null),
-      useSS ? safe(() => ssGet(`/search/all?q=${enc}`),           "SS search", errors) : Promise.resolve(null),
-      useFM ? safe(() => fmGet(`/search?term=${enc}`),            "FM search", errors) : Promise.resolve(null),
+      // TM : si URL fournie → skip la recherche, on a déjà l'ID
+      useTM && !tmIdFromUrl && playerName ? safe(() => tmGet(`/players/search/${enc}`), "TM search", errors) : Promise.resolve(null),
+      useSS && playerName ? safe(() => ssGet(`/search/all?q=${enc}`),  "SS search", errors) : Promise.resolve(null),
+      useFM && playerName ? safe(() => fmGet(`/search?term=${enc}`),   "FM search", errors) : Promise.resolve(null),
     ]);
 
     // Extraire les IDs
-    let tmId: string | null = null;
+    let tmId: string | null = tmIdFromUrl ?? null;
     let ssId: string | null = null;
     let fmId: string | null = null;
 
-    if (tmSearch) { tmId = tmExtractSearch(tmSearch, out); if (tmId) sources.push("Transfermarkt"); }
+    if (tmId) {
+      // ID extrait directement depuis l'URL — on marque TM sans passer par la recherche
+      sources.push("Transfermarkt (lien direct)");
+    } else if (tmSearch) {
+      tmId = tmExtractSearch(tmSearch, out);
+      if (tmId) sources.push("Transfermarkt");
+    }
     if (ssSearch) { ssId = ssExtractSearch(ssSearch, out); if (ssId) sources.push("SofaScore"); }
     if (fmSearch) { fmId = fmExtractSearch(fmSearch);      if (fmId) sources.push("FotMob"); }
+
+    // Stocker le lien TM original si fourni
+    if (tmUrl) out.lien = tmUrl;
 
     // ── PHASE 2 : données détaillées en parallèle ─────────────────────────────
     await Promise.all([

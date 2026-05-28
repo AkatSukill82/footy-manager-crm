@@ -56,6 +56,8 @@ export default function PlayerDetailPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [showQuickContact, setShowQuickContact] = useState(false);
+  const [showEnrichModal, setShowEnrichModal] = useState(false);
+  const [tmUrlInput, setTmUrlInput] = useState('');
   const [enriching, setEnriching] = useState(false);
   const [enrichResult, setEnrichResult] = useState(null);
   const [noteText, setNoteText] = useState('');
@@ -217,8 +219,9 @@ Réponds en JSON: {"note": "texte complet du rapport ici"}`,
     addNoteMutation.mutate(noteData);
   };
 
-  const handleEnrich = async () => {
+  const handleEnrich = async (tmUrl = '') => {
     if (!player) return;
+    setShowEnrichModal(false);
     setEnriching(true);
     setEnrichResult(null);
     const fullName = [player.prenom, player.nom].filter(Boolean).join(' ');
@@ -233,6 +236,7 @@ Réponds en JSON: {"note": "texte complet du rapport ici"}`,
         const tmRes = await base44.functions.invoke('enrichPlayerFromAPI', {
           playerName: fullName,
           source: 'transfermarkt',
+          ...(tmUrl ? { tmUrl } : {}),
         });
         if (tmRes?.data && Object.keys(tmRes.data).length > 0) {
           await base44.entities.Player.update(id, tmRes.data);
@@ -302,7 +306,7 @@ Réponds en JSON: {"note": "texte complet du rapport ici"}`,
                 <Star size={20} color={watchEntry ? '#f59e0b' : '#94a3b8'} fill={watchEntry ? '#f59e0b' : 'none'} />
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={handleEnrich}
+                onPress={() => enriching ? null : setShowEnrichModal(true)}
                 disabled={enriching}
                 className="p-2 bg-blue-50 rounded-xl"
               >
@@ -572,6 +576,49 @@ Réponds en JSON: {"note": "texte complet du rapport ici"}`,
           )}
         </View>
       </ScrollView>
+
+      {/* Modal enrichissement — lien Transfermarkt */}
+      <Modal visible={showEnrichModal} onClose={() => setShowEnrichModal(false)} title="Enrichir les données">
+        <View className="gap-4">
+          <View className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+            <Text className="text-xs text-blue-700 leading-relaxed">
+              Colle le lien Transfermarkt du joueur pour des données <Text className="font-bold">précises et garanties</Text>.{'\n'}
+              Sans lien, la recherche se fait par nom (peut parfois trouver le mauvais joueur).
+            </Text>
+          </View>
+
+          <Input
+            label="Lien Transfermarkt (optionnel)"
+            value={tmUrlInput}
+            onChangeText={setTmUrlInput}
+            placeholder="https://www.transfermarkt.com/kylian-mbappe/profil/spieler/342229"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+
+          {tmUrlInput.length > 0 && !tmUrlInput.includes('transfermarkt') && (
+            <View className="bg-amber-50 rounded-xl px-3 py-2">
+              <Text className="text-xs text-amber-700">⚠ Ce lien ne semble pas être une URL Transfermarkt valide.</Text>
+            </View>
+          )}
+
+          <Text className="text-xs text-slate-400 text-center -mt-1">
+            Exemple : ouvre la fiche du joueur sur transfermarkt.com et copie l'URL
+          </Text>
+
+          <View className="flex-row gap-3 pt-1">
+            <Button variant="outline" onPress={() => setShowEnrichModal(false)} className="flex-1">
+              Annuler
+            </Button>
+            <Button
+              onPress={() => { handleEnrich(tmUrlInput.trim()); setTmUrlInput(''); }}
+              className="flex-1"
+            >
+              {tmUrlInput.includes('transfermarkt') ? 'Enrichir via lien TM' : 'Enrichir par nom'}
+            </Button>
+          </View>
+        </View>
+      </Modal>
 
       {/* Edit modal */}
       {editForm && (
