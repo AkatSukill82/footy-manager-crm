@@ -14,12 +14,49 @@ import {
 
 const UsersRound = Users; // alias
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 import { base44, uploadFileRN } from '../src/api/base44Client';
 import { getToken } from '../src/lib/app-params';
 import { Card, CardContent, CardHeader, CardTitle } from '../src/components/ui/Card';
 import Badge from '../src/components/ui/Badge';
 import Button from '../src/components/ui/Button';
 import LoadingSpinner from '../src/components/ui/LoadingSpinner';
+
+// ─── Parseur CSV direct (pas d'IA, limite 2000 lignes) ───────────────────────
+const parseLine = (line, sep) => {
+  const cols = [];
+  let cur = '';
+  let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { inQ = !inQ; }
+    else if (ch === sep && !inQ) { cols.push(cur.trim()); cur = ''; }
+    else { cur += ch; }
+  }
+  cols.push(cur.trim());
+  return cols;
+};
+
+const parseCSV = (raw, maxRows = 2000) => {
+  const content = raw
+    .replace(/^﻿/, '')   // BOM
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n');
+  const lines = content.split('\n').filter(l => l.trim());
+  if (lines.length < 2) return [];
+  // Auto-détection séparateur ; ou ,
+  const sep = (lines[0].match(/;/g) || []).length >= (lines[0].match(/,/g) || []).length ? ';' : ',';
+  const headers = parseLine(lines[0], sep).map(h => h.replace(/"/g, '').trim());
+  const rows = [];
+  for (let i = 1; i < lines.length && rows.length < maxRows; i++) {
+    if (!lines[i].trim()) continue;
+    const vals = parseLine(lines[i], sep);
+    const obj = {};
+    headers.forEach((h, idx) => { if (h) obj[h] = (vals[idx] || '').replace(/"/g, '').trim(); });
+    rows.push(obj);
+  }
+  return rows;
+};
 
 // ─── Mots-clés qui indiquent un joueur de football ────────────────────────────
 const FOOTBALL_POSITIONS = [
@@ -198,82 +235,106 @@ export default function ImportExcelPage() {
       setSelectedFile(file);
       setUploading(true);
 
-      // Étape 1 : upload vers Base44 Storage
-      const token = await getToken();
-      let file_url;
-      try {
-        const uploadResult = await uploadFileRN(file, token);
-        file_url = uploadResult?.file_url;
-      } catch (uploadErr) {
-        console.error('Upload error:', uploadErr?.response?.data || uploadErr.message);
-        throw new Error(`Erreur upload: ${uploadErr?.response?.data?.message || uploadErr.message}`);
-      }
+      // Détecter si c'est un CSV ou un Excel
+      const fileName = (file.name || '').toLowerCase();
+      const isCSV = fileName.endsWith('.csv') || fileName.endsWith('.tsv')
+        || file.mimeType?.includes('csv') || file.mimeType === 'text/plain';
 
-      if (!file_url) throw new Error("L'upload a réussi mais aucune URL de fichier n'a été retournée.");
+      let rawRows = [];
 
-      // Étape 2 : extraction IA (même schéma que la version web)
-      let rawResult;
-      try {
-        rawResult = await base44.integrations.Core.ExtractDataFromUploadedFile({
-          file_url,
-          json_schema: EXTRACT_SCHEMA,
-        });
-      } catch (extractErr) {
-        console.error('Extract error:', extractErr?.response?.data || extractErr.message);
-        throw new Error(`Erreur extraction IA: ${extractErr?.response?.data?.message || extractErr.message}`);
-      }
+      if (isCSV) {
+        // ── Parseur CSV direct — pas d'IA, limite 2000 lignes ──────────────
+        let content;
+        try {
+          content = await FileSystem.readAsStringAsync(file.uri, {
+            encoding: FileSystem.EncodingType.UTF8,
+          });
+        } catch {
+          // Fallback lecture binaire si UTF-8 échoue
+          content = await FileSystem.readAsStringAsync(file.uri);
+        }
+        rawRows = parseCSV(content, 2000);
+        setUploading(false);
+      } else {
+        // ── Extraction IA pour Excel ─────────────────────────────────────
+        const token = await getToken();
+        let file_url;
+        try {
+          const uploadResult = await uploadFileRN(file, token);
+          file_url = uploadResult?.file_url;
+        } catch (uploadErr) {
+          throw new Error(`Erreur upload: ${uploadErr?.response?.data?.message || uploadErr.message}`);
+        }
+        if (!file_url) throw new Error("Upload réussi mais aucune URL retournée.");
 
-      setUploading(false);
+        let rawResult;
+        try {
+          rawResult = await base44.integrations.Core.ExtractDataFromUploadedFile({
+            file_url,
+            json_schema: EXTRACT_SCHEMA,
+          });
+        } catch (extractErr) {
+          throw new Error(`Erreur extraction IA: ${extractErr?.response?.data?.message || extractErr.message}`);
+        }
+        setUploading(false);
+        if (rawResult?.status === 'error') throw new Error(rawResult.details || "Erreur extraction.");
 
-      if (rawResult?.status === 'error') {
-        throw new Error(rawResult.details || "Erreur lors de l'extraction du fichier.");
-      }
-
-      // Étape 3 : extraire les lignes quelle que soit la clé retournée par l'IA
-      const extractRows = (output) => {
-        if (!output) return [];
-        if (Array.isArray(output)) {
-          const flat = [];
-          for (const item of output) {
-            if (typeof item === 'object' && !Array.isArray(item) && item !== null) {
+        // Aplatir la réponse IA quelle que soit la clé retournée
+        const aiOutput = rawResult?.output ?? rawResult;
+        if (Array.isArray(aiOutput)) {
+          for (const item of aiOutput) {
+            if (Array.isArray(item)) rawRows.push(...item);
+            else if (typeof item === 'object' && item !== null) {
               const arr = Object.values(item).find(v => Array.isArray(v));
-              if (arr) flat.push(...arr); else flat.push(item);
-            } else if (Array.isArray(item)) {
-              flat.push(...item);
+              if (arr) rawRows.push(...arr); else rawRows.push(item);
             }
           }
-          return flat;
-        }
-        if (typeof output === 'object') {
+        } else if (typeof aiOutput === 'object') {
           const knownKeys = ['rows','contacts','data','items','joueurs','players','clubs','results','records','entries'];
           for (const k of knownKeys) {
-            if (Array.isArray(output[k]) && output[k].length > 0) return output[k];
+            if (Array.isArray(aiOutput[k]) && aiOutput[k].length > 0) { rawRows = aiOutput[k]; break; }
           }
-          const found = Object.values(output).find(v => Array.isArray(v) && v.length > 0);
-          if (found) return found;
+          if (!rawRows.length) {
+            const found = Object.values(aiOutput).find(v => Array.isArray(v) && v.length > 0);
+            if (found) rawRows = found;
+          }
         }
-        return [];
-      };
+      }
 
-      const deaccent = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '');
+      const deaccent = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\x00-\x7F]/g, '');
 
       const FIELD_MAP = {
+        // Noms
         name: 'nom', last_name: 'nom', lastname: 'nom', surname: 'nom',
         first_name: 'prenom', firstname: 'prenom',
         full_name: 'nom', fullname: 'nom',
+        // Club — y compris les colonnes de ton CSV
         team: 'club', equipe: 'club',
+        club_employeur: 'club', employeur: 'club', organization: 'club',
+        // Pays — y compris pays_club
         country: 'pays', nation: 'pays',
+        pays_club: 'pays', country_club: 'pays',
+        // Poste — y compris Poste_Fonction
         position: 'poste', role: 'poste', title: 'poste',
+        poste_fonction: 'poste', fonction: 'poste', job: 'poste', job_title: 'poste',
+        // Téléphone — y compris tél_contact
         mail: 'email', email_club: 'email', courriel: 'email',
         phone: 'telephone', tel: 'telephone', mobile: 'telephone',
+        tel_contact: 'telephone', telephone_contact: 'telephone', contact_phone: 'telephone',
+        // Lien profil — y compris lien_profil
+        lien_profil: 'lien', profil: 'lien', profile: 'lien', profile_url: 'lien',
+        transfermarkt: 'lien', tm_link: 'lien',
+        // Autres
         birth: 'date_naissance', dob: 'date_naissance',
         height: 'taille', weight: 'poids',
         goals: 'buts', assists: 'passes_decisives', games: 'matchs_joues',
+        appearances: 'matchs_joues',
         value: 'valeur_marchande', contract: 'contrat_fin', salary: 'salaire',
         nationality: 'nationalite', league: 'ligue',
+        instagram_handle: 'instagram', twitter_handle: 'twitter',
       };
 
-      let rows = extractRows(rawResult?.output ?? rawResult);
+      let rows = rawRows;
       rows = rows.map(r => {
         // Normaliser les clés : minuscules + sans accents
         const lowered = {};
@@ -394,11 +455,18 @@ export default function ImportExcelPage() {
             <View className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex-row gap-3">
               <Info size={18} color="#3b82f6" />
               <View className="flex-1">
-                <Text className="text-sm font-semibold text-blue-800 mb-1">Colonnes reconnues automatiquement</Text>
+                <Text className="text-sm font-semibold text-blue-800 mb-1">Noms de colonnes recommandés</Text>
                 <Text className="text-xs text-blue-700 leading-relaxed">
-                  <Text className="font-semibold">Joueurs :</Text> nom, prénom, poste, club, nationalité, âge, email, téléphone, agent, valeur, contrat, buts, passes…{'\n'}
-                  <Text className="font-semibold">Staff / Contacts :</Text> nom, club, pays, poste, email, téléphone{'\n'}
-                  <Text className="italic">L'IA détecte les colonnes même si les noms sont différents ou en anglais.</Text>
+                  <Text className="font-semibold">Contacts / Staff :{'\n'}</Text>
+                  {'  '}Nom · Poste_Fonction · tél_contact{'\n'}
+                  {'  '}lien_profil · club_employeur · pays_club{'\n'}
+                  {'  '}Nationalité · email · whatsapp{'\n\n'}
+                  <Text className="font-semibold">Joueurs :{'\n'}</Text>
+                  {'  '}Nom · Prénom · Poste · Club · Nationalité{'\n'}
+                  {'  '}Âge · Email · Téléphone · Agent{'\n'}
+                  {'  '}Valeur · Contrat · Buts · Passes · Matchs{'\n\n'}
+                  <Text className="font-semibold">CSV :</Text> jusqu'à 2 000 lignes, séparateur ; ou ,{'\n'}
+                  <Text className="font-semibold">Excel :</Text> extraction IA (limite ~150 lignes)
                 </Text>
               </View>
             </View>
