@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRight, Calendar, Clock, Banknote, Filter, TrendingUp, Building2, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowRight, Calendar, Clock, Banknote, Filter, TrendingUp, Building2, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { format, differenceInMonths } from "date-fns";
 import { useLanguage } from "../../lib/LanguageContext";
 import { t } from "../../i18n/translations";
@@ -134,7 +134,7 @@ function SummaryBar({ transfers }) {
   );
 }
 
-export default function TransferHistory({ transfers }) {
+export default function TransferHistory({ transfers, player }) {
   const { lang } = useLanguage();
   const [filterYear, setFilterYear] = useState("all");
   const [filterClub, setFilterClub] = useState("all");
@@ -163,11 +163,29 @@ export default function TransferHistory({ transfers }) {
   }), [sorted, filterYear, filterClub]);
 
   if (!transfers || transfers.length === 0) {
+    const _name = encodeURIComponent(player?.nom || "");
+    const _tmId = player?.transfermarkt_id;
+    const tmHref = _tmId
+      ? `https://www.transfermarkt.com/a/profil/spieler/${_tmId}`
+      : `https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche?query=${_name}&Feld=spieler`;
     return (
       <Card>
         <CardHeader><CardTitle className="text-base">{t(lang,'transfers.historyTitle')}</CardTitle></CardHeader>
         <CardContent>
-          <p className="text-slate-400 text-center py-10 text-sm">{t(lang,'transfers.noTransfers')}</p>
+          <div className="flex flex-col items-center gap-3 py-8 text-sm text-slate-400">
+            <p>{t(lang,'transfers.noTransfers')}</p>
+            {player?.nom && (
+              <a
+                href={tmHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-green-600 hover:underline font-medium text-xs"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Voir l'historique sur Transfermarkt
+              </a>
+            )}
+          </div>
         </CardContent>
       </Card>
     );

@@ -29,6 +29,7 @@ import { exportPlayerPDF } from "../lib/exportPlayerPDF";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
 import ActivityLogList from "../components/activity/ActivityLogList";
+import PlayerExternalLinks from "../components/players/PlayerExternalLinks";
 
 const posteColors = {
   "Gardien": "bg-yellow-100 text-yellow-800",
@@ -389,7 +390,7 @@ export default function PlayerDetailPage() {
             {/* Charts & Evolution */}
             <PlayerChartsPanel playerId={playerId} player={player} />
 
-            <TransferHistory transfers={transfers} />
+            <TransferHistory transfers={transfers} player={player} />
             
             <TransferForm
               playerId={playerId}
@@ -433,6 +434,8 @@ export default function PlayerDetailPage() {
               player={player}
               onApply={(data) => updatePlayerMutation.mutate(data)}
             />
+
+            <PlayerExternalLinks player={player} />
 
             <ActivityLogList entityId={playerId} entityType="Player" />
           </div>
