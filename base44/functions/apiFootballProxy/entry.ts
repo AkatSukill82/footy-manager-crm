@@ -3,15 +3,10 @@
  * La clé API reste côté serveur et n'est jamais exposée au client.
  *
  * Actions disponibles :
- *   searchPlayer   — cherche un joueur par nom, retourne jusqu'à 10 résultats
- *   getPlayer      — données complètes + stats saison par ID joueur
- *   getPlayerFull  — profil complet : 5 saisons + transferts + blessures (parallèle)
- *   searchTeam     — cherche une équipe par nom
- *   getSquad       — effectif d'une équipe par ID
- *   getStandings   — classement d'une ligue pour une saison
- *   getFixtures    — 10 prochains + 5 derniers matchs d'une équipe
- *   getTopScorers  — meilleurs buteurs d'une ligue
- *   getTopAssists  — meilleurs passeurs d'une ligue
+ *   searchPlayer  — cherche un joueur par nom, retourne jusqu'à 10 résultats
+ *   getPlayer     — données complètes + stats saison par ID joueur
+ *   searchTeam    — cherche une équipe par nom
+ *   getSquad      — effectif d'une équipe par ID
  */
 
 const API_KEY = "69289700a254963331e0a79b901c56da";
@@ -110,12 +105,12 @@ const normalizePlayer = (entry: any) => {
 
 Deno.serve(async (req) => {
   try {
-    const { action, name, id, season, teamId, league } = await req.json();
+    const { action, name, id, season, teamId } = await req.json();
     const currentSeason = 2024;
 
     if (action === "searchPlayer") {
-      // Tente les 3 dernières saisons disponibles (plan gratuit : 2022-2024)
-      for (const s of [currentSeason, currentSeason - 1, currentSeason - 2]) {
+      // Tente la saison courante, puis la précédente si aucun résultat
+      for (const s of [currentSeason, currentSeason - 1]) {
         const q = encodeURIComponent((name || "").trim());
         const data = await afGet(`/players?search=${q}&season=${s}`);
         const players = data.response || [];
@@ -133,7 +128,7 @@ Deno.serve(async (req) => {
 
     if (action === "getPlayer") {
       if (!id) return Response.json({ ok: false, error: "id requis" });
-      // Stats saison courante (plan gratuit : 2022-2024)
+      // Stats saison courante
       for (const s of [currentSeason, currentSeason - 1]) {
         const data = await afGet(`/players?id=${id}&season=${s}`);
         const entries = data.response || [];
@@ -142,108 +137,6 @@ Deno.serve(async (req) => {
         }
       }
       return Response.json({ ok: false, error: "Joueur non trouvé" });
-    }
-
-    if (action === "getPlayerFull") {
-      if (!id) return Response.json({ ok: false, error: "id requis" });
-
-      // 7 appels en parallèle : 5 saisons + transferts + blessures (plan gratuit : 2022-2024)
-      const seasons = [2024, 2023, 2022, 2021, 2020];
-      const results = await Promise.allSettled([
-        ...seasons.map(s => afGet(`/players?id=${id}&season=${s}`)),
-        afGet(`/transfers?player=${id}`),
-        afGet(`/injuries?player=${id}`),
-      ]);
-
-      // Extraire les stats de chaque saison
-      const toutesStats: any[] = [];
-      let bestEntry: any = null;
-
-      for (let i = 0; i < seasons.length; i++) {
-        const r = results[i];
-        if (r.status === "fulfilled") {
-          const entries = r.value?.response || [];
-          if (entries.length > 0) {
-            const entry = entries[0];
-            if (!bestEntry) bestEntry = entry;
-            const sts = entry?.statistics || [];
-            for (const s of sts) {
-              toutesStats.push({
-                saison:           s.league?.season ? `${s.league.season}` : `${seasons[i]}`,
-                club:             s.team?.name || null,
-                ligue:            s.league?.name || null,
-                matchs:           s.games?.appearences ?? null,
-                buts:             s.goals?.total ?? null,
-                passes_decisives: s.goals?.assists ?? null,
-                minutes:          s.games?.minutes ?? null,
-                cartons_jaunes:   s.cards?.yellow ?? null,
-                cartons_rouges:   s.cards?.red ?? null,
-                tirs:             s.shots?.total ?? null,
-                tirs_cadres:      s.shots?.on ?? null,
-                tacles:           s.tackles?.total ?? null,
-                interceptions:    s.tackles?.interceptions ?? null,
-              });
-            }
-          }
-        }
-      }
-
-      // Dédoublonner par saison+club
-      const seen = new Set<string>();
-      const statsDedup = toutesStats.filter(s => {
-        const key = `${s.saison}|${s.club}|${s.ligue}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-
-      // Transferts (index 5)
-      const transfertsRaw = results[5];
-      const transferts: any[] = [];
-      if (transfertsRaw.status === "fulfilled") {
-        const tData = transfertsRaw.value?.response || [];
-        if (tData.length > 0) {
-          const tList = tData[0]?.transfers || [];
-          for (const t of tList) {
-            transferts.push({
-              date:         t.date || null,
-              club_depart:  t.teams?.out?.name || null,
-              club_arrivee: t.teams?.in?.name || null,
-              type:         t.type || null,
-              montant:      null,
-            });
-          }
-        }
-      }
-
-      // Blessures (index 6)
-      const blessuresRaw = results[6];
-      const blessures: any[] = [];
-      if (blessuresRaw.status === "fulfilled") {
-        const bList = blessuresRaw.value?.response || [];
-        for (const b of bList) {
-          blessures.push({
-            date:   b.fixture?.date || null,
-            saison: b.league?.season ? `${b.league.season}` : null,
-            type:   b.player?.type || null,
-            raison: b.player?.reason || null,
-            club:   b.team?.name || null,
-            ligue:  b.league?.name || null,
-          });
-        }
-      }
-
-      if (!bestEntry) {
-        return Response.json({ ok: false, error: "Joueur non trouvé" });
-      }
-
-      return Response.json({
-        ok:           true,
-        player:       normalizePlayer(bestEntry),
-        toutes_stats: statsDedup,
-        transferts,
-        blessures,
-      });
     }
 
     if (action === "searchTeam") {
@@ -275,75 +168,6 @@ Deno.serve(async (req) => {
         photo_url:      p.photo,
       }));
       return Response.json({ ok: true, squad });
-    }
-
-    if (action === "getStandings") {
-      if (!league) return Response.json({ ok: false, error: "league requis" });
-      const s = season ?? 2024;
-      const data = await afGet(`/standings?league=${league}&season=${s}`);
-      const rows = data.response?.[0]?.league?.standings?.[0] || [];
-      const standings = rows.map((e: any) => ({
-        rang:          e.rank,
-        equipe:        e.team?.name || null,
-        logo:          e.team?.logo || null,
-        matchs_joues:  e.all?.played ?? null,
-        victoires:     e.all?.win ?? null,
-        nuls:          e.all?.draw ?? null,
-        defaites:      e.all?.lose ?? null,
-        buts_pour:     e.all?.goals?.for ?? null,
-        buts_contre:   e.all?.goals?.against ?? null,
-        points:        e.points ?? null,
-        forme:         e.form || null,
-      }));
-      return Response.json({ ok: true, standings });
-    }
-
-    if (action === "getFixtures") {
-      if (!teamId) return Response.json({ ok: false, error: "teamId requis" });
-      const s = season ?? 2024;
-
-      const normalizeFixture = (f: any) => ({
-        date:              f.fixture?.date || null,
-        stade:             f.fixture?.venue?.name || null,
-        equipe_domicile:   f.teams?.home?.name || null,
-        logo_domicile:     f.teams?.home?.logo || null,
-        equipe_exterieur:  f.teams?.away?.name || null,
-        logo_exterieur:    f.teams?.away?.logo || null,
-        score_domicile:    f.goals?.home ?? null,
-        score_exterieur:   f.goals?.away ?? null,
-        statut:            f.fixture?.status?.short || null,
-        ligue:             f.league?.name || null,
-      });
-
-      const [nextData, lastData] = await Promise.allSettled([
-        afGet(`/fixtures?team=${teamId}&season=${s}&next=10`),
-        afGet(`/fixtures?team=${teamId}&season=${s}&last=5`),
-      ]);
-
-      const prochains = nextData.status === "fulfilled"
-        ? (nextData.value?.response || []).map(normalizeFixture)
-        : [];
-      const recents = lastData.status === "fulfilled"
-        ? (lastData.value?.response || []).map(normalizeFixture)
-        : [];
-
-      return Response.json({ ok: true, prochains, recents });
-    }
-
-    if (action === "getTopScorers") {
-      if (!league) return Response.json({ ok: false, error: "league requis" });
-      const s = season ?? 2024;
-      const data = await afGet(`/players/topscorers?league=${league}&season=${s}`);
-      const players = (data.response || []).slice(0, 20).map(normalizePlayer).filter(Boolean);
-      return Response.json({ ok: true, players });
-    }
-
-    if (action === "getTopAssists") {
-      if (!league) return Response.json({ ok: false, error: "league requis" });
-      const s = season ?? 2024;
-      const data = await afGet(`/players/topassists?league=${league}&season=${s}`);
-      const players = (data.response || []).slice(0, 20).map(normalizePlayer).filter(Boolean);
-      return Response.json({ ok: true, players });
     }
 
     return Response.json({ ok: false, error: `Action inconnue: ${action}` });

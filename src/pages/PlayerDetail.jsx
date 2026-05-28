@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, User, MapPin, Calendar, TrendingUp, Ruler, Edit2, Star, Trash2, FileDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { createPageUrl, sanitizePlayerData } from "../utils";
+import { createPageUrl } from "../utils";
 import PlayerForm from "../components/players/PlayerForm";
 import PlayerStatusModal from "../components/players/PlayerStatusModal";
 import TransferHistory from "../components/transfers/TransferHistory";
@@ -15,7 +15,9 @@ import PlayerNoteCard from "../components/notes/PlayerNoteCard";
 import SimilarPlayers from "../components/players/SimilarPlayers";
 import ContactHistory from "../components/contacts/ContactHistory";
 import RemindersList from "../components/contacts/RemindersList";
+import EnrichPlayerAI from "../components/players/EnrichPlayerAI";
 import PlayerComparison from "../components/players/PlayerComparison";
+import ImportTransfermarktPhoto from "../components/players/ImportTransfermarktPhoto";
 import PlayerFullProfile from "../components/players/PlayerFullProfile";
 import PlayerScoutingRatings from "../components/players/PlayerScoutingRatings";
 import PlayerChartsPanel from "../components/players/PlayerChartsPanel";
@@ -116,7 +118,7 @@ export default function PlayerDetailPage() {
 
   const updatePlayerMutation = useMutation({
     mutationFn: async (data) => {
-      await base44.entities.Player.update(playerId, sanitizePlayerData(data));
+      await base44.entities.Player.update(playerId, data);
       // Log the change
       const changedFields = Object.keys(data).filter(k => player && data[k] !== player[k]);
       if (currentUser && changedFields.length > 0) {
@@ -203,14 +205,7 @@ export default function PlayerDetailPage() {
     },
   });
 
-  if (!player) return (
-    <div className="fixed inset-0 flex items-center justify-center bg-slate-50">
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-green-600 rounded-full animate-spin" />
-        <p className="text-sm text-slate-400">Chargement du joueur…</p>
-      </div>
-    </div>
-  );
+  if (!player) return null;
 
   if (isEditing) {
     return (
@@ -375,15 +370,15 @@ export default function PlayerDetailPage() {
                     </div>
                   )}
                   
-                  {player.contrat_fin && (() => { const d = new Date(player.contrat_fin); return !isNaN(d) && (
+                  {player.contrat_fin && (
                     <div className="flex items-center gap-3">
                       <Calendar className="w-5 h-5 text-slate-400" />
                       <div>
                         <p className="text-sm text-slate-600">{t(lang, 'playerDetail.contractEnd')}</p>
-                        <p className="font-semibold">{format(d, "dd/MM/yyyy")}</p>
+                        <p className="font-semibold">{format(new Date(player.contrat_fin), "dd/MM/yyyy")}</p>
                       </div>
                     </div>
-                  ); })()}
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -427,7 +422,17 @@ export default function PlayerDetailPage() {
               onUpdateStatus={(id, statut) => updateReminderMutation.mutate({ id, statut })}
             />
 
+            <ImportTransfermarktPhoto
+              player={player}
+              onApply={(data) => updatePlayerMutation.mutate(data)}
+            />
+
             <UpcomingMatches playerClub={player.club_actuel} />
+
+            <EnrichPlayerAI
+              player={player}
+              onApply={(data) => updatePlayerMutation.mutate(data)}
+            />
 
             <ActivityLogList entityId={playerId} entityType="Player" />
           </div>

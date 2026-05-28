@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import TransfermarktAPI from "@/api/transfermarkt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,9 +14,8 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { useNavigate } from "react-router-dom";
-import { createPageUrl, sanitizePlayerData } from "../utils";
+import { createPageUrl } from "../utils";
 import { useQueryClient } from "@tanstack/react-query";
-import TransfermarktSearch from "../components/players/TransfermarktSearch";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
 
@@ -66,7 +66,7 @@ export default function PlayerSearchPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // ── Recherche via API-Football ───────────────────────────────────────────────
+  // ── Étape 1 : recherche Transfermarkt ───────────────────────────────────────
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -77,89 +77,252 @@ export default function PlayerSearchPage() {
     setError(null);
 
     try {
-      const afRes = await base44.functions.invoke("apiFootballProxy", {
-        action: "searchPlayer",
-        name: query.trim(),
-      });
-
-      const list = afRes?.players || [];
+      const data = await TransfermarktAPI.searchPlayers(query.trim());
+      const list = data?.results || [];
 
       if (list.length === 0) {
-        setError(`Aucun joueur trouvé pour "${query}" sur API-Football.`);
+        setError(`Aucun joueur trouvé pour "${query}" sur Transfermarkt.`);
         setLoading(false);
         return;
       }
 
       if (list.length === 1) {
         setLoading(false);
-        buildResult(list[0]);
+        await fetchFullProfile(list[0].id, list[0].name);
       } else {
         setCandidates(list);
         setLoading(false);
       }
     } catch (err) {
-      setError("Erreur de connexion à API-Football. Vérifiez votre connexion.");
+      setError("Erreur de connexion à l'API Transfermarkt. Vérifiez votre connexion.");
       setLoading(false);
     }
   };
 
-  // ── Construit l'objet résultat depuis un joueur API-Football ─────────────────
-  const buildResult = (afPlayer) => {
-    const s = afPlayer.stats_saison;
-    setResult({
-      nom:              afPlayer.nom,
-      nom_complet:      [afPlayer.prenom, afPlayer.nom].filter(Boolean).join(' '),
-      prenom:           afPlayer.prenom,
-      age:              afPlayer.age,
-      nationalite:      afPlayer.nationalite,
-      photo_url:        afPlayer.photo_url || null,
-      club_actuel:      afPlayer.club_actuel,
-      ligue:            afPlayer.ligue,
-      pays_ligue:       afPlayer.pays_ligue,
-      poste:            afPlayer.poste,
-      stats_saison:     s ? { ...s, source: "API-Football" } : null,
-      historique_clubs: [],
-      valeur_historique: [],
-      stats_par_saison:  [],
-    });
+  // ── Étape 2 : profil complet depuis TM + enrichissement LLM ─────────────────
+  const fetchFullProfile = async (tmId, playerName) => {
+    setLoadingFull(true);
+    setResult(null);
+    setCandidates(null);
+    setError(null);
+
+    try {
+      // 1. Données réelles Transfermarkt
+      setLoadingStatus(t(lang, 'playerSearch.loadingTM'));
+      const { profile, stats, marketValue, transfers } = await TransfermarktAPI.getFullPlayerData(tmId);
+
+      if (!profile) throw new Error("Profil introuvable sur Transfermarkt.");
+
+      const crmData = TransfermarktAPI.buildCRMPlayer(profile, stats, marketValue, transfers);
+
+      // 2 + 3. API-Football ET LLM en parallèle (gain ~10s vs séquentiel)
+      setLoadingStatus("Chargement stats et analyse scout…");
+      const [afResult, llmResult] = await Promise.allSettled([
+        // Stats officielles API-Football
+        base44.functions.invoke("apiFootballProxy", {
+          action: "searchPlayer",
+          name: profile.name,
+        }),
+        // Analyse qualitative LLM (uniquement description/style/forces/faiblesses/palmarès)
+        base44.integrations.Core.InvokeLLM({
+          prompt: `Profil scout qualitatif pour ${profile.name} (football professionnel, club : ${profile.club?.name || 'inconnu'}).
+
+Retourne UNIQUEMENT des données qualitatives — NE PAS inclure de statistiques numériques.
+- Description biographique courte (2-3 phrases)
+- Style de jeu
+- Points forts (forces)
+- Points faibles (faiblesses)
+- Palmarès (titres remportés)
+- Distinctions individuelles
+- Note globale scout estimée (0-100)
+
+Si inconnu = null. NE PAS INVENTER.`,
+          add_context_from_internet: true,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              description:        { type: "string" },
+              style_jeu:          { type: "string" },
+              forces:             { type: "string" },
+              faiblesses:         { type: "string" },
+              note_globale_scout: { type: "number" },
+              distinctions:       { type: "string" },
+              palmares:           { type: "array", items: { type: "string" } },
+            },
+          },
+        }),
+      ]);
+
+      const afPlayer = afResult.status === "fulfilled" ? afResult.value?.players?.[0] ?? null : null;
+      const llmEnrichment = llmResult.status === "fulfilled" ? (llmResult.value || {}) : {};
+
+      // 4. Fusion TM + API-Football + LLM qualitatif
+      const afS = afPlayer?.stats_saison;
+      const merged = {
+        ...crmData,
+        nom_complet: profile.name,
+        // Photo : API-Football en priorité (CDN sans restriction), TM en fallback
+        // Les URLs Transfermarkt nécessitent referrerPolicy="no-referrer" côté navigateur
+        photo_url: afPlayer?.photo_url || crmData.photo_url || null,
+        // Physique depuis API-Football (plus fiable que LLM)
+        poids: afPlayer?.poids || null,
+        taille: crmData.taille || afPlayer?.taille || null,
+        // Qualitatif LLM uniquement
+        description:        llmEnrichment.description,
+        style_jeu:          llmEnrichment.style_jeu,
+        forces:             llmEnrichment.forces,
+        faiblesses:         llmEnrichment.faiblesses,
+        note_globale_scout: llmEnrichment.note_globale_scout,
+        distinctions:       llmEnrichment.distinctions,
+        palmares:           llmEnrichment.palmares || [],
+        // Stats saison : API-Football en priorité, Transfermarkt en fallback
+        stats_saison: afS
+          ? {
+              saison:           afS.saison || "2024/2025",
+              matchs:           afS.matchs,
+              titulaire:        afS.titulaire,
+              minutes:          afS.minutes,
+              buts:             afS.buts,
+              passes_decisives: afS.passes_decisives,
+              cartons_jaunes:   afS.cartons_jaunes,
+              cartons_rouges:   afS.cartons_rouges,
+              tirs:             afS.tirs,
+              tirs_cadres:      afS.tirs_cadres,
+              passes_cles:      afS.passes_cles,
+              dribbles_reussis: afS.dribbles_reussis,
+              tacles:           afS.tacles,
+              interceptions:    afS.interceptions,
+              source:           "API-Football",
+            }
+          : {
+              saison:           "2024/2025",
+              matchs:           crmData.matchs_joues,
+              buts:             crmData.buts,
+              passes_decisives: crmData.passes_decisives,
+              minutes:          crmData.minutes_jouees,
+              source:           "Transfermarkt",
+            },
+      };
+
+      setResult(merged);
+    } catch (err) {
+      setError(err.message || "Erreur lors du chargement du profil.");
+    } finally {
+      setLoadingFull(false);
+      setLoadingStatus("");
+    }
   };
 
-  // ── Sélection d'un candidat ──────────────────────────────────────────────────
-  const fetchFullProfile = async (candidate) => {
-    buildResult(candidate);
-  };
-
-  // ── Sauvegarder joueur ────────────────────────────────────────────────────────
+  // ── Étape 3 : sauvegarder joueur + club ──────────────────────────────────────
   const handleSaveToApp = async () => {
     if (!result) return;
     setSaving(true);
     const s = result.stats_saison;
 
     try {
+      // 1. Auto-créer / upsert le club
+      if (result.club_actuel) {
+        const existingClubs = await base44.entities.Club.filter({ nom: result.club_actuel });
+        if (!existingClubs || existingClubs.length === 0) {
+          await base44.entities.Club.create({
+            nom: result.club_actuel,
+            pays: result.pays_ligue || '',
+            ligue: result.ligue || '',
+          });
+          queryClient.invalidateQueries({ queryKey: ['clubs'] });
+        }
+      }
+
+      // 2. Fiche joueur
       const playerData = {
-        nom:              result.nom || query,
-        age:              result.age,
-        nationalite:      result.nationalite,
-        poste:            result.poste,
-        photo_url:        result.photo_url,
-        club_actuel:      result.club_actuel,
-        ligue:            result.ligue,
-        pays_ligue:       result.pays_ligue,
-        matchs_joues:     s?.matchs,
-        titularisations:  s?.titulaire,
-        minutes_jouees:   s?.minutes,
-        buts:             s?.buts,
-        passes_decisives: s?.passes_decisives,
-        cartons_jaunes:   s?.cartons_jaunes,
-        cartons_rouges:   s?.cartons_rouges,
-        tirs:             s?.tirs,
-        tirs_cadres:      s?.tirs_cadres,
-        passes_cles:      s?.passes_cles,
-        dribbles_reussis: s?.dribbles_reussis,
-        interceptions:    s?.interceptions,
-        tacles:           s?.tacles,
+        nom: result.nom || query,
+        age: result.age,
+        date_naissance: result.date_naissance,
+        lieu_naissance: result.lieu_naissance,
+        nationalite: result.nationalite,
+        nationalite_secondaire: result.nationalite_secondaire,
+        poste: result.poste,
+        poste_secondaire: result.poste_secondaire,
+        pied_fort: result.pied_fort,
+        taille: result.taille,
+        poids: result.poids,
+        photo_url: result.photo_url,
+        club_actuel: result.club_actuel,
+        ligue: result.ligue,
+        pays_ligue: result.pays_ligue,
+        numero_maillot: result.numero_maillot,
+        contrat_fin: result.contrat_fin,
+        agent: result.agent,
+        transfermarkt_id: result.transfermarkt_id,
+        valeur_marchande: result.valeur_marchande,
+        valeur_marchande_peak: result.valeur_marchande_peak,
+        // Stats saison depuis API-Football (ou TM en fallback)
+        matchs_joues:       s?.matchs,
+        titularisations:    s?.titulaire,
+        minutes_jouees:     s?.minutes,
+        buts:               s?.buts,
+        passes_decisives:   s?.passes_decisives,
+        cartons_jaunes:     s?.cartons_jaunes,
+        cartons_rouges:     s?.cartons_rouges,
+        tirs:               s?.tirs,
+        tirs_cadres:        s?.tirs_cadres,
+        passes_cles:        s?.passes_cles,
+        dribbles_reussis:   s?.dribbles_reussis,
+        interceptions:      s?.interceptions,
+        tacles:             s?.tacles,
+        // Qualitatif LLM
+        palmares:           Array.isArray(result.palmares) ? result.palmares.join(", ") : result.palmares,
+        distinctions:       result.distinctions,
+        style_jeu:          result.style_jeu,
+        forces:             result.forces,
+        faiblesses:         result.faiblesses,
+        stats_resume:       result.description,
+        note_globale_scout: result.note_globale_scout,
+        nb_clubs:           result.historique_clubs?.length,
       };
-      const created = await base44.entities.Player.create(sanitizePlayerData(playerData));
+      Object.keys(playerData).forEach(k => (playerData[k] == null || playerData[k] === "") && delete playerData[k]);
+
+      const created = await base44.entities.Player.create(playerData);
+
+      // 3. Historique clubs
+      if (result.historique_clubs?.length > 0) {
+        await base44.entities.PlayerCareerHistory.bulkCreate(
+          result.historique_clubs.filter(c => c.club).map(c => ({
+            player_id: created.id, ...c,
+          }))
+        );
+      }
+
+      // 4. Historique valeur marchande
+      if (result.valeur_historique?.length > 0) {
+        await base44.entities.PlayerMarketValue.bulkCreate(
+          result.valeur_historique
+            .filter(v => v.date && v.valeur != null)
+            .map(v => ({ player_id: created.id, date: v.date, valeur: v.valeur, source: "Transfermarkt" }))
+        );
+      }
+
+      // 5. Stats par saison
+      const allSeasons = [];
+      (result.stats_par_saison || []).filter(s2 => s2.saison).forEach(s2 => {
+        allSeasons.push({ player_id: created.id, ...s2 });
+      });
+      if (s?.matchs) {
+        allSeasons.unshift({
+          player_id: created.id,
+          saison: s.saison || "2024/2025",
+          club: result.club_actuel,
+          ligue: result.ligue,
+          matchs: s.matchs, buts: s.buts,
+          passes_decisives: s.passes_decisives,
+          minutes: s.minutes,
+          note_sofascore: s.note_sofascore,
+          xg: s.xg, xa: s.xa,
+        });
+      }
+      if (allSeasons.length > 0) {
+        await base44.entities.PlayerSeasonStats.bulkCreate(allSeasons.filter(s2 => s2.saison));
+      }
 
       queryClient.invalidateQueries({ queryKey: ['players'] });
       setSaved(true);
@@ -182,13 +345,10 @@ export default function PlayerSearchPage() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-2">
             <Search className="w-7 h-7 text-green-500" />
-            Recherche Joueurs
+            {t(lang, 'playerSearch.title')}
           </h1>
-          <p className="text-xs text-slate-500 mt-1">Recherche via API-Football — données officielles en temps réel.</p>
+          <p className="text-xs text-slate-500 mt-1">{t(lang, 'playerSearch.subtitle')}</p>
         </div>
-
-        {/* Stub redirect notice */}
-        <TransfermarktSearch />
 
         {/* Search */}
         <form onSubmit={handleSearch} className="flex gap-2">
@@ -226,31 +386,32 @@ export default function PlayerSearchPage() {
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <Search className="w-4 h-4 text-green-500" />
-                {candidates.length} joueur{candidates.length > 1 ? 's' : ''} trouvé{candidates.length > 1 ? 's' : ''}
+                {t(lang, 'playerSearch.candidatesTitle', { count: candidates.length })}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {candidates.map((c, i) => (
                 <button
                   key={c.id || i}
-                  onClick={() => fetchFullProfile(c)}
+                  onClick={() => fetchFullProfile(c.id, c.name)}
                   className="w-full flex items-center gap-4 p-3 rounded-xl border border-slate-200 hover:border-green-400 hover:bg-green-50 transition-all text-left group"
                 >
                   <div className="w-14 h-14 rounded-xl bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-200">
-                    {c.photo_url
-                      ? <img src={c.photo_url} alt={c.nom} className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={e => e.target.style.display = 'none'} />
+                    {c.image
+                      ? <img src={c.image} alt={c.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={e => e.target.style.display = 'none'} />
                       : <User className="w-7 h-7 text-slate-400 m-auto mt-3.5" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-slate-900 group-hover:text-green-700">{c.prenom} {c.nom}</p>
+                    <p className="font-bold text-slate-900 group-hover:text-green-700">{c.name}</p>
                     <div className="flex flex-wrap gap-1.5 mt-1">
-                      {c.poste && <Badge className={`text-xs ${posteColors[c.poste] || "bg-slate-100 text-slate-700"}`}>{c.poste}</Badge>}
-                      {c.nationalite && <Badge variant="outline" className="text-xs">{c.nationalite}</Badge>}
-                      {c.club_actuel && <Badge className="bg-slate-800 text-white text-xs">{c.club_actuel}</Badge>}
+                      {c.position && <Badge className={`text-xs ${posteColors[TransfermarktAPI.mapPosition(c.position)] || "bg-slate-100 text-slate-700"}`}>{c.position}</Badge>}
+                      {c.nationality && <Badge variant="outline" className="text-xs">{c.nationality}</Badge>}
+                      {c.club && <Badge className="bg-slate-800 text-white text-xs">{c.club}</Badge>}
                       {c.age && <Badge variant="outline" className="text-xs">{c.age} {t(lang, 'common.ageUnit')}</Badge>}
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
+                    {c.marketValue && <p className="font-bold text-green-600 text-sm">{TransfermarktAPI.formatValue(c.marketValue)}</p>}
                     <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-green-500 mt-1 ml-auto" />
                   </div>
                 </button>
@@ -265,7 +426,12 @@ export default function PlayerSearchPage() {
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
               <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
             </div>
-            <p className="text-slate-600 font-medium">{loadingStatus || "Chargement du profil…"}</p>
+            <p className="text-slate-600 font-medium">{loadingStatus || t(lang, 'playerSearch.loadingProfile')}</p>
+            <div className="flex flex-col items-center gap-1">
+              {[t(lang, 'playerSearch.loadingTMDetail'), t(lang, 'playerSearch.loadingScoutDetail')].map(msg => (
+                <p key={msg} className="text-xs text-slate-400">{msg}</p>
+              ))}
+            </div>
           </div>
         )}
 
@@ -296,9 +462,9 @@ export default function PlayerSearchPage() {
                   </div>
                   <Button onClick={handleSaveToApp} disabled={saving || saved}
                     className={`flex-shrink-0 ${saved ? "bg-green-600" : "bg-slate-900 hover:bg-slate-700"}`} size="sm">
-                    {saved ? <><Trophy className="w-4 h-4 mr-1" /> Sauvegardé</> :
+                    {saved ? <><Trophy className="w-4 h-4 mr-1" /> {t(lang, 'playerSearch.saved')}</> :
                       saving ? <Loader2 className="w-4 h-4 animate-spin" /> :
-                        <><Plus className="w-4 h-4 mr-1" /> Ajouter</>}
+                        <><Plus className="w-4 h-4 mr-1" /> {t(lang, 'playerSearch.add')}</>}
                   </Button>
                 </div>
 
@@ -566,12 +732,13 @@ export default function PlayerSearchPage() {
 
             {/* CTA final */}
             <div className="flex justify-end pb-6 gap-3">
+              <p className="text-xs text-slate-400 self-center">{t(lang, 'playerSearch.autoClubNote', { club: result.club_actuel })}</p>
               <Button onClick={handleSaveToApp} disabled={saving || saved}
                 className={`${saved ? "bg-green-600" : "bg-slate-900 hover:bg-slate-700"} px-8`}>
                 {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                 {saved
-                  ? <><Trophy className="w-4 h-4 mr-2" /> Joueur ajouté <ArrowRight className="w-4 h-4 ml-2" /></>
-                  : <><Plus className="w-4 h-4 mr-2" /> Ajouter aux joueurs</>}
+                  ? <><Trophy className="w-4 h-4 mr-2" /> {t(lang,'playerSearch.playerAdded')} <ArrowRight className="w-4 h-4 ml-2" /></>
+                  : <><Plus className="w-4 h-4 mr-2" /> {t(lang,'playerSearch.addToPlayers')}</>}
               </Button>
             </div>
           </div>
