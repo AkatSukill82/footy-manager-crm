@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, User, MapPin, Calendar, TrendingUp, Ruler, Edit2, Star, Trash2, FileDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { createPageUrl } from "../utils";
+import { createPageUrl, sanitizePlayerData } from "../utils";
 import PlayerForm from "../components/players/PlayerForm";
 import PlayerStatusModal from "../components/players/PlayerStatusModal";
 import TransferHistory from "../components/transfers/TransferHistory";
@@ -118,7 +118,7 @@ export default function PlayerDetailPage() {
 
   const updatePlayerMutation = useMutation({
     mutationFn: async (data) => {
-      await base44.entities.Player.update(playerId, data);
+      await base44.entities.Player.update(playerId, sanitizePlayerData(data));
       // Log the change
       const changedFields = Object.keys(data).filter(k => player && data[k] !== player[k]);
       if (currentUser && changedFields.length > 0) {
@@ -205,7 +205,14 @@ export default function PlayerDetailPage() {
     },
   });
 
-  if (!player) return null;
+  if (!player) return (
+    <div className="fixed inset-0 flex items-center justify-center bg-slate-50">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-4 border-slate-200 border-t-green-600 rounded-full animate-spin" />
+        <p className="text-sm text-slate-400">Chargement du joueur…</p>
+      </div>
+    </div>
+  );
 
   if (isEditing) {
     return (
