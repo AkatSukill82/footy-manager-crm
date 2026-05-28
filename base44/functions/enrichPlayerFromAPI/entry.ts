@@ -1,395 +1,209 @@
 /**
- * Enrichit un joueur depuis 3 sources :
+ * Enrichit un joueur.
  *
- *  1. Transfermarkt  → infos personnelles (profil, valeur marchande, contrat, agent, photo)
- *  2. SofaScore      → stats de perf primaires (note, xG/xA, buts, passes, duels, dribbles…)
- *  3. FotMob         → stats de perf complémentaires (comble les trous de SofaScore)
+ * SOURCE ACTIVE
+ * ─────────────
+ *   API-Football (api-sports.io) — officielle, clé incluse, ~0.5s
+ *   Retourne : nom, âge, nationalité, taille, poids, photo, club, ligue,
+ *              poste, buts, passes, cartons, minutes, tirs, dribbles,
+ *              tacles, interceptions, fautes, arrêts, penaltys…
  *
- * Flux parallèle :
- *   Phase 1 : [TM search] + [SS search] + [FM search]            (en même temps)
- *   Phase 2 : [TM profile + TM valeur] + [SS stats] + [FM stats] (en même temps)
- *   Cible : ~3-5s total
+ * SOURCES EN RÉSERVE (commentées — non supprimées)
+ * ─────────────────────────────────────────────────
+ *   #2 Transfermarkt  → valeur marchande, fin de contrat, agent
+ *   #3 SofaScore      → note moyenne, xG/xA
+ *   #4 FotMob         → stats complémentaires
  *
- * Param `source` optionnel :
- *   "transfermarkt" → profil/valeur uniquement
- *   "stats"         → SofaScore + FotMob uniquement
- *   undefined       → tout
+ * Usage :
+ *   base44.functions.invoke("enrichPlayerFromAPI", { playerName: "Kylian Mbappé" })
+ *   base44.functions.invoke("enrichPlayerFromAPI", { playerName: "...", source: "transfermarkt" })
+ *   base44.functions.invoke("enrichPlayerFromAPI", { playerName: "...", tmUrl: "https://..." })
  */
 
-const TM_BASE = "https://transfermarkt-api.fly.dev";
-const SS_BASE = "https://api.sofascore.com/api/v1";
-const FM_BASE = "https://www.fotmob.com/api";
-const TIMEOUT  = 7000;
+// ═══════════════════════════════════════════════════════════════════
+// SOURCE 1 — API-FOOTBALL (ACTIVE)
+// ═══════════════════════════════════════════════════════════════════
 
-// ── Parseurs ──────────────────────────────────────────────────────────────────
+const AF_KEY  = "69289700a254963331e0a79b901c56da";
+const AF_BASE = "https://v3.football.api-sports.io";
 
-function parseTMValue(s: string | null | undefined): number | null {
+const AF_POS: Record<string, string> = {
+  "Goalkeeper": "Gardien",
+  "Defender":   "Défenseur central",
+  "Midfielder": "Milieu central",
+  "Attacker":   "Attaquant",
+};
+
+const parseCm = (s: string | null | undefined): number | null => {
   if (!s) return null;
-  const c = s.replace(/\s/g, "").replace(",", ".");
-  const mio = c.match(/([\d.]+)Mio/); if (mio) return parseFloat(mio[1]);
-  const tsd = c.match(/([\d.]+)Tsd/); if (tsd) return Math.round(parseFloat(tsd[1])) / 1000;
-  return null;
-}
-
-function parseTMHeight(s: string | null | undefined): number | null {
-  if (!s) return null;
-  const c = s.replace(",", ".").replace(/\s/g, "");
-  const m = c.match(/([\d.]+)m/);
-  if (m) { const v = parseFloat(m[1]); return v < 3 ? Math.round(v * 100) : Math.round(v); }
-  const cm = parseInt(c.replace(/\D/g, "")); return isNaN(cm) ? null : cm;
-}
-
-function toNum(v: unknown): number | null {
-  if (v == null) return null;
-  const n = typeof v === "number" ? v : parseFloat(String(v).replace(",", "."));
+  const n = parseInt(String(s).replace(/\D/g, ""));
   return isNaN(n) ? null : n;
+};
+
+const afGet = async (path: string) => {
+  const res = await fetch(`${AF_BASE}${path}`, {
+    headers: { "x-apisports-key": AF_KEY },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) throw new Error(`AF HTTP ${res.status}`);
+  const json = await res.json();
+  if (json.errors && Object.keys(json.errors).length > 0)
+    throw new Error(`AF error: ${JSON.stringify(json.errors)}`);
+  return json;
+};
+
+function extractAFPlayer(entry: any, out: Record<string, unknown>) {
+  const pl = entry?.player;
+  const st = entry?.statistics?.[0];
+  if (!pl) return;
+
+  const w = (k: string, v: unknown) => { if (v != null && v !== "") out[k] = v; };
+
+  // Identité
+  if (pl.firstname && pl.lastname) {
+    w("prenom", pl.firstname);
+    w("nom",    pl.lastname);
+  } else if (pl.name) {
+    w("nom", pl.name);
+  }
+  w("age",            pl.age);
+  w("date_naissance", pl.birth?.date  || null);
+  w("lieu_naissance", pl.birth?.place || null);
+  w("nationalite",    pl.nationality  || null);
+  w("photo_url",      pl.photo        || null);
+  w("taille",         parseCm(pl.height));
+  w("poids",          parseCm(pl.weight));
+
+  // Club & ligue
+  if (st) {
+    w("club_actuel",  st.team?.name     || null);
+    w("ligue",        st.league?.name   || null);
+    w("pays_ligue",   st.league?.country|| null);
+    const pos = AF_POS[st.games?.position];
+    if (pos) w("poste", pos);
+    w("numero_maillot", st.games?.number || null);
+
+    // Stats de performance
+    w("matchs_joues",     st.games?.appearences ?? null);
+    w("titularisations",  st.games?.lineups      ?? null);
+    w("minutes_jouees",   st.games?.minutes      ?? null);
+    w("buts",             st.goals?.total        ?? null);
+    w("passes_decisives", st.goals?.assists      ?? null);
+    w("cartons_jaunes",   st.cards?.yellow       ?? null);
+    w("cartons_rouges",   st.cards?.red          ?? null);
+    w("tirs",             st.shots?.total        ?? null);
+    w("tirs_cadres",      st.shots?.on           ?? null);
+    w("passes_cles",      st.passes?.key         ?? null);
+    w("dribbles_reussis", st.dribbles?.success   ?? null);
+    w("dribbles_tentes",  st.dribbles?.attempts  ?? null);
+    w("tacles",           st.tackles?.total      ?? null);
+    w("interceptions",    st.tackles?.interceptions ?? null);
+    w("fautes_commises",  st.fouls?.committed    ?? null);
+    w("fautes_subies",    st.fouls?.drawn        ?? null);
+    w("arrets",           st.goals?.saves        ?? null);
+    w("buts_encaisses",   st.goals?.conceded     ?? null);
+    w("penaltys_marques", st.penalty?.scored     ?? null);
+
+    if (st.shots?.total != null && st.shots?.on != null && st.shots.total > 0)
+      out.tirs_cadres_pct = Math.round((st.shots.on / st.shots.total) * 100);
+    if (st.dribbles?.success != null && st.dribbles?.attempts != null && st.dribbles.attempts > 0)
+      out.dribbles_pct = Math.round((st.dribbles.success / st.dribbles.attempts) * 100);
+  }
 }
 
-// ── Tables de correspondance postes ───────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// SOURCE 2 — TRANSFERMARKT (EN RÉSERVE)
+// ═══════════════════════════════════════════════════════════════════
+// Utile pour : valeur marchande, fin de contrat, agent, photo TM
+// Décommenter et appeler si nécessaire.
+//
+// const TM_BASE = "https://transfermarkt-api.fly.dev";
+// function extractTMIdFromUrl(url: string): string | null {
+//   const m = url.match(/\/(?:spieler|trainer)\/(\d+)/) || url.match(/\/(\d+)(?:[/?#]|$)/);
+//   return m ? m[1] : null;
+// }
+// function parseTMValue(s: string | null | undefined): number | null { ... }
+// function parseTMHeight(s: string | null | undefined): number | null { ... }
+// const TM_POS: Record<string, string> = { "Goalkeeper": "Gardien", ... };
+// const tmGet = (path: string) => fetch(`${TM_BASE}${path}`, { ... });
+// function tmExtractSearch(data, out): string | null { ... }
+// function tmExtractProfile(p, out) { ... }
+// function tmExtractMarketValue(data, out) { ... }
 
-const TM_POS: Record<string, string> = {
-  "Goalkeeper": "Gardien",
-  "Centre-Back": "Défenseur central", "Centre-back": "Défenseur central",
-  "Left-Back": "Latéral gauche",  "Left Back": "Latéral gauche",
-  "Right-Back": "Latéral droit",  "Right Back": "Latéral droit",
-  "Defensive Midfield": "Milieu défensif",
-  "Central Midfield": "Milieu central",
-  "Attacking Midfield": "Milieu offensif",
-  "Left Winger": "Ailier gauche",  "Left Wing": "Ailier gauche",
-  "Right Winger": "Ailier droit",  "Right Wing": "Ailier droit",
-  "Centre-Forward": "Attaquant", "Centre Forward": "Attaquant",
-  "Second Striker": "Attaquant",  "Striker": "Attaquant",
-};
+// ═══════════════════════════════════════════════════════════════════
+// SOURCE 3 — SOFASCORE (EN RÉSERVE)
+// ═══════════════════════════════════════════════════════════════════
+// Utile pour : note_moyenne (SofaScore rating), xG, xA, duels, grandes chances
+// Décommenter et appeler si nécessaire.
+//
+// const SS_BASE = "https://api.sofascore.com/api/v1";
+// const SS_POS: Record<string, string> = { G: "Gardien", D: "Défenseur central", M: "Milieu central", F: "Attaquant" };
+// const ssGet = (path: string) => fetch(`${SS_BASE}${path}`, { headers: { "Referer": "https://www.sofascore.com/", ... } });
+// function ssExtractSearch(data, out): string | null { ... }
+// function ssExtractStats(data, out) {
+//   // note_moyenne, xg, xa, xg_par_90
+//   // grandes_chances, grandes_chances_manquees
+//   // duels_gagnes_pct, duels_aeriens_pct
+//   // passes_reussies, passes_reussies_pct
+//   // hors_jeu, fautes_subies, clean_sheets
+// }
 
-const SS_POS: Record<string, string> = {
-  G: "Gardien", D: "Défenseur central", M: "Milieu central", F: "Attaquant",
-};
+// ═══════════════════════════════════════════════════════════════════
+// SOURCE 4 — FOTMOB (EN RÉSERVE)
+// ═══════════════════════════════════════════════════════════════════
+// Utile pour : stats complémentaires si SofaScore manque des données
+// Décommenter et appeler si nécessaire.
+//
+// const FM_BASE = "https://www.fotmob.com/api";
+// const FM_POS: Record<string, string> = { "Goalkeeper": "Gardien", "Striker": "Attaquant", ... };
+// const fmGet = (path: string) => fetch(`${FM_BASE}${path}`, { headers: { "Referer": "https://www.fotmob.com/", ... } });
+// function fmExtractSearch(data): string | null { ... }
+// function fmExtractPlayerData(data, out) { ... }
 
-const FM_POS: Record<string, string> = {
-  "Goalkeeper": "Gardien",
-  "Right Back": "Latéral droit",  "Left Back": "Latéral gauche",
-  "Center Back": "Défenseur central", "Centre Back": "Défenseur central",
-  "Defensive Midfielder": "Milieu défensif",
-  "Central Midfielder": "Milieu central",
-  "Attacking Midfielder": "Milieu offensif",
-  "Right Winger": "Ailier droit",  "Left Winger": "Ailier gauche",
-  "Striker": "Attaquant", "Center Forward": "Attaquant",
-  "Forward": "Attaquant",
-};
-
-// ── Fetch helpers ─────────────────────────────────────────────────────────────
-
-const tmGet = (path: string) =>
-  fetch(`${TM_BASE}${path}`, {
-    headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" },
-    signal: AbortSignal.timeout(TIMEOUT),
-  }).then(r => { if (!r.ok) throw new Error(`TM ${r.status}`); return r.json(); });
-
-const ssGet = (path: string) =>
-  fetch(`${SS_BASE}${path}`, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      "Accept": "application/json, text/plain, */*",
-      "Accept-Language": "en-US,en;q=0.9",
-      "Referer": "https://www.sofascore.com/",
-      "Origin": "https://www.sofascore.com",
-    },
-    signal: AbortSignal.timeout(TIMEOUT),
-  }).then(r => { if (!r.ok) throw new Error(`SS ${r.status}`); return r.json(); });
-
-const fmGet = (path: string) =>
-  fetch(`${FM_BASE}${path}`, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      "Accept": "application/json, text/plain, */*",
-      "Accept-Language": "en-US,en;q=0.9",
-      "Referer": "https://www.fotmob.com/",
-      "x-mas": "eyJib2R5Ijp7InVybCI6Imh0dHBzOi8vd3d3LmZvdG1vYi5jb20vYXBpL3NlYXJjaD90ZXJtPW1iYXBwZSJ9fQ==",
-    },
-    signal: AbortSignal.timeout(TIMEOUT),
-  }).then(r => { if (!r.ok) throw new Error(`FM ${r.status}`); return r.json(); });
+// ═══════════════════════════════════════════════════════════════════
+// HANDLER PRINCIPAL
+// ═══════════════════════════════════════════════════════════════════
 
 const safe = async <T>(fn: () => Promise<T>, label: string, errs: string[]): Promise<T | null> => {
   try { return await fn(); } catch (e: any) { errs.push(`${label}: ${e.message}`); return null; }
 };
 
-// ── Extracteurs Transfermarkt ─────────────────────────────────────────────────
-
-function tmExtractSearch(data: any, out: Record<string, unknown>): string | null {
-  const first = data?.results?.[0];
-  if (!first) return null;
-  const id = String(first.id);
-  out.transfermarkt_id = id;
-  if (first.name)       out.nom             = first.name;
-  const pos = first.position?.main ?? first.position;
-  if (pos)              out.poste           = TM_POS[pos] || pos;
-  if (first.age)        out.age             = first.age;
-  if (first.club?.name) out.club_actuel     = first.club.name;
-  const nat = Array.isArray(first.nationality) ? first.nationality[0] : first.nationality;
-  if (nat)              out.nationalite     = nat;
-  const mv = parseTMValue(first.marketValue);
-  if (mv != null)       out.valeur_marchande = mv;
-  return id;
-}
-
-function tmExtractProfile(p: any, out: Record<string, unknown>) {
-  const dob = p.dateOfBirth?.date ?? p.dateOfBirth;
-  if (dob)                          out.date_naissance  = String(dob).substring(0, 10);
-  if (p.placeOfBirth?.city)         out.lieu_naissance  = p.placeOfBirth.city;
-  const h = parseTMHeight(p.height);
-  if (h)                            out.taille          = h;
-  if (p.foot)                       out.pied_fort       = p.foot === "left" ? "Gauche" : p.foot === "both" ? "Les deux" : "Droit";
-  const expiry = p.contractExpiry ?? p.contract?.expiry ?? p.contractUntil;
-  if (expiry)                       out.contrat_fin     = String(expiry);
-  const club = p.currentClub?.name ?? p.club?.name;
-  if (club)                         out.club_actuel     = club;
-  if (p.imageURL)                   out.photo_url       = p.imageURL;
-  if (p.shirt ?? p.shirtNumber)     out.numero_maillot  = p.shirt ?? p.shirtNumber;
-  if (p.agent?.name)                out.agent           = p.agent.name;
-  const cit = Array.isArray(p.citizenship) ? p.citizenship[0] : p.citizenship;
-  if (cit)                          out.nationalite     = cit;
-  const mv = parseTMValue(p.marketValue);
-  if (mv != null)                   out.valeur_marchande = mv;
-  const pos = p.position?.main ?? p.position;
-  if (pos)                          out.poste           = TM_POS[pos] || pos;
-}
-
-function tmExtractMarketValue(data: any, out: Record<string, unknown>) {
-  const hist: any[] = data?.marketValueHistory ?? data?.history ?? [];
-  let peak = 0;
-  for (const e of hist) {
-    const v = parseTMValue(e.value ?? e.marketValue);
-    if (v != null && v > peak) peak = v;
-  }
-  if (peak > 0) out.valeur_marchande_peak = peak;
-}
-
-// ── Extracteur SofaScore (source primaire des stats) ─────────────────────────
-
-function ssExtractSearch(data: any, out: Record<string, unknown>): string | null {
-  const hit = (data?.results ?? []).find((r: any) => r.type === "player");
-  if (!hit?.entity) return null;
-  const e = hit.entity;
-  const ssId = String(e.id);
-  out.sofascore_id = ssId;
-  if (!out.photo_url)   out.photo_url   = `https://img.sofascore.com/api/v1/player/${ssId}/image`;
-  if (!out.nationalite && e.country?.name) out.nationalite = e.country.name;
-  if (!out.poste && e.position) out.poste = SS_POS[e.position] || e.position;
-  if (!out.taille && e.height)  out.taille = e.height;
-  if (!out.club_actuel && e.team?.name) out.club_actuel = e.team.name;
-  return ssId;
-}
-
-function ssExtractStats(data: any, out: Record<string, unknown>) {
-  const seasons: any[] = data?.statistics ?? [];
-  let best: any = null;
-  for (const s of seasons) {
-    const y = s.season?.year ?? s.tournamentSeasonId ?? 0;
-    if (!best || y > (best.season?.year ?? best.tournamentSeasonId ?? 0)) best = s;
-  }
-  if (!best?.statistics) return;
-  const st = best.statistics;
-  const w = (k: string, v: unknown) => { if (v != null) out[k] = v; };
-
-  w("note_moyenne",             st.rating != null ? Math.round(st.rating * 10) / 10 : null);
-  w("buts",                     st.goals);
-  w("passes_decisives",         st.assists);
-  w("cartons_jaunes",           st.yellowCards);
-  w("cartons_rouges",           st.redCards);
-  w("minutes_jouees",           st.minutesPlayed);
-  w("matchs_joues",             st.appearances);
-  w("titularisations",          st.lineups ?? st.started);
-  w("tirs",                     st.totalShots);
-  w("tirs_cadres",              st.shotsOnTarget);
-  w("passes_cles",              st.keyPasses);
-  w("dribbles_reussis",         st.successfulDribbles);
-  w("dribbles_tentes",          st.totalDribbleAttempts ?? st.attemptedDribbles);
-  w("tacles",                   st.tackles);
-  w("interceptions",            st.interceptions);
-  w("grandes_chances",          st.bigChancesCreated);
-  w("grandes_chances_manquees", st.bigChancesMissed);
-  w("fautes_commises",          st.fouls);
-  w("fautes_subies",            st.wasFouled);
-  w("hors_jeu",                 st.offsides);
-  w("penaltys_marques",         st.penaltyGoals);
-  w("arrets",                   st.saves);
-  w("clean_sheets",             st.cleanSheets);
-  w("buts_encaisses",           st.goalsConceded);
-
-  if (st.expectedGoals != null)   out.xg = Math.round(st.expectedGoals * 100) / 100;
-  if (st.expectedAssists != null) out.xa = Math.round(st.expectedAssists * 100) / 100;
-  if (st.expectedGoals != null && st.minutesPlayed)
-    out.xg_par_90 = Math.round(st.expectedGoals / st.minutesPlayed * 90 * 100) / 100;
-  if (st.accuratePasses != null) {
-    out.passes_reussies = st.accuratePasses;
-    const t = st.accuratePasses + (st.inaccuratePasses ?? 0);
-    if (t > 0) out.passes_reussies_pct = Math.round(st.accuratePasses / t * 100);
-  }
-  if (st.groundDuelsWon != null && st.groundDuelsLost != null) {
-    const t = st.groundDuelsWon + st.groundDuelsLost;
-    if (t > 0) out.duels_gagnes_pct = Math.round(st.groundDuelsWon / t * 100);
-  }
-  if (st.aerialDuelsWon != null && st.aerialDuelsLost != null) {
-    const t = st.aerialDuelsWon + st.aerialDuelsLost;
-    if (t > 0) out.duels_aeriens_pct = Math.round(st.aerialDuelsWon / t * 100);
-  }
-  if (st.successfulDribbles != null) {
-    const a = st.totalDribbleAttempts ?? st.attemptedDribbles;
-    if (a > 0) out.dribbles_pct = Math.round(st.successfulDribbles / a * 100);
-  }
-}
-
-// ── Extracteur FotMob (comble les trous de SofaScore) ────────────────────────
-
-function fmExtractSearch(data: any): string | null {
-  // La réponse de /search peut avoir plusieurs structures selon la version
-  const players: any[] =
-    data?.squad ??
-    data?.playerQuery?.searchResults ??
-    (data?.results ?? []).filter((r: any) => r.type === "player") ?? [];
-  const hit = players[0];
-  if (!hit) return null;
-  return String(hit.id ?? hit.playerId);
-}
-
-function fmExtractPlayerData(data: any, out: Record<string, unknown>) {
-  // Infos perso (complément TM si absent)
-  if (!out.photo_url && data?.imageUrl)    out.photo_url   = data.imageUrl;
-  if (!out.taille && data?.height)         out.taille      = toNum(String(data.height).replace(/\D/g, ""));
-  if (!out.poids && data?.weight)          out.poids       = toNum(String(data.weight).replace(/\D/g, ""));
-  if (!out.club_actuel && data?.primaryTeam?.teamName) out.club_actuel = data.primaryTeam.teamName;
-  if (!out.poste && data?.position)        out.poste       = FM_POS[data.position] || data.position;
-  if (!out.numero_maillot && data?.shirtNumber) out.numero_maillot = data.shirtNumber;
-
-  // Stats — construire une map {key → value} depuis les items FotMob
-  const items: any[] =
-    data?.mainLeague?.statSummary?.items ??
-    data?.currentTeamStats?.items ??
-    data?.statSummary?.items ?? [];
-
-  const fm: Record<string, number | null> = {};
-  for (const item of items) {
-    const key = (item.key ?? item.title ?? "").toLowerCase()
-      .replace(/ /g, "_").replace(/-/g, "_");
-    const val = toNum(item.value);
-    if (key && val != null) fm[key] = val;
-  }
-
-  // Helper : écrit dans `out` seulement si SofaScore n'a pas déjà rempli le champ
-  const fill = (outKey: string, ...fmKeys: string[]) => {
-    if (out[outKey] != null) return;
-    for (const k of fmKeys) { if (fm[k] != null) { out[outKey] = fm[k]; return; } }
-  };
-
-  fill("buts",             "goals", "goal", "g");
-  fill("passes_decisives", "assists", "assist", "a");
-  fill("cartons_jaunes",   "yellow_cards", "yellowcards", "yellow");
-  fill("cartons_rouges",   "red_cards", "redcards", "red");
-  fill("minutes_jouees",   "minutes_played", "minutesplayed", "mins");
-  fill("matchs_joues",     "appearances", "matches_played", "games");
-  fill("titularisations",  "starts", "started");
-  fill("tirs",             "shots", "total_shots", "shots_total");
-  fill("tirs_cadres",      "shots_on_target", "on_target");
-  fill("passes_cles",      "key_passes", "keypasses", "chances_created");
-  fill("dribbles_reussis", "dribbles", "successful_dribbles", "dribbles_won");
-  fill("tacles",           "tackles", "tackles_won");
-  fill("interceptions",    "interceptions");
-  fill("fautes_commises",  "fouls", "fouls_committed");
-  fill("arrets",           "saves");
-  fill("clean_sheets",     "clean_sheets", "cleansheets");
-  fill("buts_encaisses",   "goals_conceded", "conceded");
-  fill("xg",               "xg", "expected_goals");
-  fill("xa",               "xa", "expected_assists");
-  fill("hors_jeu",         "offsides");
-
-  // Note FotMob (uniquement si SofaScore n'a pas donné de note)
-  fill("note_moyenne",     "rating", "fotmob_rating", "average_rating");
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// Handler principal
-// ════════════════════════════════════════════════════════════════════════════
-
-// ── Extraction d'un ID TM depuis une URL ─────────────────────────────────────
-// Supporte : /spieler/342229  /trainer/342229  /profil/spieler/342229
-function extractTMIdFromUrl(url: string): string | null {
-  if (!url) return null;
-  const m = url.match(/\/(?:spieler|trainer)\/(\d+)/) ||
-            url.match(/\/(\d+)(?:[/?#]|$)/);
-  return m ? m[1] : null;
-}
-
 Deno.serve(async (req) => {
   try {
     const { playerName, source, tmUrl } = await req.json();
-    // tmUrl fourni seul suffit (pas besoin de playerName)
-    if (!playerName && !tmUrl) return Response.json({ error: "playerName ou tmUrl requis" }, { status: 400 });
+    if (!playerName && !tmUrl)
+      return Response.json({ error: "playerName ou tmUrl requis" }, { status: 400 });
 
     const out: Record<string, unknown> = {};
     const sources: string[] = [];
     const errors: string[] = [];
 
-    const useTM = !source || source === "transfermarkt";
-    const useSS = !source || source === "stats";
-    const useFM = !source || source === "stats";
+    // ── API-Football : cherche la saison courante puis précédente ──────────
+    const q = encodeURIComponent((playerName || "").trim());
+    let entry: any = null;
 
-    // ── PHASE 1 : recherches en parallèle ────────────────────────────────────
-    const enc = encodeURIComponent(playerName || "");
-
-    // Si un lien TM est fourni, extraire l'ID directement — plus fiable que la recherche par nom
-    const tmIdFromUrl = tmUrl ? extractTMIdFromUrl(tmUrl) : null;
-
-    const [tmSearch, ssSearch, fmSearch] = await Promise.all([
-      // TM : si URL fournie → skip la recherche, on a déjà l'ID
-      useTM && !tmIdFromUrl && playerName ? safe(() => tmGet(`/players/search/${enc}`), "TM search", errors) : Promise.resolve(null),
-      useSS && playerName ? safe(() => ssGet(`/search/all?q=${enc}`),  "SS search", errors) : Promise.resolve(null),
-      useFM && playerName ? safe(() => fmGet(`/search?term=${enc}`),   "FM search", errors) : Promise.resolve(null),
-    ]);
-
-    // Extraire les IDs
-    let tmId: string | null = tmIdFromUrl ?? null;
-    let ssId: string | null = null;
-    let fmId: string | null = null;
-
-    if (tmId) {
-      // ID extrait directement depuis l'URL — on marque TM sans passer par la recherche
-      sources.push("Transfermarkt (lien direct)");
-    } else if (tmSearch) {
-      tmId = tmExtractSearch(tmSearch, out);
-      if (tmId) sources.push("Transfermarkt");
+    for (const season of [2024, 2023]) {
+      const data = await safe(
+        () => afGet(`/players?search=${q}&season=${season}`),
+        `AF saison ${season}`,
+        errors,
+      );
+      if (data?.response?.length > 0) {
+        entry = data.response[0];
+        break;
+      }
     }
-    if (ssSearch) { ssId = ssExtractSearch(ssSearch, out); if (ssId) sources.push("SofaScore"); }
-    if (fmSearch) { fmId = fmExtractSearch(fmSearch);      if (fmId) sources.push("FotMob"); }
 
-    // Stocker le lien TM original si fourni
-    if (tmUrl) out.lien = tmUrl;
+    if (entry) {
+      extractAFPlayer(entry, out);
+      sources.push("API-Football");
+    }
 
-    // ── PHASE 2 : données détaillées en parallèle ─────────────────────────────
-    await Promise.all([
-      // TM : profil complet
-      tmId ? safe(async () => {
-        const p = await tmGet(`/players/${tmId}/profile`);
-        tmExtractProfile(p, out);
-      }, "TM profile", errors) : Promise.resolve(),
-
-      // TM : valeur marchande peak
-      tmId ? safe(async () => {
-        const mv = await tmGet(`/players/${tmId}/market_value`);
-        tmExtractMarketValue(mv, out);
-      }, "TM market_value", errors) : Promise.resolve(),
-
-      // SofaScore : stats saison (source primaire)
-      ssId ? safe(async () => {
-        const st = await ssGet(`/player/${ssId}/statistics/season`);
-        ssExtractStats(st, out);
-      }, "SS stats", errors) : Promise.resolve(),
-
-      // FotMob : stats saison (comble les trous)
-      fmId ? safe(async () => {
-        const d = await fmGet(`/playerData?id=${fmId}`);
-        fmExtractPlayerData(d, out);
-      }, "FM playerData", errors) : Promise.resolve(),
-    ]);
+    // ── Si tmUrl fourni, stocker le lien (valeur marchande à venir via TM) ─
+    if (tmUrl) {
+      out.lien = tmUrl;
+      // TODO: décommenter Source 2 pour récupérer valeur marchande + contrat + agent
+    }
 
     const fieldsFound = Object.keys(out).filter(k => out[k] != null && out[k] !== "").length;
     return Response.json({
