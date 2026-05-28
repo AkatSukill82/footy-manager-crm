@@ -377,15 +377,15 @@ export default function PlayerDetailPage() {
                     </div>
                   )}
                   
-                  {player.contrat_fin && (
+                  {player.contrat_fin && (() => { const d = new Date(player.contrat_fin); return !isNaN(d) && (
                     <div className="flex items-center gap-3">
                       <Calendar className="w-5 h-5 text-slate-400" />
                       <div>
                         <p className="text-sm text-slate-600">{t(lang, 'playerDetail.contractEnd')}</p>
-                        <p className="font-semibold">{format(new Date(player.contrat_fin), "dd/MM/yyyy")}</p>
+                        <p className="font-semibold">{format(d, "dd/MM/yyyy")}</p>
                       </div>
                     </div>
-                  )}
+                  ); })()}
                 </div>
               </CardContent>
             </Card>
