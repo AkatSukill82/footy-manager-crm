@@ -244,12 +244,12 @@ Réponds en JSON: {"note": "texte complet du rapport ici"}`,
         if (tmRes?.errors?.length) errors.push(...tmRes.errors);
       } catch (e) { errors.push(`Transfermarkt: ${e.message}`); }
 
-      // Étape 2 — SofaScore (stats de match)
-      setEnrichResult({ pending: true, step: 'SofaScore…' });
+      // Étape 2 — SofaScore + FotMob (stats de match, en parallèle côté serveur)
+      setEnrichResult({ pending: true, step: 'Stats (SofaScore + FotMob)…' });
       try {
         const ssRes = await base44.functions.invoke('enrichPlayerFromAPI', {
           playerName: fullName,
-          source: 'sofascore',
+          source: 'stats',
         });
         if (ssRes?.data && Object.keys(ssRes.data).length > 0) {
           await base44.entities.Player.update(id, ssRes.data);
