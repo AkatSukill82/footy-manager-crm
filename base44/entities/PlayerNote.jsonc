@@ -1,50 +1,39 @@
 {
-  "name": "ActivityLog",
+  "name": "PlayerNote",
   "type": "object",
   "properties": {
-    "entity_type": {
+    "player_id": {
+      "type": "string",
+      "description": "ID du joueur"
+    },
+    "note": {
+      "type": "string",
+      "description": "Notes et observations personnelles"
+    },
+    "evaluation": {
+      "type": "number",
+      "description": "Note d'\u00e9valuation sur 10",
+      "minimum": 0,
+      "maximum": 10
+    },
+    "interet": {
       "type": "string",
       "enum": [
-        "Player",
-        "Club"
+        "Tr\u00e8s \u00e9lev\u00e9",
+        "\u00c9lev\u00e9",
+        "Moyen",
+        "Faible"
       ],
-      "description": "Type d'entit\u00e9 modifi\u00e9e"
+      "description": "Niveau d'int\u00e9r\u00eat"
     },
-    "entity_id": {
+    "date_observation": {
       "type": "string",
-      "description": "ID de l'entit\u00e9 modifi\u00e9e"
-    },
-    "entity_name": {
-      "type": "string",
-      "description": "Nom de l'entit\u00e9 (joueur ou club)"
-    },
-    "action": {
-      "type": "string",
-      "enum": [
-        "create",
-        "update",
-        "delete"
-      ],
-      "description": "Type d'action effectu\u00e9e"
-    },
-    "champs_modifies": {
-      "type": "string",
-      "description": "Champs modifi\u00e9s (JSON stringifi\u00e9)"
-    },
-    "user_email": {
-      "type": "string",
-      "description": "Email de l'utilisateur ayant effectu\u00e9 l'action"
-    },
-    "user_name": {
-      "type": "string",
-      "description": "Nom affich\u00e9 de l'utilisateur"
+      "format": "date",
+      "description": "Date de l'observation"
     }
   },
   "required": [
-    "entity_type",
-    "entity_id",
-    "action",
-    "user_email"
+    "player_id"
   ],
   "rls": {
     "create": {

@@ -1,0 +1,106 @@
+{
+  "name": "Team",
+  "type": "object",
+  "properties": {
+    "nom": {
+      "type": "string",
+      "description": "Nom de l'\u00e9quipe"
+    },
+    "formation": {
+      "type": "string",
+      "enum": [
+        "4-4-2",
+        "4-3-3",
+        "3-5-2",
+        "4-2-3-1",
+        "3-4-3",
+        "5-3-2"
+      ],
+      "default": "4-3-3",
+      "description": "Formation tactique"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description de l'\u00e9quipe"
+    },
+    "budget": {
+      "type": "number",
+      "description": "Budget total de l'\u00e9quipe en millions"
+    },
+    "matchs_joues": {
+      "type": "number",
+      "default": 0,
+      "description": "Nombre de matchs jou\u00e9s"
+    },
+    "victoires": {
+      "type": "number",
+      "default": 0,
+      "description": "Nombre de victoires"
+    },
+    "nuls": {
+      "type": "number",
+      "default": 0,
+      "description": "Nombre de matchs nuls"
+    },
+    "defaites": {
+      "type": "number",
+      "default": 0,
+      "description": "Nombre de d\u00e9faites"
+    },
+    "buts_pour": {
+      "type": "number",
+      "default": 0,
+      "description": "Buts marqu\u00e9s"
+    },
+    "buts_contre": {
+      "type": "number",
+      "default": 0,
+      "description": "Buts encaiss\u00e9s"
+    }
+  },
+  "required": [
+    "nom",
+    "formation"
+  ],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -485,30 +485,51 @@
     "note_globale_scout": {
       "type": "number",
       "description": "Note globale scout (0-100)"
-    },
-    "note_technique": {
-      "type": "number",
-      "description": "Note technique du scout (1-10)"
-    },
-    "note_physique": {
-      "type": "number",
-      "description": "Note physique du scout (1-10)"
-    },
-    "note_intelligence": {
-      "type": "number",
-      "description": "Note intelligence de jeu du scout (1-10)"
-    },
-    "note_mental": {
-      "type": "number",
-      "description": "Note mental / caractère du scout (1-10)"
-    },
-    "note_attitude": {
-      "type": "number",
-      "description": "Note attitude, comportement et esprit d'équipe du scout (1-10)"
     }
   },
   "required": [
     "nom",
     "poste"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
 }

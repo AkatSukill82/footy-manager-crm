@@ -1,0 +1,109 @@
+{
+  "name": "PlayerCareerHistory",
+  "type": "object",
+  "properties": {
+    "player_id": {
+      "type": "string",
+      "description": "ID du joueur"
+    },
+    "club": {
+      "type": "string",
+      "description": "Nom du club"
+    },
+    "debut": {
+      "type": "string",
+      "description": "Date de d\u00e9but (YYYY-MM-DD)"
+    },
+    "fin": {
+      "type": "string",
+      "description": "Date de fin (YYYY-MM-DD ou null si actuel)"
+    },
+    "matchs": {
+      "type": "number",
+      "description": "Matchs jou\u00e9s"
+    },
+    "buts": {
+      "type": "number",
+      "description": "Buts marqu\u00e9s"
+    },
+    "passes": {
+      "type": "number",
+      "description": "Passes d\u00e9cisives"
+    },
+    "titularisations": {
+      "type": "number",
+      "description": "Titularisations"
+    },
+    "minutes": {
+      "type": "number",
+      "description": "Minutes jou\u00e9es"
+    },
+    "ligue": {
+      "type": "string",
+      "description": "Ligue / championnat"
+    },
+    "pays": {
+      "type": "string",
+      "description": "Pays du club"
+    },
+    "type_passage": {
+      "type": "string",
+      "enum": [
+        "Transfert",
+        "Pr\u00eat",
+        "Acad\u00e9mie",
+        "Free agent"
+      ],
+      "description": "Type de passage"
+    },
+    "montant_transfert": {
+      "type": "number",
+      "description": "Montant du transfert en M\u20ac"
+    }
+  },
+  "required": [
+    "player_id",
+    "club"
+  ],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

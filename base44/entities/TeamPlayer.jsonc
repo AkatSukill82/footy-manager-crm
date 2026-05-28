@@ -1,0 +1,79 @@
+{
+  "name": "TeamPlayer",
+  "type": "object",
+  "properties": {
+    "team_id": {
+      "type": "string",
+      "description": "ID de l'\u00e9quipe"
+    },
+    "player_id": {
+      "type": "string",
+      "description": "ID du joueur"
+    },
+    "position_equipe": {
+      "type": "string",
+      "enum": [
+        "Gardien",
+        "D\u00e9fenseur",
+        "Milieu",
+        "Attaquant"
+      ],
+      "description": "Position dans l'\u00e9quipe"
+    },
+    "titulaire": {
+      "type": "boolean",
+      "default": true,
+      "description": "Joueur titulaire ou rempla\u00e7ant"
+    },
+    "numero_maillot": {
+      "type": "number",
+      "description": "Num\u00e9ro de maillot"
+    }
+  },
+  "required": [
+    "team_id",
+    "player_id",
+    "position_equipe"
+  ],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

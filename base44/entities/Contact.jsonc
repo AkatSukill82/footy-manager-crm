@@ -1,0 +1,102 @@
+{
+  "name": "Contact",
+  "type": "object",
+  "properties": {
+    "player_id": {
+      "type": "string",
+      "description": "ID du joueur concern\u00e9"
+    },
+    "date_contact": {
+      "type": "string",
+      "format": "date",
+      "description": "Date du contact"
+    },
+    "type_contact": {
+      "type": "string",
+      "enum": [
+        "Appel t\u00e9l\u00e9phonique",
+        "R\u00e9union",
+        "Email",
+        "Visite",
+        "Autre"
+      ],
+      "description": "Type de contact"
+    },
+    "contact_avec": {
+      "type": "string",
+      "description": "Nom de la personne contact\u00e9e (agent, club, etc.)"
+    },
+    "role_contact": {
+      "type": "string",
+      "enum": [
+        "Agent",
+        "Directeur sportif",
+        "Entra\u00eeneur",
+        "Joueur",
+        "Autre"
+      ],
+      "description": "R\u00f4le de la personne contact\u00e9e"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Notes et r\u00e9sum\u00e9 du contact"
+    },
+    "resultat": {
+      "type": "string",
+      "enum": [
+        "Positif",
+        "Neutre",
+        "N\u00e9gatif",
+        "\u00c0 suivre"
+      ],
+      "default": "Neutre",
+      "description": "R\u00e9sultat du contact"
+    }
+  },
+  "required": [
+    "player_id",
+    "date_contact",
+    "type_contact"
+  ],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -14,45 +14,37 @@
       "type": "string",
       "description": "Ville du club"
     },
-    "ligue": {
-      "type": "string",
-      "description": "Ligue / Championnat"
-    },
     "stade": {
       "type": "string",
       "description": "Nom du stade"
     },
     "capacite_stade": {
       "type": "number",
-      "description": "Capacité du stade"
+      "description": "Capacit\u00e9 du stade"
     },
     "annee_fondation": {
       "type": "number",
-      "description": "Année de fondation"
-    },
-    "couleurs": {
-      "type": "string",
-      "description": "Couleurs du club (ex: Rouge et Blanc)"
+      "description": "Ann\u00e9e de fondation"
     },
     "president": {
       "type": "string",
-      "description": "Président du club"
+      "description": "Pr\u00e9sident du club"
     },
     "president_email": {
       "type": "string",
-      "description": "Email du président"
+      "description": "Email du pr\u00e9sident"
     },
     "president_telephone": {
       "type": "string",
-      "description": "Téléphone du président"
+      "description": "T\u00e9l\u00e9phone du pr\u00e9sident"
     },
     "entraineur": {
       "type": "string",
-      "description": "Entraîneur principal"
+      "description": "Entra\u00eeneur principal"
     },
     "entraineur_email": {
       "type": "string",
-      "description": "Email de l'entraîneur"
+      "description": "Email de l'entra\u00eeneur"
     },
     "directeur_sportif": {
       "type": "string",
@@ -64,15 +56,15 @@
     },
     "directeur_sportif_telephone": {
       "type": "string",
-      "description": "Téléphone du directeur sportif"
+      "description": "T\u00e9l\u00e9phone du directeur sportif"
     },
-    "email": {
+    "email_general": {
       "type": "string",
-      "description": "Email général du club"
+      "description": "Email g\u00e9n\u00e9ral du club"
     },
-    "telephone": {
+    "telephone_general": {
       "type": "string",
-      "description": "Téléphone général du club"
+      "description": "T\u00e9l\u00e9phone g\u00e9n\u00e9ral du club"
     },
     "site_web": {
       "type": "string",
@@ -88,23 +80,7 @@
     },
     "adresse": {
       "type": "string",
-      "description": "Adresse du siège"
-    },
-    "contact_nom": {
-      "type": "string",
-      "description": "Nom de la personne de contact"
-    },
-    "contact_poste": {
-      "type": "string",
-      "description": "Poste de la personne de contact"
-    },
-    "contact_email": {
-      "type": "string",
-      "description": "Email de la personne de contact"
-    },
-    "contact_telephone": {
-      "type": "string",
-      "description": "Téléphone de la personne de contact"
+      "description": "Adresse du si\u00e8ge"
     },
     "budget_annuel": {
       "type": "number",
@@ -124,7 +100,7 @@
     },
     "palmares": {
       "type": "string",
-      "description": "Palmarès (titres séparés par virgules)"
+      "description": "Palmar\u00e8s (titres s\u00e9par\u00e9s par virgules)"
     },
     "historique": {
       "type": "string",
@@ -139,15 +115,56 @@
       "enum": [
         "Elite",
         "Premier plan",
-        "Intermédiaire",
-        "En développement"
+        "Interm\u00e9diaire",
+        "En d\u00e9veloppement"
       ],
-      "default": "Intermédiaire",
-      "description": "Catégorie du club"
+      "default": "Interm\u00e9diaire",
+      "description": "Cat\u00e9gorie du club"
     }
   },
   "required": [
     "nom",
     "pays"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
 }

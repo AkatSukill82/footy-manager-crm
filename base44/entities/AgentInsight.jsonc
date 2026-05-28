@@ -1,0 +1,75 @@
+{
+  "name": "AgentInsight",
+  "type": "object",
+  "properties": {
+    "categorie": {
+      "type": "string",
+      "enum": [
+        "tendance_marche",
+        "performance_joueur",
+        "opportunite_transfert",
+        "analyse_equipe",
+        "prevision"
+      ],
+      "description": "Cat\u00e9gorie d'insight"
+    },
+    "titre": {
+      "type": "string",
+      "description": "Titre de l'insight"
+    },
+    "contenu": {
+      "type": "string",
+      "description": "Contenu d\u00e9taill\u00e9 de l'insight"
+    },
+    "donnees_source": {
+      "type": "string",
+      "description": "Donn\u00e9es sources utilis\u00e9es"
+    },
+    "confiance": {
+      "type": "number",
+      "description": "Score de confiance (0-100)"
+    },
+    "player_ids": {
+      "type": "string",
+      "description": "IDs des joueurs concern\u00e9s (s\u00e9par\u00e9s par virgules)"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "haute",
+        "moyenne",
+        "basse"
+      ],
+      "default": "moyenne",
+      "description": "Niveau de priorit\u00e9"
+    }
+  },
+  "required": [
+    "categorie",
+    "titre",
+    "contenu"
+  ],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}

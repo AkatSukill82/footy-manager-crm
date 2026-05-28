@@ -1,50 +1,56 @@
 {
-  "name": "ActivityLog",
+  "name": "Transfer",
   "type": "object",
   "properties": {
-    "entity_type": {
+    "player_id": {
+      "type": "string",
+      "description": "ID du joueur concern\u00e9"
+    },
+    "date_transfert": {
+      "type": "string",
+      "format": "date",
+      "description": "Date du transfert"
+    },
+    "club_depart": {
+      "type": "string",
+      "description": "Club de d\u00e9part"
+    },
+    "club_arrivee": {
+      "type": "string",
+      "description": "Club d'arriv\u00e9e"
+    },
+    "montant": {
+      "type": "number",
+      "description": "Montant du transfert en millions d'euros"
+    },
+    "type_transfert": {
       "type": "string",
       "enum": [
-        "Player",
-        "Club"
+        "Transfert d\u00e9finitif",
+        "Pr\u00eat",
+        "Libre",
+        "Fin de pr\u00eat"
       ],
-      "description": "Type d'entit\u00e9 modifi\u00e9e"
+      "description": "Type de transfert"
     },
-    "entity_id": {
+    "duree_contrat": {
       "type": "string",
-      "description": "ID de l'entit\u00e9 modifi\u00e9e"
+      "description": "Dur\u00e9e du contrat sign\u00e9 (ex: 3 ans, jusqu'en 2027)"
     },
-    "entity_name": {
+    "date_fin_pret": {
       "type": "string",
-      "description": "Nom de l'entit\u00e9 (joueur ou club)"
+      "format": "date",
+      "description": "Date de fin de pr\u00eat (si pr\u00eat)"
     },
-    "action": {
+    "notes": {
       "type": "string",
-      "enum": [
-        "create",
-        "update",
-        "delete"
-      ],
-      "description": "Type d'action effectu\u00e9e"
-    },
-    "champs_modifies": {
-      "type": "string",
-      "description": "Champs modifi\u00e9s (JSON stringifi\u00e9)"
-    },
-    "user_email": {
-      "type": "string",
-      "description": "Email de l'utilisateur ayant effectu\u00e9 l'action"
-    },
-    "user_name": {
-      "type": "string",
-      "description": "Nom affich\u00e9 de l'utilisateur"
+      "description": "Notes compl\u00e9mentaires sur le transfert"
     }
   },
   "required": [
-    "entity_type",
-    "entity_id",
-    "action",
-    "user_email"
+    "player_id",
+    "date_transfert",
+    "club_arrivee"
   ],
   "rls": {
     "create": {

@@ -1,50 +1,60 @@
 {
-  "name": "ActivityLog",
+  "name": "Reminder",
   "type": "object",
   "properties": {
-    "entity_type": {
+    "player_id": {
+      "type": "string",
+      "description": "ID du joueur concern\u00e9"
+    },
+    "titre": {
+      "type": "string",
+      "description": "Titre du rappel"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description d\u00e9taill\u00e9e"
+    },
+    "date_rappel": {
+      "type": "string",
+      "format": "date",
+      "description": "Date du rappel"
+    },
+    "priorite": {
       "type": "string",
       "enum": [
-        "Player",
-        "Club"
+        "Haute",
+        "Moyenne",
+        "Basse"
       ],
-      "description": "Type d'entit\u00e9 modifi\u00e9e"
+      "default": "Moyenne",
+      "description": "Niveau de priorit\u00e9"
     },
-    "entity_id": {
-      "type": "string",
-      "description": "ID de l'entit\u00e9 modifi\u00e9e"
-    },
-    "entity_name": {
-      "type": "string",
-      "description": "Nom de l'entit\u00e9 (joueur ou club)"
-    },
-    "action": {
+    "statut": {
       "type": "string",
       "enum": [
-        "create",
-        "update",
-        "delete"
+        "\u00c0 faire",
+        "En cours",
+        "Termin\u00e9"
       ],
-      "description": "Type d'action effectu\u00e9e"
+      "default": "\u00c0 faire",
+      "description": "Statut du rappel"
     },
-    "champs_modifies": {
+    "type": {
       "type": "string",
-      "description": "Champs modifi\u00e9s (JSON stringifi\u00e9)"
-    },
-    "user_email": {
-      "type": "string",
-      "description": "Email de l'utilisateur ayant effectu\u00e9 l'action"
-    },
-    "user_name": {
-      "type": "string",
-      "description": "Nom affich\u00e9 de l'utilisateur"
+      "enum": [
+        "Appeler",
+        "Rencontrer",
+        "Envoyer email",
+        "Suivre dossier",
+        "Autre"
+      ],
+      "description": "Type d'action \u00e0 faire"
     }
   },
   "required": [
-    "entity_type",
-    "entity_id",
-    "action",
-    "user_email"
+    "player_id",
+    "titre",
+    "date_rappel"
   ],
   "rls": {
     "create": {

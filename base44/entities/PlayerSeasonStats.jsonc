@@ -1,0 +1,116 @@
+{
+  "name": "PlayerSeasonStats",
+  "type": "object",
+  "properties": {
+    "player_id": {
+      "type": "string",
+      "description": "ID du joueur"
+    },
+    "saison": {
+      "type": "string",
+      "description": "Saison ex: 2024/2025"
+    },
+    "club": {
+      "type": "string",
+      "description": "Club lors de cette saison"
+    },
+    "ligue": {
+      "type": "string",
+      "description": "Ligue / comp\u00e9tition"
+    },
+    "matchs": {
+      "type": "number"
+    },
+    "titularisations": {
+      "type": "number"
+    },
+    "minutes": {
+      "type": "number"
+    },
+    "buts": {
+      "type": "number"
+    },
+    "passes_decisives": {
+      "type": "number"
+    },
+    "cartons_jaunes": {
+      "type": "number"
+    },
+    "cartons_rouges": {
+      "type": "number"
+    },
+    "note_sofascore": {
+      "type": "number"
+    },
+    "xg": {
+      "type": "number"
+    },
+    "xa": {
+      "type": "number"
+    },
+    "tirs_par_match": {
+      "type": "number"
+    },
+    "passes_reussies_pct": {
+      "type": "number"
+    },
+    "duels_gagnes_pct": {
+      "type": "number"
+    },
+    "dribbles_reussis": {
+      "type": "number"
+    },
+    "interceptions": {
+      "type": "number"
+    },
+    "clean_sheets": {
+      "type": "number",
+      "description": "Pour les gardiens"
+    }
+  },
+  "required": [
+    "player_id",
+    "saison"
+  ],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

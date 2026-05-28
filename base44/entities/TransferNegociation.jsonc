@@ -1,0 +1,110 @@
+{
+  "name": "TransferNegociation",
+  "type": "object",
+  "properties": {
+    "player_id": {
+      "type": "string",
+      "description": "ID du joueur concern\u00e9"
+    },
+    "club_vendeur": {
+      "type": "string",
+      "description": "Club vendeur"
+    },
+    "club_acheteur": {
+      "type": "string",
+      "description": "Club acheteur"
+    },
+    "montant_propose": {
+      "type": "number",
+      "description": "Montant propos\u00e9 en millions"
+    },
+    "montant_demande": {
+      "type": "number",
+      "description": "Montant demand\u00e9 en millions"
+    },
+    "statut": {
+      "type": "string",
+      "enum": [
+        "demande_initiale",
+        "en_negociation",
+        "offre_acceptee",
+        "offre_refusee",
+        "transfert_finalise",
+        "annule"
+      ],
+      "default": "demande_initiale",
+      "description": "Statut de la n\u00e9gociation"
+    },
+    "date_debut": {
+      "type": "string",
+      "format": "date",
+      "description": "Date de d\u00e9but de la n\u00e9gociation"
+    },
+    "date_limite": {
+      "type": "string",
+      "format": "date",
+      "description": "Date limite de la n\u00e9gociation"
+    },
+    "notes_negociation": {
+      "type": "string",
+      "description": "Notes sur la n\u00e9gociation"
+    },
+    "priorite": {
+      "type": "string",
+      "enum": [
+        "haute",
+        "moyenne",
+        "basse"
+      ],
+      "default": "moyenne",
+      "description": "Priorit\u00e9 de la n\u00e9gociation"
+    }
+  },
+  "required": [
+    "player_id",
+    "club_acheteur",
+    "montant_propose",
+    "statut"
+  ],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}
