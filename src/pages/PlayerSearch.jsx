@@ -99,7 +99,9 @@ export default function PlayerSearchPage() {
     }
   };
 
-  // ── Étape 2 : profil complet depuis TM + enrichissement LLM ─────────────────
+  const [enriching, setEnriching] = useState(false);
+
+  // ── Étape 2 : profil complet depuis TM + API-Football uniquement (pas de LLM) ─
   const fetchFullProfile = async (tmId, playerName) => {
     setLoadingFull(true);
     setResult(null);
@@ -115,67 +117,25 @@ export default function PlayerSearchPage() {
 
       const crmData = TransfermarktAPI.buildCRMPlayer(profile, stats, marketValue, transfers);
 
-      // 2 + 3. API-Football ET LLM en parallèle (gain ~10s vs séquentiel)
-      setLoadingStatus("Chargement stats et analyse scout…");
-      const [afResult, llmResult] = await Promise.allSettled([
-        // Stats officielles API-Football
-        base44.functions.invoke("apiFootballProxy", {
-          action: "searchPlayer",
-          name: profile.name,
-        }),
-        // Analyse qualitative LLM (uniquement description/style/forces/faiblesses/palmarès)
-        base44.integrations.Core.InvokeLLM({
-          prompt: `Profil scout qualitatif pour ${profile.name} (football professionnel, club : ${profile.club?.name || 'inconnu'}).
+      // 2. Stats API-Football en parallèle avec TM (déjà lancé)
+      setLoadingStatus("Chargement des statistiques officielles…");
+      const afResult = await base44.functions.invoke("apiFootballProxy", {
+        action: "searchPlayer",
+        name: profile.name,
+      }).catch(() => null);
 
-Retourne UNIQUEMENT des données qualitatives — NE PAS inclure de statistiques numériques.
-- Description biographique courte (2-3 phrases)
-- Style de jeu
-- Points forts (forces)
-- Points faibles (faiblesses)
-- Palmarès (titres remportés)
-- Distinctions individuelles
-- Note globale scout estimée (0-100)
-
-Si inconnu = null. NE PAS INVENTER.`,
-          add_context_from_internet: true,
-          response_json_schema: {
-            type: "object",
-            properties: {
-              description:        { type: "string" },
-              style_jeu:          { type: "string" },
-              forces:             { type: "string" },
-              faiblesses:         { type: "string" },
-              note_globale_scout: { type: "number" },
-              distinctions:       { type: "string" },
-              palmares:           { type: "array", items: { type: "string" } },
-            },
-          },
-        }),
-      ]);
-
-      const afPlayer = afResult.status === "fulfilled" ? afResult.value?.players?.[0] ?? null : null;
-      const llmEnrichment = llmResult.status === "fulfilled" ? (llmResult.value || {}) : {};
-
-      // 4. Fusion TM + API-Football + LLM qualitatif
+      const afPlayer = afResult?.players?.[0] ?? null;
       const afS = afPlayer?.stats_saison;
+
+      // 3. Fusion TM + API-Football uniquement — pas de LLM, pas de données inventées
       const merged = {
         ...crmData,
         nom_complet: profile.name,
-        // Photo : API-Football en priorité (CDN sans restriction), TM en fallback
-        // Les URLs Transfermarkt nécessitent referrerPolicy="no-referrer" côté navigateur
         photo_url: afPlayer?.photo_url || crmData.photo_url || null,
-        // Physique depuis API-Football (plus fiable que LLM)
         poids: afPlayer?.poids || null,
         taille: crmData.taille || afPlayer?.taille || null,
-        // Qualitatif LLM uniquement
-        description:        llmEnrichment.description,
-        style_jeu:          llmEnrichment.style_jeu,
-        forces:             llmEnrichment.forces,
-        faiblesses:         llmEnrichment.faiblesses,
-        note_globale_scout: llmEnrichment.note_globale_scout,
-        distinctions:       llmEnrichment.distinctions,
-        palmares:           llmEnrichment.palmares || [],
-        // Stats saison : API-Football en priorité, Transfermarkt en fallback
+        // Pas de champs LLM ici — l'utilisateur peut les remplir manuellement
+        // ou via le bouton "Analyse IA" optionnel ci-dessous
         stats_saison: afS
           ? {
               saison:           afS.saison || "2024/2025",
@@ -194,14 +154,9 @@ Si inconnu = null. NE PAS INVENTER.`,
               interceptions:    afS.interceptions,
               source:           "API-Football",
             }
-          : {
-              saison:           "2024/2025",
-              matchs:           crmData.matchs_joues,
-              buts:             crmData.buts,
-              passes_decisives: crmData.passes_decisives,
-              minutes:          crmData.minutes_jouees,
-              source:           "Transfermarkt",
-            },
+          : crmData.stats_saison
+            ? { ...crmData.stats_saison, source: "Transfermarkt" }
+            : null,
       };
 
       setResult(merged);
@@ -210,6 +165,48 @@ Si inconnu = null. NE PAS INVENTER.`,
     } finally {
       setLoadingFull(false);
       setLoadingStatus("");
+    }
+  };
+
+  // ── Enrichissement IA optionnel (bouton manuel) ──────────────────────────────
+  const handleEnrichWithAI = async () => {
+    if (!result || enriching) return;
+    setEnriching(true);
+    try {
+      const llmResult = await base44.integrations.Core.InvokeLLM({
+        prompt: `Profil scout qualitatif pour ${result.nom_complet || result.nom} (football professionnel, club : ${result.club_actuel || 'inconnu'}).
+
+IMPORTANT : retourne uniquement ce que tu sais avec certitude. Si une info est incertaine ou inconnue, mets null — ne génère jamais de données inventées.
+
+Champs attendus (tous optionnels) :
+- description : biographie courte (2-3 phrases, joueur réel uniquement)
+- style_jeu : style de jeu caractéristique
+- forces : points forts principaux
+- faiblesses : points faibles connus
+- palmares : liste de titres collectifs remportés (seulement si certain)
+- distinctions : récompenses individuelles (Ballon d'or, soulier d'or, etc.)
+- note_globale_scout : estimation /100 basée sur le niveau réel (null si inconnu)`,
+        add_context_from_internet: true,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            description:        { type: "string" },
+            style_jeu:          { type: "string" },
+            forces:             { type: "string" },
+            faiblesses:         { type: "string" },
+            note_globale_scout: { type: "number" },
+            distinctions:       { type: "string" },
+            palmares:           { type: "array", items: { type: "string" } },
+          },
+        },
+      });
+      if (llmResult) {
+        setResult(prev => ({ ...prev, ...llmResult, palmares: llmResult.palmares || prev.palmares || [] }));
+      }
+    } catch {
+      // ignore silently
+    } finally {
+      setEnriching(false);
     }
   };
 
@@ -699,17 +696,39 @@ Si inconnu = null. NE PAS INVENTER.`,
               )}
             </div>
 
-            {/* Profil scout */}
-            {(result.style_jeu || result.forces || result.faiblesses) && (
+            {/* Profil scout — affiché si enrichissement IA lancé, sinon bouton optionnel */}
+            {(result.style_jeu || result.forces || result.faiblesses) ? (
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2"><Star className="w-4 h-4 text-amber-500" /> {t(lang,'playerSearch.scoutProfile')}</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm flex items-center gap-2"><Star className="w-4 h-4 text-amber-500" /> {t(lang,'playerSearch.scoutProfile')}</CardTitle>
+                    <span className="text-[10px] bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full">Généré par IA · à vérifier</span>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {result.style_jeu && <div><p className="text-xs font-semibold text-slate-400 uppercase mb-1">{t(lang,'playerSearch.playStyle')}</p><p className="text-sm text-slate-700">{result.style_jeu}</p></div>}
                   {result.forces && <div><p className="text-xs font-semibold text-green-600 uppercase mb-1">{t(lang,'playerSearch.strengths')}</p><p className="text-sm text-slate-700">{result.forces}</p></div>}
                   {result.faiblesses && <div><p className="text-xs font-semibold text-red-500 uppercase mb-1">{t(lang,'playerSearch.weaknesses')}</p><p className="text-sm text-slate-700">{result.faiblesses}</p></div>}
                   {result.note_globale_scout != null && <div className="flex items-center gap-2"><Star className="w-4 h-4 text-amber-400" /><span className="font-bold text-lg">{result.note_globale_scout}/100</span><span className="text-xs text-slate-500">{t(lang,'playerSearch.scoutRating')}</span></div>}
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-dashed border-slate-200 bg-slate-50/50">
+                <CardContent className="py-5 flex flex-col sm:flex-row items-center gap-4">
+                  <div className="flex-1">
+                    <p className="font-medium text-slate-700 text-sm">Analyse scout IA (optionnel)</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Style de jeu, forces, faiblesses, palmarès — généré par IA à partir de sources web. À vérifier avant utilisation.</p>
+                  </div>
+                  <Button
+                    onClick={handleEnrichWithAI}
+                    disabled={enriching}
+                    variant="outline"
+                    size="sm"
+                    className="flex-shrink-0 border-amber-300 text-amber-700 hover:bg-amber-50"
+                  >
+                    {enriching ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Zap className="w-4 h-4 mr-2" />}
+                    {enriching ? "Analyse en cours…" : "Lancer l'analyse IA"}
+                  </Button>
                 </CardContent>
               </Card>
             )}
