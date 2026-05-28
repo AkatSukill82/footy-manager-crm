@@ -111,10 +111,10 @@ const normalizePlayer = (entry: any) => {
 Deno.serve(async (req) => {
   try {
     const { action, name, id, season, teamId, league } = await req.json();
-    const currentSeason = 2025;
+    const currentSeason = 2024;
 
     if (action === "searchPlayer") {
-      // Tente les 3 dernières saisons disponibles
+      // Tente les 3 dernières saisons disponibles (plan gratuit : 2022-2024)
       for (const s of [currentSeason, currentSeason - 1, currentSeason - 2]) {
         const q = encodeURIComponent((name || "").trim());
         const data = await afGet(`/players?search=${q}&season=${s}`);
@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
 
     if (action === "getPlayer") {
       if (!id) return Response.json({ ok: false, error: "id requis" });
-      // Stats saison courante
+      // Stats saison courante (plan gratuit : 2022-2024)
       for (const s of [currentSeason, currentSeason - 1]) {
         const data = await afGet(`/players?id=${id}&season=${s}`);
         const entries = data.response || [];
@@ -147,8 +147,8 @@ Deno.serve(async (req) => {
     if (action === "getPlayerFull") {
       if (!id) return Response.json({ ok: false, error: "id requis" });
 
-      // 7 appels en parallèle : 5 saisons + transferts + blessures
-      const seasons = [2025, 2024, 2023, 2022, 2021];
+      // 7 appels en parallèle : 5 saisons + transferts + blessures (plan gratuit : 2022-2024)
+      const seasons = [2024, 2023, 2022, 2021, 2020];
       const results = await Promise.allSettled([
         ...seasons.map(s => afGet(`/players?id=${id}&season=${s}`)),
         afGet(`/transfers?player=${id}`),
@@ -279,7 +279,7 @@ Deno.serve(async (req) => {
 
     if (action === "getStandings") {
       if (!league) return Response.json({ ok: false, error: "league requis" });
-      const s = season ?? currentSeason;
+      const s = season ?? 2024;
       const data = await afGet(`/standings?league=${league}&season=${s}`);
       const rows = data.response?.[0]?.league?.standings?.[0] || [];
       const standings = rows.map((e: any) => ({
@@ -300,7 +300,7 @@ Deno.serve(async (req) => {
 
     if (action === "getFixtures") {
       if (!teamId) return Response.json({ ok: false, error: "teamId requis" });
-      const s = season ?? currentSeason;
+      const s = season ?? 2024;
 
       const normalizeFixture = (f: any) => ({
         date:              f.fixture?.date || null,
@@ -332,7 +332,7 @@ Deno.serve(async (req) => {
 
     if (action === "getTopScorers") {
       if (!league) return Response.json({ ok: false, error: "league requis" });
-      const s = season ?? currentSeason;
+      const s = season ?? 2024;
       const data = await afGet(`/players/topscorers?league=${league}&season=${s}`);
       const players = (data.response || []).slice(0, 20).map(normalizePlayer).filter(Boolean);
       return Response.json({ ok: true, players });
@@ -340,7 +340,7 @@ Deno.serve(async (req) => {
 
     if (action === "getTopAssists") {
       if (!league) return Response.json({ ok: false, error: "league requis" });
-      const s = season ?? currentSeason;
+      const s = season ?? 2024;
       const data = await afGet(`/players/topassists?league=${league}&season=${s}`);
       const players = (data.response || []).slice(0, 20).map(normalizePlayer).filter(Boolean);
       return Response.json({ ok: true, players });
