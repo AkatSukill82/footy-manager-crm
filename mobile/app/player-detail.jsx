@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Star, Edit2, Trash2, Phone, FileText, Plus, Sparkles, Clock, Mic } from 'lucide-react-native';
+import { ArrowLeft, Star, Edit2, Trash2, Phone, FileText, Plus, Sparkles, Clock, Mic, RefreshCw } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { base44, uploadFileRN } from '../src/api/base44Client';
 import { getToken } from '../src/lib/app-params';
@@ -56,6 +56,8 @@ export default function PlayerDetailPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [showQuickContact, setShowQuickContact] = useState(false);
+  const [enriching, setEnriching] = useState(false);
+  const [enrichResult, setEnrichResult] = useState(null);
   const [noteText, setNoteText] = useState('');
   const [audioUri, setAudioUri] = useState(null);
   const [isGeneratingNote, setIsGeneratingNote] = useState(false);
@@ -215,6 +217,28 @@ Réponds en JSON: {"note": "texte complet du rapport ici"}`,
     addNoteMutation.mutate(noteData);
   };
 
+  const handleEnrich = async () => {
+    if (!player) return;
+    setEnriching(true);
+    setEnrichResult(null);
+    try {
+      const fullName = [player.prenom, player.nom].filter(Boolean).join(' ');
+      const res = await base44.functions.invoke('enrichPlayerFromAPI', { playerName: fullName });
+      if (res?.data && Object.keys(res.data).length > 0) {
+        await base44.entities.Player.update(id, res.data);
+        queryClient.invalidateQueries({ queryKey: ['player', id] });
+        queryClient.invalidateQueries({ queryKey: ['players'] });
+        setEnrichResult({ ok: true, fields: res.fieldsFound, sources: res.sources });
+      } else {
+        setEnrichResult({ ok: false, errors: res?.errors });
+      }
+    } catch (e) {
+      setEnrichResult({ ok: false, errors: [e.message] });
+    } finally {
+      setEnriching(false);
+    }
+  };
+
   const handleDelete = () => {
     Alert.alert('Supprimer le joueur', 'Cette action est irréversible.', [
       { text: 'Annuler', style: 'cancel' },
@@ -244,6 +268,15 @@ Réponds en JSON: {"note": "texte complet du rapport ici"}`,
                 className={`p-2 rounded-xl ${watchEntry ? 'bg-yellow-50' : 'bg-slate-50'}`}
               >
                 <Star size={20} color={watchEntry ? '#f59e0b' : '#94a3b8'} fill={watchEntry ? '#f59e0b' : 'none'} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleEnrich}
+                disabled={enriching}
+                className="p-2 bg-blue-50 rounded-xl"
+              >
+                {enriching
+                  ? <ActivityIndicator size={18} color="#3b82f6" />
+                  : <RefreshCw size={20} color="#3b82f6" />}
               </TouchableOpacity>
               <TouchableOpacity onPress={() => { setEditForm({ ...player }); setShowEditModal(true); }} className="p-2 bg-slate-50 rounded-xl">
                 <Edit2 size={20} color="#64748b" />
@@ -278,6 +311,32 @@ Réponds en JSON: {"note": "texte complet du rapport ici"}`,
             </View>
           </View>
         </View>
+
+        {/* Bannière résultat enrichissement */}
+        {enrichResult && (
+          <TouchableOpacity onPress={() => setEnrichResult(null)} activeOpacity={0.8}>
+            <View className={`mx-4 mt-3 px-4 py-3 rounded-xl flex-row items-center gap-3 ${enrichResult.ok ? 'bg-blue-50 border border-blue-200' : 'bg-red-50 border border-red-200'}`}>
+              <RefreshCw size={16} color={enrichResult.ok ? '#3b82f6' : '#ef4444'} />
+              <View className="flex-1">
+                {enrichResult.ok ? (
+                  <>
+                    <Text className="text-sm font-semibold text-blue-800">
+                      {enrichResult.fields} champs mis à jour
+                    </Text>
+                    <Text className="text-xs text-blue-500">
+                      Sources : {enrichResult.sources?.join(' + ')}
+                    </Text>
+                  </>
+                ) : (
+                  <Text className="text-sm text-red-700">
+                    Aucune donnée trouvée — joueur introuvable sur TM/SofaScore
+                  </Text>
+                )}
+              </View>
+              <Text className="text-xs text-slate-400">✕</Text>
+            </View>
+          </TouchableOpacity>
+        )}
 
         <View className="px-4 mt-4 gap-4">
           {/* Stats saison */}
