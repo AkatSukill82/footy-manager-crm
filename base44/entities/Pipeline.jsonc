@@ -27,5 +27,46 @@
     "notes":       { "type": "string", "description": "Notes internes" },
     "date_ajout":  { "type": "string", "description": "Date d'ajout au pipeline (YYYY-MM-DD)" }
   },
-  "required": ["player_nom", "etape"]
+  "required": ["player_nom", "etape"],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        { "created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } },
+        {
+          "$and": [
+            { "data.organization_id": "{{user.data.organization_id}}" },
+            { "data.organization_id": { "$ne": null } }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } },
+        {
+          "$and": [
+            { "data.organization_id": "{{user.data.organization_id}}" },
+            { "data.organization_id": { "$ne": null } }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } },
+        {
+          "$and": [
+            { "data.organization_id": "{{user.data.organization_id}}" },
+            { "data.organization_id": { "$ne": null } }
+          ]
+        }
+      ]
+    }
+  }
 }

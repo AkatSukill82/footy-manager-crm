@@ -30,5 +30,46 @@
     "points_faibles": { "type": "string", "description": "Points faibles observés" },
     "notes_libres":   { "type": "string", "description": "Notes libres du scout" }
   },
-  "required": ["player_nom", "date_match", "note_globale", "recommandation"]
+  "required": ["player_nom", "date_match", "note_globale", "recommandation"],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        { "created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } },
+        {
+          "$and": [
+            { "data.organization_id": "{{user.data.organization_id}}" },
+            { "data.organization_id": { "$ne": null } }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } },
+        {
+          "$and": [
+            { "data.organization_id": "{{user.data.organization_id}}" },
+            { "data.organization_id": { "$ne": null } }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } },
+        {
+          "$and": [
+            { "data.organization_id": "{{user.data.organization_id}}" },
+            { "data.organization_id": { "$ne": null } }
+          ]
+        }
+      ]
+    }
+  }
 }
