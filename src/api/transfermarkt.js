@@ -67,6 +67,60 @@ const TransfermarktAPI = {
     return this._call(`/players/search/${encodeURIComponent(query)}?page_number=${page}`);
   },
 
+  async searchClubs(query, page = 1) {
+    return this._call(`/clubs/search/${encodeURIComponent(query)}?page_number=${page}`);
+  },
+
+  async getClubProfile(tmId) {
+    return this._call(`/clubs/${tmId}/profile`);
+  },
+
+  async getClubPlayers(tmId) {
+    return this._call(`/clubs/${tmId}/players`);
+  },
+
+  // ── Build CRM Club object from TM + AF data ──────────────────────────────
+  buildCRMClub(profile, afTeam) {
+    // Parse fondation year from different formats
+    const foundedYear = (() => {
+      if (!profile?.foundedOn) return afTeam?.annee_fondation || null;
+      const y = parseInt(String(profile.foundedOn).slice(0, 4));
+      return isNaN(y) ? null : y;
+    })();
+
+    // Parse stadium capacity
+    const capacite = (() => {
+      const raw = profile?.stadiumSeats || afTeam?.capacite_stade;
+      if (!raw) return null;
+      const n = parseInt(String(raw).replace(/\D/g, ''));
+      return isNaN(n) ? null : n;
+    })();
+
+    // Parse squad market value (e.g. "€500.00m" or "500.00")
+    const valeurEffectif = (() => {
+      const raw = profile?.squad?.marketValue || profile?.marketValues?.avg || null;
+      if (!raw) return null;
+      const cleaned = String(raw).replace(/[€$£,\s]/g, '').replace('m', '').replace('M', '');
+      const n = parseFloat(cleaned);
+      return isNaN(n) ? null : Math.round(n * 10) / 10;
+    })();
+
+    return {
+      nom:               profile?.name              || '',
+      pays:              profile?.country            || afTeam?.pays || '',
+      ville:             profile?.city               || afTeam?.ville || '',
+      stade:             profile?.stadiumName        || afTeam?.stade || '',
+      capacite_stade:    capacite,
+      annee_fondation:   foundedYear,
+      valeur_effectif:   valeurEffectif,
+      // Logo : API-Football en priorité (pas de CORS), TM en fallback
+      logo_url:          afTeam?.logo               || profile?.imageUrl || '',
+      site_web:          profile?.website            || '',
+      transfermarkt_id:  String(profile?.id          || ''),
+      couleurs:          profile?.colors             || '',
+    };
+  },
+
   async getProfile(tmId) {
     return this._call(`/players/${tmId}/profile`);
   },
