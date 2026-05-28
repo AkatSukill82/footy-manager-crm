@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
-import { base44, setClientToken } from '../api/base44Client';
+import { base44, setClientToken, clearUserCache } from '../api/base44Client';
 import { appParams, getToken, setToken, clearToken } from './app-params';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -75,6 +75,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    clearUserCache();
     await clearToken();
     setUser(null);
     setIsAuthenticated(false);
