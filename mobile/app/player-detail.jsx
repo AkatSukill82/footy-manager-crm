@@ -351,14 +351,30 @@ Réponds en JSON: {"note": "texte complet du rapport ici"}`,
             <CardHeader>
               <View className="flex-row items-center justify-between">
                 <CardTitle>Notes de scouting</CardTitle>
-                <TouchableOpacity onPress={() => setShowNoteModal(true)} className="p-1">
-                  <Plus size={18} color="#16a34a" />
-                </TouchableOpacity>
+                <View className="flex-row gap-1.5">
+                  <TouchableOpacity
+                    onPress={() => setShowNoteModal(true)}
+                    className="flex-row items-center gap-1 px-2.5 py-1.5 bg-purple-50 rounded-lg border border-purple-200"
+                  >
+                    <Mic size={14} color="#8b5cf6" />
+                    <Text className="text-xs font-semibold text-purple-700">Vocale</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setShowNoteModal(true)}
+                    className="flex-row items-center gap-1 px-2.5 py-1.5 bg-green-50 rounded-lg border border-green-200"
+                  >
+                    <Plus size={14} color="#16a34a" />
+                    <Text className="text-xs font-semibold text-green-700">Texte</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </CardHeader>
             <CardContent>
               {notes.length === 0 ? (
-                <Text className="text-sm text-slate-400 text-center py-4">Aucune note — appuyez sur + pour ajouter</Text>
+                <View className="items-center py-4 gap-2">
+                  <Text className="text-sm text-slate-400 text-center">Aucune note de scouting</Text>
+                  <Text className="text-xs text-slate-300 text-center">Appuyez sur "Vocale" pour enregistrer ou "Texte" pour écrire</Text>
+                </View>
               ) : (
                 notes.map(n => (
                   <View key={n.id} className="py-2 border-b border-slate-50 last:border-0">
