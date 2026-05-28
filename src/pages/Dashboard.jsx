@@ -34,37 +34,42 @@ export default function Dashboard() {
     enabled: !!userEmail,
   });
 
+  // Onglet "personnalisé" — chargé uniquement quand actif
   const { data: negociations = [] } = useQuery({
     queryKey: ['dashboard-negociations', userEmail],
     queryFn: () => base44.entities.TransferNegociation.filter({ created_by: userEmail }),
-    enabled: !!userEmail,
+    enabled: !!userEmail && activeView === "personalized",
   });
 
   const { data: insights = [] } = useQuery({
     queryKey: ['dashboard-insights'],
-    queryFn: () => base44.entities.AgentInsight.list('-created_date', 20)
+    queryFn: () => base44.entities.AgentInsight.list('-created_date', 20),
+    enabled: activeView === "personalized",
   });
 
   const { data: reminders = [] } = useQuery({
     queryKey: ['dashboard-reminders', userEmail],
     queryFn: () => base44.entities.Reminder.filter({ created_by: userEmail }),
-    enabled: !!userEmail,
+    enabled: !!userEmail && activeView === "personalized",
   });
 
   const { data: sharedContent = [] } = useQuery({
     queryKey: ['dashboard-shared'],
-    queryFn: () => base44.entities.SharedContent.list('-created_date', 20)
+    queryFn: () => base44.entities.SharedContent.list('-created_date', 20),
+    enabled: activeView === "personalized",
   });
 
+  // Onglet "analytics" — chargé uniquement quand actif
   const { data: transfers = [] } = useQuery({
     queryKey: ['dashboard-transfers'],
-    queryFn: () => base44.entities.Transfer.list()
+    queryFn: () => base44.entities.Transfer.list(),
+    enabled: activeView === "analytics",
   });
 
   const { data: teams = [] } = useQuery({
     queryKey: ['dashboard-teams', userEmail],
     queryFn: () => base44.entities.Team.filter({ created_by: userEmail }),
-    enabled: !!userEmail,
+    enabled: !!userEmail && activeView === "analytics",
   });
 
   const totalPlayers = players.length;
@@ -130,7 +135,6 @@ export default function Dashboard() {
               value={`${watchListValue.toFixed(1)}M €`}
               subtitle={t(lang, 'dashboard.myListDesc')}
               color="orange" />
-
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -142,16 +146,16 @@ export default function Dashboard() {
             <TopPlayers players={players} />
             <ContractExpiring players={players} />
           </div>
+
+          <ContractTimeline players={players} />
+
+          <EnhancedCharts
+            players={players}
+            transfers={transfers}
+            watchList={watchList}
+            teams={teams} />
         </TabsContent>
       </Tabs>
-
-      <ContractTimeline players={players} />
-
-      <EnhancedCharts
-        players={players}
-        transfers={transfers}
-        watchList={watchList}
-        teams={teams} />
 
     </div>);
 

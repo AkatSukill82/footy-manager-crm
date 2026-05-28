@@ -541,6 +541,10 @@ urgence = "haute" si c'est une info très récente (< 2 semaines) ou critique, "
 
             {!loadingJournal && articlesJournal.length > 0 && (
               <>
+                <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  Contenu généré par IA — peut contenir des inexactitudes. Vérifier les informations avant utilisation professionnelle.
+                </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {[
                     { labelKey: "news.statsArticles",  value: articlesJournal.length,                                              icon: Newspaper,      color: "text-slate-700",  bg: "bg-slate-100" },
@@ -675,6 +679,10 @@ urgence = "haute" si c'est une info très récente (< 2 semaines) ou critique, "
 
             {!loadingPlayer && articlesPlayer.length > 0 && (
               <>
+                <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  Contenu généré par IA — peut contenir des inexactitudes. Vérifier les informations avant utilisation professionnelle.
+                </div>
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="font-bold text-slate-900">{selectedPlayer?.nom}</h2>

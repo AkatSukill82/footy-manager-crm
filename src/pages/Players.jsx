@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "../lib/useCurrentUser";
@@ -61,6 +61,12 @@ export default function PlayersPage() {
       queryClient.invalidateQueries({ queryKey: ['watchListItem'] });
     },
   });
+
+  const PAGE_SIZE = 20;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  // Reset pagination quand les filtres changent
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [filters]);
 
   const watchListMap = Object.fromEntries(watchList.map(w => [w.player_id, w]));
 
@@ -173,17 +179,26 @@ export default function PlayersPage() {
                 <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
               </div>
             ) : (
-              <div className="bg-white border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-50 shadow-sm">
-                {filteredPlayers.map((player) => (
-                  <PlayerCard
-                    key={player.id}
-                    player={player}
-                    inWatchList={!!watchListMap[player.id]}
-                    watchlistItem={watchListMap[player.id]}
-                    onAddToWatchlist={watchListMap[player.id] ? undefined : (p) => setModalPlayer(p)}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-50 shadow-sm">
+                  {filteredPlayers.slice(0, visibleCount).map((player) => (
+                    <PlayerCard
+                      key={player.id}
+                      player={player}
+                      inWatchList={!!watchListMap[player.id]}
+                      watchlistItem={watchListMap[player.id]}
+                      onAddToWatchlist={watchListMap[player.id] ? undefined : (p) => setModalPlayer(p)}
+                    />
+                  ))}
+                </div>
+                {visibleCount < filteredPlayers.length && (
+                  <div className="text-center pt-4">
+                    <Button variant="outline" onClick={() => setVisibleCount(c => c + PAGE_SIZE)}>
+                      Voir plus ({filteredPlayers.length - visibleCount} restants)
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
 
             {!isLoading && filteredPlayers.length === 0 && (

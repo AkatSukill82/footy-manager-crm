@@ -5,7 +5,7 @@ import {
   Users, Star, LogOut, BarChart3, Bell, Phone, Shield,
   FileText, Network, ArrowRightLeft, Menu, X, Building2,
   Sparkles, Newspaper, FileSpreadsheet, CalendarDays, UserCircle,
-  ClipboardList, Columns,
+  ClipboardList, Columns, ChevronDown,
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Toaster } from "@/components/ui/sonner";
@@ -13,32 +13,75 @@ import { useLanguage } from "./lib/LanguageContext";
 import { t } from "./i18n/translations";
 import { useQuery } from "@tanstack/react-query";
 
-const navItems = (lang) => [
-  { name: "Dashboard",           key: "dashboard",  icon: BarChart3 },
-  { name: "Players",             key: "players",    icon: Users },
-  { name: "Clubs",               key: "clubs",      icon: Building2 },
-  { name: "MyWatchList",         key: "watchlist",  icon: Star },
-  { name: "Alerts",              key: "alerts",     icon: Bell },
-  { name: "ClubContacts",        key: "contacts",   icon: Phone },
-  { name: "Teams",               key: "teams",      icon: Shield },
-  { name: "TransferManagement",  key: "transfers",  icon: ArrowRightLeft },
-  { name: "Reports",             key: "reports",    icon: FileText },
-  { name: "AgentNetwork",        key: "network",    icon: Network },
-  { name: "Calendar",            key: "calendar",   icon: CalendarDays },
-  { name: "PredictiveDashboard", key: "predictive", icon: Sparkles },
-  { name: "News",                key: "news",       icon: Newspaper },
-  { name: "ScoutingIA",          key: "scouting",   icon: Sparkles },
-  { name: "ImportExcel",         key: "import",     icon: FileSpreadsheet },
-  { name: "Organization",        key: "organization",    icon: Building2 },
-  { name: "ScoutingReports",     key: "scouting_reports", icon: ClipboardList, label: "Scouting" },
-  { name: "Pipeline",            key: "pipeline",        icon: Columns,       label: "Pipeline" },
+// Pages principales — toujours visibles
+const CORE_PAGES = ["Dashboard", "Players", "Clubs", "MyWatchList", "Pipeline", "ScoutingReports", "Alerts", "ClubContacts"];
+// Outils — groupe repliable
+const TOOLS_PAGES = ["TransferManagement", "Teams", "News", "ScoutingIA", "Calendar"];
+// Avancé — groupe repliable
+const ADVANCED_PAGES = ["Reports", "PredictiveDashboard", "AgentNetwork", "ImportExcel", "Organization"];
 
+const ALL_ITEMS = (lang) => [
+  { name: "Dashboard",           key: "dashboard",        icon: BarChart3 },
+  { name: "Players",             key: "players",          icon: Users },
+  { name: "Clubs",               key: "clubs",            icon: Building2 },
+  { name: "MyWatchList",         key: "watchlist",        icon: Star },
+  { name: "Pipeline",            key: "pipeline",         icon: Columns,       label: "Pipeline" },
+  { name: "ScoutingReports",     key: "scouting_reports", icon: ClipboardList, label: "Scouting" },
+  { name: "Alerts",              key: "alerts",           icon: Bell },
+  { name: "ClubContacts",        key: "contacts",         icon: Phone },
+  { name: "TransferManagement",  key: "transfers",        icon: ArrowRightLeft },
+  { name: "Teams",               key: "teams",            icon: Shield },
+  { name: "News",                key: "news",             icon: Newspaper },
+  { name: "ScoutingIA",          key: "scouting",         icon: Sparkles },
+  { name: "Calendar",            key: "calendar",         icon: CalendarDays },
+  { name: "Reports",             key: "reports",          icon: FileText },
+  { name: "PredictiveDashboard", key: "predictive",       icon: Sparkles },
+  { name: "AgentNetwork",        key: "network",          icon: Network },
+  { name: "ImportExcel",         key: "import",           icon: FileSpreadsheet },
+  { name: "Organization",        key: "organization",     icon: Building2 },
 ].map(item => ({ ...item, label: item.label || t(lang, `nav.${item.key}`) }));
 
-const bottomPrimary = ["Dashboard", "Players", "Teams", "TransferManagement", "Clubs"];
+const navItems = (lang) => ALL_ITEMS(lang);
+const bottomPrimary_items = ["Dashboard", "Players", "Pipeline", "Alerts", "Clubs"];
+
+const bottomPrimary = bottomPrimary_items;
+
+function NavGroup({ label, items, currentPageName, open, onToggle }) {
+  return (
+    <div>
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-3 py-1.5 text-xs font-semibold text-slate-400 uppercase tracking-wider hover:text-slate-600 transition-colors"
+      >
+        {label}
+        <ChevronDown className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && items.map((item) => {
+        const Icon = item.icon;
+        const isActive = currentPageName === item.name;
+        return (
+          <Link
+            key={item.name}
+            to={createPageUrl(item.name)}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+              isActive
+                ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md shadow-green-500/25"
+                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+            }`}
+          >
+            <Icon className="w-4 h-4 flex-shrink-0" />
+            <span className="font-medium text-sm truncate">{item.label}</span>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function Layout({ children, currentPageName }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const { lang } = useLanguage();
   const items = navItems(lang);
 
@@ -70,8 +113,9 @@ export default function Layout({ children, currentPageName }) {
         </div>
 
         {/* Nav items */}
-        <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-          {items.map((item) => {
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+          {/* Core pages — toujours visibles */}
+          {items.filter(i => CORE_PAGES.includes(i.name)).map((item) => {
             const Icon = item.icon;
             const isActive = currentPageName === item.name;
             return (
@@ -89,6 +133,26 @@ export default function Layout({ children, currentPageName }) {
               </Link>
             );
           })}
+
+          <div className="pt-1">
+            <NavGroup
+              label="Outils"
+              items={items.filter(i => TOOLS_PAGES.includes(i.name))}
+              currentPageName={currentPageName}
+              open={toolsOpen || TOOLS_PAGES.includes(currentPageName)}
+              onToggle={() => setToolsOpen(o => !o)}
+            />
+          </div>
+
+          <div className="pt-1">
+            <NavGroup
+              label="Avancé"
+              items={items.filter(i => ADVANCED_PAGES.includes(i.name))}
+              currentPageName={currentPageName}
+              open={advancedOpen || ADVANCED_PAGES.includes(currentPageName)}
+              onToggle={() => setAdvancedOpen(o => !o)}
+            />
+          </div>
         </nav>
 
         {/* Bottom: Profile + Logout */}

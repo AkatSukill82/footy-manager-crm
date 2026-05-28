@@ -150,7 +150,18 @@ export default function ScoutingIAPage() {
       return;
     }
 
-    const playersContext = players.map(pl => ({
+    // Pré-filtrer avant d'envoyer à l'IA — réduit la taille du prompt et le coût
+    const preFiltered = players.filter(pl => {
+      if (pl.poste !== criteria.poste && pl.poste_secondaire !== criteria.poste) return false;
+      if (criteria.age_max && pl.age && pl.age > Number(criteria.age_max)) return false;
+      if (criteria.budget_max && pl.valeur_marchande && pl.valeur_marchande > Number(criteria.budget_max) * 1.5) return false;
+      if (criteria.ligue && pl.ligue && !pl.ligue.toLowerCase().includes(criteria.ligue.toLowerCase())) return false;
+      return true;
+    });
+
+    const pool = preFiltered.length > 0 ? preFiltered : players;
+
+    const playersContext = pool.map(pl => ({
       id: pl.id,
       nom: pl.nom,
       poste: pl.poste,
@@ -180,7 +191,7 @@ export default function ScoutingIAPage() {
 - Priorité principale: ${criteria.priorite}
 ${criteria.ligue ? `- Ligue préférée: ${criteria.ligue}` : ""}
 
-Voici la liste des joueurs disponibles dans la base (JSON):
+Voici la liste pré-filtrée des joueurs disponibles dans la base (${pool.length} joueurs, JSON):
 ${JSON.stringify(playersContext, null, 2)}
 
 Analyse ces joueurs et sélectionne les 3 à 5 meilleurs profils correspondant aux critères du manager.

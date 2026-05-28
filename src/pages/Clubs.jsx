@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -34,12 +34,18 @@ export default function ClubsPage() {
     },
   });
 
+  const PAGE_SIZE = 18;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
   const filteredClubs = clubs.filter(club => {
     const matchesSearch = club.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          club.pays?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategorie = filterCategorie === "all" || club.categorie === filterCategorie;
     return matchesSearch && matchesCategorie;
   });
+
+  // Reset pagination quand les filtres changent
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [searchQuery, filterCategorie]);
 
   if (showForm) {
     return (
@@ -135,11 +141,20 @@ export default function ClubsPage() {
           <p className="text-slate-500">{t(lang, 'clubs.noResults')}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredClubs.map(club => (
-            <ClubCard key={club.id} club={club} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredClubs.slice(0, visibleCount).map(club => (
+              <ClubCard key={club.id} club={club} />
+            ))}
+          </div>
+          {visibleCount < filteredClubs.length && (
+            <div className="text-center pt-4">
+              <Button variant="outline" onClick={() => setVisibleCount(c => c + PAGE_SIZE)}>
+                Voir plus ({filteredClubs.length - visibleCount} restants)
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
