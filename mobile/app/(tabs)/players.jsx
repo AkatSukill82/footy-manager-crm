@@ -96,7 +96,6 @@ function AddPlayerModal({ visible, onClose, onSubmit, loading }) {
     try {
       const res = await base44.functions.invoke('enrichPlayerFromAPI', {
         playerName: '',
-        source: 'transfermarkt',
         tmUrl: form.tm_url.trim(),
       });
       if (res?.data) {

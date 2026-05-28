@@ -15,7 +15,7 @@ import Input from '../src/components/ui/Input';
 import Select from '../src/components/ui/Select';
 import LoadingSpinner from '../src/components/ui/LoadingSpinner';
 import VoiceNoteRecorder from '../src/components/ui/VoiceNoteRecorder';
-import { formatCurrency, formatDate, daysUntil, getPositionColor } from '../src/utils';
+import { formatCurrency, formatDate, daysUntil, getPositionColor, sanitizePlayerData } from '../src/utils';
 
 const STATUTS_TRANSFER = [
   { value: 'disponible', label: 'Disponible' },
@@ -225,51 +225,25 @@ Réponds en JSON: {"note": "texte complet du rapport ici"}`,
     setEnriching(true);
     setEnrichResult(null);
     const fullName = [player.prenom, player.nom].filter(Boolean).join(' ');
-    const errors = [];
-    let totalFields = 0;
-    const allSources = [];
 
     try {
-      // Étape 1 — Transfermarkt (profil + valeur marchande)
-      setEnrichResult({ pending: true, step: 'Transfermarkt…' });
-      try {
-        const tmRes = await base44.functions.invoke('enrichPlayerFromAPI', {
-          playerName: fullName,
-          source: 'transfermarkt',
-          ...(tmUrl ? { tmUrl } : {}),
-        });
-        if (tmRes?.data && Object.keys(tmRes.data).length > 0) {
-          await base44.entities.Player.update(id, tmRes.data);
-          queryClient.invalidateQueries({ queryKey: ['player', id] });
-          queryClient.invalidateQueries({ queryKey: ['players'] });
-          totalFields += tmRes.fieldsFound || 0;
-          if (tmRes.sources?.length) allSources.push(...tmRes.sources);
-        }
-        if (tmRes?.errors?.length) errors.push(...tmRes.errors);
-      } catch (e) { errors.push(`Transfermarkt: ${e.message}`); }
+      setEnrichResult({ pending: true, step: 'Recherche API-Football…' });
 
-      // Étape 2 — SofaScore + FotMob (stats de match, en parallèle côté serveur)
-      setEnrichResult({ pending: true, step: 'Stats (SofaScore + FotMob)…' });
-      try {
-        const ssRes = await base44.functions.invoke('enrichPlayerFromAPI', {
-          playerName: fullName,
-          source: 'stats',
-        });
-        if (ssRes?.data && Object.keys(ssRes.data).length > 0) {
-          await base44.entities.Player.update(id, ssRes.data);
-          queryClient.invalidateQueries({ queryKey: ['player', id] });
-          queryClient.invalidateQueries({ queryKey: ['players'] });
-          totalFields += ssRes.fieldsFound || 0;
-          if (ssRes.sources?.length) allSources.push(...ssRes.sources);
-        }
-        if (ssRes?.errors?.length) errors.push(...ssRes.errors);
-      } catch (e) { errors.push(`SofaScore: ${e.message}`); }
+      const res = await base44.functions.invoke('enrichPlayerFromAPI', {
+        playerName: fullName,
+        ...(tmUrl ? { tmUrl } : {}),
+      });
 
-      setEnrichResult(
-        totalFields > 0
-          ? { ok: true, fields: totalFields, sources: [...new Set(allSources)] }
-          : { ok: false, errors }
-      );
+      if (res?.data && Object.keys(res.data).length > 0) {
+        await base44.entities.Player.update(id, sanitizePlayerData(res.data));
+        queryClient.invalidateQueries({ queryKey: ['player', id] });
+        queryClient.invalidateQueries({ queryKey: ['players'] });
+        setEnrichResult({ ok: true, fields: res.fieldsFound, sources: res.sources });
+      } else {
+        setEnrichResult({ ok: false, errors: res?.errors });
+      }
+    } catch (e) {
+      setEnrichResult({ ok: false, errors: [e.message] });
     } finally {
       setEnriching(false);
     }

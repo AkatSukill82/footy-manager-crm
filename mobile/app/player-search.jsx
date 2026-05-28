@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../src/components/ui/C
 import Badge from '../src/components/ui/Badge';
 import Button from '../src/components/ui/Button';
 import Input from '../src/components/ui/Input';
-import { formatCurrency } from '../src/utils';
+import { formatCurrency, sanitizePlayerData } from '../src/utils';
 
 export default function PlayerSearchPage() {
   const router = useRouter();
@@ -78,8 +78,8 @@ Réponds en JSON: {
   };
 
   const savePlayer = (player) => {
-    const { _searchId, description, ...playerData } = player;
-    saveMutation.mutate({ ...playerData, _searchId });
+    const { _searchId, description, ...raw } = player;
+    saveMutation.mutate({ ...sanitizePlayerData(raw), _searchId });
   };
 
   return (
