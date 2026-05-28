@@ -234,6 +234,26 @@ Réponds en JSON: {"note": "texte complet du rapport ici"}`,
         await base44.entities.Player.update(id, sanitizePlayerData(res.data));
         queryClient.invalidateQueries({ queryKey: ['player', id] });
         queryClient.invalidateQueries({ queryKey: ['players'] });
+
+        // Créer les transferts depuis les données AF
+        if (res?.transferts?.length > 0) {
+          for (const t of res.transferts.slice(0, 10)) {
+            try {
+              const exists = await base44.entities.Transfer.filter({ player_id: id, date_transfert: t.date });
+              if (!exists?.length) {
+                await base44.entities.Transfer.create({
+                  player_id: id,
+                  club_depart: t.club_depart || '',
+                  club_arrivee: t.club_arrivee || '',
+                  date_transfert: t.date,
+                  type_transfert: t.type || 'Inconnu',
+                });
+              }
+            } catch {}
+          }
+          queryClient.invalidateQueries({ queryKey: ['player-transfers', id] });
+        }
+
         setEnrichResult({ ok: true, fields: res.fieldsFound, sources: res.sources });
       } else {
         setEnrichResult({ ok: false, errors: res?.errors });

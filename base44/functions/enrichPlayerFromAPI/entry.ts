@@ -4,6 +4,7 @@
  * Retourne : nom, âge, nationalité, taille, poids, photo, club, ligue,
  *            poste, buts, passes, cartons, minutes, tirs, dribbles,
  *            tacles, interceptions, fautes, arrêts, penaltys…
+ *            + transferts (array) + blessures (résumé)
  *
  * Usage :
  *   base44.functions.invoke("enrichPlayerFromAPI", { playerName: "Kylian Mbappé" })
@@ -126,9 +127,64 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Données de transferts et blessures (si on a un ID joueur AF)
+    let transferts: any[] = [];
+    let blessures: any[] = [];
+
     if (entry) {
       extractAFPlayer(entry, out);
       sources.push("API-Football");
+
+      const afId = entry?.player?.id;
+      if (afId) {
+        // Récupérer transferts et blessures en parallèle avec les stats déjà extraites
+        const [transfertsData, blessuresData] = await Promise.allSettled([
+          safe(() => afGet(`/transfers?player=${afId}`), "AF transfers", errors),
+          safe(() => afGet(`/injuries?player=${afId}`), "AF injuries", errors),
+        ]);
+
+        // Traiter les transferts
+        if (transfertsData.status === "fulfilled" && transfertsData.value) {
+          const tData = transfertsData.value?.response || [];
+          if (tData.length > 0) {
+            const tList = tData[0]?.transfers || [];
+            transferts = tList.slice(0, 10).map((t: any) => ({
+              date:         t.date || null,
+              club_depart:  t.teams?.out?.name || null,
+              club_arrivee: t.teams?.in?.name || null,
+              type:         t.type || null,
+            }));
+          }
+        }
+
+        // Traiter les blessures
+        if (blessuresData.status === "fulfilled" && blessuresData.value) {
+          const bList = blessuresData.value?.response || [];
+          // Garder les 5 dernières blessures
+          const recentBlessures = bList.slice(0, 5);
+          blessures = recentBlessures.map((b: any) => ({
+            date:   b.fixture?.date || null,
+            saison: b.league?.season ? `${b.league.season}` : null,
+            type:   b.player?.type || null,
+            raison: b.player?.reason || null,
+            club:   b.team?.name || null,
+            ligue:  b.league?.name || null,
+          }));
+
+          // Ajouter les résumés de blessures dans out
+          if (bList.length > 0) {
+            out.blessures = bList.length;
+            const types = [...new Set(
+              bList
+                .map((b: any) => b.player?.reason || b.player?.type)
+                .filter(Boolean)
+            )];
+            if (types.length > 0) {
+              out.type_blessures = types.join(", ");
+            }
+          }
+        }
+      }
     }
 
     const fieldsFound = Object.keys(out).filter(k => out[k] != null && out[k] !== "").length;
@@ -137,6 +193,8 @@ Deno.serve(async (req) => {
       fieldsFound,
       sources,
       data: out,
+      transferts,
+      blessures,
       ...(errors.length ? { errors } : {}),
     });
 
