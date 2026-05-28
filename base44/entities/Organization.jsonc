@@ -25,11 +25,7 @@
     "read": {
       "$or": [
         {
-          "data.membres": {
-            "$in": [
-              "{{user.email}}"
-            ]
-          }
+          "id": "{{user.data.organization_id}}"
         },
         {
           "user_condition": {
@@ -41,11 +37,7 @@
     "update": {
       "$or": [
         {
-          "data.membres": {
-            "$in": [
-              "{{user.email}}"
-            ]
-          }
+          "created_by_id": "{{user.id}}"
         },
         {
           "user_condition": {
@@ -55,9 +47,16 @@
       ]
     },
     "delete": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
     }
   }
 }
