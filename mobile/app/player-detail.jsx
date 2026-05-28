@@ -221,19 +221,51 @@ Réponds en JSON: {"note": "texte complet du rapport ici"}`,
     if (!player) return;
     setEnriching(true);
     setEnrichResult(null);
+    const fullName = [player.prenom, player.nom].filter(Boolean).join(' ');
+    const errors = [];
+    let totalFields = 0;
+    const allSources = [];
+
     try {
-      const fullName = [player.prenom, player.nom].filter(Boolean).join(' ');
-      const res = await base44.functions.invoke('enrichPlayerFromAPI', { playerName: fullName });
-      if (res?.data && Object.keys(res.data).length > 0) {
-        await base44.entities.Player.update(id, res.data);
-        queryClient.invalidateQueries({ queryKey: ['player', id] });
-        queryClient.invalidateQueries({ queryKey: ['players'] });
-        setEnrichResult({ ok: true, fields: res.fieldsFound, sources: res.sources });
-      } else {
-        setEnrichResult({ ok: false, errors: res?.errors });
-      }
-    } catch (e) {
-      setEnrichResult({ ok: false, errors: [e.message] });
+      // Étape 1 — Transfermarkt (profil + valeur marchande)
+      setEnrichResult({ pending: true, step: 'Transfermarkt…' });
+      try {
+        const tmRes = await base44.functions.invoke('enrichPlayerFromAPI', {
+          playerName: fullName,
+          source: 'transfermarkt',
+        });
+        if (tmRes?.data && Object.keys(tmRes.data).length > 0) {
+          await base44.entities.Player.update(id, tmRes.data);
+          queryClient.invalidateQueries({ queryKey: ['player', id] });
+          queryClient.invalidateQueries({ queryKey: ['players'] });
+          totalFields += tmRes.fieldsFound || 0;
+          if (tmRes.sources?.length) allSources.push(...tmRes.sources);
+        }
+        if (tmRes?.errors?.length) errors.push(...tmRes.errors);
+      } catch (e) { errors.push(`Transfermarkt: ${e.message}`); }
+
+      // Étape 2 — SofaScore (stats de match)
+      setEnrichResult({ pending: true, step: 'SofaScore…' });
+      try {
+        const ssRes = await base44.functions.invoke('enrichPlayerFromAPI', {
+          playerName: fullName,
+          source: 'sofascore',
+        });
+        if (ssRes?.data && Object.keys(ssRes.data).length > 0) {
+          await base44.entities.Player.update(id, ssRes.data);
+          queryClient.invalidateQueries({ queryKey: ['player', id] });
+          queryClient.invalidateQueries({ queryKey: ['players'] });
+          totalFields += ssRes.fieldsFound || 0;
+          if (ssRes.sources?.length) allSources.push(...ssRes.sources);
+        }
+        if (ssRes?.errors?.length) errors.push(...ssRes.errors);
+      } catch (e) { errors.push(`SofaScore: ${e.message}`); }
+
+      setEnrichResult(
+        totalFields > 0
+          ? { ok: true, fields: totalFields, sources: [...new Set(allSources)] }
+          : { ok: false, errors }
+      );
     } finally {
       setEnriching(false);
     }
@@ -312,28 +344,43 @@ Réponds en JSON: {"note": "texte complet du rapport ici"}`,
           </View>
         </View>
 
-        {/* Bannière résultat enrichissement */}
+        {/* Bannière enrichissement — progression + résultat */}
         {enrichResult && (
-          <TouchableOpacity onPress={() => setEnrichResult(null)} activeOpacity={0.8}>
-            <View className={`mx-4 mt-3 px-4 py-3 rounded-xl flex-row items-center gap-3 ${enrichResult.ok ? 'bg-blue-50 border border-blue-200' : 'bg-red-50 border border-red-200'}`}>
-              <RefreshCw size={16} color={enrichResult.ok ? '#3b82f6' : '#ef4444'} />
+          <TouchableOpacity
+            onPress={() => !enrichResult.pending && setEnrichResult(null)}
+            activeOpacity={enrichResult.pending ? 1 : 0.8}
+          >
+            <View className={`mx-4 mt-3 px-4 py-3 rounded-xl flex-row items-center gap-3 ${
+              enrichResult.pending ? 'bg-blue-50 border border-blue-100'
+              : enrichResult.ok    ? 'bg-green-50 border border-green-200'
+              :                      'bg-red-50 border border-red-200'
+            }`}>
+              {enrichResult.pending
+                ? <ActivityIndicator size={16} color="#3b82f6" />
+                : <RefreshCw size={16} color={enrichResult.ok ? '#16a34a' : '#ef4444'} />}
               <View className="flex-1">
-                {enrichResult.ok ? (
+                {enrichResult.pending ? (
+                  <Text className="text-sm font-semibold text-blue-700">
+                    {enrichResult.step}
+                  </Text>
+                ) : enrichResult.ok ? (
                   <>
-                    <Text className="text-sm font-semibold text-blue-800">
+                    <Text className="text-sm font-semibold text-green-800">
                       {enrichResult.fields} champs mis à jour
                     </Text>
-                    <Text className="text-xs text-blue-500">
+                    <Text className="text-xs text-green-600">
                       Sources : {enrichResult.sources?.join(' + ')}
                     </Text>
                   </>
                 ) : (
                   <Text className="text-sm text-red-700">
-                    Aucune donnée trouvée — joueur introuvable sur TM/SofaScore
+                    Joueur introuvable sur Transfermarkt / SofaScore
                   </Text>
                 )}
               </View>
-              <Text className="text-xs text-slate-400">✕</Text>
+              {!enrichResult.pending && (
+                <Text className="text-xs text-slate-400">✕</Text>
+              )}
             </View>
           </TouchableOpacity>
         )}
