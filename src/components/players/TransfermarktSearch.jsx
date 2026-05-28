@@ -14,7 +14,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { useNavigate } from "react-router-dom";
-import { createPageUrl } from "../../utils";
+import { createPageUrl, sanitizePlayerData } from "../../utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLanguage } from "../../lib/LanguageContext";
 import { t } from "../../i18n/translations";
@@ -516,11 +516,7 @@ Ne PAS réinventer les stats déjà fournies. null si inconnu.`,
         note_globale_scout:     result.note_globale_scout,
         nb_clubs:               result.historique_clubs?.length,
       };
-      Object.keys(playerData).forEach(k =>
-        (playerData[k] == null || playerData[k] === "") && delete playerData[k]
-      );
-
-      const created = await base44.entities.Player.create(playerData);
+      const created = await base44.entities.Player.create(sanitizePlayerData(playerData));
 
       await Promise.allSettled([
         result.historique_clubs?.length > 0
