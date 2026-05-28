@@ -16,6 +16,7 @@ import ClubForm from "../components/clubs/ClubForm";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
 import ActivityLogList from "../components/activity/ActivityLogList";
+import ClubExternalLinks from "../components/clubs/ClubExternalLinks";
 
 function Row({ label, value, valueClass = "font-medium text-slate-900" }) {
   if (!value) return null;
@@ -223,6 +224,9 @@ export default function ClubDetailPage() {
         ))}
       </div>
 
+      {/* Liens externes */}
+      <ClubExternalLinks club={club} />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Infos générales */}
         <Card>
@@ -403,6 +407,22 @@ export default function ClubDetailPage() {
         </Card>
       )}
 
+      {/* Finances — notice si données manquantes */}
+      {!club.budget_annuel && !club.budget_transfert && !club.dette && !club.valeur_effectif && (
+        <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-sm text-slate-500">
+          <TrendingUp className="w-4 h-4 text-slate-400 flex-shrink-0" />
+          <span>Données financières non renseignées —</span>
+          <a
+            href={`https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche?query=${encodeURIComponent(club.nom)}&Feld=verein`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-green-600 hover:underline font-medium"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />Voir sur Transfermarkt
+          </a>
+        </div>
+      )}
+
       {/* Finances */}
       {(club.budget_annuel || club.budget_transfert || club.dette || club.valeur_effectif) && (
         <Card>
@@ -512,7 +532,17 @@ export default function ClubDetailPage() {
           </CardHeader>
           <CardContent>
             {arrivals.length === 0 ? (
-              <p className="text-center text-slate-500 py-4 text-sm">{t(lang,'clubDetail.noArrivals')}</p>
+              <div className="flex flex-col items-center gap-2 py-6 text-sm text-slate-400">
+                <p>{t(lang,'clubDetail.noArrivals')}</p>
+                <a
+                  href={`https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche?query=${encodeURIComponent(club.nom)}&Feld=verein`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-green-600 hover:underline font-medium text-xs"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />Voir les transferts sur Transfermarkt
+                </a>
+              </div>
             ) : (
               <div className="space-y-2">
                 {arrivals.slice(0, 5).map(tr => (
@@ -531,7 +561,17 @@ export default function ClubDetailPage() {
           </CardHeader>
           <CardContent>
             {departures.length === 0 ? (
-              <p className="text-center text-slate-500 py-4 text-sm">{t(lang,'clubDetail.noDepartures')}</p>
+              <div className="flex flex-col items-center gap-2 py-6 text-sm text-slate-400">
+                <p>{t(lang,'clubDetail.noDepartures')}</p>
+                <a
+                  href={`https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche?query=${encodeURIComponent(club.nom)}&Feld=verein`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-green-600 hover:underline font-medium text-xs"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />Voir les transferts sur Transfermarkt
+                </a>
+              </div>
             ) : (
               <div className="space-y-2">
                 {departures.slice(0, 5).map(tr => (
