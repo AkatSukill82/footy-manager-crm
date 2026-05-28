@@ -178,11 +178,11 @@ Deno.serve(async (req) => {
     const sources: string[] = [];
     const errors: string[] = [];
 
-    // ── API-Football : cherche la saison courante puis précédente ──────────
+    // ── API-Football : cherche les 3 dernières saisons disponibles ────────
     const q = encodeURIComponent((playerName || "").trim());
     let entry: any = null;
 
-    for (const season of [2024, 2023]) {
+    for (const season of [2025, 2024, 2023]) {
       const data = await safe(
         () => afGet(`/players?search=${q}&season=${season}`),
         `AF saison ${season}`,

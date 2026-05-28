@@ -15,7 +15,7 @@ import Input from '../../src/components/ui/Input';
 import LoadingSpinner from '../../src/components/ui/LoadingSpinner';
 import EmptyState from '../../src/components/ui/EmptyState';
 import Avatar from '../../src/components/ui/Avatar';
-import { formatCurrency, daysUntil, getPositionColor } from '../../src/utils';
+import { formatCurrency, daysUntil, getPositionColor, sanitizePlayerData } from '../../src/utils';
 
 const POSTES = [
   { value: 'all', label: 'Tous les postes' },
@@ -57,21 +57,21 @@ function PlayerCard({ player, inWatchList, onPress }) {
             ) : null}
           </View>
 
-          {(player.buts_saison || player.passes_saison || player.note_moyenne) ? (
+          {(player.buts ?? player.buts_saison != null || player.passes_decisives ?? player.passes_saison != null || player.note_moyenne != null) ? (
             <View className="flex-row gap-4 mt-3 pt-3 border-t border-slate-100">
-              {player.buts_saison !== undefined && (
+              {(player.buts ?? player.buts_saison) != null && (
                 <View className="items-center">
-                  <Text className="text-base font-bold text-slate-900">{player.buts_saison}</Text>
+                  <Text className="text-base font-bold text-slate-900">{player.buts ?? player.buts_saison}</Text>
                   <Text className="text-xs text-slate-400">Buts</Text>
                 </View>
               )}
-              {player.passes_saison !== undefined && (
+              {(player.passes_decisives ?? player.passes_saison) != null && (
                 <View className="items-center">
-                  <Text className="text-base font-bold text-slate-900">{player.passes_saison}</Text>
+                  <Text className="text-base font-bold text-slate-900">{player.passes_decisives ?? player.passes_saison}</Text>
                   <Text className="text-xs text-slate-400">Passes</Text>
                 </View>
               )}
-              {player.note_moyenne !== undefined && (
+              {player.note_moyenne != null && (
                 <View className="items-center">
                   <Text className="text-base font-bold text-green-600">{Number(player.note_moyenne).toFixed(1)}</Text>
                   <Text className="text-xs text-slate-400">Note</Text>
@@ -194,7 +194,7 @@ export default function PlayersPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Player.create(data),
+    mutationFn: (data) => base44.entities.Player.create(sanitizePlayerData(data)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['players'] });
       setShowAdd(false);

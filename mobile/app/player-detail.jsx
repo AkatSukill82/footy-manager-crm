@@ -123,7 +123,7 @@ export default function PlayerDetailPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.Player.update(id, data),
+    mutationFn: (data) => base44.entities.Player.update(id, sanitizePlayerData(data)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['player', id] });
       queryClient.invalidateQueries({ queryKey: ['players'] });
@@ -352,7 +352,7 @@ Réponds en JSON: {"note": "texte complet du rapport ici"}`,
                   </>
                 ) : (
                   <Text className="text-sm text-red-700">
-                    Joueur introuvable sur Transfermarkt / SofaScore
+                    Joueur introuvable sur API-Football
                   </Text>
                 )}
               </View>
