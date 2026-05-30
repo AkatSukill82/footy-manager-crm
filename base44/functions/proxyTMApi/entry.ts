@@ -3,9 +3,27 @@
  * Toujours retourner HTTP 200 — base44.functions.invoke throw sur tout autre status.
  * Les erreurs sont dans le corps : { error: "..." }
  */
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+
+function isValidPath(path: string): boolean {
+  if (!path.startsWith("/")) return false;
+  // Block path traversal and protocol injection
+  if (path.includes("..") || path.includes("://")) return false;
+  // Only printable ASCII, no control characters
+  if (/[\x00-\x1f\x7f]/.test(path)) return false;
+  return true;
+}
+
 Deno.serve(async (req) => {
   let path = "";
   try {
+    // Auth check
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    if (!user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
     path = body?.path || "";
 
@@ -13,7 +31,10 @@ Deno.serve(async (req) => {
       return Response.json({ error: "path manquant" });
     }
 
-    // Reconstruct clean URL (path already contains encoded query string)
+    if (!isValidPath(path)) {
+      return Response.json({ error: "path invalide" });
+    }
+
     const url = `https://transfermarkt-api.fly.dev${path}`;
 
     const controller = new AbortController();

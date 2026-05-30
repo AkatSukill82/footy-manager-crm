@@ -18,6 +18,7 @@ export default function ImportTransfermarktPhoto({ player, onApply }) {
   const [manualUrl, setManualUrl] = useState("");
   const [manualMode, setManualMode] = useState(false);
   const [imageErrors, setImageErrors] = useState({});
+  const [manualImageError, setManualImageError] = useState(false);
 
   const handleSearch = async () => {
     setLoading(true);
@@ -120,18 +121,23 @@ IMPORTANT :
             <p className="text-xs text-slate-500">{t(lang, 'playerDetail.pasteUrl')}</p>
             <Input
               value={manualUrl}
-              onChange={(e) => { setManualUrl(e.target.value); setApplied(false); }}
+              onChange={(e) => { setManualUrl(e.target.value); setApplied(false); setManualImageError(false); }}
               placeholder="https://upload.wikimedia.org/..."
               className="text-xs"
             />
             {manualUrl && manualUrl.startsWith("http") && (
               <div className="flex justify-center p-2 bg-white rounded-lg border">
-                <img
-                  src={manualUrl}
-                  alt={t(lang, 'common.preview')}
-                  className="h-24 w-24 rounded-lg object-cover" referrerPolicy="no-referrer"
-                  onError={(e) => { e.target.src = ""; e.currentTarget.parentElement.innerHTML = `<p class="text-xs text-red-500 p-2">${t(lang, 'playerDetail.imageNotAccessible')}</p>`; }}
-                />
+                {manualImageError ? (
+                  <p className="text-xs text-red-500 p-2">{t(lang, 'playerDetail.imageNotAccessible')}</p>
+                ) : (
+                  <img
+                    src={manualUrl}
+                    alt={t(lang, 'common.preview')}
+                    className="h-24 w-24 rounded-lg object-cover"
+                    referrerPolicy="no-referrer"
+                    onError={() => setManualImageError(true)}
+                  />
+                )}
               </div>
             )}
             {applied ? (
