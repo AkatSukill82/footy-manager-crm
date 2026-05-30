@@ -358,8 +358,9 @@ export default function NewsPage() {
 
     const today = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
-    const data = await base44.integrations.Core.InvokeLLM({
-      prompt: `Tu es un journaliste sportif expert en football. Nous sommes le ${today}.
+    try {
+      const data = await base44.integrations.Core.InvokeLLM({
+        prompt: `Tu es un journaliste sportif expert en football. Nous sommes le ${today}.
 
 Consulte les journaux et sources sportives du jour : L'Équipe, RMC Sport, Sky Sports, BBC Sport, Transfermarkt, Fabrizio Romano, Goal.com, Marca, AS, Gazzetta dello Sport, Le Parisien Sport.
 
@@ -375,14 +376,17 @@ Génère un journal complet du football du jour avec 15 à 20 articles couvrant 
 
 Pour chaque article, sois TRÈS DÉTAILLÉ dans les "details" : chiffres, montants, durée de contrat, statistiques, contexte, sources.
 IMPORTANT: urgence = "haute" si transfert imminent ou fin de contrat < 6 mois, "moyenne" si dans les 6-12 mois, "basse" sinon.`,
-      add_context_from_internet: true,
-      response_json_schema: NEWS_SCHEMA,
-    });
-
-    clearInterval(interval);
-    setArticlesJournal(data?.articles || []);
-    setLastUpdate(new Date());
-    setLoadingJournal(false);
+        add_context_from_internet: true,
+        response_json_schema: NEWS_SCHEMA,
+      });
+      setArticlesJournal(data?.articles || []);
+      setLastUpdate(new Date());
+    } catch (err) {
+      setArticlesJournal([]);
+    } finally {
+      clearInterval(interval);
+      setLoadingJournal(false);
+    }
   };
 
   const fetchPlayerNews = async () => {
@@ -417,8 +421,9 @@ IMPORTANT: urgence = "haute" si transfert imminent ou fin de contrat < 6 mois, "
       pl.contrat_fin && `Fin de contrat : ${pl.contrat_fin}`,
     ].filter(Boolean).join(", ");
 
-    const data = await base44.integrations.Core.InvokeLLM({
-      prompt: `Tu es un analyste sportif expert. Nous sommes le ${today}.
+    try {
+      const data = await base44.integrations.Core.InvokeLLM({
+        prompt: `Tu es un analyste sportif expert. Nous sommes le ${today}.
 
 Recherche toutes les informations et actualités concernant le joueur de football **${pl.nom}** sur les ${periodLabel} écoulés (depuis le ${fromLabel}).
 ${context ? `\nContexte du joueur dans notre CRM : ${context}` : ""}
@@ -439,14 +444,18 @@ Génère entre 8 et 15 articles couvrant TOUT ce qui concerne ce joueur sur cett
 Sois PRÉCIS dans les dates (mois/année), les montants et les statistiques.
 Si tu ne trouves pas d'info récente sur une catégorie, ne l'invente pas.
 urgence = "haute" si c'est une info très récente (< 2 semaines) ou critique, "moyenne" si dans le dernier mois, "basse" sinon.`,
-      add_context_from_internet: true,
-      response_json_schema: NEWS_SCHEMA,
-    });
-
-    clearInterval(interval);
-    setArticlesPlayer(data?.articles || []);
-    setPlayerSearchDone(true);
-    setLoadingPlayer(false);
+        add_context_from_internet: true,
+        response_json_schema: NEWS_SCHEMA,
+      });
+      setArticlesPlayer(data?.articles || []);
+      setPlayerSearchDone(true);
+    } catch (err) {
+      setArticlesPlayer([]);
+      setPlayerSearchDone(true);
+    } finally {
+      clearInterval(interval);
+      setLoadingPlayer(false);
+    }
   };
 
   const urgentCountJournal = articlesJournal.filter(a => a.urgence === "haute").length;

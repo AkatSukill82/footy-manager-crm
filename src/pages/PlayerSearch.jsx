@@ -204,7 +204,7 @@ Champs attendus (tous optionnels) :
         setResult(prev => ({ ...prev, ...llmResult, palmares: llmResult.palmares || prev.palmares || [] }));
       }
     } catch {
-      // ignore silently
+      setError("L'enrichissement IA a échoué. Vous pouvez continuer sans enrichissement.");
     } finally {
       setEnriching(false);
     }

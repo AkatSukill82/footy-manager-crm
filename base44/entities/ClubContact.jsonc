@@ -37,6 +37,10 @@
     "club_id": {
       "type": "string",
       "description": "ID du club li\u00e9 (si trouv\u00e9 en base)"
+    },
+    "organization_id": {
+      "type": "string",
+      "description": "Organisation ID pour le partage entre membres"
     }
   },
   "required": [
@@ -45,7 +49,8 @@
   ],
   "rls": {
     "create": {
-      "created_by_id": "{{user.id}}"
+      "created_by_id": "{{user.id}}",
+      "organization_id": "{{user.data.organization_id}}"
     },
     "read": {
       "$or": [

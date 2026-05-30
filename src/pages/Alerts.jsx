@@ -27,8 +27,9 @@ export default function AlertsPage() {
   const userEmail = user?.email;
 
   const { data: players = [], isLoading: loadingPlayers } = useQuery({
-    queryKey: ['players'],
-    queryFn: () => base44.entities.Player.list(),
+    queryKey: ['players', user?.id],
+    queryFn: () => base44.entities.Player.filter({ created_by_id: user.id }),
+    enabled: !!user?.id,
   });
 
   const { data: watchList = [] } = useQuery({
@@ -38,8 +39,9 @@ export default function AlertsPage() {
   });
 
   const { data: transfers = [] } = useQuery({
-    queryKey: ['transfers'],
-    queryFn: () => base44.entities.Transfer.list('-created_date', 30),
+    queryKey: ['transfers', user?.id],
+    queryFn: () => base44.entities.Transfer.filter({ created_by_id: user.id }),
+    enabled: !!user?.id,
   });
 
   const { data: negociations = [] } = useQuery({
@@ -59,9 +61,10 @@ export default function AlertsPage() {
     queryFn: () => base44.entities.Match.list('-date_match', 20),
   });
 
-  const { data: clubContacts = [] } = useQuery({
-    queryKey: ['club-contacts-alerts'],
-    queryFn: () => base44.entities.ClubContact.list(),
+  const { data: clubContacts = [], isLoading: loadingContacts } = useQuery({
+    queryKey: ['club-contacts-alerts', user?.id],
+    queryFn: () => base44.entities.ClubContact.filter({ created_by_id: user.id }),
+    enabled: !!user?.id,
   });
 
   const { data: teams = [] } = useQuery({
@@ -166,6 +169,20 @@ export default function AlertsPage() {
     transfert_finalise: t(lang,'alerts.statutFinalized'),
     annule: t(lang,'alerts.statutCancelled'),
   };
+
+  if (loadingPlayers) {
+    return (
+      <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-4">
+        <div className="h-10 w-48 bg-slate-100 rounded-xl animate-pulse" />
+        <div className="grid grid-cols-5 gap-2">
+          {[1,2,3,4,5].map(i => <div key={i} className="h-10 bg-slate-100 rounded-xl animate-pulse" />)}
+        </div>
+        <div className="space-y-3">
+          {[1,2,3,4].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-4 md:space-y-6">

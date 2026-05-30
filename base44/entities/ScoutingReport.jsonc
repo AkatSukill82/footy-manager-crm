@@ -28,12 +28,14 @@
     },
     "points_forts":   { "type": "string", "description": "Points forts observés" },
     "points_faibles": { "type": "string", "description": "Points faibles observés" },
-    "notes_libres":   { "type": "string", "description": "Notes libres du scout" }
+    "notes_libres":   { "type": "string", "description": "Notes libres du scout" },
+    "organization_id": { "type": "string", "description": "Organisation ID pour le partage entre membres" }
   },
   "required": ["player_nom", "date_match", "note_globale", "recommandation"],
   "rls": {
     "create": {
-      "created_by_id": "{{user.id}}"
+      "created_by_id": "{{user.id}}",
+      "organization_id": "{{user.data.organization_id}}"
     },
     "read": {
       "$or": [

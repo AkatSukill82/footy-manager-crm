@@ -25,12 +25,14 @@
       "description": "Niveau de priorité"
     },
     "notes":       { "type": "string", "description": "Notes internes" },
-    "date_ajout":  { "type": "string", "description": "Date d'ajout au pipeline (YYYY-MM-DD)" }
+    "date_ajout":  { "type": "string", "description": "Date d'ajout au pipeline (YYYY-MM-DD)" },
+    "organization_id": { "type": "string", "description": "Organisation ID pour le partage entre membres" }
   },
   "required": ["player_nom", "etape"],
   "rls": {
     "create": {
-      "created_by_id": "{{user.id}}"
+      "created_by_id": "{{user.id}}",
+      "organization_id": "{{user.data.organization_id}}"
     },
     "read": {
       "$or": [
