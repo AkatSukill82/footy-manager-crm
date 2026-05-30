@@ -143,7 +143,11 @@ export default function PlayerDetailPage() {
   });
 
   const deletePlayerMutation = useMutation({
-    mutationFn: () => base44.entities.Player.delete(playerId),
+    mutationFn: async () => {
+      const pipelineEntries = await base44.entities.Pipeline.filter({ player_id: playerId });
+      await Promise.all(pipelineEntries.map((e) => base44.entities.Pipeline.delete(e.id)));
+      await base44.entities.Player.delete(playerId);
+    },
     onSuccess: () => {
       navigate(createPageUrl("Players"));
     },

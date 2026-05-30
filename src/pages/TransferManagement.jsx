@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { TrendingUp, Plus, Calculator, History } from "lucide-react";
+import { TrendingUp, Plus, Calculator, History, AlertCircle, X } from "lucide-react";
 import NegociationCard from "../components/transfers/NegociationCard";
 import BudgetSimulator from "../components/transfers/BudgetSimulator";
 import PlayerTransferHistory from "../components/transfers/PlayerTransferHistory";
@@ -19,6 +19,7 @@ export default function TransferManagementPage() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("negociations");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [mutationError, setMutationError] = useState(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState("");
   const [formData, setFormData] = useState({
     player_id: "",
@@ -112,6 +113,7 @@ export default function TransferManagementPage() {
       queryClient.invalidateQueries({ queryKey: ['transfers'] });
       queryClient.invalidateQueries({ queryKey: ['players'] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la finalisation du transfert"),
   });
 
   const handleSubmit = (e) => {
@@ -132,6 +134,13 @@ export default function TransferManagementPage() {
 
   return (
     <div className="p-4 md:p-8 space-y-4 md:space-y-8">
+      {mutationError && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span className="flex-1">{mutationError}</span>
+          <button onClick={() => setMutationError(null)} className="hover:text-red-900"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">

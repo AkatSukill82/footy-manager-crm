@@ -35,7 +35,6 @@ export default function ImportExcel() {
       setResults(data);
       setStep("results");
     } catch (err) {
-      console.error("Import function error:", err);
       setResults({ erreurs: [err.message || "Erreur inconnue"], contacts_crees: 0, contacts_mis_a_jour: 0, clubs_crees: 0, clubs_mis_a_jour: 0 });
       setStep("results");
     } finally {

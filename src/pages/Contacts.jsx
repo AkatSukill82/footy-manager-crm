@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Phone, Users, Calendar, Bell } from "lucide-react";
+import { Phone, Users, Calendar, Bell, AlertCircle, X } from "lucide-react";
 import ContactHistory from "../components/contacts/ContactHistory";
 import ContactForm from "../components/contacts/ContactForm";
 import RemindersList from "../components/contacts/RemindersList";
@@ -17,6 +17,7 @@ export default function ContactsPage() {
   const { lang } = useLanguage();
   const [selectedPlayerId, setSelectedPlayerId] = useState("");
   const [activeTab, setActiveTab] = useState("contacts");
+  const [mutationError, setMutationError] = useState(null);
   const queryClient = useQueryClient();
   const user = useCurrentUser();
   const userEmail = user?.email;
@@ -55,6 +56,7 @@ export default function ContactsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la création du contact"),
   });
 
   const createReminderMutation = useMutation({
@@ -63,6 +65,7 @@ export default function ContactsPage() {
       queryClient.invalidateQueries({ queryKey: ['reminders'] });
       queryClient.invalidateQueries({ queryKey: ['all-reminders'] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la création du rappel"),
   });
 
   const updateReminderMutation = useMutation({
@@ -78,6 +81,13 @@ export default function ContactsPage() {
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
+      {mutationError && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span className="flex-1">{mutationError}</span>
+          <button onClick={() => setMutationError(null)} className="hover:text-red-900"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
       <div>
         <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
           <Phone className="w-8 h-8 text-blue-600" />

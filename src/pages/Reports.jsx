@@ -69,7 +69,6 @@ export default function ReportsPage() {
       window.URL.revokeObjectURL(url);
       a.remove();
     } catch (error) {
-      console.error('Export error:', error);
     } finally {
       setIsExporting(false);
     }

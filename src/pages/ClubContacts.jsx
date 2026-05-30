@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Search, Mail, Building2, Trash2, ExternalLink,
-  Plus, Users, Globe, Phone, ChevronDown, X, Filter
+  Plus, Users, Globe, Phone, ChevronDown, X, Filter, AlertCircle
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -259,6 +259,7 @@ export default function ClubContactsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editContact, setEditContact] = useState(null);
+  const [mutationError, setMutationError] = useState(null);
 
   const { data: contacts = [], isLoading } = useQuery({
     queryKey: ["club-contacts"],
@@ -268,16 +269,19 @@ export default function ClubContactsPage() {
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.ClubContact.create(data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["club-contacts"] }),
+    onError: (err) => setMutationError(err.message || "Erreur lors de la création"),
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.ClubContact.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["club-contacts"] }),
+    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour"),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.ClubContact.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["club-contacts"] }),
+    onError: (err) => setMutationError(err.message || "Erreur lors de la suppression"),
   });
 
   const handleSave = (form) => {
@@ -328,6 +332,13 @@ export default function ClubContactsPage() {
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
+      {mutationError && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span className="flex-1">{mutationError}</span>
+          <button onClick={() => setMutationError(null)} className="hover:text-red-900"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>

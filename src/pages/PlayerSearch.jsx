@@ -325,7 +325,6 @@ Champs attendus (tous optionnels) :
       setSaved(true);
       setTimeout(() => navigate(createPageUrl("PlayerDetail") + `?id=${created.id}`), 800);
     } catch (err) {
-      console.error("Save error:", err);
       setError("Erreur lors de la sauvegarde : " + (err.message || "inconnue"));
     } finally {
       setSaving(false);

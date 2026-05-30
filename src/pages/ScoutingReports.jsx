@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   ClipboardList, Plus, Search, Trash2, Eye,
-  Star, Calendar, MapPin, Trophy, ChevronRight
+  Star, Calendar, MapPin, Trophy, ChevronRight, AlertCircle, X
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -315,6 +315,7 @@ export default function ScoutingReportsPage() {
   const [filterReco, setFilterReco] = useState("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [viewReport, setViewReport] = useState(null);
+  const [mutationError, setMutationError] = useState(null);
 
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ["scouting-reports"],
@@ -329,11 +330,13 @@ export default function ScoutingReportsPage() {
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.ScoutingReport.create(data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["scouting-reports"] }); setModalOpen(false); },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la création du rapport"),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.ScoutingReport.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["scouting-reports"] }),
+    onError: (err) => setMutationError(err.message || "Erreur lors de la suppression"),
   });
 
   const filtered = useMemo(() => reports.filter(r => {
@@ -352,6 +355,13 @@ export default function ScoutingReportsPage() {
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
+      {mutationError && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span className="flex-1">{mutationError}</span>
+          <button onClick={() => setMutationError(null)} className="hover:text-red-900"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
