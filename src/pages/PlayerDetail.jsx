@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, User, MapPin, Calendar, TrendingUp, Ruler, Edit2, Star, Trash2, FileDown } from "lucide-react";
+import { ArrowLeft, User, MapPin, Calendar, TrendingUp, Ruler, Edit2, Star, Trash2, FileDown, AlertCircle, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import PlayerForm from "../components/players/PlayerForm";
@@ -52,6 +52,7 @@ export default function PlayerDetailPage() {
   const playerId = urlParams.get('id');
   const [isEditing, setIsEditing] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [mutationError, setMutationError] = useState(null);
 
   const { data: player } = useQuery({
     queryKey: ['player', playerId],
@@ -95,7 +96,7 @@ export default function PlayerDetailPage() {
   });
 
   const { data: allPlayers = [] } = useQuery({
-    queryKey: ['players'],
+    queryKey: ['allPlayers'],
     queryFn: () => base44.entities.Player.list(),
   });
 
@@ -140,6 +141,7 @@ export default function PlayerDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['activityLogs', 'Player', playerId] });
       setIsEditing(false);
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour du joueur"),
   });
 
   const deletePlayerMutation = useMutation({
@@ -151,6 +153,7 @@ export default function PlayerDetailPage() {
     onSuccess: () => {
       navigate(createPageUrl("Players"));
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la suppression du joueur"),
   });
 
   const addToWatchListMutation = useMutation({
@@ -163,6 +166,7 @@ export default function PlayerDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['watchListItem', playerId] });
       queryClient.invalidateQueries({ queryKey: ['watchList'] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de l'ajout à la watchlist"),
   });
 
   const updateWatchListStatusMutation = useMutation({
@@ -171,6 +175,7 @@ export default function PlayerDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['watchListItem', playerId] });
       queryClient.invalidateQueries({ queryKey: ['watchList'] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour du statut"),
   });
 
   const removeFromWatchListMutation = useMutation({
@@ -179,6 +184,7 @@ export default function PlayerDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['watchListItem', playerId] });
       queryClient.invalidateQueries({ queryKey: ['watchList'] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors du retrait de la watchlist"),
   });
 
   const createTransferMutation = useMutation({
@@ -186,21 +192,25 @@ export default function PlayerDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transfers', playerId] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la création du transfert"),
   });
 
   const createNoteMutation = useMutation({
     mutationFn: (data) => base44.entities.PlayerNote.create({ ...data, player_id: playerId }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['playerNotes', playerId] }),
+    onError: (err) => setMutationError(err.message || "Erreur lors de la création de la note"),
   });
 
   const updateNoteMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.PlayerNote.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['playerNotes', playerId] }),
+    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour de la note"),
   });
 
   const deleteNoteMutation = useMutation({
     mutationFn: (id) => base44.entities.PlayerNote.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['playerNotes', playerId] }),
+    onError: (err) => setMutationError(err.message || "Erreur lors de la suppression de la note"),
   });
 
   const updateReminderMutation = useMutation({
@@ -208,6 +218,7 @@ export default function PlayerDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reminders', playerId] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour du rappel"),
   });
 
   if (!player) return null;
@@ -237,6 +248,13 @@ export default function PlayerDetailPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
       <div className="max-w-6xl mx-auto">
+        {mutationError && (
+          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-4">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span className="flex-1">{mutationError}</span>
+            <button onClick={() => setMutationError(null)} className="hover:text-red-900"><X className="w-3.5 h-3.5" /></button>
+          </div>
+        )}
         <Button
           variant="ghost"
           onClick={() => navigate(createPageUrl("Players"))}
@@ -461,10 +479,14 @@ export default function PlayerDetailPage() {
         open={statusModalOpen}
         onClose={() => setStatusModalOpen(false)}
         onConfirm={async (statut) => {
-          if (watchListItem) {
-            await updateWatchListStatusMutation.mutateAsync(statut);
-          } else {
-            await addToWatchListMutation.mutateAsync(statut);
+          try {
+            if (watchListItem) {
+              await updateWatchListStatusMutation.mutateAsync(statut);
+            } else {
+              await addToWatchListMutation.mutateAsync(statut);
+            }
+          } catch {
+            // onError handlers on each mutation display the error banner
           }
         }}
       />

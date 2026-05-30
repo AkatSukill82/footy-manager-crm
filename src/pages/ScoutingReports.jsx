@@ -244,7 +244,7 @@ function ReportCard({ report, onView, onDelete }) {
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           {report.player_photo
-            ? <img src={report.player_photo} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" referrerPolicy="no-referrer" />
+            ? <img src={report.player_photo} alt={report.player_nom || ""} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" referrerPolicy="no-referrer" />
             : <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
                 <ClipboardList className="w-6 h-6 text-slate-400" />
               </div>

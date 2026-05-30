@@ -259,7 +259,7 @@ export default function AlertsPage() {
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     {alert.photo_url
-                      ? <img src={alert.photo_url} className="w-10 h-10 rounded-full object-cover flex-shrink-0" referrerPolicy="no-referrer" />
+                      ? <img src={alert.photo_url} alt={alert.nom || ""} className="w-10 h-10 rounded-full object-cover flex-shrink-0" referrerPolicy="no-referrer" />
                       : <div className="w-10 h-10 bg-slate-200 rounded-full flex-shrink-0" />}
                     <div className="min-w-0">
                       <div className="font-semibold text-slate-900 truncate">{alert.nom}</div>
@@ -462,7 +462,7 @@ export default function AlertsPage() {
                     <div key={c.id} className="flex items-center justify-between p-3 bg-orange-50 border border-orange-200 rounded-xl">
                       <div className="flex items-center gap-3 min-w-0">
                         {c.photo_url
-                          ? <img src={c.photo_url} className="w-9 h-9 rounded-full object-cover flex-shrink-0" referrerPolicy="no-referrer" />
+                          ? <img src={c.photo_url} alt={c.nom || ""} className="w-9 h-9 rounded-full object-cover flex-shrink-0" referrerPolicy="no-referrer" />
                           : <div className="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center flex-shrink-0">
                               <Users className="w-4 h-4 text-slate-400" />
                             </div>}
@@ -509,7 +509,7 @@ export default function AlertsPage() {
                       <div key={c.id} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
                         <div className="flex items-center gap-3 min-w-0">
                           {c.photo_url
-                            ? <img src={c.photo_url} className="w-9 h-9 rounded-full object-cover flex-shrink-0" referrerPolicy="no-referrer" />
+                            ? <img src={c.photo_url} alt={c.nom || ""} className="w-9 h-9 rounded-full object-cover flex-shrink-0" referrerPolicy="no-referrer" />
                             : <div className="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center flex-shrink-0">
                                 <Users className="w-4 h-4 text-slate-400" />
                               </div>}

@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Star, Loader2, Trash2, UserCheck, Zap, FileText, Eye, Edit2 } from "lucide-react";
+import { Star, Loader2, Trash2, UserCheck, Zap, FileText, Eye, Edit2, AlertCircle, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import TransfermarktImage from "../components/ui/TransfermarktImage";
@@ -111,6 +111,7 @@ function PlayerRow({ item, player, note, onEditStatus, onRemove, lang }) {
             <Button
               variant="ghost"
               size="sm"
+              title="Retirer de la watchlist"
               className="h-8 text-red-400 hover:text-red-600 hover:bg-red-50"
               onClick={() => onRemove(item.id)}
             >
@@ -146,6 +147,7 @@ export default function MyWatchListPage() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("all");
   const [modalData, setModalData] = useState(null); // { item, player }
+  const [mutationError, setMutationError] = useState(null);
   const user = useCurrentUser();
   const userEmail = user?.email;
 
@@ -170,6 +172,7 @@ export default function MyWatchListPage() {
   const updateWatchListMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.WatchList.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['watchList'] }),
+    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour"),
   });
 
   const removeFromWatchListMutation = useMutation({
@@ -178,6 +181,7 @@ export default function MyWatchListPage() {
       queryClient.invalidateQueries({ queryKey: ['watchList'] });
       queryClient.invalidateQueries({ queryKey: ['watchListItem'] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la suppression"),
   });
 
   const playersMap = Object.fromEntries(players.map(p => [p.id, p]));
@@ -199,7 +203,13 @@ export default function MyWatchListPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-6">
-
+        {mutationError && (
+          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span className="flex-1">{mutationError}</span>
+            <button onClick={() => setMutationError(null)} className="hover:text-red-900"><X className="w-3.5 h-3.5" /></button>
+          </div>
+        )}
         {/* Header */}
         <div className="flex items-center gap-3">
           <Star className="w-8 h-8 fill-yellow-400 text-yellow-400 flex-shrink-0" />
@@ -302,7 +312,7 @@ export default function MyWatchListPage() {
           open={!!modalData}
           onClose={() => setModalData(null)}
           onConfirm={(statut) =>
-            updateWatchListMutation.mutateAsync({ id: modalData.item.id, data: { statut } })
+            updateWatchListMutation.mutateAsync({ id: modalData.item.id, data: { statut } }).catch(() => {})
           }
         />
       )}

@@ -65,6 +65,7 @@ export default function AgentNetworkPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sharedContents'] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors du like"),
   });
 
   const filteredSharedContents = sharedContents.filter(content => {

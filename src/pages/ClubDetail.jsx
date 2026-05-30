@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, Building2, MapPin, Users, TrendingUp, Trophy,
   Edit2, Trash2, Calendar, Phone, Mail, Globe, User, ExternalLink,
-  Instagram, Twitter, Palette, Link
+  Instagram, Twitter, Palette, Link, AlertCircle, X
 } from "lucide-react";
 import TransfermarktImage from "../components/ui/TransfermarktImage";
 import { useNavigate } from "react-router-dom";
@@ -64,6 +64,7 @@ export default function ClubDetailPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const clubId = urlParams.get('id');
   const [isEditing, setIsEditing] = useState(false);
+  const [mutationError, setMutationError] = useState(null);
 
   const { data: currentUser } = useQuery({
     queryKey: ["currentUser"],
@@ -123,11 +124,13 @@ export default function ClubDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['activityLogs', 'Club', clubId] });
       setIsEditing(false);
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour du club"),
   });
 
   const deleteClubMutation = useMutation({
     mutationFn: () => base44.entities.Club.delete(clubId),
     onSuccess: () => navigate(createPageUrl("Clubs")),
+    onError: (err) => setMutationError(err.message || "Erreur lors de la suppression du club"),
   });
 
   if (!club) return null;
@@ -157,6 +160,13 @@ export default function ClubDetailPage() {
       <Button variant="ghost" onClick={() => navigate(createPageUrl("Clubs"))}>
         <ArrowLeft className="w-4 h-4 mr-2" /> {t(lang,'clubDetail.back')}
       </Button>
+      {mutationError && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span className="flex-1">{mutationError}</span>
+          <button onClick={() => setMutationError(null)} className="hover:text-red-900"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4">

@@ -546,7 +546,6 @@ Ne PAS réinventer les stats déjà fournies. null si inconnu.`,
       setSaved(true);
       setTimeout(() => navigate(createPageUrl("PlayerDetail") + `?id=${created.id}`), 800);
     } catch (err) {
-      console.error("Save error:", err);
       setError(t(lang, 'playerSearch.saveError', { msg: err.message || "inconnue" }));
     } finally {
       setSaving(false);

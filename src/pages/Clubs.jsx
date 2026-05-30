@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Plus, Search, Filter, Globe } from "lucide-react";
+import { Building2, Plus, Search, Filter, Globe, AlertCircle, X } from "lucide-react";
 import ClubCard from "../components/clubs/ClubCard";
 import ClubForm from "../components/clubs/ClubForm";
 import ClubSearch from "../components/clubs/ClubSearch";
@@ -20,6 +20,7 @@ export default function ClubsPage() {
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategorie, setFilterCategorie] = useState("all");
+  const [mutationError, setMutationError] = useState(null);
 
   const { data: clubs = [], isLoading } = useQuery({
     queryKey: ['clubs'],
@@ -32,6 +33,7 @@ export default function ClubsPage() {
       queryClient.invalidateQueries({ queryKey: ['clubs'] });
       setShowForm(false);
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la création du club"),
   });
 
   const PAGE_SIZE = 18;
@@ -75,6 +77,13 @@ export default function ClubsPage() {
 
   return (
     <div className="p-4 md:p-8 space-y-4 md:space-y-8">
+      {mutationError && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span className="flex-1">{mutationError}</span>
+          <button onClick={() => setMutationError(null)} className="hover:text-red-900"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">

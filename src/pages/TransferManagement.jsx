@@ -83,6 +83,7 @@ export default function TransferManagementPage() {
         priorite: "moyenne"
       });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la création de la négociation"),
   });
 
   const updateNegociationMutation = useMutation({
@@ -90,6 +91,7 @@ export default function TransferManagementPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['negociations'] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour du statut"),
   });
 
   const finalizeTransferMutation = useMutation({

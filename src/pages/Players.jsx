@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "../lib/useCurrentUser";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, List, Search } from "lucide-react";
+import { Plus, Loader2, List, Search, AlertCircle, X } from "lucide-react";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
 import PlayerCard from "../components/players/PlayerCard";
@@ -32,6 +32,7 @@ export default function PlayersPage() {
   const currentUser = useCurrentUser();
   const userEmail = currentUser?.email;
   const [modalPlayer, setModalPlayer] = useState(null);
+  const [mutationError, setMutationError] = useState(null);
 
   const { data: players = [], isLoading } = useQuery({
     queryKey: ['players', currentUser?.id],
@@ -51,6 +52,7 @@ export default function PlayersPage() {
       queryClient.invalidateQueries({ queryKey: ['players'] });
       setShowForm(false);
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la création du joueur"),
   });
 
   const addToWatchListMutation = useMutation({
@@ -60,6 +62,7 @@ export default function PlayersPage() {
       queryClient.invalidateQueries({ queryKey: ['watchList'] });
       queryClient.invalidateQueries({ queryKey: ['watchListItem'] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de l'ajout à la watchlist"),
   });
 
   const PAGE_SIZE = 20;
@@ -112,6 +115,14 @@ export default function PlayersPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
+
+        {mutationError && (
+          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-4">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span className="flex-1">{mutationError}</span>
+            <button onClick={() => setMutationError(null)} className="hover:text-red-900"><X className="w-3.5 h-3.5" /></button>
+          </div>
+        )}
 
         {/* Header */}
         <div className="flex justify-between items-center mb-4 md:mb-6 gap-3">
@@ -222,7 +233,7 @@ export default function PlayersPage() {
           player={modalPlayer}
           open={!!modalPlayer}
           onClose={() => setModalPlayer(null)}
-          onConfirm={(statut) => addToWatchListMutation.mutateAsync({ playerId: modalPlayer.id, statut })}
+          onConfirm={(statut) => addToWatchListMutation.mutateAsync({ playerId: modalPlayer.id, statut }).catch(() => {})}
         />
       )}
     </div>

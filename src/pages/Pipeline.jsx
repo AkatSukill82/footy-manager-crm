@@ -56,7 +56,7 @@ function PipelineCard({ card, onDelete, onEdit, onDragStart }) {
 
           <div className="flex items-center gap-2">
             {card.player_photo
-              ? <img src={card.player_photo} className="w-8 h-8 rounded-lg object-cover flex-shrink-0" referrerPolicy="no-referrer" />
+              ? <img src={card.player_photo} alt={card.player_nom || ""} className="w-8 h-8 rounded-lg object-cover flex-shrink-0" referrerPolicy="no-referrer" />
               : <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
                   <User className="w-4 h-4 text-slate-400" />
                 </div>
@@ -228,6 +228,7 @@ export default function PipelinePage() {
   const deleteMutation = useMutation({
     mutationFn: id => base44.entities.Pipeline.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pipeline"] }),
+    onError: (err) => toast({ title: "Erreur lors de la suppression", description: err?.message || String(err), variant: "destructive" }),
   });
 
   const cardsByCol = useMemo(() => {

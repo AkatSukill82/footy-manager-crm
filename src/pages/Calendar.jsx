@@ -337,7 +337,7 @@ export default function CalendarPage() {
 
   const { data: players = [] } = useQuery({
     queryKey: ['players'],
-    queryFn: () => base44.entities.Player.list('-created_date'),
+    queryFn: () => base44.entities.Player.list(),
   });
 
   const calendarId = selectedCal?.id || 'primary';

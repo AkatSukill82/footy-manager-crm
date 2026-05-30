@@ -9,7 +9,7 @@
  *   getSquad      — effectif d'une équipe par ID
  */
 
-const API_KEY = "69289700a254963331e0a79b901c56da";
+const API_KEY = Deno.env.get("API_FOOTBALL_KEY") ?? "69289700a254963331e0a79b901c56da";
 const BASE    = "https://v3.football.api-sports.io";
 
 const afGet = async (path: string) => {

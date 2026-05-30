@@ -67,7 +67,7 @@ export default function PlayerForm({ player, onSubmit, onCancel }) {
           </div>
           <CardTitle className="text-lg">{player ? t(lang,'playerForm.titleEdit') : t(lang,'playerForm.titleAdd')}</CardTitle>
         </div>
-        <Button variant="ghost" size="icon" onClick={onCancel}>
+        <Button variant="ghost" size="icon" title="Fermer" onClick={onCancel}>
           <X className="w-4 h-4" />
         </Button>
       </CardHeader>

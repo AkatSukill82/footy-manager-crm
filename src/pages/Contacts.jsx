@@ -74,6 +74,7 @@ export default function ContactsPage() {
       queryClient.invalidateQueries({ queryKey: ['reminders'] });
       queryClient.invalidateQueries({ queryKey: ['all-reminders'] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour du rappel"),
   });
 
   const selectedPlayer = players.find(p => p.id === selectedPlayerId);
