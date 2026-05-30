@@ -317,10 +317,23 @@ export default function CalendarPage() {
   const [events, setEvents]           = useState([]);
   const [loading, setLoading]         = useState(false);
   const [connecting, setConnecting]   = useState(false);
+  const [autoReconnecting, setAutoReconnecting] = useState(false);
   const [error, setError]             = useState('');
   const [showNewEvent, setShowNewEvent] = useState(false);
   const [showCalPicker, setShowCalPicker] = useState(false);
   const [deletingId, setDeletingId]   = useState(null);
+
+  // Reconnexion silencieuse au chargement si le token a expiré
+  // mais que l'utilisateur était déjà connecté (session Google toujours active)
+  useEffect(() => {
+    if (!connected && GoogleCalendarService.getUserInfoCache()) {
+      setAutoReconnecting(true);
+      GoogleCalendarService.connect()
+        .then(() => setConnected(true))
+        .catch(() => {}) // échec silencieux → l'utilisateur verra le bouton connect
+        .finally(() => setAutoReconnecting(false));
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: players = [] } = useQuery({
     queryKey: ['players'],
@@ -456,8 +469,18 @@ export default function CalendarPage() {
           </div>
         )}
 
+        {/* Reconnexion silencieuse en cours */}
+        {autoReconnecting && (
+          <Card>
+            <CardContent className="flex flex-col items-center py-16 gap-4 text-slate-500">
+              <Loader2 className="w-8 h-8 animate-spin text-green-500" />
+              <p className="text-sm">Reconnexion à Google Calendar…</p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Non connecté */}
-        {!connected && (
+        {!connected && !autoReconnecting && (
           <Card className="overflow-hidden">
             <div className="h-1 bg-gradient-to-r from-green-400 to-emerald-500" />
             <CardContent className="flex flex-col items-center py-16 gap-6">
