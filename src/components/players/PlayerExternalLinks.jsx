@@ -2,9 +2,20 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExternalLink } from "lucide-react";
 
+const slugify = (name) =>
+  (name || "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
 function buildLinks(player) {
   const name = encodeURIComponent(player.nom || "");
   const tmId = player.transfermarkt_id;
+  const ssId = player.sofascore_id;
+  const ssSlug = slugify(player.nom);
   return [
     {
       label: "Transfermarkt",
@@ -16,18 +27,20 @@ function buildLinks(player) {
       style: "bg-green-50 border-green-200 hover:bg-green-100 text-green-900",
     },
     {
+      label: "SofaScore",
+      description: "Notes de match, performances, forme récente",
+      href: ssId
+        ? `https://www.sofascore.com/football/player/${ssSlug}/${ssId}`
+        : `https://www.google.com/search?q=sofascore+${name}+football`,
+      badge: ssId ? "Profil direct" : "Via Google",
+      style: "bg-orange-50 border-orange-200 hover:bg-orange-100 text-orange-900",
+    },
+    {
       label: "FBref",
       description: "Stats avancées : xG, passes clés, duels, pressing…",
       href: `https://fbref.com/search/search.fcgi?search=${name}`,
       badge: "Recherche",
       style: "bg-blue-50 border-blue-200 hover:bg-blue-100 text-blue-900",
-    },
-    {
-      label: "SofaScore",
-      description: "Notes de match, performances, forme récente",
-      href: `https://www.google.com/search?q=sofascore+${name}+football`,
-      badge: "Via Google",
-      style: "bg-orange-50 border-orange-200 hover:bg-orange-100 text-orange-900",
     },
   ];
 }

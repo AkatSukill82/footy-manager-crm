@@ -30,6 +30,8 @@ import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
 import ActivityLogList from "../components/activity/ActivityLogList";
 import PlayerExternalLinks from "../components/players/PlayerExternalLinks";
+import PlayerTMStats from "../components/players/PlayerTMStats";
+import PlayerSofaStats from "../components/players/PlayerSofaStats";
 
 const posteColors = {
   "Gardien": "bg-yellow-100 text-yellow-800",
@@ -411,6 +413,10 @@ export default function PlayerDetailPage() {
 
             {/* Charts & Evolution */}
             <PlayerChartsPanel playerId={playerId} player={player} />
+
+            <PlayerTMStats player={player} />
+
+            <PlayerSofaStats player={player} />
 
             <TransferHistory transfers={transfers} player={player} />
             
