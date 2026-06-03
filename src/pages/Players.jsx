@@ -3,7 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "../lib/useCurrentUser";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, List, Search, AlertCircle, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Plus, Loader2, Search, AlertCircle, X, SlidersHorizontal, ChevronDown, ChevronUp, Users } from "lucide-react";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
 import PlayerCard from "../components/players/PlayerCard";
@@ -12,27 +13,37 @@ import PlayerForm from "../components/players/PlayerForm";
 import TransfermarktSearch from "../components/players/TransfermarktSearch";
 import PlayerStatusModal from "../components/players/PlayerStatusModal";
 
+const POSTES_QUICK = [
+  { label: "Tous", value: "all" },
+  { label: "GK",  value: "Gardien" },
+  { label: "DC",  value: "Défenseur central" },
+  { label: "LD",  value: "Latéral droit" },
+  { label: "LG",  value: "Latéral gauche" },
+  { label: "MD",  value: "Milieu défensif" },
+  { label: "MC",  value: "Milieu central" },
+  { label: "MO",  value: "Milieu offensif" },
+  { label: "AD",  value: "Ailier droit" },
+  { label: "AG",  value: "Ailier gauche" },
+  { label: "ATT", value: "Attaquant" },
+];
+
+const PAGE_SIZE = 25;
+
 export default function PlayersPage() {
   const { lang } = useLanguage();
   const [activeTab, setActiveTab] = useState("liste");
-  const [showForm, setShowForm] = useState(false);
-  const [filters, setFilters] = useState({
-    search: "",
-    poste: "all",
-    ageMin: "",
-    ageMax: "",
-    club: "",
-    budgetMax: "",
-    contratExpire: "all",
-    nationalite: "",
-    piedFort: "all"
-  });
+  const [showForm, setShowForm]   = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [quickPoste, setQuickPoste] = useState("all");
+  const [search, setSearch] = useState("");
+  const [advancedFilters, setAdvancedFilters] = useState({});
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [modalPlayer, setModalPlayer] = useState(null);
+  const [mutationError, setMutationError] = useState(null);
 
   const queryClient = useQueryClient();
   const currentUser = useCurrentUser();
-  const userEmail = currentUser?.email;
-  const [modalPlayer, setModalPlayer] = useState(null);
-  const [mutationError, setMutationError] = useState(null);
+  const userEmail   = currentUser?.email;
 
   const { data: players = [], isLoading } = useQuery({
     queryKey: ['players', currentUser?.id],
@@ -65,115 +76,105 @@ export default function PlayersPage() {
     onError: (err) => setMutationError(err.message || "Erreur lors de l'ajout à la watchlist"),
   });
 
-  const PAGE_SIZE = 20;
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-
-  // Reset pagination quand les filtres changent
-  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [filters]);
+  // Reset pagination on filter change
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [search, quickPoste, advancedFilters]);
 
   const watchListMap = Object.fromEntries(watchList.map(w => [w.player_id, w]));
 
   const filteredPlayers = players.filter(player => {
-    const matchesSearch = !filters.search ||
-      player.nom?.toLowerCase().includes(filters.search.toLowerCase()) ||
-      player.club_actuel?.toLowerCase().includes(filters.search.toLowerCase());
+    // Quick search
+    if (search && !player.nom?.toLowerCase().includes(search.toLowerCase()) &&
+        !player.club_actuel?.toLowerCase().includes(search.toLowerCase()) &&
+        !player.nationalite?.toLowerCase().includes(search.toLowerCase()))
+      return false;
 
-    const matchesPoste = filters.poste === "all" || player.poste === filters.poste;
+    // Quick poste filter
+    if (quickPoste !== "all" && player.poste !== quickPoste) return false;
 
-    const matchesAge = (!filters.ageMin || player.age >= parseInt(filters.ageMin)) &&
-                       (!filters.ageMax || player.age <= parseInt(filters.ageMax));
-
-    const matchesClub = !filters.club ||
-      player.club_actuel?.toLowerCase().includes(filters.club.toLowerCase());
-
-    const matchesBudget =
-      (!filters.valeurMin || (player.valeur_marchande && player.valeur_marchande >= parseFloat(filters.valeurMin))) &&
-      (!filters.valeurMax || !player.valeur_marchande || player.valeur_marchande <= parseFloat(filters.valeurMax));
-    const matchesBudgetLegacy = !filters.budgetMax || !player.valeur_marchande || player.valeur_marchande <= parseFloat(filters.budgetMax);
-
-    const matchesContrat = filters.contratExpire === "all" || (() => {
+    // Advanced filters
+    const f = advancedFilters;
+    if (f.poste && f.poste !== "all" && player.poste !== f.poste) return false;
+    if (f.ageMin && player.age < parseInt(f.ageMin)) return false;
+    if (f.ageMax && player.age > parseInt(f.ageMax)) return false;
+    if (f.club && !player.club_actuel?.toLowerCase().includes(f.club.toLowerCase())) return false;
+    if (f.nationalite && !player.nationalite?.toLowerCase().includes(f.nationalite.toLowerCase())) return false;
+    if (f.piedFort && f.piedFort !== "all" && player.pied_fort !== f.piedFort) return false;
+    if (f.valeurMin && (!player.valeur_marchande || player.valeur_marchande < parseFloat(f.valeurMin))) return false;
+    if (f.valeurMax && player.valeur_marchande && player.valeur_marchande > parseFloat(f.valeurMax)) return false;
+    if (f.contratExpire && f.contratExpire !== "all") {
       if (!player.contrat_fin) return false;
-      const now = new Date();
-      const contractEnd = new Date(player.contrat_fin);
-      switch (filters.contratExpire) {
-        case "expired": return contractEnd < now;
-        case "6months": return contractEnd >= now && contractEnd <= new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000);
-        case "1year":   return contractEnd >= now && contractEnd <= new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
-        default: return true;
-      }
-    })();
+      const now = new Date(); const end = new Date(player.contrat_fin);
+      if (f.contratExpire === "expired" && end >= now) return false;
+      if (f.contratExpire === "6months" && (end < now || end > new Date(now.getTime() + 180 * 86400000))) return false;
+      if (f.contratExpire === "1year"   && (end < now || end > new Date(now.getTime() + 365 * 86400000))) return false;
+    }
 
-    const matchesNationalite = !filters.nationalite ||
-      player.nationalite?.toLowerCase().includes(filters.nationalite.toLowerCase());
-
-    const matchesPied = filters.piedFort === "all" || player.pied_fort === filters.piedFort;
-
-    return matchesSearch && matchesPoste && matchesAge && matchesClub &&
-           matchesBudget && matchesBudgetLegacy && matchesContrat && matchesNationalite && matchesPied;
+    return true;
   });
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-6">
-      <div className="max-w-7xl mx-auto">
+  const visible = filteredPlayers.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredPlayers.length;
 
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <div className="max-w-5xl mx-auto px-4 py-6 space-y-4">
+
+        {/* Error banner */}
         {mutationError && (
-          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-4">
+          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span className="flex-1">{mutationError}</span>
-            <button onClick={() => setMutationError(null)} className="hover:text-red-900"><X className="w-3.5 h-3.5" /></button>
+            <button onClick={() => setMutationError(null)}><X className="w-3.5 h-3.5" /></button>
           </div>
         )}
 
         {/* Header */}
-        <div className="flex justify-between items-center mb-4 md:mb-6 gap-3">
-          <div className="min-w-0">
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 truncate">{t(lang, 'players.title')}</h1>
-            <p className="text-slate-600 mt-0.5 text-sm">{t(lang, 'players.count', { count: players.length })}</p>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">{t(lang, 'players.title')}</h1>
+            <p className="text-sm text-slate-400 mt-0.5">
+              {players.length} joueur{players.length !== 1 ? "s" : ""} enregistré{players.length !== 1 ? "s" : ""}
+              {filteredPlayers.length !== players.length && ` · ${filteredPlayers.length} affiché${filteredPlayers.length !== 1 ? "s" : ""}`}
+            </p>
           </div>
-          {activeTab === "liste" && (
+          <div className="flex gap-2">
             <Button
-              onClick={() => setShowForm(!showForm)}
-              className="bg-green-600 hover:bg-green-700 flex-shrink-0"
+              onClick={() => { setActiveTab("liste"); setShowForm(f => !f); }}
+              className="bg-green-600 hover:bg-green-700 gap-2"
               size="sm"
             >
-              <Plus className="w-4 h-4 md:mr-2" />
-              <span className="hidden md:inline">{t(lang, 'players.addPlayer')}</span>
-              <span className="md:hidden">{t(lang, 'common.add')}</span>
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">{t(lang, 'players.addPlayer')}</span>
             </Button>
-          )}
+          </div>
         </div>
 
-        {/* Tab toggle */}
-        <div className="flex gap-1 p-1 bg-slate-100 rounded-xl mb-6 w-fit">
-          <button
-            onClick={() => setActiveTab("recherche")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === "recherche"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            <Search className="w-4 h-4" />
-            {t(lang, 'players.searchTab')}
-          </button>
-          <button
-            onClick={() => setActiveTab("liste")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === "liste"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            <List className="w-4 h-4" />
-            {t(lang, 'players.myList')}
-          </button>
+        {/* Tabs */}
+        <div className="flex gap-1 p-1 bg-white border border-slate-200 rounded-xl w-fit shadow-sm">
+          {[
+            { key: "liste",     label: "👤 Ma liste" },
+            { key: "recherche", label: "🔍 Recherche TM" },
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                activeTab === tab.key
+                  ? "bg-green-600 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {/* ── MA LISTE ── */}
         {activeTab === "liste" && (
           <>
+            {/* Add form */}
             {showForm && (
-              <div className="mb-6">
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
                 <PlayerForm
                   onSubmit={(data) => createMutation.mutate(data)}
                   onCancel={() => setShowForm(false)}
@@ -181,18 +182,81 @@ export default function PlayersPage() {
               </div>
             )}
 
-            <div className="mb-6">
-              <AdvancedFilters onFiltersChange={setFilters} players={players} />
+            {/* Search + position pills */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 space-y-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input
+                  placeholder="Rechercher par nom, club, nationalité…"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="pl-9 bg-slate-50 border-slate-200 h-9"
+                />
+                {search && (
+                  <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <X className="w-3.5 h-3.5 text-slate-400 hover:text-slate-700" />
+                  </button>
+                )}
+              </div>
+
+              {/* Position quick-filter */}
+              <div className="flex flex-wrap gap-1.5">
+                {POSTES_QUICK.map(p => (
+                  <button
+                    key={p.value}
+                    onClick={() => setQuickPoste(p.value)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                      quickPoste === p.value
+                        ? "bg-green-600 text-white shadow-sm"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Advanced filters toggle */}
+              <button
+                onClick={() => setShowAdvanced(v => !v)}
+                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition-colors"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                Filtres avancés
+                {showAdvanced ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
+
+              {showAdvanced && (
+                <div className="pt-1 border-t border-slate-100">
+                  <AdvancedFilters
+                    onFiltersChange={setAdvancedFilters}
+                    players={players}
+                  />
+                </div>
+              )}
             </div>
 
+            {/* List */}
             {isLoading ? (
               <div className="flex justify-center items-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                <Loader2 className="w-7 h-7 animate-spin text-slate-300" />
+              </div>
+            ) : filteredPlayers.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <Users className="w-12 h-12 text-slate-200 mb-3" />
+                <p className="text-slate-500 font-medium">
+                  {players.length === 0 ? "Aucun joueur enregistré" : "Aucun joueur ne correspond aux filtres"}
+                </p>
+                {players.length === 0 && (
+                  <Button onClick={() => setShowForm(true)} variant="outline" size="sm" className="mt-4 gap-2">
+                    <Plus className="w-4 h-4" /> Ajouter un joueur
+                  </Button>
+                )}
               </div>
             ) : (
               <>
-                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-50 shadow-sm">
-                  {filteredPlayers.slice(0, visibleCount).map((player) => (
+                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                  {visible.map(player => (
                     <PlayerCard
                       key={player.id}
                       player={player}
@@ -202,38 +266,40 @@ export default function PlayersPage() {
                     />
                   ))}
                 </div>
-                {visibleCount < filteredPlayers.length && (
-                  <div className="text-center pt-4">
-                    <Button variant="outline" onClick={() => setVisibleCount(c => c + PAGE_SIZE)}>
-                      Voir plus ({filteredPlayers.length - visibleCount} restants)
+
+                {hasMore && (
+                  <div className="text-center pt-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
+                      className="text-slate-500 hover:text-slate-800 gap-2"
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                      Voir {Math.min(PAGE_SIZE, filteredPlayers.length - visibleCount)} joueurs de plus
+                      <span className="text-slate-400">({filteredPlayers.length - visibleCount} restants)</span>
                     </Button>
                   </div>
                 )}
               </>
             )}
-
-            {!isLoading && filteredPlayers.length === 0 && (
-              <div className="text-center py-20">
-                <p className="text-slate-500 text-lg">{t(lang, 'players.noResults')}</p>
-              </div>
-            )}
           </>
         )}
 
-        {/* ── AJOUTER VIA TRANSFERMARKT ── */}
-        {activeTab === "recherche" && (
-          <TransfermarktSearch />
-        )}
+        {/* ── RECHERCHE TRANSFERMARKT ── */}
+        {activeTab === "recherche" && <TransfermarktSearch />}
 
       </div>
 
-      {/* Player status modal */}
+      {/* Watchlist modal */}
       {modalPlayer && (
         <PlayerStatusModal
           player={modalPlayer}
           open={!!modalPlayer}
           onClose={() => setModalPlayer(null)}
-          onConfirm={(statut) => addToWatchListMutation.mutateAsync({ playerId: modalPlayer.id, statut }).catch(() => {})}
+          onConfirm={(statut) =>
+            addToWatchListMutation.mutateAsync({ playerId: modalPlayer.id, statut }).catch(() => {})
+          }
         />
       )}
     </div>

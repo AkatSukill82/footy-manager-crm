@@ -21,6 +21,7 @@ import ImportTransfermarktPhoto from "../components/players/ImportTransfermarktP
 import PlayerFullProfile from "../components/players/PlayerFullProfile";
 import PlayerScoutingRatings from "../components/players/PlayerScoutingRatings";
 import PlayerChartsPanel from "../components/players/PlayerChartsPanel";
+import PlayerStatsPanel from "../components/players/PlayerStatsPanel";
 import SyncPlayerButton from "../components/players/SyncPlayerButton";
 import UpcomingMatches from "../components/players/UpcomingMatches";
 import { format } from "date-fns";
@@ -410,6 +411,9 @@ export default function PlayerDetailPage() {
 
             {/* Profil complet identique à Recherche Joueurs */}
             <PlayerFullProfile player={player} />
+
+            {/* Stats par catégorie */}
+            <PlayerStatsPanel player={player} />
 
             {/* Charts & Evolution */}
             <PlayerChartsPanel playerId={playerId} player={player} />
