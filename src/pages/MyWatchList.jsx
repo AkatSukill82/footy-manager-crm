@@ -171,14 +171,14 @@ export default function MyWatchListPage() {
 
   const updateWatchListMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.WatchList.update(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['watchList'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['watchList', userEmail] }),
     onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour"),
   });
 
   const removeFromWatchListMutation = useMutation({
     mutationFn: (id) => base44.entities.WatchList.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['watchList'] });
+      queryClient.invalidateQueries({ queryKey: ['watchList', userEmail] });
       queryClient.invalidateQueries({ queryKey: ['watchListItem'] });
     },
     onError: (err) => setMutationError(err.message || "Erreur lors de la suppression"),

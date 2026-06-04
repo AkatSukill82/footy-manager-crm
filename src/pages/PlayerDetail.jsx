@@ -401,7 +401,7 @@ export default function PlayerDetailPage() {
                       <Calendar className="w-5 h-5 text-slate-400" />
                       <div>
                         <p className="text-sm text-slate-600">{t(lang, 'playerDetail.contractEnd')}</p>
-                        <p className="font-semibold">{format(new Date(player.contrat_fin), "dd/MM/yyyy")}</p>
+                        <p className="font-semibold">{(() => { const d = new Date(player.contrat_fin); return isNaN(d) ? player.contrat_fin : format(d, "dd/MM/yyyy"); })()}</p>
                       </div>
                     </div>
                   )}

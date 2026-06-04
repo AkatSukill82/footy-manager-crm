@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Loader2, CheckCircle2, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { Sparkles, Loader2, CheckCircle2, RefreshCw, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
 import { useLanguage } from "../../lib/LanguageContext";
 import { t } from "../../i18n/translations";
 
@@ -118,11 +118,13 @@ export default function EnrichPlayerAI({ player, onApply }) {
   const [result, setResult] = useState(null);
   const [applied, setApplied] = useState(false);
   const [showUnchanged, setShowUnchanged] = useState(false);
+  const [enrichError, setEnrichError] = useState(null);
 
   const handleEnrich = async () => {
     setLoading(true);
     setResult(null);
     setApplied(false);
+    setEnrichError(null);
 
     const playerCtx = [
       `Nom: ${player.nom}`,
@@ -202,10 +204,11 @@ RÈGLES DE FORMAT STRICTES :
       }
     };
 
-    // Lancer 2 requêtes en parallèle : une pour l'identité/carrière, une pour les stats/matchs
-    const [data1, data2] = await Promise.all([
-      base44.integrations.Core.InvokeLLM({
-        prompt: `Tu es un scout football expert. Recherche TOUTES les infos disponibles sur ce joueur en consultant OBLIGATOIREMENT dans cet ordre :
+    try {
+      // Lancer 2 requêtes en parallèle : une pour l'identité/carrière, une pour les stats/matchs
+      const [data1, data2] = await Promise.all([
+        base44.integrations.Core.InvokeLLM({
+          prompt: `Tu es un scout football expert. Recherche TOUTES les infos disponibles sur ce joueur en consultant OBLIGATOIREMENT dans cet ordre :
 
 1. **Transfermarkt** (transfermarkt.com et transfermarkt.fr) : profil complet, valeur marchande actuelle et historique, contrat, agent, club actuel, situation de prêt, historique de tous les clubs, blessures passées, matchs et buts en carrière, transfermarkt_id
 2. **Wikipedia** (en français, anglais et dans la langue du pays du joueur) : biographie, lieu de naissance exact, palmarès, distinctions, anecdotes carrière
@@ -217,13 +220,13 @@ ${playerCtx}
 
 FOCUS DE CETTE REQUÊTE : identité, biographie, contrat, valeur marchande, agent, historique clubs, blessures, carrière complète, palmarès, photo.
 ${FORMAT_RULES}`,
-        add_context_from_internet: true,
-        model: "gemini_3_1_pro",
-        response_json_schema: jsonSchema,
-      }),
+          add_context_from_internet: true,
+          model: "gemini_3_1_pro",
+          response_json_schema: jsonSchema,
+        }),
 
-      base44.integrations.Core.InvokeLLM({
-        prompt: `Tu es un analyste football expert. Recherche TOUTES les statistiques disponibles sur ce joueur en consultant OBLIGATOIREMENT :
+        base44.integrations.Core.InvokeLLM({
+          prompt: `Tu es un analyste football expert. Recherche TOUTES les statistiques disponibles sur ce joueur en consultant OBLIGATOIREMENT :
 
 1. **SofaScore** (sofascore.com) : stats saison en cours (buts, passes déc., note moyenne, xG, xA, tirs, dribbles, duels, interceptions, passes %, distance course, sprints, vitesse max, touches balle), sofascore_id
 2. **FBref** (fbref.com) : stats avancées, xG, xA, passes progressives, pressings
@@ -237,24 +240,28 @@ ${playerCtx}
 
 FOCUS DE CETTE REQUÊTE : statistiques saison en cours, stats avancées (xG/xA/duels/physique), sélection nationale, style de jeu détaillé, points forts et faibles basés sur les stats.
 ${FORMAT_RULES}`,
-        add_context_from_internet: true,
-        model: "gemini_3_1_pro",
-        response_json_schema: jsonSchema,
-      }),
-    ]);
+          add_context_from_internet: true,
+          model: "gemini_3_1_pro",
+          response_json_schema: jsonSchema,
+        }),
+      ]);
 
-    // Fusionner les deux résultats : data1 prioritaire sauf si null/undefined
-    const merged = { ...data2 };
-    if (data1) {
-      for (const key of Object.keys(data1)) {
-        if (data1[key] !== null && data1[key] !== undefined && data1[key] !== "") {
-          merged[key] = data1[key];
+      // Fusionner les deux résultats : data1 prioritaire sauf si null/undefined
+      const merged = { ...data2 };
+      if (data1) {
+        for (const key of Object.keys(data1)) {
+          if (data1[key] !== null && data1[key] !== undefined && data1[key] !== "") {
+            merged[key] = data1[key];
+          }
         }
       }
-    }
 
-    setResult(merged);
-    setLoading(false);
+      setResult(merged);
+    } catch (err) {
+      setEnrichError(err.message || "L'enrichissement IA a échoué. Veuillez réessayer.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleApply = () => {
@@ -335,6 +342,12 @@ ${FORMAT_RULES}`,
                 ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t(lang, 'playerDetail.searching')}</>
                 : <><Sparkles className="w-4 h-4 mr-2" />{t(lang, 'playerDetail.searchAll')}</>}
             </Button>
+            {enrichError && (
+              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mt-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1">{enrichError}</span>
+              </div>
+            )}
           </>
         )}
 

@@ -27,8 +27,9 @@ export default function ImportTransfermarktPhoto({ player, onApply }) {
     setApplied(false);
     setImageErrors({});
 
-    const data = await base44.integrations.Core.InvokeLLM({
-      prompt: `Recherche la photo officielle du joueur de football "${player.nom}"${player.club_actuel ? ` qui joue à ${player.club_actuel}` : ""}${player.nationalite ? `, nationalité ${player.nationalite}` : ""}.
+    try {
+      const data = await base44.integrations.Core.InvokeLLM({
+        prompt: `Recherche la photo officielle du joueur de football "${player.nom}"${player.club_actuel ? ` qui joue à ${player.club_actuel}` : ""}${player.nationalite ? `, nationalité ${player.nationalite}` : ""}.
 
 Donne-moi 3 URLs directes d'images de ce joueur, en priorité :
 1. Wikipedia (https://upload.wikimedia.org/...)
@@ -40,23 +41,26 @@ IMPORTANT :
 - NE PAS donner des URLs Transfermarkt car elles sont bloquées
 - Préfère Wikipedia, les sites officiels des clubs, UEFA.com, FIFA.com
 - Vérifie bien que les URLs existent et sont accessibles`,
-      add_context_from_internet: true,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          photo_1: { type: "string", description: "URL directe image 1 (Wikipedia de préférence)" },
-          source_1: { type: "string", description: "Nom de la source 1" },
-          photo_2: { type: "string", description: "URL directe image 2" },
-          source_2: { type: "string", description: "Nom de la source 2" },
-          photo_3: { type: "string", description: "URL directe image 3" },
-          source_3: { type: "string", description: "Nom de la source 3" },
-          profil_transfermarkt: { type: "string", description: "URL du profil Transfermarkt (pour référence seulement)" },
+        add_context_from_internet: true,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            photo_1: { type: "string", description: "URL directe image 1 (Wikipedia de préférence)" },
+            source_1: { type: "string", description: "Nom de la source 1" },
+            photo_2: { type: "string", description: "URL directe image 2" },
+            source_2: { type: "string", description: "Nom de la source 2" },
+            photo_3: { type: "string", description: "URL directe image 3" },
+            source_3: { type: "string", description: "Nom de la source 3" },
+            profil_transfermarkt: { type: "string", description: "URL du profil Transfermarkt (pour référence seulement)" },
+          }
         }
-      }
-    });
-
-    setCandidates(data);
-    setLoading(false);
+      });
+      setCandidates(data);
+    } catch (err) {
+      setCandidates({});
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleApply = async (photoUrl) => {
