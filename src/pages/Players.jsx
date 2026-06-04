@@ -140,7 +140,7 @@ export default function PlayersPage() {
           <div className="flex gap-2">
             <Button
               onClick={() => { setActiveTab("liste"); setShowForm(f => !f); }}
-              className="bg-green-600 hover:bg-green-700 gap-2"
+              className="bg-slate-900 hover:bg-slate-800 gap-2"
               size="sm"
             >
               <Plus className="w-4 h-4" />
@@ -160,7 +160,7 @@ export default function PlayersPage() {
               onClick={() => setActiveTab(tab.key)}
               className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
                 activeTab === tab.key
-                  ? "bg-green-600 text-white shadow-sm"
+                  ? "bg-slate-900 text-white shadow-sm"
                   : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
               }`}
             >

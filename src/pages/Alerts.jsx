@@ -190,10 +190,7 @@ export default function AlertsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-2">
-            <Bell className="w-6 h-6 md:w-8 md:h-8 text-orange-500" />
-            {t(lang, 'alerts.title')}
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-900">{t(lang, 'alerts.title')}</h1>
           <p className="text-sm text-slate-500 mt-0.5">{t(lang, 'alerts.count', { count: totalAlerts })}</p>
         </div>
       </div>

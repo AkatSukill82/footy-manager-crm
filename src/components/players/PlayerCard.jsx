@@ -16,16 +16,16 @@ const POSTE_ABBR = {
 };
 
 const POSTE_COLOR = {
-  "Gardien": "bg-yellow-100 text-yellow-700",
-  "Défenseur central": "bg-blue-100 text-blue-700",
-  "Latéral droit": "bg-blue-100 text-blue-600",
-  "Latéral gauche": "bg-blue-100 text-blue-600",
-  "Milieu défensif": "bg-teal-100 text-teal-700",
-  "Milieu central": "bg-green-100 text-green-700",
-  "Milieu offensif": "bg-purple-100 text-purple-700",
-  "Ailier droit": "bg-orange-100 text-orange-700",
-  "Ailier gauche": "bg-orange-100 text-orange-700",
-  "Attaquant": "bg-red-100 text-red-700",
+  "Gardien": "bg-amber-50 text-amber-700",
+  "Défenseur central": "bg-slate-100 text-slate-600",
+  "Latéral droit": "bg-slate-100 text-slate-600",
+  "Latéral gauche": "bg-slate-100 text-slate-600",
+  "Milieu défensif": "bg-slate-100 text-slate-600",
+  "Milieu central": "bg-slate-100 text-slate-600",
+  "Milieu offensif": "bg-slate-100 text-slate-600",
+  "Ailier droit": "bg-slate-100 text-slate-600",
+  "Ailier gauche": "bg-slate-100 text-slate-600",
+  "Attaquant": "bg-slate-900 text-white",
 };
 
 function Stat({ label, value, color = "text-slate-800" }) {
@@ -154,7 +154,7 @@ export default function PlayerCard({ player, inWatchList, watchlistItem, onAddTo
             <button
               type="button"
               onClick={e => { e.stopPropagation(); onAddToWatchlist(player); }}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-300 hover:text-green-600 hover:bg-green-50 transition-colors"
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-300 hover:text-slate-900 hover:bg-slate-100 transition-colors"
               title={t(lang, 'players.addToWatch')}
             >
               <Plus className="w-4 h-4" />

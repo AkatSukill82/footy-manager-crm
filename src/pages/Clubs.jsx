@@ -96,7 +96,7 @@ export default function ClubsPage() {
             onClick={() => setShowSearch(true)}
             variant="outline"
             size="sm"
-            className="border-green-300 text-green-700 hover:bg-green-50"
+            className="border-slate-200 text-slate-600 hover:bg-slate-50"
           >
             <Globe className="w-4 h-4 md:mr-2" />
             <span className="hidden md:inline">{t(lang, 'clubs.searchOnline')}</span>

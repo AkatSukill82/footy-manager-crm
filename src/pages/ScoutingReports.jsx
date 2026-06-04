@@ -366,15 +366,10 @@ export default function ScoutingReportsPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <div className="w-9 h-9 bg-gradient-to-br from-violet-500 to-violet-600 rounded-xl flex items-center justify-center shadow-md">
-              <ClipboardList className="w-5 h-5 text-white" />
-            </div>
-            Rapports de scouting
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-900">Rapports de scouting</h1>
           <p className="text-slate-500 text-sm mt-1">Évaluations de joueurs observés sur le terrain</p>
         </div>
-        <Button onClick={() => setModalOpen(true)} className="bg-violet-600 hover:bg-violet-700 text-white gap-2 flex-shrink-0">
+        <Button onClick={() => setModalOpen(true)} className="bg-slate-900 hover:bg-slate-800 text-white gap-2 flex-shrink-0">
           <Plus className="w-4 h-4" /> Nouveau rapport
         </Button>
       </div>
@@ -383,19 +378,14 @@ export default function ScoutingReportsPage() {
       {reports.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "Rapports", value: stats.total, color: "text-violet-600 bg-violet-50" },
-            { label: "À signer", value: stats.signer, color: "text-green-600 bg-green-50" },
-            { label: "À suivre", value: stats.suivre, color: "text-blue-600 bg-blue-50" },
-            { label: "Note moy.", value: `${stats.moyNote}/10`, color: "text-orange-600 bg-orange-50" },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="bg-white rounded-xl border border-slate-100 p-3 flex items-center gap-3 shadow-sm">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${color}`}>
-                <Star className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="font-bold text-lg text-slate-900 leading-none">{value}</div>
-                <div className="text-xs text-slate-400 mt-0.5">{label}</div>
-              </div>
+            { label: "Rapports", value: stats.total },
+            { label: "À signer", value: stats.signer },
+            { label: "À suivre", value: stats.suivre },
+            { label: "Note moy.", value: `${stats.moyNote}/10` },
+          ].map(({ label, value }) => (
+            <div key={label} className="bg-white rounded-xl border border-slate-100 p-4">
+              <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-2">{label}</div>
+              <div className="text-2xl font-bold text-slate-900 leading-none">{value}</div>
             </div>
           ))}
         </div>
