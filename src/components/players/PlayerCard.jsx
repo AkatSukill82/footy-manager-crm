@@ -42,11 +42,12 @@ function contractStatus(dateStr) {
   if (!dateStr) return null;
   const now = new Date();
   const end = new Date(dateStr);
+  if (isNaN(end)) return null;
   const diffDays = (end - now) / (1000 * 60 * 60 * 24);
-  if (diffDays < 0) return { label: "Expiré", color: "text-red-600 bg-red-50", warn: true };
-  if (diffDays < 180) return { label: dateStr.substring(0, 7), color: "text-red-500 bg-red-50", warn: true };
-  if (diffDays < 365) return { label: dateStr.substring(0, 7), color: "text-orange-500 bg-orange-50", warn: true };
-  return { label: dateStr.substring(0, 7), color: "text-slate-400", warn: false };
+  if (diffDays < 0) return { label: "Expiré", rowBadge: "bg-red-100 text-red-700 border border-red-200", sideColor: null, warn: true, critical: true };
+  if (diffDays < 90) return { label: "Expire bientôt", rowBadge: "bg-orange-100 text-orange-700 border border-orange-200", sideColor: "text-orange-500 bg-orange-50", warn: true, critical: true, date: dateStr.substring(0, 7) };
+  if (diffDays < 365) return { label: dateStr.substring(0, 7), sideColor: "text-orange-500 bg-orange-50", warn: true, critical: false };
+  return { label: dateStr.substring(0, 7), sideColor: "text-slate-400", warn: false, critical: false };
 }
 
 function formatVM(v) {
@@ -95,6 +96,16 @@ export default function PlayerCard({ player, inWatchList, watchlistItem, onAddTo
                 {abbr}
               </span>
             )}
+            {!player.club_actuel && (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0 bg-slate-100 text-slate-500 border border-slate-200">
+                Libre
+              </span>
+            )}
+            {contract?.critical && (
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0 ${contract.rowBadge}`}>
+                {contract.label}
+              </span>
+            )}
             {sc && (
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${sc.badge} flex-shrink-0`}>
                 {watchlistItem.statut}
@@ -124,9 +135,9 @@ export default function PlayerCard({ player, inWatchList, watchlistItem, onAddTo
           </div>
         )}
 
-        {/* Contract warning */}
-        {contract?.warn && (
-          <span className={`hidden md:flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${contract.color}`}>
+        {/* Contract date — only non-critical (critical ones appear in the name row) */}
+        {contract && !contract.critical && contract.warn && (
+          <span className={`hidden md:flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${contract.sideColor}`}>
             <AlertTriangle className="w-3 h-3" />
             {contract.label}
           </span>
@@ -160,8 +171,8 @@ export default function PlayerCard({ player, inWatchList, watchlistItem, onAddTo
           {player.passes_decisives != null && <span className="text-xs text-blue-700 font-semibold">🅰 {player.passes_decisives}</span>}
           {player.note_moyenne != null && <span className="text-xs text-amber-600 font-semibold">★ {player.note_moyenne}</span>}
           {player.valeur_marchande != null && <span className="text-xs text-emerald-700 font-semibold">{formatVM(player.valeur_marchande)}</span>}
-          {contract && (
-            <span className={`text-xs font-medium ${contract.warn ? contract.color.split(" ")[0] : "text-slate-400"}`}>
+          {contract && !contract.critical && (
+            <span className={`text-xs font-medium ${contract.warn ? contract.sideColor?.split(" ")[0] : "text-slate-400"}`}>
               {contract.warn && "⚠ "}{contract.label}
             </span>
           )}

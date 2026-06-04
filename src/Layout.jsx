@@ -1,17 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "./utils";
 import {
   Users, Star, LogOut, BarChart3, Bell, Phone, Shield,
   FileText, Network, ArrowRightLeft, Menu, X, Building2,
   Sparkles, Newspaper, FileSpreadsheet, CalendarDays, UserCircle,
-  ClipboardList, Columns, ChevronDown,
+  ClipboardList, Columns, ChevronDown, Search,
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Toaster } from "@/components/ui/sonner";
 import { useLanguage } from "./lib/LanguageContext";
 import { t } from "./i18n/translations";
 import { useQuery } from "@tanstack/react-query";
+import GlobalSearch from "./components/ui/GlobalSearch";
 
 // Pages principales — toujours visibles
 const CORE_PAGES = ["Dashboard", "Players", "Clubs", "MyWatchList", "Pipeline", "ScoutingReports", "Alerts", "ClubContacts"];
@@ -82,8 +83,21 @@ export default function Layout({ children, currentPageName }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const { lang } = useLanguage();
   const items = navItems(lang);
+
+  // Cmd+K / Ctrl+K global shortcut
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen(o => !o);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   const { data: user } = useQuery({
     queryKey: ["currentUser"],
@@ -110,6 +124,18 @@ export default function Layout({ children, currentPageName }) {
               <div className="text-xs text-slate-400">Football Data Manager</div>
             </div>
           </Link>
+        </div>
+
+        {/* Search button */}
+        <div className="px-3 pb-2 flex-shrink-0">
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-400 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors"
+          >
+            <Search className="w-4 h-4" />
+            <span className="flex-1 text-left">Rechercher…</span>
+            <kbd className="text-[10px] bg-white border border-slate-200 px-1.5 py-0.5 rounded font-mono">⌘K</kbd>
+          </button>
         </div>
 
         {/* Nav items */}
@@ -295,6 +321,7 @@ export default function Layout({ children, currentPageName }) {
         </>
       )}
 
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
       <Toaster position="top-right" richColors />
     </div>
   );

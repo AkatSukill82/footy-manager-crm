@@ -76,7 +76,8 @@ export default function ClubsPage() {
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-4 md:space-y-8">
+    <div className="min-h-screen bg-slate-50">
+    <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
       {mutationError && (
         <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -165,6 +166,7 @@ export default function ClubsPage() {
           )}
         </>
       )}
+    </div>
     </div>
   );
 }

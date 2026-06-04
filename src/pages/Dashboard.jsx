@@ -1,162 +1,421 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, BarChart3 } from "lucide-react";
-import StatsCard from "../components/dashboard/StatsCard";
-import PlayersByPosition from "../components/dashboard/PlayersByPosition";
-import PlayersByAge from "../components/dashboard/PlayersByAge";
-import TopPlayers from "../components/dashboard/TopPlayers";
-import ContractExpiring from "../components/dashboard/ContractExpiring";
-import PersonalizedDashboard from "../components/dashboard/PersonalizedDashboard";
-import EnhancedCharts from "../components/dashboard/EnhancedCharts";
-import NotificationSystem from "../components/notifications/NotificationSystem";
-import ContractTimeline from "../components/dashboard/ContractTimeline";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "../utils";
 import { useCurrentUser } from "../lib/useCurrentUser";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import NotificationSystem from "../components/notifications/NotificationSystem";
+import PlayersByPosition from "../components/dashboard/PlayersByPosition";
+import PlayersByAge from "../components/dashboard/PlayersByAge";
+import TopPlayers from "../components/dashboard/TopPlayers";
+import EnhancedCharts from "../components/dashboard/EnhancedCharts";
+import {
+  Users, Star, TrendingUp, AlertTriangle, Clock, ChevronRight,
+  Calendar, ArrowRightLeft, Bell, BarChart3, ChevronDown, ChevronUp,
+} from "lucide-react";
+
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  return Math.floor((new Date(dateStr) - new Date()) / (1000 * 60 * 60 * 24));
+}
+
+function formatVM(v) {
+  if (v == null) return null;
+  return v >= 1 ? `${v}M€` : `${Math.round(v * 1000)}K€`;
+}
+
+function StatCard({ icon: Icon, label, value, sub, color = "blue", onClick }) {
+  const colors = {
+    blue:   "bg-blue-50   text-blue-600   border-blue-100",
+    green:  "bg-green-50  text-green-600  border-green-100",
+    purple: "bg-purple-50 text-purple-600 border-purple-100",
+    orange: "bg-orange-50 text-orange-600 border-orange-100",
+    red:    "bg-red-50    text-red-600    border-red-100",
+  };
+  return (
+    <div
+      onClick={onClick}
+      className={`rounded-2xl border p-4 flex items-center gap-4 ${colors[color]} ${onClick ? "cursor-pointer hover:shadow-md transition-shadow" : ""}`}
+    >
+      <div className="w-11 h-11 rounded-xl bg-white/70 flex items-center justify-center flex-shrink-0 shadow-sm">
+        <Icon className="w-5 h-5" />
+      </div>
+      <div className="min-w-0">
+        <div className="text-2xl font-bold leading-tight">{value}</div>
+        <div className="text-sm font-medium opacity-80 truncate">{label}</div>
+        {sub && <div className="text-xs opacity-60 truncate">{sub}</div>}
+      </div>
+    </div>
+  );
+}
+
+function SectionHeader({ icon: Icon, title, count, cta, onCta }) {
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-2">
+        <Icon className="w-4 h-4 text-slate-500" />
+        <h2 className="font-semibold text-slate-800 text-sm">{title}</h2>
+        {count != null && (
+          <span className="text-xs bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full font-medium">{count}</span>
+        )}
+      </div>
+      {cta && (
+        <button onClick={onCta} className="text-xs text-green-600 hover:text-green-700 font-medium flex items-center gap-1">
+          {cta} <ChevronRight className="w-3 h-3" />
+        </button>
+      )}
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const { lang } = useLanguage();
-  const [activeView, setActiveView] = useState("personalized");
+  const navigate = useNavigate();
   const user = useCurrentUser();
   const userEmail = user?.email;
+  const [showCharts, setShowCharts] = useState(false);
 
-  const { data: players = [], isLoading: loadingPlayers } = useQuery({
+  const { data: players = [] } = useQuery({
     queryKey: ['players', user?.id],
     queryFn: () => base44.entities.Player.filter({ created_by_id: user.id }),
     enabled: !!user?.id,
   });
 
-  const { data: watchList = [], isLoading: loadingWatchList } = useQuery({
-    queryKey: ['my-watchlist', userEmail],
+  const { data: watchList = [] } = useQuery({
+    queryKey: ['watchList', userEmail],
     queryFn: () => base44.entities.WatchList.filter({ created_by: userEmail }),
     enabled: !!userEmail,
-  });
-
-  // Onglet "personnalisé" — chargé uniquement quand actif
-  const { data: negociations = [] } = useQuery({
-    queryKey: ['dashboard-negociations', userEmail],
-    queryFn: () => base44.entities.TransferNegociation.filter({ created_by: userEmail }),
-    enabled: !!userEmail && activeView === "personalized",
-  });
-
-  const { data: insights = [] } = useQuery({
-    queryKey: ['dashboard-insights'],
-    queryFn: () => base44.entities.AgentInsight.list('-created_date', 20),
-    enabled: activeView === "personalized",
   });
 
   const { data: reminders = [] } = useQuery({
     queryKey: ['dashboard-reminders', userEmail],
     queryFn: () => base44.entities.Reminder.filter({ created_by: userEmail }),
-    enabled: !!userEmail && activeView === "personalized",
+    enabled: !!userEmail,
   });
 
-  const { data: sharedContent = [] } = useQuery({
-    queryKey: ['dashboard-shared'],
-    queryFn: () => base44.entities.SharedContent.list('-created_date', 20),
-    enabled: activeView === "personalized",
+  const { data: negociations = [] } = useQuery({
+    queryKey: ['dashboard-negociations', userEmail],
+    queryFn: () => base44.entities.TransferNegociation.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
-  // Onglet "analytics" — chargé uniquement quand actif
   const { data: transfers = [] } = useQuery({
     queryKey: ['dashboard-transfers'],
     queryFn: () => base44.entities.Transfer.list(),
-    enabled: activeView === "analytics",
   });
 
-  const { data: teams = [] } = useQuery({
-    queryKey: ['dashboard-teams', userEmail],
-    queryFn: () => base44.entities.Team.filter({ created_by: userEmail }),
-    enabled: !!userEmail && activeView === "analytics",
+  // ── Computed data ────────────────────────────────────────────────────────────
+
+  const now = new Date();
+  const hour = now.getHours();
+  const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
+  const firstName = user?.email?.split("@")[0] || "";
+
+  // Contracts expiring
+  const contractsExpiring = players
+    .filter(p => {
+      const d = daysUntil(p.contrat_fin);
+      return d != null && d >= 0 && d <= 180;
+    })
+    .sort((a, b) => new Date(a.contrat_fin) - new Date(b.contrat_fin));
+
+  const contractsExpired = players.filter(p => {
+    const d = daysUntil(p.contrat_fin);
+    return d != null && d < 0;
   });
 
-  const totalPlayers = players.length;
-  const watchedPlayers = watchList.length;
-  const totalValue = players.reduce((sum, p) => sum + (p.valeur_marchande || 0), 0);
+  // Overdue / upcoming reminders
+  const overdueReminders = reminders
+    .filter(r => r.statut !== "Terminé" && daysUntil(r.date_rappel) < 0)
+    .sort((a, b) => new Date(a.date_rappel) - new Date(b.date_rappel));
 
-  const watchedPlayerIds = new Set(watchList.map((w) => w.player_id));
-  const myWatchedPlayers = players.filter((p) => watchedPlayerIds.has(p.id));
-  const watchListValue = myWatchedPlayers.reduce((sum, p) => sum + (p.valeur_marchande || 0), 0);
+  const upcomingReminders = reminders
+    .filter(r => r.statut !== "Terminé" && daysUntil(r.date_rappel) >= 0 && daysUntil(r.date_rappel) <= 7)
+    .sort((a, b) => new Date(a.date_rappel) - new Date(b.date_rappel));
+
+  // Active negotiations
+  const activeNego = negociations.filter(n =>
+    n.statut !== "transfert_finalise" && n.statut !== "annule"
+  );
+
+  // Total portfolio value
+  const totalValue = players.reduce((s, p) => s + (p.valeur_marchande || 0), 0);
+
+  // Players recently added (last 7 days)
+  const recentPlayers = players
+    .filter(p => p.created_date && daysUntil(p.created_date.split("T")[0]) > -8)
+    .slice(0, 5);
+
+  const urgentCount = overdueReminders.length + (contractsExpired.length > 0 ? 1 : 0);
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
-      <NotificationSystem user={user} />
-      
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">{t(lang, 'dashboard.title')}</h1>
-        
-      </div>
+    <div className="min-h-screen bg-slate-50">
+      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+        <NotificationSystem user={user} />
 
-      <Tabs value={activeView} onValueChange={setActiveView} className="space-y-4 md:space-y-6">
-        <TabsList className="grid w-full max-w-xs grid-cols-2">
-          <TabsTrigger value="personalized" className="flex items-center gap-2">
-            <LayoutDashboard className="w-4 h-4" />
-            {t(lang, 'dashboard.personalised')}
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">{greeting} 👋</h1>
+          <p className="text-slate-400 text-sm mt-0.5">
+            {now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
+          </p>
+        </div>
+
+        {/* Stat cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard
+            icon={Users} label="Joueurs suivis" value={players.length}
+            sub={`${watchList.length} en watchlist`}
+            color="blue"
+            onClick={() => navigate(createPageUrl("Players"))}
+          />
+          <StatCard
+            icon={TrendingUp} label="Valeur portefeuille"
+            value={totalValue >= 1 ? `${totalValue.toFixed(1)}M€` : `${Math.round(totalValue * 1000)}K€`}
+            sub="valeur marchande totale"
+            color="green"
+          />
+          <StatCard
+            icon={AlertTriangle} label="Contrats à risque"
+            value={contractsExpiring.length + contractsExpired.length}
+            sub={`${contractsExpired.length} expirés · ${contractsExpiring.length} dans 6 mois`}
+            color={contractsExpiring.length + contractsExpired.length > 0 ? "orange" : "blue"}
+            onClick={() => navigate(createPageUrl("Players"))}
+          />
+          <StatCard
+            icon={ArrowRightLeft} label="Négociations actives"
+            value={activeNego.length}
+            sub={`${transfers.length} transferts au total`}
+            color="purple"
+            onClick={() => navigate(createPageUrl("TransferManagement"))}
+          />
+        </div>
+
+        {/* ── URGENT ── */}
+        {(overdueReminders.length > 0 || contractsExpired.length > 0) && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-600" />
+              <span className="font-semibold text-red-800 text-sm">
+                {urgentCount} point{urgentCount > 1 ? "s" : ""} urgent{urgentCount > 1 ? "s" : ""} à traiter
+              </span>
+            </div>
+            {contractsExpired.map(p => (
+              <div
+                key={p.id}
+                onClick={() => navigate(createPageUrl("PlayerDetail") + "?id=" + p.id)}
+                className="flex items-center justify-between bg-white rounded-xl p-3 cursor-pointer hover:shadow-sm transition-shadow"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{p.nom}</p>
+                  <p className="text-xs text-red-600">Contrat expiré · {p.contrat_fin}</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-red-400" />
+              </div>
+            ))}
+            {overdueReminders.map(r => (
+              <div
+                key={r.id}
+                onClick={() => navigate(createPageUrl("Contacts"))}
+                className="flex items-center justify-between bg-white rounded-xl p-3 cursor-pointer hover:shadow-sm transition-shadow"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{r.titre}</p>
+                  <p className="text-xs text-red-600">
+                    Rappel en retard · {new Date(r.date_rappel).toLocaleDateString("fr-FR")}
+                  </p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-red-400" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+          {/* ── CONTRATS À SURVEILLER ── */}
+          {contractsExpiring.length > 0 && (
+            <Card className="rounded-2xl border-slate-200">
+              <CardContent className="p-4">
+                <SectionHeader
+                  icon={Calendar} title="Contrats à surveiller"
+                  count={contractsExpiring.length}
+                  cta="Voir tous" onCta={() => navigate(createPageUrl("Players"))}
+                />
+                <div className="space-y-2">
+                  {contractsExpiring.slice(0, 5).map(p => {
+                    const days = daysUntil(p.contrat_fin);
+                    const urgency = days <= 60
+                      ? "text-red-600 bg-red-50"
+                      : days <= 120
+                      ? "text-orange-600 bg-orange-50"
+                      : "text-amber-600 bg-amber-50";
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => navigate(createPageUrl("PlayerDetail") + "?id=" + p.id)}
+                        className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-7 h-7 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                            <span className="text-[10px] font-bold text-green-700">
+                              {p.nom?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-900 truncate">{p.nom}</p>
+                            <p className="text-xs text-slate-400 truncate">{p.poste} · {p.club_actuel}</p>
+                          </div>
+                        </div>
+                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${urgency}`}>
+                          {days <= 30 ? `${days}j` : p.contrat_fin?.substring(0, 7)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── RAPPELS À VENIR ── */}
+          {upcomingReminders.length > 0 && (
+            <Card className="rounded-2xl border-slate-200">
+              <CardContent className="p-4">
+                <SectionHeader
+                  icon={Bell} title="Rappels cette semaine"
+                  count={upcomingReminders.length}
+                  cta="Voir tous" onCta={() => navigate(createPageUrl("Contacts"))}
+                />
+                <div className="space-y-2">
+                  {upcomingReminders.slice(0, 5).map(r => {
+                    const days = daysUntil(r.date_rappel);
+                    return (
+                      <div
+                        key={r.id}
+                        className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-slate-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Clock className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                          <p className="text-sm text-slate-800 truncate">{r.titre}</p>
+                        </div>
+                        <span className="text-[11px] text-blue-600 font-medium flex-shrink-0 ml-2">
+                          {days === 0 ? "Aujourd'hui" : `Dans ${days}j`}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── NÉGOCIATIONS ACTIVES ── */}
+          {activeNego.length > 0 && (
+            <Card className="rounded-2xl border-slate-200">
+              <CardContent className="p-4">
+                <SectionHeader
+                  icon={ArrowRightLeft} title="Négociations en cours"
+                  count={activeNego.length}
+                  cta="Gérer" onCta={() => navigate(createPageUrl("TransferManagement"))}
+                />
+                <div className="space-y-2">
+                  {activeNego.slice(0, 5).map(n => (
+                    <div
+                      key={n.id}
+                      onClick={() => navigate(createPageUrl("TransferManagement"))}
+                      className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-900 truncate">{n.player_nom}</p>
+                        <p className="text-xs text-slate-400 truncate">
+                          {n.club_acheteur || n.club_vendeur || "—"}
+                        </p>
+                      </div>
+                      <span className="text-[11px] font-medium text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full flex-shrink-0 ml-2 capitalize">
+                        {(n.statut || "").replace(/_/g, " ")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── JOUEURS RÉCENTS ── */}
+          {recentPlayers.length > 0 && (
+            <Card className="rounded-2xl border-slate-200">
+              <CardContent className="p-4">
+                <SectionHeader
+                  icon={Users} title="Joueurs ajoutés récemment"
+                  count={recentPlayers.length}
+                  cta="Voir tous" onCta={() => navigate(createPageUrl("Players"))}
+                />
+                <div className="space-y-2">
+                  {recentPlayers.map(p => (
+                    <div
+                      key={p.id}
+                      onClick={() => navigate(createPageUrl("PlayerDetail") + "?id=" + p.id)}
+                      className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-7 h-7 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                          <span className="text-[10px] font-bold text-green-700">
+                            {p.nom?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-900 truncate">{p.nom}</p>
+                          <p className="text-xs text-slate-400 truncate">{p.poste} · {p.club_actuel}</p>
+                        </div>
+                      </div>
+                      {p.valeur_marchande && (
+                        <span className="text-[11px] text-emerald-700 font-semibold flex-shrink-0 ml-2">
+                          {formatVM(p.valeur_marchande)}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+        </div>
+
+        {/* ── ANALYTICS (repliable) ── */}
+        <div>
+          <button
+            onClick={() => setShowCharts(v => !v)}
+            className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+          >
             <BarChart3 className="w-4 h-4" />
-            {t(lang, 'dashboard.analysis')}
-          </TabsTrigger>
-        </TabsList>
+            Statistiques & graphiques
+            {showCharts ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
 
-        <TabsContent value="personalized" className="space-y-6">
-          <PersonalizedDashboard
-            negociations={negociations}
-            insights={insights}
-            reminders={reminders}
-            sharedContent={sharedContent} />
+          {showCharts && (
+            <div className="mt-4 space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <PlayersByPosition players={players} />
+                <PlayersByAge players={players} />
+              </div>
+              <TopPlayers players={players} />
+              <EnhancedCharts
+                players={players}
+                transfers={transfers}
+                watchList={watchList}
+                teams={[]}
+              />
+            </div>
+          )}
+        </div>
 
-        </TabsContent>
-
-        <TabsContent value="analytics" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatsCard
-              title={t(lang, 'dashboard.totalPlayers')}
-              value={totalPlayers}
-              subtitle={t(lang, 'dashboard.totalPlayersDesc')}
-              color="blue" />
-
-            <StatsCard
-              title={t(lang, 'dashboard.myList')}
-              value={watchedPlayers}
-              subtitle={t(lang, 'dashboard.myListDesc')}
-              color="purple" />
-
-            <StatsCard
-              title={t(lang, 'dashboard.totalValue')}
-              value={`${totalValue.toFixed(1)}M €`}
-              subtitle={t(lang, 'dashboard.totalValueDesc')}
-              color="green" />
-
-            <StatsCard
-              title={t(lang, 'dashboard.myListValue')}
-              value={`${watchListValue.toFixed(1)}M €`}
-              subtitle={t(lang, 'dashboard.myListDesc')}
-              color="orange" />
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <PlayersByPosition players={players} />
-            <PlayersByAge players={players} />
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <TopPlayers players={players} />
-            <ContractExpiring players={players} />
-          </div>
-
-          <ContractTimeline players={players} />
-
-          <EnhancedCharts
-            players={players}
-            transfers={transfers}
-            watchList={watchList}
-            teams={teams} />
-        </TabsContent>
-      </Tabs>
-
-    </div>);
-
+      </div>
+    </div>
+  );
 }

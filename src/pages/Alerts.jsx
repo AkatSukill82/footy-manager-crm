@@ -172,7 +172,7 @@ export default function AlertsPage() {
 
   if (loadingPlayers) {
     return (
-      <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-4">
+      <div className="min-h-screen bg-slate-50"><div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
         <div className="h-10 w-48 bg-slate-100 rounded-xl animate-pulse" />
         <div className="grid grid-cols-5 gap-2">
           {[1,2,3,4,5].map(i => <div key={i} className="h-10 bg-slate-100 rounded-xl animate-pulse" />)}
@@ -180,12 +180,13 @@ export default function AlertsPage() {
         <div className="space-y-3">
           {[1,2,3,4].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />)}
         </div>
-      </div>
+      </div></div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
+    <div className="min-h-screen bg-slate-50">
+    <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -534,6 +535,7 @@ export default function AlertsPage() {
         </TabsContent>
 
       </Tabs>
+    </div>
     </div>
   );
 }
