@@ -35,17 +35,33 @@ import PlayerTMStats from "../components/players/PlayerTMStats";
 import PlayerSofaStats from "../components/players/PlayerSofaStats";
 
 const posteColors = {
-  "Gardien": "bg-yellow-100 text-yellow-800",
-  "Défenseur central": "bg-blue-100 text-blue-800",
-  "Latéral droit": "bg-blue-100 text-blue-800",
-  "Latéral gauche": "bg-blue-100 text-blue-800",
-  "Milieu défensif": "bg-green-100 text-green-800",
-  "Milieu central": "bg-green-100 text-green-800",
-  "Milieu offensif": "bg-purple-100 text-purple-800",
-  "Ailier droit": "bg-orange-100 text-orange-800",
-  "Ailier gauche": "bg-orange-100 text-orange-800",
-  "Attaquant": "bg-red-100 text-red-800"
+  "Gardien": "bg-amber-50 text-amber-700",
+  "Défenseur central": "bg-slate-100 text-slate-700",
+  "Latéral droit": "bg-slate-100 text-slate-700",
+  "Latéral gauche": "bg-slate-100 text-slate-700",
+  "Milieu défensif": "bg-slate-100 text-slate-700",
+  "Milieu central": "bg-slate-100 text-slate-700",
+  "Milieu offensif": "bg-slate-100 text-slate-700",
+  "Ailier droit": "bg-slate-100 text-slate-700",
+  "Ailier gauche": "bg-slate-100 text-slate-700",
+  "Attaquant": "bg-slate-900 text-white",
 };
+
+function profileCompleteness(player) {
+  let score = 0;
+  if (player.nom) score += 10;
+  if (player.poste) score += 10;
+  if (player.photo_url) score += 15;
+  if (player.age) score += 5;
+  if (player.nationalite) score += 5;
+  if (player.club_actuel) score += 10;
+  if (player.contrat_fin) score += 10;
+  if (player.valeur_marchande) score += 10;
+  if (player.buts != null || player.passes_decisives != null || player.note_moyenne != null) score += 15;
+  if (player.taille || player.pied_fort) score += 5;
+  if (player.xg != null || player.matchs_joues != null) score += 5;
+  return Math.min(score, 100);
+}
 
 export default function PlayerDetailPage() {
   const { lang } = useLanguage();
@@ -228,7 +244,7 @@ export default function PlayerDetailPage() {
 
   if (isEditing) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+      <div className="min-h-screen bg-slate-50 p-6">
         <div className="max-w-4xl mx-auto">
           <Button
             variant="ghost"
@@ -248,8 +264,10 @@ export default function PlayerDetailPage() {
     );
   }
 
+  const completeness = profileCompleteness(player);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div className="min-h-screen bg-slate-50 p-4 md:p-6">
       <div className="max-w-6xl mx-auto">
         {mutationError && (
           <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-4">
@@ -298,11 +316,20 @@ export default function PlayerDetailPage() {
                           <Badge variant="outline" className="text-slate-500">{player.club_actuel}</Badge>
                         )}
                       </div>
-                      <div className="mt-3">
+                      <div className="mt-3 flex items-center gap-3 flex-wrap">
                         <SyncPlayerButton
                           player={player}
                           onApply={(data) => updatePlayerMutation.mutate(data)}
                         />
+                        <div className="flex items-center gap-2" title="Complétude du profil">
+                          <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${completeness >= 80 ? "bg-slate-900" : completeness >= 50 ? "bg-slate-500" : "bg-slate-300"}`}
+                              style={{ width: `${completeness}%` }}
+                            />
+                          </div>
+                          <span className="text-[11px] text-slate-400 font-medium">{completeness}%</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -378,14 +405,26 @@ export default function PlayerDetailPage() {
                   
                   {player.valeur_marchande && (
                     <div className="flex items-center gap-3">
-                      <TrendingUp className="w-5 h-5 text-green-600" />
+                      <TrendingUp className="w-5 h-5 text-slate-400" />
                       <div>
                         <p className="text-sm text-slate-600">{t(lang, 'playerDetail.value')}</p>
-                        <p className="font-bold text-green-600">{player.valeur_marchande} M€</p>
+                        <p className="font-bold text-slate-900">{player.valeur_marchande} M€</p>
                       </div>
                     </div>
                   )}
                   
+                  {(player.salaire || player.salaire_semaine) && (
+                    <div className="flex items-center gap-3">
+                      <TrendingUp className="w-5 h-5 text-slate-400" />
+                      <div>
+                        <p className="text-sm text-slate-600">Salaire</p>
+                        <p className="font-semibold text-slate-900">
+                          {player.salaire ? `${player.salaire}K€/mois` : `${player.salaire_semaine}K€/sem.`}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {player.taille && (
                     <div className="flex items-center gap-3">
                       <Ruler className="w-5 h-5 text-slate-400" />

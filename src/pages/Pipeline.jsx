@@ -67,9 +67,17 @@ function PipelineCard({ card, onDelete, onEdit, onDragStart }) {
             </div>
           </div>
 
-          {card.valeur_marchande != null && (
-            <p className="text-[11px] text-green-600 font-semibold mt-1.5">{card.valeur_marchande} M€</p>
-          )}
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            {card.valeur_marchande != null && (
+              <span className="text-[11px] text-emerald-700 font-semibold">{card.valeur_marchande}M€</span>
+            )}
+            {card.age && (
+              <span className="text-[11px] text-slate-400">{card.age} ans</span>
+            )}
+            {card.nationalite && (
+              <span className="text-[11px] text-slate-400">{card.nationalite}</span>
+            )}
+          </div>
           {card.notes && (
             <p className="text-[10px] text-slate-400 mt-1 line-clamp-2 leading-snug">{card.notes}</p>
           )}

@@ -156,6 +156,82 @@ export default function Dashboard() {
           </p>
         </div>
 
+        {/* ── TODAY'S FOCUS ── */}
+        {(() => {
+          const focus = [];
+          contractsExpired.forEach(p => focus.push({
+            type: "contract-expired", player: p,
+            label: `Contrat expiré — ${p.nom}`,
+            sub: p.club_actuel || "Sans club",
+            level: 0,
+            href: createPageUrl("PlayerDetail") + "?id=" + p.id,
+          }));
+          overdueReminders.forEach(r => focus.push({
+            type: "reminder-overdue",
+            label: r.titre,
+            sub: `Rappel en retard · ${new Date(r.date_rappel).toLocaleDateString("fr-FR")}`,
+            level: 1,
+            href: createPageUrl("Contacts"),
+          }));
+          contractsExpiring.filter(p => daysUntil(p.contrat_fin) <= 30).forEach(p => focus.push({
+            type: "contract-soon", player: p,
+            label: `Contrat expire dans ${daysUntil(p.contrat_fin)}j — ${p.nom}`,
+            sub: p.club_actuel || "—",
+            level: 2,
+            href: createPageUrl("PlayerDetail") + "?id=" + p.id,
+          }));
+          upcomingReminders.filter(r => daysUntil(r.date_rappel) === 0).forEach(r => focus.push({
+            type: "reminder-today",
+            label: r.titre,
+            sub: "Rappel aujourd'hui",
+            level: 2,
+            href: createPageUrl("Contacts"),
+          }));
+          activeNego.filter(n => n.date_limite && daysUntil(n.date_limite) <= 1).forEach(n => focus.push({
+            type: "nego-deadline",
+            label: `Deadline négociation — ${n.player_nom || "joueur"}`,
+            sub: n.date_limite ? `Limite : ${new Date(n.date_limite).toLocaleDateString("fr-FR")}` : "",
+            level: 1,
+            href: createPageUrl("TransferManagement"),
+          }));
+
+          if (focus.length === 0) return null;
+          const sorted = focus.sort((a, b) => a.level - b.level).slice(0, 5);
+
+          return (
+            <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-50 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-1.5 h-4 bg-slate-900 rounded-full flex-shrink-0" />
+                  <span className="font-semibold text-slate-900 text-sm">Focus du jour</span>
+                  <span className="text-[11px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-medium">{focus.length}</span>
+                </div>
+                <span className="text-[11px] text-slate-400">
+                  {now.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })}
+                </span>
+              </div>
+              <div className="divide-y divide-slate-50">
+                {sorted.map((item, i) => (
+                  <div
+                    key={i}
+                    onClick={() => navigate(item.href)}
+                    className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-slate-50/70 transition-colors group"
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                      item.level === 0 ? "bg-red-500" : item.level === 1 ? "bg-orange-400" : "bg-slate-300"
+                    }`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-slate-800 font-medium truncate">{item.label}</p>
+                      {item.sub && <p className="text-[11px] text-slate-400 truncate">{item.sub}</p>}
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-200 group-hover:text-slate-400 transition-colors flex-shrink-0" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Stat cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard
@@ -353,8 +429,8 @@ export default function Dashboard() {
                       className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors"
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-7 h-7 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
-                          <span className="text-[10px] font-bold text-green-700">
+                        <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+                          <span className="text-[10px] font-bold text-slate-500">
                             {p.nom?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
                           </span>
                         </div>
