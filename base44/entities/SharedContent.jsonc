@@ -49,10 +49,6 @@
       "type": "number",
       "default": 0,
       "description": "Nombre de likes"
-    },
-    "organization_id": {
-      "type": "string",
-      "description": "Organisation ID pour le partage entre membres"
     }
   },
   "required": [
@@ -62,8 +58,7 @@
   ],
   "rls": {
     "create": {
-      "created_by_id": "{{user.id}}",
-      "organization_id": "{{user.data.organization_id}}"
+      "created_by_id": "{{user.id}}"
     },
     "read": {
       "$or": [

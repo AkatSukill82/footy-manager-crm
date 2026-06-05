@@ -1,74 +1,99 @@
 {
-  "name": "Pipeline",
   "type": "object",
   "properties": {
-    "player_id":       { "type": "string", "description": "ID du joueur (si lié à la base)" },
-    "player_nom":      { "type": "string", "description": "Nom du joueur" },
-    "player_photo":    { "type": "string", "description": "URL photo du joueur" },
-    "poste":           { "type": "string", "description": "Poste" },
-    "club_actuel":     { "type": "string", "description": "Club actuel" },
-    "nationalite":     { "type": "string", "description": "Nationalité" },
-    "age":             { "type": "number", "description": "Âge" },
-    "valeur_marchande":{ "type": "number", "description": "Valeur marchande (M€)" },
-    "budget_max":      { "type": "number", "description": "Budget max alloué (M€)" },
-    "agent":           { "type": "string", "description": "Agent / représentant" },
+    "player_id": {
+      "type": "string",
+      "description": "ID du joueur (si li\u00e9 \u00e0 la base)"
+    },
+    "player_nom": {
+      "type": "string",
+      "description": "Nom du joueur"
+    },
+    "player_photo": {
+      "type": "string",
+      "description": "URL photo du joueur"
+    },
+    "poste": {
+      "type": "string",
+      "description": "Poste"
+    },
+    "club_actuel": {
+      "type": "string",
+      "description": "Club actuel"
+    },
+    "nationalite": {
+      "type": "string",
+      "description": "Nationalit\u00e9"
+    },
+    "age": {
+      "type": "number",
+      "description": "\u00c2ge"
+    },
+    "valeur_marchande": {
+      "type": "number",
+      "description": "Valeur marchande (M\u20ac)"
+    },
+    "budget_max": {
+      "type": "number",
+      "description": "Budget max allou\u00e9 (M\u20ac)"
+    },
+    "agent": {
+      "type": "string",
+      "description": "Agent / repr\u00e9sentant"
+    },
     "etape": {
       "type": "string",
-      "enum": ["Identifié", "Étudié", "Contacté", "Négociation", "Signé", "Refusé"],
-      "default": "Identifié",
-      "description": "Étape dans le pipeline de recrutement"
+      "enum": [
+        "Identifi\u00e9",
+        "\u00c9tudi\u00e9",
+        "Contact\u00e9",
+        "N\u00e9gociation",
+        "Sign\u00e9",
+        "Refus\u00e9"
+      ],
+      "default": "Identifi\u00e9",
+      "description": "\u00c9tape dans le pipeline de recrutement"
     },
     "priorite": {
       "type": "string",
-      "enum": ["Haute", "Moyenne", "Basse"],
+      "enum": [
+        "Haute",
+        "Moyenne",
+        "Basse"
+      ],
       "default": "Moyenne",
-      "description": "Niveau de priorité"
+      "description": "Niveau de priorit\u00e9"
     },
-    "notes":       { "type": "string", "description": "Notes internes" },
-    "date_ajout":  { "type": "string", "description": "Date d'ajout au pipeline (YYYY-MM-DD)" },
-    "organization_id": { "type": "string", "description": "Organisation ID pour le partage entre membres" }
+    "notes": {
+      "type": "string",
+      "description": "Notes internes"
+    },
+    "date_ajout": {
+      "type": "string",
+      "description": "Date d'ajout au pipeline (YYYY-MM-DD)"
+    },
+    "organization_id": {
+      "type": "string",
+      "description": "Organisation ID pour le partage entre membres"
+    }
   },
-  "required": ["player_nom", "etape"],
+  "required": [
+    "player_nom",
+    "etape"
+  ],
   "rls": {
     "create": {
-      "created_by_id": "{{user.id}}",
-      "organization_id": "{{user.data.organization_id}}"
+      "created_by": "{{user.email}}"
     },
     "read": {
-      "$or": [
-        { "created_by_id": "{{user.id}}" },
-        { "user_condition": { "role": "admin" } },
-        {
-          "$and": [
-            { "data.organization_id": "{{user.data.organization_id}}" },
-            { "data.organization_id": { "$ne": null } }
-          ]
-        }
-      ]
+      "created_by": "{{user.email}}"
     },
     "update": {
-      "$or": [
-        { "created_by_id": "{{user.id}}" },
-        { "user_condition": { "role": "admin" } },
-        {
-          "$and": [
-            { "data.organization_id": "{{user.data.organization_id}}" },
-            { "data.organization_id": { "$ne": null } }
-          ]
-        }
-      ]
+      "created_by": "{{user.email}}"
     },
     "delete": {
-      "$or": [
-        { "created_by_id": "{{user.id}}" },
-        { "user_condition": { "role": "admin" } },
-        {
-          "$and": [
-            { "data.organization_id": "{{user.data.organization_id}}" },
-            { "data.organization_id": { "$ne": null } }
-          ]
-        }
-      ]
+      "created_by": "{{user.email}}"
     }
-  }
+  },
+  "name": "Pipeline"
 }
