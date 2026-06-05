@@ -54,9 +54,12 @@ Deno.serve(async (req) => {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
+      const message = err?.error?.message || `Google API error ${res.status}`;
+      const reason  = err?.error?.errors?.[0]?.reason || "";
+      console.error("Google API error:", JSON.stringify(err));
       return Response.json(
-        { error: err?.error?.message || `Google API error ${res.status}` },
-        { status: res.status }
+        { error: `${message}${reason ? ` (${reason})` : ""}`, status: res.status, details: err },
+        { status: 200 } // On retourne 200 pour que l'erreur soit lisible côté client
       );
     }
 
