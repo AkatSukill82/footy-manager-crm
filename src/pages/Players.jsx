@@ -59,9 +59,23 @@ export default function PlayersPage() {
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Player.create(data),
-    onSuccess: () => {
+    onSuccess: (player) => {
       queryClient.invalidateQueries({ queryKey: ['players'] });
       setShowForm(false);
+      // Auto-fetch photo en arrière-plan si pas déjà une photo
+      if (player?.id && player?.nom && !player?.photo_url) {
+        base44.functions.invoke("fetchEntityPhoto", {
+          type: "player",
+          name: player.nom,
+          club: player.club_actuel || "",
+        }).then(result => {
+          if (result?.photo_url) {
+            base44.entities.Player.update(player.id, { photo_url: result.photo_url })
+              .then(() => queryClient.invalidateQueries({ queryKey: ['players'] }))
+              .catch(() => {});
+          }
+        }).catch(() => {});
+      }
     },
     onError: (err) => setMutationError(err.message || "Erreur lors de la création du joueur"),
   });

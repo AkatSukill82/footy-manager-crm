@@ -29,9 +29,22 @@ export default function ClubsPage() {
 
   const createClubMutation = useMutation({
     mutationFn: (data) => base44.entities.Club.create(data),
-    onSuccess: () => {
+    onSuccess: (club) => {
       queryClient.invalidateQueries({ queryKey: ['clubs'] });
       setShowForm(false);
+      // Auto-fetch logo en arrière-plan si pas déjà un logo
+      if (club?.id && club?.nom && !club?.logo_url) {
+        base44.functions.invoke("fetchEntityPhoto", {
+          type: "club",
+          name: club.nom,
+        }).then(result => {
+          if (result?.photo_url) {
+            base44.entities.Club.update(club.id, { logo_url: result.photo_url })
+              .then(() => queryClient.invalidateQueries({ queryKey: ['clubs'] }))
+              .catch(() => {});
+          }
+        }).catch(() => {});
+      }
     },
     onError: (err) => setMutationError(err.message || "Erreur lors de la création du club"),
   });
