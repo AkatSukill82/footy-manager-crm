@@ -221,7 +221,7 @@ export default function PlayersPage() {
                     onClick={() => setQuickPoste(p.value)}
                     className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
                       quickPoste === p.value
-                        ? "bg-green-600 text-white shadow-sm"
+                        ? "bg-slate-900 text-white shadow-sm"
                         : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                     }`}
                   >
