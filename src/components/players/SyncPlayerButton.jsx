@@ -189,7 +189,13 @@ export default function SyncPlayerButton({ player, onApply }) {
             </p>
             {result.raw?.transfermarkt_id && (
               <a
-                href={`https://www.transfermarkt.fr/a/profil/spieler/${result.raw.transfermarkt_id}`}
+                href={`https://www.transfermarkt.fr/${
+                  (player.nom || "joueur")
+                    .toLowerCase()
+                    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+                    .replace(/[^a-z0-9\s-]/g, "")
+                    .trim().replace(/\s+/g, "-")
+                }/profil/spieler/${result.raw.transfermarkt_id}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[10px] text-slate-400 hover:text-slate-700 underline"

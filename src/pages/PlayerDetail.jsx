@@ -267,6 +267,17 @@ export default function PlayerDetailPage() {
 
   const completeness = profileCompleteness(player);
 
+  const tmUrl = player.lien ||
+    (player.transfermarkt_id
+      ? `https://www.transfermarkt.fr/${
+          (player.nom || "joueur")
+            .toLowerCase()
+            .normalize("NFD").replace(/[̀-ͯ]/g, "")
+            .replace(/[^a-z0-9\s-]/g, "")
+            .trim().replace(/\s+/g, "-")
+        }/profil/spieler/${player.transfermarkt_id}`
+      : null);
+
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-6">
       <div className="max-w-6xl mx-auto">
@@ -399,17 +410,17 @@ export default function PlayerDetailPage() {
                     </div>
                   )}
 
-                  {/* Source Transfermarkt — lien vérifiable */}
-                  {player.transfermarkt_id && (
+                  {/* Source Transfermarkt — lien direct fiche joueur */}
+                  {tmUrl && (
                     <div className="flex items-center gap-2 mt-2">
                       <a
-                        href={`https://www.transfermarkt.fr/a/profil/spieler/${player.transfermarkt_id}`}
+                        href={tmUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-slate-700 transition-colors border border-slate-200 rounded-md px-2 py-0.5 hover:border-slate-300"
                       >
                         <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                        Source Transfermarkt
+                        Fiche Transfermarkt
                       </a>
                       <span className="text-[10px] text-slate-300">données vérifiables</span>
                     </div>
