@@ -121,7 +121,7 @@ export default function SyncPlayerButton({ player, onApply }) {
           size="sm"
           onClick={handleQuickStats}
           disabled={state === "loading"}
-          className="flex items-center gap-1.5 text-xs border-green-200 text-green-700 hover:bg-green-50 font-semibold"
+          className="flex items-center gap-1.5 text-xs border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 font-medium"
         >
           {state === "loading"
             ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -135,26 +135,26 @@ export default function SyncPlayerButton({ player, onApply }) {
           size="sm"
           onClick={handleFullSync}
           disabled={state === "loading"}
-          className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-blue-600 px-2"
+          className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-700 px-2"
         >
           <RefreshCw className="w-3 h-3" />
           {t(lang, 'playerDetail.syncBtn')}
         </Button>
 
         {state === "loading" && (
-          <span className="text-xs text-slate-400 italic">TheSportsDB + API-Football…</span>
+          <span className="text-xs text-slate-400 italic">Transfermarkt · SofaScore · FotMob…</span>
         )}
 
         {state === "done" && result && (
           <>
             {autoApplied ? (
-              <Badge className="bg-green-100 text-green-700 border-0 text-xs">
+              <Badge className="bg-slate-100 text-slate-700 border-0 text-xs">
                 <CheckCircle2 className="w-3 h-3 mr-1" />
                 {newFieldsCount} stat{s} appliquée{s}
               </Badge>
             ) : newFieldsCount > 0 ? (
               <>
-                <Badge className="bg-green-100 text-green-700 border-0 text-xs">
+                <Badge className="bg-slate-100 text-slate-700 border-0 text-xs">
                   {t(lang, 'playerDetail.newFields', { count: newFieldsCount, s, x })}
                 </Badge>
                 <button
@@ -164,7 +164,7 @@ export default function SyncPlayerButton({ player, onApply }) {
                   {showDetail ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                   {t(lang, 'playerDetail.viewChanges')}
                 </button>
-                <Button size="sm" onClick={handleApply} className="bg-green-600 hover:bg-green-700 text-white text-xs h-7 px-3">
+                <Button size="sm" onClick={handleApply} className="bg-slate-900 hover:bg-slate-800 text-white text-xs h-7 px-3">
                   <CheckCircle2 className="w-3.5 h-3.5 mr-1" />{t(lang, 'playerDetail.applyBtn')}
                 </Button>
               </>
@@ -183,9 +183,21 @@ export default function SyncPlayerButton({ player, onApply }) {
 
       {showDetail && result && newFieldsCount > 0 && !autoApplied && (
         <div className="bg-slate-50 rounded-lg border border-slate-200 p-2 max-h-48 overflow-y-auto">
-          <p className="text-[10px] text-slate-400 mb-1.5 font-semibold uppercase">
-            {t(lang, 'playerDetail.sourcesLabel')} {result.sources.join(", ")}
-          </p>
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-[10px] text-slate-400 font-semibold uppercase">
+              {t(lang, 'playerDetail.sourcesLabel')} {result.sources.join(", ")}
+            </p>
+            {result.raw?.transfermarkt_id && (
+              <a
+                href={`https://www.transfermarkt.fr/a/profil/spieler/${result.raw.transfermarkt_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] text-slate-400 hover:text-slate-700 underline"
+              >
+                Voir sur Transfermarkt ↗
+              </a>
+            )}
+          </div>
           {Object.entries(result.toApply).map(([k, v]) => (
             <div key={k} className="flex justify-between items-center py-1 border-b border-slate-100 last:border-0">
               <span className="text-xs text-slate-500 capitalize">{k.replace(/_/g, " ")}</span>

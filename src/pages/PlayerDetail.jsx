@@ -17,7 +17,6 @@ import PlayerNoteCard from "../components/notes/PlayerNoteCard";
 import SimilarPlayers from "../components/players/SimilarPlayers";
 import ContactHistory from "../components/contacts/ContactHistory";
 import RemindersList from "../components/contacts/RemindersList";
-import EnrichPlayerAI from "../components/players/EnrichPlayerAI";
 import PlayerComparison from "../components/players/PlayerComparison";
 import ImportTransfermarktPhoto from "../components/players/ImportTransfermarktPhoto";
 import PlayerFullProfile from "../components/players/PlayerFullProfile";
@@ -400,6 +399,22 @@ export default function PlayerDetailPage() {
                     </div>
                   )}
 
+                  {/* Source Transfermarkt — lien vérifiable */}
+                  {player.transfermarkt_id && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <a
+                        href={`https://www.transfermarkt.fr/a/profil/spieler/${player.transfermarkt_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-slate-700 transition-colors border border-slate-200 rounded-md px-2 py-0.5 hover:border-slate-300"
+                      >
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                        Source Transfermarkt
+                      </a>
+                      <span className="text-[10px] text-slate-300">données vérifiables</span>
+                    </div>
+                  )}
+
                   {/* Complétude + Sync */}
                   <div className="flex items-center gap-3 mt-3">
                     <SyncPlayerButton player={player} onApply={(data) => updatePlayerMutation.mutate(data)} />
@@ -469,11 +484,6 @@ export default function PlayerDetailPage() {
             />
 
             <UpcomingMatches playerClub={player.club_actuel} />
-
-            <EnrichPlayerAI
-              player={player}
-              onApply={(data) => updatePlayerMutation.mutate(data)}
-            />
 
             <PlayerExternalLinks player={player} />
 
