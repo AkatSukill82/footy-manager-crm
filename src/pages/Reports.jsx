@@ -85,11 +85,12 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="min-h-screen bg-slate-50">
+    <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-slate-900">{t(lang, 'reports.title')}</h1>
-          <p className="text-slate-500 mt-2">{t(lang, 'reports.subtitle')}</p>
+          <h1 className="text-2xl font-bold text-slate-900">{t(lang, 'reports.title')}</h1>
+          <p className="text-slate-400 text-sm mt-0.5">{t(lang, 'reports.subtitle')}</p>
         </div>
         <Button 
           onClick={handleExportPDF} 
@@ -157,6 +158,7 @@ export default function ReportsPage() {
           />
         )}
       </div>
+    </div>
     </div>
   );
 }

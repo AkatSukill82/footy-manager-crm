@@ -81,7 +81,8 @@ export default function ContactsPage() {
   const upcomingReminders = allReminders.filter(r => r.statut !== "Terminé").slice(0, 5);
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="min-h-screen bg-slate-50">
+    <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
       {mutationError && (
         <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -90,45 +91,45 @@ export default function ContactsPage() {
         </div>
       )}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
-          <Phone className="w-8 h-8 text-blue-600" />
+        <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <Phone className="w-6 h-6 text-slate-600" />
           {t(lang, 'contacts.title')}
         </h1>
-        <p className="text-slate-600 mt-1">{t(lang, 'contacts.subtitle')}</p>
+        <p className="text-slate-400 text-sm mt-0.5">{t(lang, 'contacts.subtitle')}</p>
       </div>
 
-      <div className="flex gap-2 border-b border-slate-200">
+      <div className="flex gap-1 p-1 bg-white border border-slate-200 rounded-xl w-fit shadow-sm">
         <button
           onClick={() => setActiveTab("contacts")}
-          className={`px-4 py-2 font-medium transition-colors ${
+          className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
             activeTab === "contacts"
-              ? "border-b-2 border-green-600 text-green-700"
-              : "text-slate-600 hover:text-slate-900"
+              ? "bg-slate-900 text-white shadow-sm"
+              : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
           }`}
         >
-          <Phone className="w-4 h-4 inline mr-2" />
+          <Phone className="w-3.5 h-3.5 inline mr-1.5" />
           {t(lang, 'contacts.tabContacts')}
         </button>
         <button
           onClick={() => setActiveTab("reminders")}
-          className={`px-4 py-2 font-medium transition-colors ${
+          className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
             activeTab === "reminders"
-              ? "border-b-2 border-green-600 text-green-700"
-              : "text-slate-600 hover:text-slate-900"
+              ? "bg-slate-900 text-white shadow-sm"
+              : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
           }`}
         >
-          <Bell className="w-4 h-4 inline mr-2" />
+          <Bell className="w-3.5 h-3.5 inline mr-1.5" />
           {t(lang, 'contacts.tabReminders')}
         </button>
         <button
           onClick={() => setActiveTab("calendar")}
-          className={`px-4 py-2 font-medium transition-colors ${
+          className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
             activeTab === "calendar"
-              ? "border-b-2 border-green-600 text-green-700"
-              : "text-slate-600 hover:text-slate-900"
+              ? "bg-slate-900 text-white shadow-sm"
+              : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
           }`}
         >
-          <Calendar className="w-4 h-4 inline mr-2" />
+          <Calendar className="w-3.5 h-3.5 inline mr-1.5" />
           {t(lang, 'contacts.tabCalendar')}
         </button>
       </div>
@@ -183,10 +184,10 @@ export default function ContactsPage() {
         <div>
           {!selectedPlayerId ? (
             <div className="space-y-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-semibold text-blue-900 mb-2">{t(lang, 'contacts.upcomingReminders')}</h3>
+              <div className="bg-white border border-slate-200 rounded-xl p-4">
+                <h3 className="font-semibold text-slate-800 mb-2">{t(lang, 'contacts.upcomingReminders')}</h3>
                 {upcomingReminders.length === 0 ? (
-                  <p className="text-blue-700">{t(lang, 'contacts.noReminders')}</p>
+                  <p className="text-slate-500 text-sm">{t(lang, 'contacts.noReminders')}</p>
                 ) : (
                   <div className="space-y-2">
                     {upcomingReminders.map(reminder => (
@@ -227,6 +228,7 @@ export default function ContactsPage() {
       {activeTab === "calendar" && (
         <ContractCalendar players={players} />
       )}
+    </div>
     </div>
   );
 }

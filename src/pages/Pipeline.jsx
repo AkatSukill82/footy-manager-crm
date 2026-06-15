@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, GripVertical, User, Loader2 } from "lucide-react";
+import { Plus, Trash2, GripVertical, User, Loader2, Pencil } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 
 // ── Colonnes du pipeline ──────────────────────────────────────────────────────
@@ -37,15 +38,25 @@ const EMPTY = {
 
 // ── Carte joueur dans le Kanban ───────────────────────────────────────────────
 function PipelineCard({ card, onDelete, onEdit, onDragStart }) {
+  const navigate = useNavigate();
+
+  const handleCardClick = () => {
+    if (card.player_id) {
+      navigate(`/player-detail?id=${card.player_id}`);
+    } else {
+      onEdit(card);
+    }
+  };
+
   return (
     <div
       draggable
       onDragStart={e => onDragStart(e, card.id)}
-      onClick={() => onEdit(card)}
-      className="bg-white rounded-xl border border-slate-200 p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-all group select-none"
+      onClick={handleCardClick}
+      className="bg-white rounded-xl border border-slate-200 p-3 cursor-pointer hover:shadow-md hover:border-slate-300 transition-all group select-none"
     >
       <div className="flex items-start gap-2">
-        <GripVertical className="w-3.5 h-3.5 text-slate-300 flex-shrink-0 mt-0.5" />
+        <GripVertical className="w-3.5 h-3.5 text-slate-300 flex-shrink-0 mt-0.5 cursor-grab active:cursor-grabbing" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap mb-1">
             {card.priorite && card.priorite !== "Moyenne" && (
@@ -82,12 +93,22 @@ function PipelineCard({ card, onDelete, onEdit, onDragStart }) {
             <p className="text-[10px] text-slate-400 mt-1 line-clamp-2 leading-snug">{card.notes}</p>
           )}
         </div>
-        <button
-          onClick={e => { e.stopPropagation(); onDelete(card.id); }}
-          className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-400 transition-all p-0.5 flex-shrink-0"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0">
+          <button
+            onClick={e => { e.stopPropagation(); onEdit(card); }}
+            className="text-slate-300 hover:text-slate-600 p-0.5"
+            title="Modifier"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={e => { e.stopPropagation(); onDelete(card.id); }}
+            className="text-slate-300 hover:text-red-400 p-0.5"
+            title="Supprimer"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   );
