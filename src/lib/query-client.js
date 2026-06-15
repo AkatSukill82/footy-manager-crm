@@ -8,9 +8,9 @@ export const queryClientInstance = new QueryClient({
 			refetchOnWindowFocus: false,
 			retry: 1,
 			staleTime:       FOUR_HOURS,
-			gcTime:          30 * 60 * 1000,
+			gcTime:          60 * 60 * 1000, // 1h — garde les données plus longtemps entre navigations
 			placeholderData: keepPreviousData,
-			refetchInterval: FOUR_HOURS,
+			// refetchInterval supprimé — le staleTime suffit, le polling arrière-plan est inutile
 		},
 	},
 });

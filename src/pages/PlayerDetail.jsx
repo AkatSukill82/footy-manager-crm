@@ -93,7 +93,7 @@ export default function PlayerDetailPage() {
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => base44.auth.me(),
-    staleTime: 5 * 60 * 1000,
+    staleTime: Infinity,
   });
   const userEmail = currentUser?.email;
 
@@ -115,9 +115,12 @@ export default function PlayerDetailPage() {
     enabled: !!playerId,
   });
 
+  // Réutilise le cache de la page Players — pas de requête réseau si déjà chargé
   const { data: allPlayers = [] } = useQuery({
-    queryKey: ['allPlayers'],
-    queryFn: () => base44.entities.Player.list(),
+    queryKey: ['players', currentUser?.id],
+    queryFn: () => base44.entities.Player.filter({ created_by_id: currentUser.id }, '-created_date'),
+    enabled: !!currentUser?.id,
+    staleTime: Infinity,
   });
 
   const { data: contacts = [] } = useQuery({

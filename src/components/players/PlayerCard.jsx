@@ -56,7 +56,7 @@ function formatVM(v) {
   return `${Math.round(v * 1000)}K€`;
 }
 
-export default function PlayerCard({ player, inWatchList, watchlistItem, onAddToWatchlist }) {
+function PlayerCard({ player, inWatchList, watchlistItem, onAddToWatchlist }) {
   const { lang } = useLanguage();
   const navigate = useNavigate();
   const sc = watchlistItem ? statutConfig(watchlistItem.statut) : null;
@@ -181,3 +181,5 @@ export default function PlayerCard({ player, inWatchList, watchlistItem, onAddTo
     </div>
   );
 }
+
+export default React.memo(PlayerCard);

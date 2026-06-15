@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "../lib/useCurrentUser";
@@ -36,6 +36,7 @@ export default function PlayersPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [quickPoste, setQuickPoste] = useState("all");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [advancedFilters, setAdvancedFilters] = useState({});
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [modalPlayer, setModalPlayer] = useState(null);
@@ -90,17 +91,29 @@ export default function PlayersPage() {
     onError: (err) => setMutationError(err.message || "Erreur lors de l'ajout à la watchlist"),
   });
 
+  // Debounce la recherche texte — évite de filtrer à chaque frappe
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 250);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   // Reset pagination on filter change
-  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [search, quickPoste, advancedFilters]);
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [debouncedSearch, quickPoste, advancedFilters]);
 
-  const watchListMap = Object.fromEntries(watchList.map(w => [w.player_id, w]));
+  const watchListMap = useMemo(
+    () => Object.fromEntries(watchList.map(w => [w.player_id, w])),
+    [watchList]
+  );
 
-  const filteredPlayers = players.filter(player => {
-    // Quick search
-    if (search && !player.nom?.toLowerCase().includes(search.toLowerCase()) &&
-        !player.club_actuel?.toLowerCase().includes(search.toLowerCase()) &&
-        !player.nationalite?.toLowerCase().includes(search.toLowerCase()))
-      return false;
+  const filteredPlayers = useMemo(() => players.filter(player => {
+    // Quick search (debounced)
+    if (debouncedSearch) {
+      const q = debouncedSearch.toLowerCase();
+      if (!player.nom?.toLowerCase().includes(q) &&
+          !player.club_actuel?.toLowerCase().includes(q) &&
+          !player.nationalite?.toLowerCase().includes(q))
+        return false;
+    }
 
     // Quick poste filter
     if (quickPoste !== "all" && player.poste !== quickPoste) return false;
@@ -124,7 +137,7 @@ export default function PlayersPage() {
     }
 
     return true;
-  });
+  }), [players, debouncedSearch, quickPoste, advancedFilters]);
 
   const visible = filteredPlayers.slice(0, visibleCount);
   const hasMore = visibleCount < filteredPlayers.length;

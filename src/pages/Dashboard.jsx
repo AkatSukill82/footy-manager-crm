@@ -94,8 +94,9 @@ export default function Dashboard() {
   });
 
   const { data: transfers = [] } = useQuery({
-    queryKey: ['dashboard-transfers'],
-    queryFn: () => base44.entities.Transfer.list(),
+    queryKey: ['dashboard-transfers', userEmail],
+    queryFn: () => base44.entities.Transfer.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
   });
 
   // ── Computed data ────────────────────────────────────────────────────────────

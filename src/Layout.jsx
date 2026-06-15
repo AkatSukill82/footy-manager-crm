@@ -102,7 +102,7 @@ export default function Layout({ children, currentPageName }) {
   const { data: user } = useQuery({
     queryKey: ["currentUser"],
     queryFn: () => base44.auth.me(),
-    staleTime: 5 * 60 * 1000,
+    staleTime: Infinity,
   });
 
   const initials = user?.email ? user.email.slice(0, 2).toUpperCase() : "??";
