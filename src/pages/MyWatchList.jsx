@@ -3,7 +3,6 @@ import { base44 } from "@/api/base44Client";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Star, Loader2, Trash2, UserCheck, Zap, FileText, Eye, Edit2, AlertCircle, X } from "lucide-react";
@@ -28,9 +27,9 @@ function PlayerRow({ item, player, note, onEditStatus, onRemove, lang }) {
   const Icon = sc.Icon || Eye;
 
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow">
-      <div className={`h-1 ${sc.bg.split(' ')[0]}`} />
-      <CardContent className="p-4">
+    <div className="bg-white rounded-xl border border-slate-100 overflow-hidden hover:border-slate-200 hover:shadow-sm transition-all">
+      <div className={`h-0.5 ${sc.bg.split(' ')[0]}`} />
+      <div className="p-4">
         <div className="flex items-center gap-4">
           {/* Photo */}
           <div
@@ -74,7 +73,7 @@ function PlayerRow({ item, player, note, onEditStatus, onRemove, lang }) {
                 </span>
               )}
               {player.valeur_marchande && (
-                <span className="text-xs text-green-700 bg-green-50 px-1.5 py-0.5 rounded font-medium">
+                <span className="text-xs text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded font-medium">
                   {player.valeur_marchande} M€
                 </span>
               )}
@@ -83,10 +82,10 @@ function PlayerRow({ item, player, note, onEditStatus, onRemove, lang }) {
             {note && (
               <div className="flex items-center gap-2 mt-1.5">
                 {note.evaluation != null && (
-                  <span className="text-sm font-bold text-blue-600">{note.evaluation}/10</span>
+                  <span className="text-sm font-bold text-slate-800">{note.evaluation}/10</span>
                 )}
                 {note.interet && (
-                  <Badge className="text-[10px] bg-blue-50 text-blue-700 border-blue-200">
+                  <Badge className="text-[10px] bg-slate-100 text-slate-600 border-slate-200">
                     Intérêt : {note.interet}
                   </Badge>
                 )}
@@ -137,8 +136,8 @@ function PlayerRow({ item, player, note, onEditStatus, onRemove, lang }) {
           );
           return null;
         })()}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -274,19 +273,17 @@ export default function MyWatchListPage() {
             <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
           </div>
         ) : filtered.length === 0 ? (
-          <Card>
-            <CardContent className="py-20 text-center">
-              <Star className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-              <p className="text-slate-500 text-lg font-medium">
-                {activeTab === "all"
-                  ? t(lang, 'watchlist.emptyAll')
-                  : t(lang, 'watchlist.emptyStatus', { status: activeTab })}
-              </p>
-              <p className="text-slate-400 mt-2 text-sm">
-                {t(lang, 'watchlist.emptyHint')}
-              </p>
-            </CardContent>
-          </Card>
+          <div className="bg-white rounded-2xl border border-slate-100 py-20 text-center">
+            <Star className="w-16 h-16 mx-auto text-slate-300 mb-4" />
+            <p className="text-slate-500 text-lg font-medium">
+              {activeTab === "all"
+                ? t(lang, 'watchlist.emptyAll')
+                : t(lang, 'watchlist.emptyStatus', { status: activeTab })}
+            </p>
+            <p className="text-slate-400 mt-2 text-sm">
+              {t(lang, 'watchlist.emptyHint')}
+            </p>
+          </div>
         ) : (
           <div className="space-y-3">
             {filtered.map((item) => (

@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -200,23 +199,23 @@ export default function AlertsPage() {
           <TabsTrigger value="contracts" className="flex flex-col items-center gap-0.5 py-2 text-xs">
             <FileText className="w-4 h-4" />
             <span className="hidden sm:inline">{t(lang, 'alerts.tabContracts')}</span>
-            {contractAlerts.length > 0 && <Badge className="bg-red-500 text-white text-[10px] px-1 py-0 h-4 min-w-4">{contractAlerts.length}</Badge>}
+            {contractAlerts.length > 0 && <Badge className="bg-slate-700 text-white text-[10px] px-1 py-0 h-4 min-w-4">{contractAlerts.length}</Badge>}
           </TabsTrigger>
           <TabsTrigger value="matches" className="flex flex-col items-center gap-0.5 py-2 text-xs">
             <Shield className="w-4 h-4" />
             <span className="hidden sm:inline">{t(lang, 'alerts.tabMatches')}</span>
-            {upcomingMatches.length > 0 && <Badge className="bg-blue-500 text-white text-[10px] px-1 py-0 h-4 min-w-4">{upcomingMatches.length}</Badge>}
+            {upcomingMatches.length > 0 && <Badge className="bg-slate-700 text-white text-[10px] px-1 py-0 h-4 min-w-4">{upcomingMatches.length}</Badge>}
           </TabsTrigger>
           <TabsTrigger value="transfers" className="flex flex-col items-center gap-0.5 py-2 text-xs">
             <ArrowRightLeft className="w-4 h-4" />
             <span className="hidden sm:inline">{t(lang, 'alerts.tabTransfers')}</span>
-            {activeNegociations.length > 0 && <Badge className="bg-orange-500 text-white text-[10px] px-1 py-0 h-4 min-w-4">{activeNegociations.length}</Badge>}
+            {activeNegociations.length > 0 && <Badge className="bg-slate-700 text-white text-[10px] px-1 py-0 h-4 min-w-4">{activeNegociations.length}</Badge>}
           </TabsTrigger>
           <TabsTrigger value="reminders" className="flex flex-col items-center gap-0.5 py-2 text-xs">
             <Clock className="w-4 h-4" />
             <span className="hidden sm:inline">{t(lang, 'alerts.tabReminders')}</span>
             {pendingReminders.filter(r => r.overdue || r.daysUntil <= 3).length > 0 && (
-              <Badge className="bg-purple-500 text-white text-[10px] px-1 py-0 h-4 min-w-4">
+              <Badge className="bg-slate-700 text-white text-[10px] px-1 py-0 h-4 min-w-4">
                 {pendingReminders.filter(r => r.overdue || r.daysUntil <= 3).length}
               </Badge>
             )}
@@ -225,7 +224,7 @@ export default function AlertsPage() {
             <Phone className="w-4 h-4" />
             <span className="hidden sm:inline">Contacts</span>
             {totalContactAlerts > 0 && (
-              <Badge className="bg-teal-500 text-white text-[10px] px-1 py-0 h-4 min-w-4">{totalContactAlerts}</Badge>
+              <Badge className="bg-slate-700 text-white text-[10px] px-1 py-0 h-4 min-w-4">{totalContactAlerts}</Badge>
             )}
           </TabsTrigger>
         </TabsList>
@@ -241,7 +240,7 @@ export default function AlertsPage() {
           </div>
 
           {contractAlerts.length === 0 ? (
-            <Card><CardContent className="py-12 text-center text-slate-500">{t(lang, 'alerts.noContracts')}</CardContent></Card>
+            <div className="bg-white rounded-2xl border border-slate-100 py-12 text-center text-slate-500">{t(lang, 'alerts.noContracts')}</div>
           ) : (
             <div className="space-y-2">
               {contractAlerts.filter(a => a.isWatched).length > 0 && (
@@ -279,14 +278,12 @@ export default function AlertsPage() {
 
         {/* ── MATCHS ── */}
         <TabsContent value="matches" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Shield className="w-4 h-4 text-blue-500" />
-                {t(lang, 'alerts.upcomingMatches')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div className="bg-white rounded-2xl border border-slate-100 p-4">
+            <p className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
+              <Shield className="w-4 h-4 text-slate-400" />
+              {t(lang, 'alerts.upcomingMatches')}
+            </p>
+            <div>
               {upcomingMatches.length === 0 ? (
                 <div className="py-8 text-center text-slate-500 text-sm">{t(lang, 'alerts.noMatches')}</div>
               ) : (
@@ -313,25 +310,23 @@ export default function AlertsPage() {
                   })}
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
         {/* ── TRANSFERTS ── */}
         <TabsContent value="transfers" className="space-y-4 mt-4">
           {activeNegociations.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-orange-500" />
-                  {t(lang, 'alerts.activeNegotiations', { count: activeNegociations.length })}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
+            <div className="bg-white rounded-2xl border border-slate-100 p-4">
+              <p className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
+                <AlertTriangle className="w-4 h-4 text-slate-400" />
+                {t(lang, 'alerts.activeNegotiations', { count: activeNegociations.length })}
+              </p>
+              <div className="space-y-2">
                 {activeNegociations.map(neg => {
                   const player = players.find(p => p.id === neg.player_id);
                   return (
-                    <div key={neg.id} className="flex items-center justify-between p-3 bg-orange-50 border border-orange-200 rounded-xl">
+                    <div key={neg.id} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
                       <div className="min-w-0">
                         <div className="font-semibold text-slate-900 text-sm truncate">{player?.nom || t(lang,'alerts.unknownPlayer')}</div>
                         <div className="text-xs text-slate-500">{neg.club_acheteur} • {neg.montant_propose}M€</div>
@@ -347,49 +342,45 @@ export default function AlertsPage() {
                     </div>
                   );
                 })}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <ArrowRightLeft className="w-4 h-4 text-purple-500" />
-                {t(lang, 'alerts.latestTransfers')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {recentTransfers.length === 0 ? (
-                <div className="py-8 text-center text-slate-500 text-sm">{t(lang, 'alerts.noTransfers')}</div>
-              ) : (
-                <div className="space-y-2">
-                  {recentTransfers.map(tr => {
-                    const player = players.find(p => p.id === tr.player_id);
-                    return (
-                      <div key={tr.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
-                        <div className="min-w-0">
-                          <div className="font-semibold text-slate-900 text-sm truncate">{player?.nom || t(lang,'alerts.player')}</div>
-                          <div className="text-xs text-slate-500">
-                            {tr.club_depart || "—"} → {tr.club_arrivee}
-                          </div>
-                        </div>
-                        <div className="text-right flex-shrink-0 ml-3">
-                          {tr.montant ? <div className="font-semibold text-green-600 text-sm">{tr.montant}M€</div> : null}
-                          <div className="text-xs text-slate-400">{tr.type_transfert}</div>
+          <div className="bg-white rounded-2xl border border-slate-100 p-4">
+            <p className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
+              <ArrowRightLeft className="w-4 h-4 text-slate-400" />
+              {t(lang, 'alerts.latestTransfers')}
+            </p>
+            {recentTransfers.length === 0 ? (
+              <div className="py-8 text-center text-slate-500 text-sm">{t(lang, 'alerts.noTransfers')}</div>
+            ) : (
+              <div className="space-y-2">
+                {recentTransfers.map(tr => {
+                  const player = players.find(p => p.id === tr.player_id);
+                  return (
+                    <div key={tr.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+                      <div className="min-w-0">
+                        <div className="font-semibold text-slate-900 text-sm truncate">{player?.nom || t(lang,'alerts.player')}</div>
+                        <div className="text-xs text-slate-500">
+                          {tr.club_depart || "—"} → {tr.club_arrivee}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                      <div className="text-right flex-shrink-0 ml-3">
+                        {tr.montant ? <div className="font-semibold text-slate-800 text-sm">{tr.montant}M€</div> : null}
+                        <div className="text-xs text-slate-400">{tr.type_transfert}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </TabsContent>
 
         {/* ── RAPPELS ── */}
         <TabsContent value="reminders" className="space-y-4 mt-4">
           {pendingReminders.length === 0 ? (
-            <Card><CardContent className="py-12 text-center text-slate-500">{t(lang, 'alerts.noReminders')}</CardContent></Card>
+            <div className="bg-white rounded-2xl border border-slate-100 py-12 text-center text-slate-500">{t(lang, 'alerts.noReminders')}</div>
           ) : (
             <div className="space-y-2">
               {pendingReminders.map(r => {
@@ -441,23 +432,63 @@ export default function AlertsPage() {
         <TabsContent value="contacts" className="space-y-4 mt-4">
 
           {/* Contrats à risque */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <FileText className="w-4 h-4 text-orange-500" />
-                Contrats expirant dans 90 jours
-                {contactContractAlerts.length > 0 && (
-                  <Badge className="bg-orange-500 text-white ml-auto">{contactContractAlerts.length}</Badge>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {contactContractAlerts.length === 0 ? (
-                <div className="py-8 text-center text-slate-500 text-sm">Aucun contrat à risque</div>
-              ) : (
-                <div className="space-y-2">
-                  {contactContractAlerts.map(c => (
-                    <div key={c.id} className="flex items-center justify-between p-3 bg-orange-50 border border-orange-200 rounded-xl">
+          <div className="bg-white rounded-2xl border border-slate-100 p-4">
+            <p className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
+              <FileText className="w-4 h-4 text-slate-400" />
+              Contrats expirant dans 90 jours
+              {contactContractAlerts.length > 0 && (
+                <Badge className="bg-slate-700 text-white ml-auto">{contactContractAlerts.length}</Badge>
+              )}
+            </p>
+            {contactContractAlerts.length === 0 ? (
+              <div className="py-8 text-center text-slate-500 text-sm">Aucun contrat à risque</div>
+            ) : (
+              <div className="space-y-2">
+                {contactContractAlerts.map(c => (
+                  <div key={c.id} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {c.photo_url
+                        ? <img src={c.photo_url} alt={c.nom || ""} className="w-9 h-9 rounded-full object-cover flex-shrink-0" referrerPolicy="no-referrer" />
+                        : <div className="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center flex-shrink-0">
+                            <Users className="w-4 h-4 text-slate-400" />
+                          </div>}
+                      <div className="min-w-0">
+                        <div className="font-semibold text-slate-900 text-sm truncate">{c.nom}</div>
+                        <div className="text-xs text-slate-500 truncate">{c.poste}{c.club ? ` • ${c.club}` : ''}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {c.telephone && (
+                        <span className="text-xs text-slate-500 hidden sm:block">{c.telephone}</span>
+                      )}
+                      <Badge className={c.daysLeft <= 30 ? "bg-red-100 text-red-700" : c.daysLeft <= 60 ? "bg-orange-100 text-orange-700" : "bg-slate-100 text-slate-600"}>
+                        <Calendar className="w-3 h-3 mr-1" />{c.daysLeft}j
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Contacts froids */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-4">
+            <p className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
+              <UserX className="w-4 h-4 text-slate-400" />
+              Contacts inactifs (+60 jours)
+              {coldContacts.length > 0 && (
+                <Badge className="bg-slate-200 text-slate-600 ml-auto">{coldContacts.length}</Badge>
+              )}
+            </p>
+            {coldContacts.length === 0 ? (
+              <div className="py-8 text-center text-slate-500 text-sm">Tous vos contacts sont actifs</div>
+            ) : (
+              <div className="space-y-2">
+                {coldContacts.slice(0, 20).map(c => {
+                  const lastDate = c.updated_date || c.created_date;
+                  const daysSince = differenceInDays(new Date(), new Date(lastDate));
+                  return (
+                    <div key={c.id} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
                       <div className="flex items-center gap-3 min-w-0">
                         {c.photo_url
                           ? <img src={c.photo_url} alt={c.nom || ""} className="w-9 h-9 rounded-full object-cover flex-shrink-0" referrerPolicy="no-referrer" />
@@ -469,66 +500,18 @@ export default function AlertsPage() {
                           <div className="text-xs text-slate-500 truncate">{c.poste}{c.club ? ` • ${c.club}` : ''}</div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {c.telephone && (
-                          <span className="text-xs text-slate-500 hidden sm:block">{c.telephone}</span>
-                        )}
-                        <Badge className={c.daysLeft <= 30 ? "bg-red-100 text-red-700" : c.daysLeft <= 60 ? "bg-orange-100 text-orange-700" : "bg-yellow-100 text-yellow-700"}>
-                          <Calendar className="w-3 h-3 mr-1" />{c.daysLeft}j
-                        </Badge>
-                      </div>
+                      <Badge className="bg-slate-100 text-slate-600 flex-shrink-0">
+                        <Clock className="w-3 h-3 mr-1" />{daysSince}j
+                      </Badge>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Contacts froids */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <UserX className="w-4 h-4 text-slate-400" />
-                Contacts inactifs (+60 jours)
-                {coldContacts.length > 0 && (
-                  <Badge className="bg-slate-400 text-white ml-auto">{coldContacts.length}</Badge>
+                  );
+                })}
+                {coldContacts.length > 20 && (
+                  <p className="text-xs text-center text-slate-400 pt-1">+ {coldContacts.length - 20} autres contacts inactifs</p>
                 )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {coldContacts.length === 0 ? (
-                <div className="py-8 text-center text-slate-500 text-sm">Tous vos contacts sont actifs</div>
-              ) : (
-                <div className="space-y-2">
-                  {coldContacts.slice(0, 20).map(c => {
-                    const lastDate = c.updated_date || c.created_date;
-                    const daysSince = differenceInDays(new Date(), new Date(lastDate));
-                    return (
-                      <div key={c.id} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                        <div className="flex items-center gap-3 min-w-0">
-                          {c.photo_url
-                            ? <img src={c.photo_url} alt={c.nom || ""} className="w-9 h-9 rounded-full object-cover flex-shrink-0" referrerPolicy="no-referrer" />
-                            : <div className="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center flex-shrink-0">
-                                <Users className="w-4 h-4 text-slate-400" />
-                              </div>}
-                          <div className="min-w-0">
-                            <div className="font-semibold text-slate-900 text-sm truncate">{c.nom}</div>
-                            <div className="text-xs text-slate-500 truncate">{c.poste}{c.club ? ` • ${c.club}` : ''}</div>
-                          </div>
-                        </div>
-                        <Badge className="bg-slate-100 text-slate-600 flex-shrink-0">
-                          <Clock className="w-3 h-3 mr-1" />{daysSince}j
-                        </Badge>
-                      </div>
-                    );
-                  })}
-                  {coldContacts.length > 20 && (
-                    <p className="text-xs text-center text-slate-400 pt-1">+ {coldContacts.length - 20} autres contacts inactifs</p>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            )}
+          </div>
         </TabsContent>
 
       </Tabs>

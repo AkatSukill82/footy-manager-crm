@@ -60,11 +60,7 @@ function RatingPicker({ value, onChange, label }) {
             type="button"
             onClick={() => onChange(n)}
             className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${
-              value === n
-                ? n >= 8 ? "bg-green-500 text-white"
-                  : n >= 5 ? "bg-blue-500 text-white"
-                  : "bg-red-400 text-white"
-                : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+              value === n ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
             }`}
           >
             {n}
@@ -238,7 +234,7 @@ function ReportForm({ initial, players, onSave, onClose }) {
 
 // ── Carte rapport ─────────────────────────────────────────────────────────────
 function ReportCard({ report, onView, onDelete }) {
-  const noteColor = report.note_globale >= 8 ? "text-green-600" : report.note_globale >= 6 ? "text-blue-600" : "text-red-500";
+  const noteColor = "text-slate-900";
   return (
     <Card className="hover:shadow-md transition-all cursor-pointer group" onClick={() => onView(report)}>
       <CardContent className="p-4">
@@ -413,10 +409,10 @@ export default function ScoutingReportsPage() {
         <div className="grid gap-3">{[1,2,3].map(i => <div key={i} className="h-28 bg-slate-100 rounded-xl animate-pulse" />)}</div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-24 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-          <ClipboardList className="w-12 h-12 text-violet-300 mx-auto mb-4" />
+          <ClipboardList className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <p className="text-slate-600 font-semibold">Aucun rapport trouvé</p>
           <p className="text-slate-400 text-sm mt-1 mb-5">Créez votre premier rapport de scouting après avoir observé un joueur</p>
-          <Button onClick={() => setModalOpen(true)} className="bg-violet-600 hover:bg-violet-700 text-white gap-2">
+          <Button onClick={() => setModalOpen(true)} className="bg-slate-900 hover:bg-slate-800 text-white gap-2">
             <Plus className="w-4 h-4" /> Nouveau rapport
           </Button>
         </div>
@@ -438,7 +434,7 @@ export default function ScoutingReportsPage() {
         <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <ClipboardList className="w-5 h-5 text-violet-600" />
+              <ClipboardList className="w-5 h-5 text-slate-500" />
               Nouveau rapport de scouting
             </DialogTitle>
           </DialogHeader>
@@ -479,7 +475,7 @@ export default function ScoutingReportsPage() {
                 <div className="grid grid-cols-4 gap-2">
                   {CRITERES.map(c => viewReport[c.key] ? (
                     <div key={c.key} className="bg-slate-50 rounded-lg p-3 text-center border border-slate-100">
-                      <div className={`text-xl font-black ${viewReport[c.key] >= 8 ? "text-green-600" : viewReport[c.key] >= 5 ? "text-blue-600" : "text-red-500"}`}>
+                      <div className="text-xl font-black text-slate-900">
                         {viewReport[c.key]}
                       </div>
                       <div className="text-[10px] text-slate-500 mt-0.5">{c.label}</div>
@@ -487,9 +483,9 @@ export default function ScoutingReportsPage() {
                   ) : null)}
                 </div>
                 {viewReport.points_forts && (
-                  <div className="bg-green-50 border border-green-100 rounded-xl p-3">
-                    <p className="text-xs font-semibold text-green-700 mb-1">Points forts</p>
-                    <p className="text-sm text-green-800 whitespace-pre-line">{viewReport.points_forts}</p>
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <p className="text-xs font-semibold text-slate-600 mb-1">Points forts</p>
+                    <p className="text-sm text-slate-700 whitespace-pre-line">{viewReport.points_forts}</p>
                   </div>
                 )}
                 {viewReport.points_faibles && (

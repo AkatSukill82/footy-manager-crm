@@ -6,7 +6,6 @@ import { createPageUrl } from "../utils";
 import { useCurrentUser } from "../lib/useCurrentUser";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import NotificationSystem from "../components/notifications/NotificationSystem";
 import PlayersByPosition from "../components/dashboard/PlayersByPosition";
@@ -305,124 +304,21 @@ export default function Dashboard() {
 
           {/* ── CONTRATS À SURVEILLER ── */}
           {contractsExpiring.length > 0 && (
-            <Card className="rounded-2xl border-slate-200">
-              <CardContent className="p-4">
-                <SectionHeader
-                  icon={Calendar} title="Contrats à surveiller"
-                  count={contractsExpiring.length}
-                  cta="Voir tous" onCta={() => navigate(createPageUrl("Players"))}
-                />
-                <div className="space-y-2">
-                  {contractsExpiring.slice(0, 5).map(p => {
-                    const days = daysUntil(p.contrat_fin);
-                    const urgency = days <= 60
-                      ? "text-red-600 bg-red-50"
-                      : days <= 120
-                      ? "text-orange-600 bg-orange-50"
-                      : "text-slate-600 bg-slate-100";
-                    return (
-                      <div
-                        key={p.id}
-                        onClick={() => navigate(createPageUrl("PlayerDetail") + "?id=" + p.id)}
-                        className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
-                            <span className="text-[10px] font-bold text-slate-500">
-                              {p.nom?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-slate-900 truncate">{p.nom}</p>
-                            <p className="text-xs text-slate-400 truncate">{p.poste} · {p.club_actuel}</p>
-                          </div>
-                        </div>
-                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${urgency}`}>
-                          {days <= 30 ? `${days}j` : p.contrat_fin?.substring(0, 7)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* ── RAPPELS À VENIR ── */}
-          {upcomingReminders.length > 0 && (
-            <Card className="rounded-2xl border-slate-200">
-              <CardContent className="p-4">
-                <SectionHeader
-                  icon={Bell} title="Rappels cette semaine"
-                  count={upcomingReminders.length}
-                  cta="Voir tous" onCta={() => navigate(createPageUrl("Contacts"))}
-                />
-                <div className="space-y-2">
-                  {upcomingReminders.slice(0, 5).map(r => {
-                    const days = daysUntil(r.date_rappel);
-                    return (
-                      <div
-                        key={r.id}
-                        className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-slate-50 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Clock className="w-4 h-4 text-slate-300 flex-shrink-0" />
-                          <p className="text-sm text-slate-800 truncate">{r.titre}</p>
-                        </div>
-                        <span className="text-[11px] text-slate-500 font-medium flex-shrink-0 ml-2">
-                          {days === 0 ? "Aujourd'hui" : `Dans ${days}j`}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* ── NÉGOCIATIONS ACTIVES ── */}
-          {activeNego.length > 0 && (
-            <Card className="rounded-2xl border-slate-200">
-              <CardContent className="p-4">
-                <SectionHeader
-                  icon={ArrowRightLeft} title="Négociations en cours"
-                  count={activeNego.length}
-                  cta="Gérer" onCta={() => navigate(createPageUrl("TransferManagement"))}
-                />
-                <div className="space-y-2">
-                  {activeNego.slice(0, 5).map(n => (
-                    <div
-                      key={n.id}
-                      onClick={() => navigate(createPageUrl("TransferManagement"))}
-                      className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-slate-900 truncate">{n.player_nom}</p>
-                        <p className="text-xs text-slate-400 truncate">
-                          {n.club_acheteur || n.club_vendeur || "—"}
-                        </p>
-                      </div>
-                      <span className="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full flex-shrink-0 ml-2 capitalize">
-                        {(n.statut || "").replace(/_/g, " ")}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* ── JOUEURS RÉCENTS ── */}
-          {recentPlayers.length > 0 && (
-            <Card className="rounded-2xl border-slate-200">
-              <CardContent className="p-4">
-                <SectionHeader
-                  icon={Users} title="Joueurs ajoutés récemment"
-                  count={recentPlayers.length}
-                  cta="Voir tous" onCta={() => navigate(createPageUrl("Players"))}
-                />
-                <div className="space-y-2">
-                  {recentPlayers.map(p => (
+            <div className="bg-white rounded-2xl border border-slate-100 p-4">
+              <SectionHeader
+                icon={Calendar} title="Contrats à surveiller"
+                count={contractsExpiring.length}
+                cta="Voir tous" onCta={() => navigate(createPageUrl("Players"))}
+              />
+              <div className="space-y-2">
+                {contractsExpiring.slice(0, 5).map(p => {
+                  const days = daysUntil(p.contrat_fin);
+                  const urgency = days <= 60
+                    ? "text-red-600 bg-red-50"
+                    : days <= 120
+                    ? "text-orange-600 bg-orange-50"
+                    : "text-slate-600 bg-slate-100";
+                  return (
                     <div
                       key={p.id}
                       onClick={() => navigate(createPageUrl("PlayerDetail") + "?id=" + p.id)}
@@ -439,16 +335,111 @@ export default function Dashboard() {
                           <p className="text-xs text-slate-400 truncate">{p.poste} · {p.club_actuel}</p>
                         </div>
                       </div>
-                      {p.valeur_marchande && (
-                        <span className="text-[11px] text-slate-600 font-medium flex-shrink-0 ml-2">
-                          {formatVM(p.valeur_marchande)}
-                        </span>
-                      )}
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${urgency}`}>
+                        {days <= 30 ? `${days}j` : p.contrat_fin?.substring(0, 7)}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── RAPPELS À VENIR ── */}
+          {upcomingReminders.length > 0 && (
+            <div className="bg-white rounded-2xl border border-slate-100 p-4">
+              <SectionHeader
+                icon={Bell} title="Rappels cette semaine"
+                count={upcomingReminders.length}
+                cta="Voir tous" onCta={() => navigate(createPageUrl("Contacts"))}
+              />
+              <div className="space-y-2">
+                {upcomingReminders.slice(0, 5).map(r => {
+                  const days = daysUntil(r.date_rappel);
+                  return (
+                    <div
+                      key={r.id}
+                      className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-slate-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Clock className="w-4 h-4 text-slate-300 flex-shrink-0" />
+                        <p className="text-sm text-slate-800 truncate">{r.titre}</p>
+                      </div>
+                      <span className="text-[11px] text-slate-500 font-medium flex-shrink-0 ml-2">
+                        {days === 0 ? "Aujourd'hui" : `Dans ${days}j`}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── NÉGOCIATIONS ACTIVES ── */}
+          {activeNego.length > 0 && (
+            <div className="bg-white rounded-2xl border border-slate-100 p-4">
+              <SectionHeader
+                icon={ArrowRightLeft} title="Négociations en cours"
+                count={activeNego.length}
+                cta="Gérer" onCta={() => navigate(createPageUrl("TransferManagement"))}
+              />
+              <div className="space-y-2">
+                {activeNego.slice(0, 5).map(n => (
+                  <div
+                    key={n.id}
+                    onClick={() => navigate(createPageUrl("TransferManagement"))}
+                    className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-900 truncate">{n.player_nom}</p>
+                      <p className="text-xs text-slate-400 truncate">
+                        {n.club_acheteur || n.club_vendeur || "—"}
+                      </p>
+                    </div>
+                    <span className="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full flex-shrink-0 ml-2 capitalize">
+                      {(n.statut || "").replace(/_/g, " ")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── JOUEURS RÉCENTS ── */}
+          {recentPlayers.length > 0 && (
+            <div className="bg-white rounded-2xl border border-slate-100 p-4">
+              <SectionHeader
+                icon={Users} title="Joueurs ajoutés récemment"
+                count={recentPlayers.length}
+                cta="Voir tous" onCta={() => navigate(createPageUrl("Players"))}
+              />
+              <div className="space-y-2">
+                {recentPlayers.map(p => (
+                  <div
+                    key={p.id}
+                    onClick={() => navigate(createPageUrl("PlayerDetail") + "?id=" + p.id)}
+                    className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+                        <span className="text-[10px] font-bold text-slate-500">
+                          {p.nom?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-900 truncate">{p.nom}</p>
+                        <p className="text-xs text-slate-400 truncate">{p.poste} · {p.club_actuel}</p>
+                      </div>
+                    </div>
+                    {p.valeur_marchande && (
+                      <span className="text-[11px] text-slate-600 font-medium flex-shrink-0 ml-2">
+                        {formatVM(p.valeur_marchande)}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
         </div>
