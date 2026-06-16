@@ -61,9 +61,8 @@ export default function PlayersPage() {
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Player.create(data),
     onSuccess: (player) => {
-      queryClient.invalidateQueries({ queryKey: ['players'] });
+      queryClient.invalidateQueries({ queryKey: ['players', currentUser?.id] });
       setShowForm(false);
-      // Auto-fetch photo en arrière-plan si pas déjà une photo
       if (player?.id && player?.nom && !player?.photo_url) {
         base44.functions.invoke("fetchEntityPhoto", {
           type: "player",
@@ -72,7 +71,7 @@ export default function PlayersPage() {
         }).then(result => {
           if (result?.photo_url) {
             base44.entities.Player.update(player.id, { photo_url: result.photo_url })
-              .then(() => queryClient.invalidateQueries({ queryKey: ['players'] }))
+              .then(() => queryClient.invalidateQueries({ queryKey: ['players', currentUser?.id] }))
               .catch(() => {});
           }
         }).catch(() => {});
@@ -85,7 +84,7 @@ export default function PlayersPage() {
     mutationFn: ({ playerId, statut }) =>
       base44.entities.WatchList.create({ player_id: playerId, statut, priorite: "Moyenne" }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['watchList'] });
+      queryClient.invalidateQueries({ queryKey: ['watchList', userEmail] });
       queryClient.invalidateQueries({ queryKey: ['watchListItem'] });
     },
     onError: (err) => setMutationError(err.message || "Erreur lors de l'ajout à la watchlist"),

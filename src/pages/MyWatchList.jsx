@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
@@ -183,20 +183,24 @@ export default function MyWatchListPage() {
     onError: (err) => setMutationError(err.message || "Erreur lors de la suppression"),
   });
 
-  const playersMap = Object.fromEntries(players.map(p => [p.id, p]));
-  const notesMap   = Object.fromEntries(notes.map(n => [n.player_id, n]));
+  const playersMap = useMemo(() => Object.fromEntries(players.map(p => [p.id, p])), [players]);
+  const notesMap   = useMemo(() => Object.fromEntries(notes.map(n => [n.player_id, n])), [notes]);
 
-  const enriched = watchList
-    .map(w => ({ ...w, player: playersMap[w.player_id], note: notesMap[w.player_id] }))
-    .filter(w => w.player);
+  const enriched = useMemo(() =>
+    watchList
+      .map(w => ({ ...w, player: playersMap[w.player_id], note: notesMap[w.player_id] }))
+      .filter(w => w.player),
+    [watchList, playersMap, notesMap]
+  );
 
-  const filtered = activeTab === "all"
-    ? enriched
-    : enriched.filter(w => w.statut === activeTab);
+  const filtered = useMemo(() =>
+    activeTab === "all" ? enriched : enriched.filter(w => w.statut === activeTab),
+    [enriched, activeTab]
+  );
 
-  // Counts per tab
-  const counts = Object.fromEntries(
-    STATUTS.map(s => [s.value, enriched.filter(w => w.statut === s.value).length])
+  const counts = useMemo(() =>
+    Object.fromEntries(STATUTS.map(s => [s.value, enriched.filter(w => w.statut === s.value).length])),
+    [enriched]
   );
 
   return (

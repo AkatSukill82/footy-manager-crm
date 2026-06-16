@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../../utils";
@@ -17,7 +17,7 @@ function highlight(text, query) {
   return (
     <>
       {text.slice(0, idx)}
-      <mark className="bg-green-100 text-green-800 rounded px-0.5 not-italic font-semibold">
+      <mark className="bg-slate-200 text-slate-900 rounded px-0.5 not-italic font-semibold">
         {text.slice(idx, idx + query.length)}
       </mark>
       {text.slice(idx + query.length)}
@@ -41,30 +41,21 @@ export default function GlobalSearch({ open, onClose }) {
     }
   }, [open]);
 
-  // Collect data from React Query cache
-  const allPlayers = (() => {
-    const cache = qc.getQueriesData({ queryKey: ["players"] });
-    for (const [, data] of cache) {
-      if (Array.isArray(data) && data.length > 0) return data;
-    }
-    return [];
-  })();
-
-  const allClubs = (() => {
-    const cache = qc.getQueriesData({ queryKey: ["clubs"] });
-    for (const [, data] of cache) {
-      if (Array.isArray(data) && data.length > 0) return data;
-    }
-    return [];
-  })();
-
-  const allContacts = (() => {
-    const cache = qc.getQueriesData({ queryKey: ["contacts"] });
-    for (const [, data] of cache) {
-      if (Array.isArray(data) && data.length > 0) return data;
-    }
-    return [];
-  })();
+  // Lit le cache une seule fois à l'ouverture — pas à chaque frappe
+  const { allPlayers, allClubs, allContacts } = useMemo(() => {
+    const readFirst = (key) => {
+      const cache = qc.getQueriesData({ queryKey: [key] });
+      for (const [, data] of cache) {
+        if (Array.isArray(data) && data.length > 0) return data;
+      }
+      return [];
+    };
+    return {
+      allPlayers:  readFirst("players"),
+      allClubs:    readFirst("clubs"),
+      allContacts: readFirst("contacts"),
+    };
+  }, [open, qc]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const q = query.trim().toLowerCase();
 
@@ -77,7 +68,7 @@ export default function GlobalSearch({ open, onClose }) {
         title: p.nom,
         sub: [POSTE_ABBR[p.poste] || p.poste, p.club_actuel].filter(Boolean).join(" · "),
         icon: Users,
-        iconColor: "text-green-600 bg-green-50",
+        iconColor: "text-slate-600 bg-slate-100",
         url: createPageUrl("PlayerDetail") + "?id=" + p.id,
       })),
     ...allClubs
@@ -88,7 +79,7 @@ export default function GlobalSearch({ open, onClose }) {
         title: c.nom,
         sub: [c.pays, c.ligue].filter(Boolean).join(" · "),
         icon: Building2,
-        iconColor: "text-blue-600 bg-blue-50",
+        iconColor: "text-slate-600 bg-slate-100",
         url: createPageUrl("ClubDetail") + "?id=" + c.id,
       })),
     ...allContacts
@@ -99,7 +90,7 @@ export default function GlobalSearch({ open, onClose }) {
         title: c.nom,
         sub: [c.poste, c.club].filter(Boolean).join(" · "),
         icon: Phone,
-        iconColor: "text-purple-600 bg-purple-50",
+        iconColor: "text-slate-600 bg-slate-100",
         url: createPageUrl("ClubContacts"),
       })),
   ];
@@ -191,7 +182,7 @@ export default function GlobalSearch({ open, onClose }) {
                       onClick={() => go(item)}
                       onMouseEnter={() => setCursor(idx)}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
-                        cursor === idx ? "bg-green-50" : "hover:bg-slate-50"
+                        cursor === idx ? "bg-slate-50" : "hover:bg-slate-50"
                       }`}
                     >
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${item.iconColor}`}>
@@ -205,7 +196,7 @@ export default function GlobalSearch({ open, onClose }) {
                           <div className="text-xs text-slate-400 truncate">{item.sub}</div>
                         )}
                       </div>
-                      {cursor === idx && <ArrowRight className="w-4 h-4 text-green-500 flex-shrink-0" />}
+                      {cursor === idx && <ArrowRight className="w-4 h-4 text-slate-400 flex-shrink-0" />}
                     </button>
                   );
                 })}

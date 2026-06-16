@@ -30,6 +30,7 @@ import TransfermarktImage from "../components/ui/TransfermarktImage";
 import { exportPlayerPDF } from "../lib/exportPlayerPDF";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
+import { useCurrentUser } from "../lib/useCurrentUser";
 import ActivityLogList from "../components/activity/ActivityLogList";
 import PlayerExternalLinks from "../components/players/PlayerExternalLinks";
 import PlayerTMStats from "../components/players/PlayerTMStats";
@@ -89,12 +90,8 @@ export default function PlayerDetailPage() {
     enabled: !!playerId,
   });
 
-  // Single auth call shared by all user-scoped queries
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-    staleTime: Infinity,
-  });
+  // Réutilise le cache global — zéro requête réseau supplémentaire
+  const currentUser = useCurrentUser();
   const userEmail = currentUser?.email;
 
   const { data: watchListItem } = useQuery({
@@ -160,7 +157,7 @@ export default function PlayerDetailPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['player', playerId] });
-      queryClient.invalidateQueries({ queryKey: ['players'] });
+      queryClient.invalidateQueries({ queryKey: ['players', currentUser?.id] });
       queryClient.invalidateQueries({ queryKey: ['activityLogs', 'Player', playerId] });
       setIsEditing(false);
     },
@@ -187,7 +184,7 @@ export default function PlayerDetailPage() {
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchListItem', playerId] });
-      queryClient.invalidateQueries({ queryKey: ['watchList'] });
+      queryClient.invalidateQueries({ queryKey: ['watchList', userEmail] });
     },
     onError: (err) => setMutationError(err.message || "Erreur lors de l'ajout à la watchlist"),
   });
@@ -196,7 +193,7 @@ export default function PlayerDetailPage() {
     mutationFn: (statut) => base44.entities.WatchList.update(watchListItem.id, { statut }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchListItem', playerId] });
-      queryClient.invalidateQueries({ queryKey: ['watchList'] });
+      queryClient.invalidateQueries({ queryKey: ['watchList', userEmail] });
     },
     onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour du statut"),
   });
@@ -205,7 +202,7 @@ export default function PlayerDetailPage() {
     mutationFn: () => base44.entities.WatchList.delete(watchListItem.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchListItem', playerId] });
-      queryClient.invalidateQueries({ queryKey: ['watchList'] });
+      queryClient.invalidateQueries({ queryKey: ['watchList', userEmail] });
     },
     onError: (err) => setMutationError(err.message || "Erreur lors du retrait de la watchlist"),
   });

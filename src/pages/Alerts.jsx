@@ -32,7 +32,7 @@ export default function AlertsPage() {
   });
 
   const { data: watchList = [] } = useQuery({
-    queryKey: ['my-watchlist', userEmail],
+    queryKey: ['watchList', userEmail],
     queryFn: () => base44.entities.WatchList.filter({ created_by: userEmail }),
     enabled: !!userEmail,
   });
@@ -61,9 +61,9 @@ export default function AlertsPage() {
   });
 
   const { data: clubContacts = [], isLoading: loadingContacts } = useQuery({
-    queryKey: ['club-contacts-alerts', user?.id],
-    queryFn: () => base44.entities.ClubContact.filter({ created_by_id: user.id }),
-    enabled: !!user?.id,
+    queryKey: ['club-contacts'],
+    queryFn: () => base44.entities.ClubContact.list(),
+    staleTime: Infinity,
   });
 
   const { data: teams = [] } = useQuery({
