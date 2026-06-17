@@ -174,6 +174,13 @@ export default function PlayerDetailPage() {
       await base44.entities.Player.delete(playerId);
     },
     onSuccess: () => {
+      // Purger le cache du joueur supprimé + rafraîchir les listes liées,
+      // sinon la liste Players ressert l'ancien cache jusqu'au refresh manuel.
+      queryClient.removeQueries({ queryKey: ['player', playerId] });
+      queryClient.invalidateQueries({ queryKey: ['players'] });
+      queryClient.invalidateQueries({ queryKey: ['watchList'] });
+      queryClient.invalidateQueries({ queryKey: ['watchListItem'] });
+      queryClient.invalidateQueries({ queryKey: ['pipeline'] });
       navigate(createPageUrl("Players"));
     },
     onError: (err) => setMutationError(err.message || "Erreur lors de la suppression du joueur"),
