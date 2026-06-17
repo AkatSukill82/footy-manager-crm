@@ -148,7 +148,10 @@ export default function ClubDetailPage() {
   const arrivals = transfers.filter(t => t.club_arrivee === club.nom);
   const departures = transfers.filter(t => t.club_depart === club.nom);
 
-  const hasClubContact = club.telephone || club.email || club.site_web || club.instagram || club.twitter;
+  const siteWebUrl = club.site_web
+    ? (club.site_web.startsWith("http") ? club.site_web : `https://${club.site_web}`)
+    : null;
+  const hasClubContact = club.telephone_general || club.email_general || club.site_web || club.instagram || club.twitter;
   const hasPersonContact = club.contact_nom || club.contact_email || club.contact_telephone;
   const hasPresidentContact = club.president && (club.president_email || club.president_telephone);
   const hasCoachContact = club.entraineur && club.entraineur_email;
@@ -323,9 +326,9 @@ export default function ClubDetailPage() {
             <Phone className="w-4 h-4 text-slate-400" /> {t(lang,'clubDetail.contact')}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <ContactLink href={`tel:${club.telephone}`} icon={Phone} label={t(lang,'clubDetail.phone')} value={club.telephone} color="slate" />
-            <ContactLink href={`mailto:${club.email}`} icon={Mail} label={t(lang,'clubDetail.email')} value={club.email} color="slate" />
-            <ContactLink href={club.site_web} icon={Globe} label={t(lang,'clubDetail.website')} value={club.site_web} color="slate" />
+            <ContactLink href={`tel:${club.telephone_general}`} icon={Phone} label={t(lang,'clubDetail.phone')} value={club.telephone_general} color="slate" />
+            <ContactLink href={`mailto:${club.email_general}`} icon={Mail} label={t(lang,'clubDetail.email')} value={club.email_general} color="slate" />
+            <ContactLink href={siteWebUrl} icon={Globe} label={t(lang,'clubDetail.website')} value={club.site_web} color="slate" />
             <ContactLink href={club.instagram ? `https://instagram.com/${club.instagram.replace('@','')}` : null} icon={Instagram} label={t(lang,'clubDetail.instagram')} value={club.instagram} color="slate" />
             <ContactLink href={club.twitter ? `https://twitter.com/${club.twitter.replace('@','')}` : null} icon={Twitter} label={t(lang,'clubDetail.twitter')} value={club.twitter} color="slate" />
           </div>

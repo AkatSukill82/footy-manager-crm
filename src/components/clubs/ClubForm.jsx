@@ -17,7 +17,7 @@ export default function ClubForm({ club, onSubmit, onCancel }) {
     annee_fondation: "", couleurs: "", president: "", president_email: "",
     president_telephone: "", entraineur: "", entraineur_email: "",
     directeur_sportif: "", directeur_sportif_email: "", directeur_sportif_telephone: "",
-    email: "", telephone: "", site_web: "", instagram: "", twitter: "", adresse: "",
+    email_general: "", telephone_general: "", site_web: "", instagram: "", twitter: "", adresse: "",
     contact_nom: "", contact_poste: "", contact_email: "", contact_telephone: "",
     budget_annuel: "", budget_transfert: "", dette: "", valeur_effectif: "",
     palmares: "", historique: "", logo_url: "", categorie: "Intermédiaire",
@@ -181,10 +181,10 @@ export default function ClubForm({ club, onSubmit, onCancel }) {
           <Section title={t(lang,'clubForm.contact')} icon={Phone}>
             <div className="grid grid-cols-3 gap-4">
               <F label={t(lang,'clubForm.generalPhone')}>
-                <Input value={formData.telephone} onChange={set("telephone")} placeholder={t(lang,'clubForm.generalPhonePlh')} />
+                <Input value={formData.telephone_general} onChange={set("telephone_general")} placeholder={t(lang,'clubForm.generalPhonePlh')} />
               </F>
               <F label={t(lang,'clubForm.generalEmail')}>
-                <Input type="email" value={formData.email} onChange={set("email")} placeholder={t(lang,'clubForm.generalEmailPlh')} />
+                <Input type="email" value={formData.email_general} onChange={set("email_general")} placeholder={t(lang,'clubForm.generalEmailPlh')} />
               </F>
               <F label={t(lang,'clubForm.website')}>
                 <Input value={formData.site_web} onChange={set("site_web")} placeholder={t(lang,'clubForm.websitePlh')} />

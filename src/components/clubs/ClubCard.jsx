@@ -71,24 +71,24 @@ export default function ClubCard({ club }) {
         </div>
 
         {/* Contact rapide */}
-        {(club.telephone || club.email || club.site_web) && (
+        {(club.telephone_general || club.email_general || club.site_web) && (
           <div className="flex gap-2 mt-3 pt-3 border-t border-slate-100" onClick={e => e.stopPropagation()}>
-            {club.telephone && (
-              <a href={`tel:${club.telephone}`} title={club.telephone}
+            {club.telephone_general && (
+              <a href={`tel:${club.telephone_general}`} title={club.telephone_general}
                 className="flex items-center gap-1.5 text-xs text-green-600 hover:text-green-700 bg-green-50 px-2 py-1 rounded-lg">
                 <Phone className="w-3 h-3" />
-                <span className="hidden sm:inline truncate max-w-[80px]">{club.telephone}</span>
+                <span className="hidden sm:inline truncate max-w-[80px]">{club.telephone_general}</span>
               </a>
             )}
-            {club.email && (
-              <a href={`mailto:${club.email}`} title={club.email}
+            {club.email_general && (
+              <a href={`mailto:${club.email_general}`} title={club.email_general}
                 className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 bg-blue-50 px-2 py-1 rounded-lg">
                 <Mail className="w-3 h-3" />
-                <span className="hidden sm:inline truncate max-w-[80px]">{club.email}</span>
+                <span className="hidden sm:inline truncate max-w-[80px]">{club.email_general}</span>
               </a>
             )}
             {club.site_web && (
-              <a href={club.site_web} target="_blank" rel="noopener noreferrer" title={club.site_web}
+              <a href={club.site_web.startsWith("http") ? club.site_web : `https://${club.site_web}`} target="_blank" rel="noopener noreferrer" title={club.site_web}
                 className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-700 bg-slate-100 px-2 py-1 rounded-lg">
                 <Globe className="w-3 h-3" />
               </a>
