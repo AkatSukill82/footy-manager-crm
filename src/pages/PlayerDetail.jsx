@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, User, Edit2, Star, Trash2, FileDown, AlertCircle, X, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, User, Edit2, Star, Trash2, FileDown, AlertCircle, X, MoreHorizontal, ExternalLink } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
@@ -32,10 +32,10 @@ import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
 import { useCurrentUser } from "../lib/useCurrentUser";
 import ActivityLogList from "../components/activity/ActivityLogList";
-import PlayerExternalLinks from "../components/players/PlayerExternalLinks";
 import PlayerTMStats from "../components/players/PlayerTMStats";
 import PlayerSofaStats from "../components/players/PlayerSofaStats";
 import PlayerVideos from "../components/players/PlayerVideos";
+import PlayerMatches from "../components/players/PlayerMatches";
 
 const posteColors = {
   "Gardien": "bg-amber-50 text-amber-700",
@@ -412,21 +412,32 @@ export default function PlayerDetailPage() {
                     </div>
                   )}
 
-                  {/* Source Transfermarkt — lien direct fiche joueur */}
-                  {tmUrl && (
-                    <div className="flex items-center gap-2 mt-2">
-                      <a
-                        href={tmUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-slate-700 transition-colors border border-slate-200 rounded-md px-2 py-0.5 hover:border-slate-300"
-                      >
-                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                        Fiche Transfermarkt
-                      </a>
-                      <span className="text-[10px] text-slate-300">données vérifiables</span>
-                    </div>
-                  )}
+                  {/* Liens externes — directement sous les stats */}
+                  {(() => {
+                    const q = encodeURIComponent(player.nom || "");
+                    const links = [
+                      { label: "Transfermarkt", url: tmUrl || `https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche?query=${q}`,
+                        color: "text-blue-700 border-blue-200 hover:bg-blue-50", direct: !!tmUrl },
+                      { label: "BeSoccer", url: `https://www.besoccer.com/search/${q}`,
+                        color: "text-emerald-700 border-emerald-200 hover:bg-emerald-50", direct: false },
+                      { label: "SofaScore", url: player.sofascore_id ? `https://www.sofascore.com/player/${player.sofascore_id}` : `https://www.sofascore.com/search#query=${q}`,
+                        color: "text-purple-700 border-purple-200 hover:bg-purple-50", direct: !!player.sofascore_id },
+                      { label: "FotMob", url: `https://www.fotmob.com/search?q=${q}`,
+                        color: "text-orange-700 border-orange-200 hover:bg-orange-50", direct: false },
+                    ];
+                    return (
+                      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                        {links.map(l => (
+                          <a key={l.label} href={l.url} target="_blank" rel="noopener noreferrer"
+                            className={`inline-flex items-center gap-1 text-[11px] border rounded-md px-2 py-0.5 transition-colors ${l.color}`}>
+                            <ExternalLink className="w-3 h-3" />
+                            {l.label}
+                            {!l.direct && <span className="text-[9px] opacity-50">↗</span>}
+                          </a>
+                        ))}
+                      </div>
+                    );
+                  })()}
 
                   {/* Complétude + Sync */}
                   <div className="flex items-center gap-3 mt-3">
@@ -453,6 +464,8 @@ export default function PlayerDetailPage() {
 
             {/* Charts & Evolution */}
             <PlayerChartsPanel playerId={playerId} player={player} />
+
+            <PlayerMatches player={player} />
 
             <PlayerVideos player={player} />
 
@@ -499,8 +512,6 @@ export default function PlayerDetailPage() {
             />
 
             <UpcomingMatches playerClub={player.club_actuel} />
-
-            <PlayerExternalLinks player={player} />
 
             <ActivityLogList entityId={playerId} entityType="Player" />
           </div>

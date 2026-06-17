@@ -137,6 +137,26 @@ const getPlayerStats = async (playerId: number): Promise<Record<string, any>> =>
   return stats;
 };
 
+// Matchs récents + performance du joueur (depuis playerData.recentMatches)
+const mapRecentMatches = (json: any): any[] => {
+  const list: any[] = json?.recentMatches ?? json?.lastMatches ?? [];
+  return list.slice(0, 8).map((m: any) => {
+    const r = m.ratingProps?.rating ?? m.rating ?? null;
+    return {
+      date:        m.matchDate ? String(m.matchDate).split("T")[0] : (m.date ?? null),
+      competition: m.leagueName ?? m.tournamentName ?? null,
+      adversaire:  m.opponentTeamName ?? m.opponentName ?? null,
+      domicile:    m.home ?? m.isHome ?? null,
+      score:       (m.homeScore != null && m.awayScore != null) ? `${m.homeScore}-${m.awayScore}` : null,
+      minutes:     m.minutesPlayed ?? null,
+      buts:        m.goals ?? null,
+      passes:      m.assists ?? null,
+      note:        r != null ? Number(r) : null,
+      a_joue:      (m.minutesPlayed ?? 0) > 0,
+    };
+  });
+};
+
 // ── Recherche équipe ──────────────────────────────────────────────────────────
 
 const searchTeam = async (name: string): Promise<any[]> => {
@@ -190,6 +210,24 @@ Deno.serve(async (req) => {
       if (!fotmob_id) return Response.json({ ok: false, error: "fotmob_id requis" });
       const stats = await getPlayerStats(parseInt(fotmob_id));
       return Response.json({ ok: true, stats });
+    }
+
+    // ── Matchs récents + performance (recherche par nom) ─────────────────────
+    if (action === "searchAndGetMatches") {
+      if (!query?.trim()) return Response.json({ ok: false, error: "query requis" });
+      const player = await searchPlayer(query.trim(), club);
+      if (!player) return Response.json({ ok: false, error: "Joueur non trouvé sur FotMob." });
+      const json    = await fmGet(`/playerData?id=${player.id}`);
+      const matches = mapRecentMatches(json);
+      return Response.json({ ok: true, player_name: player.name, fotmob_id: String(player.id), matches });
+    }
+
+    // ── Matchs récents depuis ID connu ───────────────────────────────────────
+    if (action === "getMatches") {
+      if (!fotmob_id) return Response.json({ ok: false, error: "fotmob_id requis" });
+      const json    = await fmGet(`/playerData?id=${parseInt(fotmob_id)}`);
+      const matches = mapRecentMatches(json);
+      return Response.json({ ok: true, matches });
     }
 
     // ── Recherche équipe ─────────────────────────────────────────────────────
