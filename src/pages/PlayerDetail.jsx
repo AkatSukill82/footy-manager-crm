@@ -35,6 +35,7 @@ import { useCurrentUser } from "../lib/useCurrentUser";
 import ActivityLogList from "../components/activity/ActivityLogList";
 import PlayerTMStats from "../components/players/PlayerTMStats";
 import PlayerSofaStats from "../components/players/PlayerSofaStats";
+import PlayerFotmobStats from "../components/players/PlayerFotmobStats";
 import PlayerVideos from "../components/players/PlayerVideos";
 import PlayerMatches from "../components/players/PlayerMatches";
 import { playerExternalLinks } from "../lib/externalLinks";
@@ -465,6 +466,8 @@ export default function PlayerDetailPage() {
             <PlayerTMStats player={player} />
 
             <PlayerSofaStats player={player} />
+
+            <PlayerFotmobStats player={player} onApply={(data) => updatePlayerMutation.mutate(data)} />
 
             <TransferHistory transfers={transfers} player={player} />
             

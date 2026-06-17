@@ -82,22 +82,55 @@ const searchPlayer = async (name: string, hint: Hint): Promise<{ id: number; nam
 
 // ── Stats joueur ──────────────────────────────────────────────────────────────
 
+// Titres FotMob (EN) → champs entité Player. Plusieurs libellés possibles par
+// champ selon les versions de l'API ; on prend le premier présent.
 const STAT_MAP: Record<string, string> = {
-  "Goals":          "buts",
-  "Assists":        "passes_decisives",
-  "Matches":        "matchs_joues",
-  "Started":        "titularisations",
-  "Minutes played": "minutes_jouees",
-  "Rating":         "note_fotmob",
-  "Yellow cards":   "cartons_jaunes",
-  "Red cards":      "cartons_rouges",
-  "Shots":          "tirs",
-  "Key passes":     "passes_cles",
-  "Dribbles":       "dribbles_reussis",
-  "Tackles":        "tacles",
-  "Interceptions":  "interceptions",
-  "xG":             "xg",
-  "xA":             "xa",
+  // Synthèse
+  "Matches":              "matchs_joues",
+  "Appearances":          "matchs_joues",
+  "Started":              "titularisations",
+  "Minutes played":       "minutes_jouees",
+  "Rating":               "note_fotmob",
+  "FotMob rating":        "note_fotmob",
+  // Offensif
+  "Goals":                "buts",
+  "Assists":              "passes_decisives",
+  "xG":                   "xg",
+  "Expected goals (xG)":  "xg",
+  "xA":                   "xa",
+  "Expected assists (xA)":"xa",
+  "Shots":                "tirs",
+  "Shots on target":      "tirs_cadres",
+  "Big chances missed":   "grandes_chances_manquees",
+  "Penalties scored":     "penaltys_marques",
+  // Passes / création
+  "Key passes":           "passes_cles",
+  "Chances created":      "passes_cles",
+  "Big chances created":  "grandes_chances",
+  "Accurate passes":      "passes_reussies",
+  "Successful crosses":   "centres",
+  // Dribbles / possession
+  "Dribbles":             "dribbles_reussis",
+  "Successful dribbles":  "dribbles_reussis",
+  "Touches":              "touches_balle",
+  "Dispossessed":         "pertes_balle",
+  // Défensif
+  "Tackles":              "tacles",
+  "Tackles won":          "tacles",
+  "Interceptions":        "interceptions",
+  "Recoveries":           "recuperations",
+  "Clearances":           "degagements",
+  "Blocks":               "tirs_bloques",
+  // Discipline
+  "Yellow cards":         "cartons_jaunes",
+  "Red cards":            "cartons_rouges",
+  "Fouls":                "fautes_commises",
+  "Was fouled":           "fautes_subies",
+  "Offsides":             "hors_jeu",
+  // Gardien
+  "Saves":                "arrets",
+  "Goals conceded":       "buts_encaisses",
+  "Clean sheets":         "clean_sheets",
 };
 
 // Position FotMob (label EN) → poste entité Player (FR)
