@@ -45,12 +45,11 @@ export default function SyncPlayerButton({ player, onApply }) {
     const name = player.nom;
     const club = player.club_actuel;
 
-    // Infos perso (TheSportsDB) + stats FotMob primary + SofaScore best-effort
+    // Transfermarkt (infos perso) + FotMob + SofaScore (stats) en parallèle
     const [tdbRes, fmRes, ssRes] = await Promise.allSettled([
-      base44.functions.invoke("sofascoreProxy", {
-        action: "getPersonalInfo",
+      base44.functions.invoke("transfermarktProxy", {
+        action: "searchAndGet",
         query:  name,
-        club,
       }),
       base44.functions.invoke("fotmobProxy", {
         action: "searchAndGetStats",
@@ -70,10 +69,10 @@ export default function SyncPlayerButton({ player, onApply }) {
 
     if (!bs && !ss && !fm) throw new Error("Aucune donnée trouvée.");
 
-    const sources = [bs && "TheSportsDB", fm && "FotMob", ss && "SofaScore"].filter(Boolean);
+    const sources = [bs && "Transfermarkt", fm && "FotMob", ss && "SofaScore"].filter(Boolean);
 
     const flat = {
-      // Infos perso depuis BeSoccer
+      // Infos perso depuis Transfermarkt
       ...(bs ? {
         age:              bs.age,
         date_naissance:   bs.date_naissance,

@@ -148,7 +148,6 @@ function mergeStats(ss, fm, bs) {
 // ── Fusion infos perso (Transfermarkt prioritaire, TDB/BS en fallback) ────────
 function mergePersonal(tm, tdb, bs, candidate) {
   // tm  = Transfermarkt  (principal)
-  // tdb = TheSportsDB    (fallback)
   // bs  = BeSoccer       (complément : ligue, ELO, lien)
   // ca  = candidat de recherche (FotMob ou TDB)
   const t = tm  || {};
@@ -178,13 +177,13 @@ function mergePersonal(tm, tdb, bs, candidate) {
     contrat_fin:      t.contrat_fin   || b.contrat_fin,
     agent:            t.agent         || null,
     transfermarkt_id: t.transfermarkt_id || null,
-    // Photo : TM prioritaire, puis TheSportsDB (fiable), puis BeSoccer CDN, puis candidat
-    photo_url:        t.photo_url     || d.photo_url     || b.photo_url  || c.photo_url,
+    // Photo : TM prioritaire, puis BeSoccer CDN, puis candidat (FotMob CDN)
+    photo_url:        t.photo_url     || b.photo_url  || c.photo_url,
     // Liens
     transfermarkt_url:  t.transfermarkt_url || null,
     besoccer_url:       b.besoccer_url      || null,
     sofascore_url:      null,
-    sources_perso: [tm && "Transfermarkt", tdb && "TheSportsDB", bs && "BeSoccer"].filter(Boolean),
+    sources_perso: [tm && "Transfermarkt", bs && "BeSoccer"].filter(Boolean),
   };
 }
 
@@ -202,7 +201,7 @@ export default function PlayerSearchPage() {
   const navigate    = useNavigate();
   const queryClient = useQueryClient();
 
-  // ── 1. Recherche FotMob + TheSportsDB en parallèle ──────────────────────
+  // ── 1. Recherche via FotMob ──────────────────────────────────────────────
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -213,14 +212,12 @@ export default function PlayerSearchPage() {
     setError(null);
 
     try {
-      const [fmRes, tdbRes] = await Promise.allSettled([
-        base44.functions.invoke("fotmobProxy",    { action: "searchPlayer", query: query.trim() }),
-        base44.functions.invoke("sofascoreProxy", { action: "searchPlayer", query: query.trim() }),
-      ]);
+      const fmRes = await base44.functions.invoke("fotmobProxy", {
+        action: "searchPlayer",
+        query:  query.trim(),
+      });
 
-      const fmPlayers  = fmRes.status  === "fulfilled" && Array.isArray(fmRes.value?.players)  ? fmRes.value.players  : [];
-      const tdbPlayers = tdbRes.status === "fulfilled" && Array.isArray(tdbRes.value?.players) ? tdbRes.value.players : [];
-      const list = fmPlayers.length > 0 ? fmPlayers : tdbPlayers;
+      const list = Array.isArray(fmRes?.players) ? fmRes.players : [];
 
       if (list.length === 0) {
         setError(`Aucun joueur trouvé pour "${query}".`);
@@ -244,28 +241,25 @@ export default function PlayerSearchPage() {
       const nom  = candidate.nom;
       const club = candidate.club_actuel;
 
-      const [tmRes, tdbRes, bsRes, fmStatsRes, ssStatsRes] = await Promise.allSettled([
-        // Transfermarkt — infos perso prioritaires
+      const [tmRes, bsRes, fmStatsRes, ssStatsRes] = await Promise.allSettled([
+        // Transfermarkt — infos perso + stats
         base44.functions.invoke("transfermarktProxy", { action: "searchAndGet", query: nom }),
-        // TheSportsDB — fallback infos perso (date naissance, nationalité, photo)
-        base44.functions.invoke("sofascoreProxy", { action: "getPersonalInfo", query: nom, club }),
-        // BeSoccer — lien profil + ELO + quelques stats
+        // BeSoccer — lien profil + ELO + stats
         base44.functions.invoke("besoccerProxy", { action: "searchAndGetPlayer", query: nom }),
         // FotMob — stats (confirmé accessible depuis cloud)
         candidate.fotmob_id
           ? base44.functions.invoke("fotmobProxy", { action: "getStats",          fotmob_id: candidate.fotmob_id })
           : base44.functions.invoke("fotmobProxy", { action: "searchAndGetStats", query: nom, club }),
-        // SofaScore — stats avancées xG/xA (best effort, peut échouer)
+        // SofaScore — stats avancées xG/xA (best effort)
         base44.functions.invoke("sofascoreProxy", { action: "searchAndGetStats", query: nom, club }),
       ]);
 
       const tmData  = tmRes.status      === "fulfilled" && tmRes.value?.ok      ? tmRes.value.player  : null;
-      const tdbInfo = tdbRes.status     === "fulfilled" && tdbRes.value?.ok     ? tdbRes.value.player : null;
       const bsData  = bsRes.status      === "fulfilled" && bsRes.value?.ok      ? bsRes.value.player  : null;
       const fmStats = fmStatsRes.status === "fulfilled" && fmStatsRes.value?.ok ? fmStatsRes.value.stats : null;
       const ssStats = ssStatsRes.status === "fulfilled" && ssStatsRes.value?.ok ? ssStatsRes.value.stats : null;
 
-      const personal = mergePersonal(tmData, tdbInfo, bsData, candidate);
+      const personal = mergePersonal(tmData, null, bsData, candidate);
       const stats    = mergeStats(ssStats, fmStats, bsData);
 
       setResult({ ...personal, stats_saison: stats });
@@ -343,11 +337,10 @@ export default function PlayerSearchPage() {
           </h1>
           <div className="flex flex-wrap gap-1.5 mt-2 items-center text-[11px]">
             <span className="text-slate-400">Infos :</span>
-            {["Transfermarkt","TheSportsDB","BeSoccer"].map(s => (
+            {["Transfermarkt","BeSoccer"].map(s => (
               <span key={s} className={`px-2 py-0.5 rounded-full font-medium ${
                 s === "Transfermarkt" ? "bg-blue-100 text-blue-700" :
-                s === "BeSoccer"     ? "bg-emerald-100 text-emerald-700" :
-                "bg-slate-100 text-slate-600"}`}>{s}</span>
+                "bg-emerald-100 text-emerald-700"}`}>{s}</span>
             ))}
             <span className="text-slate-400 ml-2">Stats :</span>
             {["FotMob","SofaScore","BeSoccer"].map(s => (
@@ -382,7 +375,7 @@ export default function PlayerSearchPage() {
         {loading && (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
-            <p className="text-slate-600 font-medium">Recherche sur FotMob + TheSportsDB…</p>
+            <p className="text-slate-600 font-medium">Recherche sur FotMob…</p>
           </div>
         )}
 
@@ -397,7 +390,7 @@ export default function PlayerSearchPage() {
             </CardHeader>
             <CardContent className="space-y-2">
               {candidates.map((c, i) => (
-                <button key={c.fotmob_id || c.thesportsdb_id || i} onClick={() => fetchFullProfile(c)}
+                <button key={c.fotmob_id || i} onClick={() => fetchFullProfile(c)}
                   className="w-full flex items-center gap-4 p-3 rounded-xl border border-slate-200 hover:border-green-400 hover:bg-green-50 transition-all text-left group">
                   <div className="w-14 h-14 rounded-xl bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-200">
                     {c.photo_url
@@ -424,7 +417,7 @@ export default function PlayerSearchPage() {
         {loadingFull && (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
-            <p className="text-slate-600 font-medium">Transfermarkt · TheSportsDB · BeSoccer · FotMob · SofaScore…</p>
+            <p className="text-slate-600 font-medium">Transfermarkt · BeSoccer · FotMob · SofaScore…</p>
           </div>
         )}
 

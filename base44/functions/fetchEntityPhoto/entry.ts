@@ -2,8 +2,7 @@
  * Cherche automatiquement une photo/logo pour un joueur ou un club.
  * Sources (par ordre de priorité) :
  *   1. Google Custom Search Images API (principale)
- *   2. TheSportsDB (fallback)
- *   3. Wikipedia (fallback)
+ *   2. Wikipedia (fallback)
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
@@ -50,23 +49,7 @@ Deno.serve(async (req) => {
       photoUrl = await searchGoogleImage(googleQuery);
       if (photoUrl) sources.push('Google Images');
 
-      // ── 2. TheSportsDB (fallback) ─────────────────────────────────────────
-      if (!photoUrl) {
-        try {
-          const res = await fetch(
-            `https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(name)}`,
-            { headers: { 'User-Agent': 'Mozilla/5.0' } }
-          );
-          if (res.ok) {
-            const data = await res.json();
-            const player = data?.players?.[0];
-            if (player?.strThumb) { photoUrl = player.strThumb; sources.push('TheSportsDB'); }
-            else if (player?.strCutout) { photoUrl = player.strCutout; sources.push('TheSportsDB'); }
-          }
-        } catch (e) { console.error('TheSportsDB:', e.message); }
-      }
-
-      // ── 3. Wikipedia (fallback) ───────────────────────────────────────────
+      // ── 2. Wikipedia (fallback) ───────────────────────────────────────────
       if (!photoUrl) {
         try {
           const res = await fetch(
@@ -88,23 +71,7 @@ Deno.serve(async (req) => {
       photoUrl = await searchGoogleImage(`"${name}" football club logo écusson`);
       if (photoUrl) sources.push('Google Images');
 
-      // ── 2. TheSportsDB (fallback) ─────────────────────────────────────────
-      if (!photoUrl) {
-        try {
-          const res = await fetch(
-            `https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=${encodeURIComponent(name)}`,
-            { headers: { 'User-Agent': 'Mozilla/5.0' } }
-          );
-          if (res.ok) {
-            const data = await res.json();
-            const team = data?.teams?.[0];
-            if (team?.strTeamBadge) { photoUrl = team.strTeamBadge + '/preview'; sources.push('TheSportsDB'); }
-            else if (team?.strTeamLogo) { photoUrl = team.strTeamLogo; sources.push('TheSportsDB'); }
-          }
-        } catch (e) { console.error('TheSportsDB club:', e.message); }
-      }
-
-      // ── 3. Wikipedia (fallback) ───────────────────────────────────────────
+      // ── 2. Wikipedia (fallback) ───────────────────────────────────────────
       if (!photoUrl) {
         try {
           const res = await fetch(
