@@ -11,9 +11,10 @@
 
 const enc = (s) => encodeURIComponent((s || "").trim());
 
-// Recherche Google ciblée sur un domaine
-const google = (site, name, extra = "") =>
-  `https://www.google.com/search?q=${encodeURIComponent(`site:${site} ${name} ${extra}`.trim())}`;
+// Recherche Google « nom du site + prénom nom » → tombe directement sur le profil
+// sans dépendre d'un ID/slug interne (souvent périmé ou en 404).
+const googleByName = (siteLabel, name) =>
+  `https://www.google.com/search?q=${encodeURIComponent(`${siteLabel} ${name}`.trim())}`;
 
 export function playerExternalLinks(player = {}) {
   const name = (player.nom_complet || player.nom || "").trim();
@@ -28,23 +29,25 @@ export function playerExternalLinks(player = {}) {
         : `https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche?query=${q}`),
       direct: !!(player.transfermarkt_url || player.transfermarkt_id),
     },
+    // SofaScore / FotMob / BeSoccer : recherche par nom uniquement (pas d'ID),
+    // car leurs URLs directes à base de numéro sont instables / en 404.
     {
       label: "BeSoccer",
       color: "text-emerald-700 border-emerald-200 hover:bg-emerald-50",
-      url: player.besoccer_url || google("besoccer.com", name),
-      direct: !!player.besoccer_url,
+      url: googleByName("Besoccer", name),
+      direct: false,
     },
     {
       label: "SofaScore",
       color: "text-purple-700 border-purple-200 hover:bg-purple-50",
-      url: player.sofascore_url || google("sofascore.com", name, "football player"),
-      direct: !!player.sofascore_url,
+      url: googleByName("Sofascore", name),
+      direct: false,
     },
     {
       label: "FotMob",
       color: "text-orange-700 border-orange-200 hover:bg-orange-50",
-      url: player.fotmob_url || google("fotmob.com", name),
-      direct: !!player.fotmob_url,
+      url: googleByName("Fotmob", name),
+      direct: false,
     },
   ];
 }
