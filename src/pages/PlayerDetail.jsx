@@ -497,7 +497,7 @@ export default function PlayerDetailPage() {
               onApply={(data) => updatePlayerMutation.mutate(data)}
             />
 
-            <UpcomingMatches playerClub={player.club_actuel} />
+            <UpcomingMatches playerClub={player.club_actuel} playerName={player.nom} />
 
             <PlayerMandates player={player} />
 
