@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileSignature, FolderOpen, Plus, Loader2, Pencil, Trash2, ExternalLink } from "lucide-react";
+import { FileSignature, FolderOpen, Plus, Loader2, Pencil, Trash2, ExternalLink, Upload, CheckCircle2 } from "lucide-react";
 
 // ── Référentiels ──────────────────────────────────────────────────────────────
 
@@ -109,7 +109,29 @@ function DocumentForm({ open, onClose, onSave, initial, saving }) {
   const [f, setF] = useState(() => initial || {
     titre: "", type: "contrat", url: "", date_expiration: "", notes: "",
   });
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+  const fileRef = useRef(null);
   const set = (k) => (e) => setF(s => ({ ...s, [k]: e?.target ? e.target.value : e }));
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadError(null);
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      if (!file_url) throw new Error("upload vide");
+      // Le fichier hébergé devient le lien du document ; titre pré-rempli si vide.
+      setF(s => ({ ...s, url: file_url, titre: s.titre?.trim() ? s.titre : file.name }));
+    } catch (err) {
+      setUploadError("Échec de l'import : " + (err?.message || "réessayez"));
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
   const submit = () => {
     if (!f.titre?.trim()) return;
     const clean = { ...f };
@@ -129,13 +151,38 @@ function DocumentForm({ open, onClose, onSave, initial, saving }) {
               <SelectContent>{DOC_TYPES.map(t => <SelectItem key={t.v} value={t.v}>{t.label}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div><Label className="text-xs">Lien du document (Drive, Dropbox…)</Label><Input value={f.url} onChange={set("url")} placeholder="https://…" /></div>
+
+          {/* Fichier : importer depuis le PC OU coller un lien */}
+          <div>
+            <Label className="text-xs">Fichier</Label>
+            <input ref={fileRef} type="file" className="hidden"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.xls,.xlsx,.csv,.txt"
+              onChange={handleFile} />
+            <Button type="button" variant="outline" className="w-full justify-start mt-1"
+              onClick={() => fileRef.current?.click()} disabled={uploading}>
+              {uploading
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Import en cours…</>
+                : <><Upload className="w-4 h-4 mr-2" /> Importer un fichier depuis mon PC</>}
+            </Button>
+            {f.url && !uploading && (
+              <a href={f.url} target="_blank" rel="noopener noreferrer"
+                className="mt-1 flex items-center gap-1.5 text-xs text-green-600 hover:text-green-700 truncate">
+                <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" /> Fichier joint <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+            {uploadError && <p className="text-xs text-red-600 mt-1">{uploadError}</p>}
+          </div>
+          <div>
+            <Label className="text-xs">… ou lien externe (Drive, Dropbox…)</Label>
+            <Input value={f.url || ""} onChange={set("url")} placeholder="https://…" />
+          </div>
+
           <div><Label className="text-xs">Date d'expiration (passeport, permis…)</Label><Input type="date" value={f.date_expiration || ""} onChange={set("date_expiration")} /></div>
           <div><Label className="text-xs">Notes</Label><Textarea value={f.notes} onChange={set("notes")} rows={2} /></div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Annuler</Button>
-          <Button onClick={submit} disabled={saving || !f.titre?.trim()} className="bg-slate-900 hover:bg-slate-700">
+          <Button onClick={submit} disabled={saving || uploading || !f.titre?.trim()} className="bg-slate-900 hover:bg-slate-700">
             {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}{initial?.id ? "Enregistrer" : "Ajouter"}
           </Button>
         </DialogFooter>
