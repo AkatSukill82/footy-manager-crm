@@ -15,8 +15,28 @@ const STATS_FIELDS = new Set([
   "tacles", "interceptions", "degagements", "recuperations",
   "cartons_jaunes", "cartons_rouges", "fautes_commises", "fautes_subies", "hors_jeu",
   "arrets", "buts_encaisses", "clean_sheets",
-  "club_actuel", "ligue", "sofascore_id",
+  "club_actuel", "ligue",
+  "sofascore_id", "fotmob_id", "besoccer_id", "transfermarkt_id",
 ]);
+
+// Champs de stats pures (hors identité/IDs) — alimentés depuis UNE seule source
+// primaire pour garder une ligne de stats cohérente (même périmètre partout).
+const STAT_ONLY_FIELDS = [
+  "matchs_joues", "titularisations", "minutes_jouees", "note_moyenne",
+  "buts", "passes_decisives", "xg", "xa", "tirs", "tirs_cadres", "tirs_cadres_pct",
+  "grandes_chances", "grandes_chances_manquees", "penaltys_marques",
+  "passes_reussies", "passes_reussies_pct", "passes_cles", "passes_longues_pct",
+  "centres", "centres_reussis_pct",
+  "dribbles_reussis", "dribbles_tentes", "dribbles_pct", "touches_balle", "pertes_balle",
+  "duels_gagnes_pct", "duels_aeriens_pct",
+  "tacles", "interceptions", "degagements", "recuperations",
+  "cartons_jaunes", "cartons_rouges", "fautes_commises", "fautes_subies", "hors_jeu",
+  "arrets", "buts_encaisses", "clean_sheets",
+];
+
+// Une source a-t-elle de vraies stats saison (pas juste un objet vide) ?
+const hasStats = (s) =>
+  !!s && (s.matchs_joues != null || s.buts != null || s.minutes_jouees != null);
 
 // Anti-spam : on ne re-synchronise pas un joueur déjà synchro il y a moins de 6h
 const SYNC_TTL = 1000 * 60 * 60 * 6;
@@ -43,68 +63,59 @@ export default function SyncPlayerButton({ player, onApply }) {
     (async () => {
       setState("loading");
       try {
-        const [tmRes, fmRes, ssRes] = await Promise.allSettled([
-          invokeFn("transfermarktProxy", { action: "searchAndGet",      query: player.nom }),
-          invokeFn("fotmobProxy",        { action: "searchAndGetStats", query: player.nom, club: player.club_actuel }),
-          invokeFn("sofascoreProxy",     { action: "searchAndGetStats", query: player.nom, club: player.club_actuel }),
-        ]);
+        // Indices d'identité passés à chaque source pour fiabiliser le matching.
+        const club        = player.club_actuel || undefined;
+        const nationality = player.nationalite || undefined;
+        const age         = player.age || undefined;
+        const birthYear   = player.date_naissance
+          ? parseInt(String(player.date_naissance).slice(0, 4)) || undefined
+          : undefined;
+
+        // Réutiliser un ID déjà résolu (getStats/getPlayer par ID) plutôt que de
+        // refaire une recherche par nom fragile qui peut re-binder un autre joueur.
+        const tmCall = player.transfermarkt_id
+          ? invokeFn("transfermarktProxy", { action: "getPlayer", transfermarkt_url: `https://www.transfermarkt.com/-/profil/spieler/${player.transfermarkt_id}` })
+          : invokeFn("transfermarktProxy", { action: "searchAndGet", query: player.nom, club });
+        const fmCall = player.fotmob_id
+          ? invokeFn("fotmobProxy", { action: "getStats", fotmob_id: player.fotmob_id })
+          : invokeFn("fotmobProxy", { action: "searchAndGetStats", query: player.nom, club });
+        const ssCall = player.sofascore_id
+          ? invokeFn("sofascoreProxy", { action: "getStats", sofascore_id: player.sofascore_id })
+          : invokeFn("sofascoreProxy", { action: "searchAndGetStats", query: player.nom, club, nationality, birthYear });
+        const bsCall = invokeFn("besoccerProxy", { action: "searchAndGetPlayer", query: player.nom, club, nationality, age });
+
+        const [tmRes, fmRes, ssRes, bsRes] = await Promise.allSettled([tmCall, fmCall, ssCall, bsCall]);
         if (cancelled) return;
 
         const tm = tmRes.status === "fulfilled" && tmRes.value?.ok ? tmRes.value.player : null;
         const fm = fmRes.status === "fulfilled" && fmRes.value?.ok ? fmRes.value.stats  : null;
         const ss = ssRes.status === "fulfilled" && ssRes.value?.ok ? ssRes.value.stats  : null;
+        const bs = bsRes.status === "fulfilled" && bsRes.value?.ok ? bsRes.value.player : null;
+
+        // Normaliser le nom de la note FotMob vers le champ commun.
+        if (fm && fm.note_moyenne == null && fm.note_fotmob != null) fm.note_moyenne = fm.note_fotmob;
+
+        // ── Source primaire UNIQUE pour les stats ──────────────────────────────
+        // SofaScore (le plus riche, périmètre saison/toutes compétitions) ; sinon
+        // FotMob (même périmètre) ; sinon BeSoccer (basiques). On ne mélange pas
+        // les sources champ par champ → ligne de stats cohérente, même périmètre.
+        const primary = hasStats(ss) ? ss : hasStats(fm) ? fm : hasStats(bs) ? bs : null;
 
         const flat = {
-          sofascore_id:     ss?.sofascore_id,
-          club_actuel:      tm?.club_actuel,
-          ligue:            tm?.ligue,
-          // Synthèse
-          matchs_joues:     ss?.matchs_joues     ?? fm?.matchs_joues,
-          titularisations:  fm?.titularisations,
-          minutes_jouees:   ss?.minutes_jouees   ?? fm?.minutes_jouees,
-          note_moyenne:     ss?.note_moyenne     ?? fm?.note_fotmob,
-          // Offensif
-          buts:             ss?.buts             ?? fm?.buts,
-          passes_decisives: ss?.passes_decisives ?? fm?.passes_decisives,
-          xg:               ss?.xg,
-          xa:               ss?.xa,
-          tirs:             ss?.tirs             ?? fm?.tirs,
-          tirs_cadres:      ss?.tirs_cadres,
-          tirs_cadres_pct:  ss?.tirs_cadres_pct,
-          grandes_chances:          ss?.grandes_chances,
-          grandes_chances_manquees: ss?.grandes_chances_manquees,
-          penaltys_marques: ss?.penaltys_marques,
-          // Passes
-          passes_reussies:     ss?.passes_reussies,
-          passes_reussies_pct: ss?.passes_reussies_pct,
-          passes_cles:         ss?.passes_cles ?? fm?.passes_cles,
-          passes_longues_pct:  ss?.passes_longues_pct,
-          centres:             ss?.centres,
-          centres_reussis_pct: ss?.centres_reussis_pct,
-          // Dribbles / possession
-          dribbles_reussis: ss?.dribbles_reussis ?? fm?.dribbles_reussis,
-          dribbles_tentes:  ss?.dribbles_tentes,
-          dribbles_pct:     ss?.dribbles_pct,
-          touches_balle:    ss?.touches_balle,
-          pertes_balle:     ss?.pertes_balle,
-          duels_gagnes_pct:  ss?.duels_gagnes_pct,
-          duels_aeriens_pct: ss?.duels_aeriens_pct,
-          // Défensif
-          tacles:           ss?.tacles        ?? fm?.tacles,
-          interceptions:    ss?.interceptions ?? fm?.interceptions,
-          degagements:      ss?.degagements,
-          recuperations:    ss?.recuperations,
-          // Discipline
-          cartons_jaunes:   ss?.cartons_jaunes ?? fm?.cartons_jaunes,
-          cartons_rouges:   ss?.cartons_rouges ?? fm?.cartons_rouges,
-          fautes_commises:  ss?.fautes_commises,
-          fautes_subies:    ss?.fautes_subies,
-          hors_jeu:         ss?.hors_jeu,
-          // Gardien
-          arrets:           ss?.arrets,
-          buts_encaisses:   ss?.buts_encaisses,
-          clean_sheets:     ss?.clean_sheets,
+          // Identité : Transfermarkt prioritaire, BeSoccer en complément.
+          club_actuel: tm?.club_actuel || bs?.club_actuel,
+          ligue:       bs?.ligue || tm?.ligue,
+          // IDs résolus → réutilisés à la prochaine synchro (plus de recherche par nom).
+          sofascore_id: ss?.sofascore_id,
+          fotmob_id:    fm?.fotmob_id,
+          besoccer_id:  bs?.besoccer_id,
+          transfermarkt_id: tm?.transfermarkt_id,
         };
+
+        // Toutes les stats proviennent de la même source primaire.
+        if (primary) {
+          for (const k of STAT_ONLY_FIELDS) flat[k] = primary[k];
+        }
 
         // N'appliquer que les champs stats qui changent réellement
         const toApply = {};

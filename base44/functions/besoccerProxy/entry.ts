@@ -57,6 +57,40 @@ const POS: Record<string, string> = {
 };
 const mapPos = (s: string): string | null => POS[s.trim().toUpperCase()] ?? null;
 
+// ── Matcher d'identité : score nom + club + nationalité + âge ──────────────────
+
+const STOP = new Set(["fc", "cf", "sc", "ac", "afc", "cd", "club", "de", "the", "us", "ss", "as", "ud", "rc", "sv", "if"]);
+const norm = (s: string): string =>
+  (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+const toks = (s: string): Set<string> =>
+  new Set(norm(s).split(" ").filter((t) => t.length > 1 && !STOP.has(t)));
+const overlap = (a: string, b: string): number => {
+  const A = toks(a), B = toks(b);
+  if (!A.size || !B.size) return 0;
+  let n = 0; for (const t of A) if (B.has(t)) n++;
+  return n / Math.min(A.size, B.size);
+};
+
+interface Hint { name: string; club?: string; nationality?: string; age?: number; }
+
+const pickBest = (cands: any[], hint: Hint): { cand: any; confidence: number } | null => {
+  let best: any = null, bestScore = -1, bestNameSim = 0;
+  for (const c of cands) {
+    const nameSim = overlap(c.nom ?? "", hint.name);
+    if (nameSim < 0.5) continue;                        // le nom DOIT correspondre
+    let score = nameSim * 4;
+    if (hint.club && c.club_actuel) score += overlap(c.club_actuel, hint.club) * 3;
+    if (hint.nationality && c.nationalite &&
+        norm(c.nationalite) === norm(hint.nationality)) score += 1;
+    if (hint.age && c.age && Math.abs(c.age - hint.age) <= 1) score += 2;
+    if (score > bestScore) { bestScore = score; best = c; bestNameSim = nameSim; }
+  }
+  if (!best) return null;
+  const confidence = Math.min(1, bestNameSim * 0.6 + (bestScore - bestNameSim * 4) / 6 * 0.4 + 0.1);
+  return { cand: best, confidence: Math.round(confidence * 100) / 100 };
+};
+
 // ── Code pays → nationalité (adjectif) ───────────────────────────────────────
 
 const NATIONS: Record<string, string> = {
@@ -297,7 +331,7 @@ const parseProfile = (html: string, url: string, id: string): Record<string, any
 
 Deno.serve(async (req) => {
   try {
-    const { action, query, besoccer_url, besoccer_id } = await req.json();
+    const { action, query, club, nationality, age, besoccer_url, besoccer_id } = await req.json();
 
     // ── Recherche joueurs
     if (action === "searchPlayer") {
@@ -326,16 +360,22 @@ Deno.serve(async (req) => {
       const players    = parseSearch(searchHtml);
       if (players.length === 0) return Response.json({ ok: false, error: "Joueur non trouvé sur BeSoccer." });
 
-      const first  = players[0];
-      const profHtml  = await fetchHtml(first.besoccer_url);
-      const player = parseProfile(profHtml, first.besoccer_url, first.besoccer_id);
+      // Choisir le meilleur candidat (nom + club + nationalité + âge), pas le 1er
+      const best = pickBest(players, { name: query.trim(), club, nationality, age });
+      if (!best) return Response.json({ ok: false, error: "Aucun candidat fiable sur BeSoccer." });
+      const chosen = best.cand;
+
+      const profHtml  = await fetchHtml(chosen.besoccer_url);
+      const player = parseProfile(profHtml, chosen.besoccer_url, chosen.besoccer_id);
 
       // Fusionner les données de recherche (nationalité, poste) si absentes du profil
-      if (!player.nationalite && first.nationalite) player.nationalite = first.nationalite;
-      if (!player.poste && first.poste)             player.poste       = first.poste;
-      if (!player.club_actuel && first.club_actuel) player.club_actuel = first.club_actuel;
+      if (!player.nationalite && chosen.nationalite) player.nationalite = chosen.nationalite;
+      if (!player.poste && chosen.poste)             player.poste       = chosen.poste;
+      if (!player.club_actuel && chosen.club_actuel) player.club_actuel = chosen.club_actuel;
+      player.besoccer_id = chosen.besoccer_id;
+      player.saison = "saison en cours, toutes compétitions"; // périmètre des stats scrapées
 
-      return Response.json({ ok: true, player, candidates: players });
+      return Response.json({ ok: true, player, confidence: best.confidence, candidates: players });
     }
 
     return Response.json({ ok: false, error: `Action inconnue: ${action}` });

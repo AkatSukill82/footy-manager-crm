@@ -29,22 +29,66 @@ const ssGet = async (path: string) => {
   return res.json();
 };
 
+// ── Matcher d'identité (partagé conceptuellement avec les autres proxies) ──────
+// Évite de prendre aveuglément le 1er résultat : score chaque candidat sur
+// nom + club + nationalité + année de naissance, et n'accepte qu'au-dessus d'un
+// seuil de similarité de nom. Retourne null plutôt qu'un mauvais joueur.
+
+const STOP = new Set(["fc", "cf", "sc", "ac", "afc", "cd", "club", "de", "the", "us", "ss", "as", "ud", "rc", "sv", "if"]);
+const norm = (s: string): string =>
+  (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+const toks = (s: string): Set<string> =>
+  new Set(norm(s).split(" ").filter((t) => t.length > 1 && !STOP.has(t)));
+const overlap = (a: string, b: string): number => {
+  const A = toks(a), B = toks(b);
+  if (!A.size || !B.size) return 0;
+  let n = 0; for (const t of A) if (B.has(t)) n++;
+  return n / Math.min(A.size, B.size);
+};
+
+interface Hint { name: string; club?: string; nationality?: string; birthYear?: number; }
+interface Cand { id: number; name: string; team?: string; nationality?: string; birthYear?: number; }
+
+const pickBest = (cands: Cand[], hint: Hint): { cand: Cand; confidence: number } | null => {
+  let best: Cand | null = null, bestScore = -1, bestNameSim = 0;
+  for (const c of cands) {
+    const nameSim = overlap(c.name, hint.name);
+    if (nameSim < 0.5) continue;                      // le nom DOIT correspondre
+    let score = nameSim * 4;
+    if (hint.club && c.team) score += overlap(c.team, hint.club) * 3;
+    if (hint.nationality && c.nationality &&
+        norm(c.nationality) === norm(hint.nationality)) score += 1;
+    if (hint.birthYear && c.birthYear &&
+        Math.abs(c.birthYear - hint.birthYear) <= 1) score += 2;
+    if (score > bestScore) { bestScore = score; best = c; bestNameSim = nameSim; }
+  }
+  if (!best) return null;
+  // Confiance : nom seul ~0.5 ; bonus club/nat/âge montent vers 1.
+  const confidence = Math.min(1, bestNameSim * 0.6 + (bestScore - bestNameSim * 4) / 6 * 0.4 + 0.1);
+  return { cand: best, confidence: Math.round(confidence * 100) / 100 };
+};
+
 // ── Recherche joueur ──────────────────────────────────────────────────────────
 
-const searchPlayer = async (name: string, club?: string): Promise<{ id: number; name: string } | null> => {
+const searchPlayer = async (name: string, hint: Hint): Promise<{ id: number; name: string; confidence: number } | null> => {
   const json = await ssGet(`/search/all?q=${encodeURIComponent(name)}`);
   const entries = (json.results || []).filter((r: any) => r.type === "player");
   if (entries.length === 0) return null;
 
-  // Matching par club si fourni
-  if (club) {
-    const hit = entries.find((r: any) =>
-      (r.entity?.team?.name || "").toLowerCase().includes(club.toLowerCase().split(" ")[0])
-    );
-    if (hit) return { id: hit.entity.id, name: hit.entity.name };
-  }
+  const cands: Cand[] = entries.map((r: any) => ({
+    id: r.entity?.id,
+    name: r.entity?.name ?? "",
+    team: r.entity?.team?.name,
+    nationality: r.entity?.country?.name,
+    birthYear: r.entity?.dateOfBirthTimestamp
+      ? new Date(r.entity.dateOfBirthTimestamp * 1000).getUTCFullYear()
+      : undefined,
+  })).filter((c: Cand) => c.id != null);
 
-  return { id: entries[0].entity.id, name: entries[0].entity.name };
+  const best = pickBest(cands, hint);
+  if (!best) return null;
+  return { id: best.cand.id, name: best.cand.name, confidence: best.confidence };
 };
 
 // ── Stats saison en cours (agrégé toutes compétitions) ───────────────────────
@@ -55,14 +99,25 @@ const getSeasonStats = async (playerId: number): Promise<Record<string, any>> =>
   const json = await ssGet(`/player/${playerId}/statistics`);
   const seasons: any[] = json.seasons || [];
 
-  // Filtrer la saison courante (2025-26)
-  const current = seasons.filter((s: any) =>
-    s.startYear === CURRENT_YEAR ||
-    (typeof s.year === "string" && s.year.startsWith("25"))
-  );
+  // Année de chaque entrée saison (une entrée par tournoi).
+  const yearOf = (s: any): number | null => {
+    if (typeof s.startYear === "number") return s.startYear;
+    if (typeof s.year === "string") {
+      const m = s.year.match(/(\d{2,4})/);
+      if (m) { const y = parseInt(m[1]); return y < 100 ? 2000 + y : y; }
+    }
+    return null;
+  };
 
-  // Si pas de données 2025-26, prendre la saison la plus récente
-  const pool = current.length > 0 ? current : seasons.slice(0, 10);
+  // Périmètre canonique = UNE seule saison (la courante si présente, sinon la
+  // plus récente disponible), agrégée sur toutes les compétitions de CETTE
+  // saison. On ne mélange JAMAIS plusieurs saisons (ancien bug slice(0,10)).
+  let targetYear = CURRENT_YEAR;
+  if (!seasons.some((s) => yearOf(s) === CURRENT_YEAR)) {
+    const years = seasons.map(yearOf).filter((y): y is number => y != null);
+    targetYear = years.length ? Math.max(...years) : CURRENT_YEAR;
+  }
+  const pool = seasons.filter((s) => yearOf(s) === targetYear);
 
   const sum: Record<string, number> = {};
   const ratings: number[] = [];
@@ -159,6 +214,7 @@ const getSeasonStats = async (playerId: number): Promise<Record<string, any>> =>
     buts_encaisses:   n("goalsConceded"),
     clean_sheets:     n("cleanSheet"),
     source: "SofaScore",
+    saison: `${targetYear}/${(targetYear + 1) % 100}`, // périmètre : 1 saison, toutes compétitions
     sofascore_id: String(playerId),
   };
 };
@@ -167,14 +223,14 @@ const getSeasonStats = async (playerId: number): Promise<Record<string, any>> =>
 
 Deno.serve(async (req) => {
   try {
-    const { action, query, club, sofascore_id } = await req.json();
+    const { action, query, club, nationality, birthYear, sofascore_id } = await req.json();
 
     if (action === "searchAndGetStats") {
       if (!query?.trim()) return Response.json({ ok: false, error: "query requis" });
-      const player = await searchPlayer(query.trim(), club);
-      if (!player) return Response.json({ ok: false, error: "Joueur non trouvé sur SofaScore." });
+      const player = await searchPlayer(query.trim(), { name: query.trim(), club, nationality, birthYear });
+      if (!player) return Response.json({ ok: false, error: "Joueur non trouvé sur SofaScore (aucun candidat fiable)." });
       const stats = await getSeasonStats(player.id);
-      return Response.json({ ok: true, player_name: player.name, stats });
+      return Response.json({ ok: true, player_name: player.name, confidence: player.confidence, stats });
     }
 
     if (action === "getStats") {

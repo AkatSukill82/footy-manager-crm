@@ -39,16 +39,54 @@ const fetchHtml = async (url: string): Promise<string> => {
   return html;
 };
 
-// ── Recherche → première URL joueur ──────────────────────────────────────────
+// ── Matcher d'identité : nom + club ───────────────────────────────────────────
 
-const searchPlayer = async (name: string): Promise<string | null> => {
+const STOP = new Set(["fc", "cf", "sc", "ac", "afc", "cd", "club", "de", "the", "us", "ss", "as", "ud", "rc", "sv", "if"]);
+const norm = (s: string): string =>
+  (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+const toks = (s: string): Set<string> =>
+  new Set(norm(s).split(" ").filter((t) => t.length > 1 && !STOP.has(t)));
+const overlap = (a: string, b: string): number => {
+  const A = toks(a), B = toks(b);
+  if (!A.size || !B.size) return 0;
+  let n = 0; for (const t of A) if (B.has(t)) n++;
+  return n / Math.min(A.size, B.size);
+};
+
+// ── Recherche → meilleure URL joueur (scoring nom + club) ─────────────────────
+
+const searchPlayer = async (name: string, club?: string): Promise<string | null> => {
   const url = `${TM_BASE}/schnellsuche/ergebnis/schnellsuche?query=${encodeURIComponent(name)}`;
   const html = await fetchHtml(url);
 
-  // Trouver le premier lien /profil/spieler/
-  const linkM = html.match(/href="(\/[^"]+\/profil\/spieler\/(\d+))"/i);
-  if (!linkM) return null;
-  return `${TM_BASE}${linkM[1]}`;
+  // Collecter tous les candidats : lien profil + nom (texte de l'ancre) + une
+  // fenêtre de HTML suivant le lien pour détecter le club (lien /verein/).
+  const re = /href="(\/[^"]+\/profil\/spieler\/(\d+))"[^>]*>([^<]*)</gi;
+  const cands: { path: string; name: string; window: string }[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html)) !== null) {
+    cands.push({ path: m[1], name: m[3].trim(), window: html.slice(m.index, m.index + 600) });
+    if (cands.length >= 15) break;
+  }
+  if (cands.length === 0) return null;
+
+  let best: typeof cands[0] | null = null, bestScore = -1;
+  for (const c of cands) {
+    const nameSim = overlap(c.name, name);
+    if (nameSim < 0.5) continue;                        // le nom DOIT correspondre
+    let score = nameSim * 4;
+    if (club) {
+      const clubM = c.window.match(/\/verein\/\d+"[^>]*(?:title="([^"]+)"|>\s*([^<]{2,40}))/i);
+      const clubName = clubM ? (clubM[1] ?? clubM[2] ?? "") : "";
+      if (clubName) score += overlap(clubName, club) * 3;
+    }
+    if (score > bestScore) { bestScore = score; best = c; }
+  }
+  // Fallback : si aucun nom ne passe le seuil mais qu'il y a des candidats,
+  // on garde le premier (l'ancien comportement) plutôt que d'échouer.
+  const chosen = best ?? cands[0];
+  return `${TM_BASE}${chosen.path}`;
 };
 
 // ── Parse profil joueur ───────────────────────────────────────────────────────
@@ -141,11 +179,11 @@ const parseProfile = (html: string, url: string): Record<string, any> => {
 
 Deno.serve(async (req) => {
   try {
-    const { action, query, transfermarkt_url } = await req.json();
+    const { action, query, club, transfermarkt_url } = await req.json();
 
     if (action === "searchAndGet") {
       if (!query?.trim()) return Response.json({ ok: false, error: "query requis" });
-      const profileUrl = await searchPlayer(query.trim());
+      const profileUrl = await searchPlayer(query.trim(), club);
       if (!profileUrl) return Response.json({ ok: false, error: "Joueur non trouvé sur Transfermarkt." });
       const html   = await fetchHtml(profileUrl);
       const player = parseProfile(html, profileUrl);

@@ -101,63 +101,48 @@ function ExternalLinks({ nom, tmUrl, bsUrl, sofaUrl }) {
 }
 
 // ── Fusion stats (SofaScore xG/avancé, FotMob titularisations, BeSoccer backup) ─
+// Champs de stats pris EN BLOC depuis une seule source primaire (cohérence du
+// périmètre : on ne mélange pas SofaScore/FotMob/BeSoccer champ par champ).
+const STAT_FIELDS = [
+  "matchs_joues", "titularisations", "minutes_jouees", "buts", "passes_decisives",
+  "cartons_jaunes", "cartons_rouges", "note_moyenne",
+  "xg", "xa", "tirs", "tirs_cadres", "tirs_cadres_pct",
+  "grandes_chances", "grandes_chances_manquees", "penaltys_marques",
+  "passes_reussies", "passes_reussies_pct", "passes_cles", "passes_longues_pct",
+  "centres", "centres_reussis_pct",
+  "dribbles_reussis", "dribbles_tentes", "dribbles_pct", "touches_balle", "pertes_balle",
+  "duels_gagnes_pct", "duels_aeriens_pct",
+  "tacles", "interceptions", "degagements", "recuperations",
+  "fautes_commises", "fautes_subies", "hors_jeu",
+  "arrets", "buts_encaisses", "clean_sheets",
+];
+const statSourceHasData = (s) =>
+  !!s && (s.matchs_joues != null || s.buts != null || s.minutes_jouees != null);
+
 function mergeStats(ss, fm, bs) {
   if (!ss && !fm && !bs) return null;
-  const a = ss || {};  // SofaScore
-  const b = fm || {};  // FotMob
-  const c = bs || {};  // BeSoccer (extrait de l'objet player BS)
 
-  const bsMatchs = c.matchs_joues;
-  const bsButs   = c.buts;
-  const bsPasses = c.passes_decisives;
+  // Normaliser la note FotMob vers le champ commun.
+  if (fm && fm.note_moyenne == null && fm.note_fotmob != null) fm.note_moyenne = fm.note_fotmob;
 
-  return {
-    matchs_joues:     a.matchs_joues     ?? b.matchs_joues     ?? bsMatchs,
-    titularisations:  b.titularisations  ?? null,
-    minutes_jouees:   a.minutes_jouees   ?? b.minutes_jouees   ?? c.minutes_jouees,
-    buts:             a.buts             ?? b.buts             ?? bsButs,
-    passes_decisives: a.passes_decisives ?? b.passes_decisives ?? bsPasses,
-    cartons_jaunes:   a.cartons_jaunes   ?? b.cartons_jaunes   ?? c.cartons_jaunes,
-    cartons_rouges:   a.cartons_rouges   ?? b.cartons_rouges   ?? c.cartons_rouges,
-    note_moyenne:     a.note_moyenne     ?? b.note_fotmob,
-    // Stats avancées — SofaScore
-    xg:               a.xg,
-    xa:               a.xa,
-    tirs:             a.tirs             ?? b.tirs,
-    tirs_cadres:      a.tirs_cadres,
-    tirs_cadres_pct:  a.tirs_cadres_pct,
-    grandes_chances:          a.grandes_chances,
-    grandes_chances_manquees: a.grandes_chances_manquees,
-    penaltys_marques: a.penaltys_marques,
-    passes_reussies:     a.passes_reussies,
-    passes_reussies_pct: a.passes_reussies_pct,
-    passes_cles:         a.passes_cles ?? b.passes_cles,
-    passes_longues_pct:  a.passes_longues_pct,
-    centres:             a.centres,
-    centres_reussis_pct: a.centres_reussis_pct,
-    dribbles_reussis: a.dribbles_reussis ?? b.dribbles_reussis,
-    dribbles_tentes:  a.dribbles_tentes,
-    dribbles_pct:     a.dribbles_pct,
-    touches_balle:    a.touches_balle,
-    pertes_balle:     a.pertes_balle,
-    duels_gagnes_pct:  a.duels_gagnes_pct,
-    duels_aeriens_pct: a.duels_aeriens_pct,
-    tacles:           a.tacles        ?? b.tacles,
-    interceptions:    a.interceptions ?? b.interceptions,
-    degagements:      a.degagements,
-    recuperations:    a.recuperations,
-    fautes_commises:  a.fautes_commises,
-    fautes_subies:    a.fautes_subies,
-    hors_jeu:         a.hors_jeu,
-    arrets:           a.arrets,
-    buts_encaisses:   a.buts_encaisses,
-    clean_sheets:     a.clean_sheets,
-    besoccer_elo:     c.besoccer_elo,
-    // IDs externes (pour les tableaux de stats détaillés sur la fiche)
-    sofascore_id:     a.sofascore_id ?? null,
-    fotmob_id:        b.fotmob_id    ?? null,
-    sources: [ss && "SofaScore", fm && "FotMob", (bsMatchs || bsButs) && "BeSoccer"].filter(Boolean),
-  };
+  // Source primaire unique : SofaScore (riche), sinon FotMob, sinon BeSoccer.
+  const primary = statSourceHasData(ss) ? ss
+                : statSourceHasData(fm) ? fm
+                : statSourceHasData(bs) ? bs : null;
+  const primaryName = primary === ss ? "SofaScore"
+                    : primary === fm ? "FotMob"
+                    : primary === bs ? "BeSoccer" : null;
+
+  const out = {};
+  if (primary) for (const k of STAT_FIELDS) out[k] = primary[k] ?? null;
+
+  // Métadonnées propres à chaque source (indépendantes du périmètre stats).
+  out.besoccer_elo = bs?.besoccer_elo ?? null;
+  out.sofascore_id = ss?.sofascore_id ?? null;
+  out.fotmob_id    = fm?.fotmob_id    ?? null;
+  out.saison       = primary?.saison  ?? null;        // périmètre affiché à l'utilisateur
+  out.sources      = primaryName ? [primaryName] : [];
+  return out;
 }
 
 // ── Fusion infos perso (Transfermarkt prioritaire, TDB/BS en fallback) ────────
