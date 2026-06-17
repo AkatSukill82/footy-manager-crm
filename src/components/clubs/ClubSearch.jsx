@@ -125,7 +125,13 @@ Champs attendus :
   // ── Sauvegarde ─────────────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!result) return;
+    // Le pays est requis par l'entité Club — on guide au lieu de planter
+    if (!result.pays || !String(result.pays).trim()) {
+      setError("Le pays n'a pas été trouvé automatiquement. Renseignez-le ci-dessous avant d'ajouter le club.");
+      return;
+    }
     setSaving(true);
+    setError(null);
     try {
       const clubData = Object.fromEntries(
         Object.entries({
@@ -272,6 +278,20 @@ Champs attendus :
           </CardHeader>
 
           <CardContent className="space-y-4">
+            {/* Pays à confirmer si introuvable (champ requis) */}
+            {(!result.pays || !String(result.pays).trim()) && (
+              <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                <Globe className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <span className="text-xs text-amber-700 font-medium whitespace-nowrap">Pays à renseigner :</span>
+                <Input
+                  value={result.pays || ""}
+                  onChange={(e) => setResult(prev => ({ ...prev, pays: e.target.value }))}
+                  placeholder="Ex: France"
+                  className="h-8 text-sm"
+                />
+              </div>
+            )}
+
             {/* Stats clés */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {result.valeur_effectif != null && (

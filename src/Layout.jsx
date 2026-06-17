@@ -15,11 +15,11 @@ import { useQuery } from "@tanstack/react-query";
 import GlobalSearch from "./components/ui/GlobalSearch";
 
 // Pages principales — toujours visibles
-const CORE_PAGES = ["Dashboard", "Players", "Clubs", "MyWatchList", "Pipeline", "Finance", "Marketplace", "ScoutingReports", "Alerts", "ClubContacts"];
+const CORE_PAGES = ["Dashboard", "Players", "Clubs", "MyWatchList", "ClubContacts"];
 // Outils — groupe repliable
 const TOOLS_PAGES = ["Comparator", "Mandates", "TransferManagement", "Teams", "News", "ScoutingIA", "Calendar"];
 // Avancé — groupe repliable
-const ADVANCED_PAGES = ["Reports", "PredictiveDashboard", "AgentNetwork", "ImportExcel", "Organization"];
+const ADVANCED_PAGES = ["Pipeline", "Finance", "Marketplace", "ScoutingReports", "Alerts", "Reports", "PredictiveDashboard", "AgentNetwork", "ImportExcel", "Organization"];
 
 const ALL_ITEMS = (lang) => [
   { name: "Dashboard",           key: "dashboard",        icon: BarChart3 },
