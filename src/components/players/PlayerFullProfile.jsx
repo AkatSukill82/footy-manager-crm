@@ -37,24 +37,28 @@ function SectionTitle({ icon: Icon, label, color = "text-slate-700" }) {
   );
 }
 
-function ExternalNotice({ tmHref, fbrefHref, sofaHref }) {
+function ExternalNotice({ tmHref, bsHref, sofaHref, fmHref }) {
   return (
     <div className="flex items-start gap-3 px-4 py-3 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-sm text-slate-500">
       <BarChart2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-slate-400" />
       <div>
         <p className="text-slate-600 mb-1.5">Données non disponibles — retrouvez-les sur :</p>
         <div className="flex flex-wrap gap-x-4 gap-y-1">
+          <a href={bsHref} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1 text-emerald-600 hover:underline font-medium text-xs">
+            <ExternalLink className="w-3 h-3" />BeSoccer
+          </a>
           <a href={tmHref} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-1 text-green-600 hover:underline font-medium text-xs">
+            className="flex items-center gap-1 text-blue-600 hover:underline font-medium text-xs">
             <ExternalLink className="w-3 h-3" />Transfermarkt
           </a>
-          <a href={fbrefHref} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-1 text-blue-600 hover:underline font-medium text-xs">
-            <ExternalLink className="w-3 h-3" />FBref
-          </a>
           <a href={sofaHref} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-1 text-orange-500 hover:underline font-medium text-xs">
+            className="flex items-center gap-1 text-purple-600 hover:underline font-medium text-xs">
             <ExternalLink className="w-3 h-3" />SofaScore
+          </a>
+          <a href={fmHref} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1 text-orange-500 hover:underline font-medium text-xs">
+            <ExternalLink className="w-3 h-3" />FotMob
           </a>
         </div>
       </div>
@@ -71,8 +75,9 @@ export default function PlayerFullProfile({ player }) {
   const tmHref = _tmId
     ? `https://www.transfermarkt.com/a/profil/spieler/${_tmId}`
     : `https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche?query=${_name}&Feld=spieler`;
-  const fbrefHref = `https://fbref.com/search/search.fcgi?search=${_name}`;
-  const sofaHref  = `https://www.google.com/search?q=sofascore+${_name}+football`;
+  const bsHref    = `https://www.besoccer.com/search/${_name}`;
+  const sofaHref  = `https://www.sofascore.com/search#query=${_name}`;
+  const fmHref    = `https://www.fotmob.com/search?q=${_name}`;
 
   const hasContacts = player.email || player.telephone || player.whatsapp || player.instagram || player.twitter || player.linkedin;
   const hasAddress = player.adresse || player.ville_residence || player.pays_residence;
@@ -362,7 +367,7 @@ export default function PlayerFullProfile({ player }) {
         </Card>
       )}
       {!hasSaisonStats && (
-        <ExternalNotice tmHref={tmHref} fbrefHref={fbrefHref} sofaHref={sofaHref} />
+        <ExternalNotice tmHref={tmHref} bsHref={bsHref} sofaHref={sofaHref} fmHref={fmHref} />
       )}
 
       {/* ── Sélection + Blessures + Carrière ── */}

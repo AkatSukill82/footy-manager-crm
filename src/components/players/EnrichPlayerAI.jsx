@@ -229,11 +229,10 @@ ${FORMAT_RULES}`,
           prompt: `Tu es un analyste football expert. Recherche TOUTES les statistiques disponibles sur ce joueur en consultant OBLIGATOIREMENT :
 
 1. **SofaScore** (sofascore.com) : stats saison en cours (buts, passes déc., note moyenne, xG, xA, tirs, dribbles, duels, interceptions, passes %, distance course, sprints, vitesse max, touches balle), sofascore_id
-2. **FBref** (fbref.com) : stats avancées, xG, xA, passes progressives, pressings
-3. **WhoScored** (whoscored.com) : stats et note de la saison
-4. **FlashScore / LiveScore** : matchs récents joués, performances récentes
-5. **Soccerway** : historique complet matchs et buts saison par saison
-6. **Sélection nationale** : caps, buts, derniers matchs en équipe nationale
+2. **FotMob** (fotmob.com) : titularisations, stats par match, note, forme récente
+3. **BeSoccer** (besoccer.com) : stats saison, valeur marchande, ELO, contrat
+4. **Soccerway** : historique complet matchs et buts saison par saison
+5. **Sélection nationale** : caps, buts, derniers matchs en équipe nationale
 
 INFORMATIONS CONNUES SUR LE JOUEUR :
 ${playerCtx}
@@ -356,8 +355,8 @@ ${FORMAT_RULES}`,
             {[
               "🔍 Transfermarkt — valeur, contrat, agent, historique clubs...",
               "📖 Wikipedia — biographie, palmarès, distinctions...",
-              "📊 SofaScore / FBref — stats saison, xG, xA, duels...",
-              "⚡ WhoScored / FlashScore — matchs récents, forme actuelle...",
+              "📊 SofaScore / FotMob — stats saison, xG, xA, duels...",
+              "⚡ BeSoccer — valeur marchande, ELO, forme actuelle...",
               "🌍 Sélection nationale — caps, buts internationaux...",
             ].map(s => (
               <div key={s} className="flex items-center gap-2 text-xs text-slate-500">

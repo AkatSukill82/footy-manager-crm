@@ -3,7 +3,8 @@ import { View, Text, ScrollView, TouchableOpacity, FlatList, RefreshControl } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { Plus, Filter, X, ChevronRight, RefreshCw } from 'lucide-react-native';
+import { Plus, Filter, X, ChevronRight, Search, Loader } from 'lucide-react-native';
+import { ActivityIndicator } from 'react-native';
 import { base44 } from '../../src/api/base44Client';
 import { Card, CardContent } from '../../src/components/ui/Card';
 import SearchBar from '../../src/components/ui/SearchBar';
@@ -15,7 +16,7 @@ import Input from '../../src/components/ui/Input';
 import LoadingSpinner from '../../src/components/ui/LoadingSpinner';
 import EmptyState from '../../src/components/ui/EmptyState';
 import Avatar from '../../src/components/ui/Avatar';
-import { formatCurrency, daysUntil, getPositionColor } from '../../src/utils';
+import { formatCurrency, daysUntil, getPositionColor, sanitizePlayerData } from '../../src/utils';
 
 const POSTES = [
   { value: 'all', label: 'Tous les postes' },
@@ -57,21 +58,21 @@ function PlayerCard({ player, inWatchList, onPress }) {
             ) : null}
           </View>
 
-          {(player.buts_saison || player.passes_saison || player.note_moyenne) ? (
+          {(player.buts ?? player.buts_saison != null || player.passes_decisives ?? player.passes_saison != null || player.note_moyenne != null) ? (
             <View className="flex-row gap-4 mt-3 pt-3 border-t border-slate-100">
-              {player.buts_saison !== undefined && (
+              {(player.buts ?? player.buts_saison) != null && (
                 <View className="items-center">
-                  <Text className="text-base font-bold text-slate-900">{player.buts_saison}</Text>
+                  <Text className="text-base font-bold text-slate-900">{player.buts ?? player.buts_saison}</Text>
                   <Text className="text-xs text-slate-400">Buts</Text>
                 </View>
               )}
-              {player.passes_saison !== undefined && (
+              {(player.passes_decisives ?? player.passes_saison) != null && (
                 <View className="items-center">
-                  <Text className="text-base font-bold text-slate-900">{player.passes_saison}</Text>
+                  <Text className="text-base font-bold text-slate-900">{player.passes_decisives ?? player.passes_saison}</Text>
                   <Text className="text-xs text-slate-400">Passes</Text>
                 </View>
               )}
-              {player.note_moyenne !== undefined && (
+              {player.note_moyenne != null && (
                 <View className="items-center">
                   <Text className="text-base font-bold text-green-600">{Number(player.note_moyenne).toFixed(1)}</Text>
                   <Text className="text-xs text-slate-400">Note</Text>
@@ -86,71 +87,140 @@ function PlayerCard({ player, inWatchList, onPress }) {
 }
 
 function AddPlayerModal({ visible, onClose, onSubmit, loading }) {
-  const [form, setForm] = useState({ nom: '', prenom: '', poste: '', age: '', club_actuel: '', nationalite: '', tm_url: '' });
-  const [fetchingTM, setFetchingTM] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchError, setSearchError] = useState('');
+  const [form, setForm] = useState({ nom: '', prenom: '', poste: '', age: '', club_actuel: '', nationalite: '' });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  const handleFetchFromTM = async () => {
-    if (!form.tm_url) return;
-    setFetchingTM(true);
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setSearching(true);
+    setSearchResults([]);
+    setSearchError('');
     try {
-      const res = await base44.functions.invoke('enrichPlayerFromAPI', {
-        playerName: '',
-        source: 'transfermarkt',
-        tmUrl: form.tm_url.trim(),
+      const res = await base44.functions.invoke('apiFootballProxy', {
+        action: 'searchPlayer',
+        name: searchQuery.trim(),
       });
-      if (res?.data) {
-        const d = res.data;
-        setForm(f => ({
-          ...f,
-          nom:        d.nom        || f.nom,
-          prenom:     d.prenom     || f.prenom,
-          poste:      d.poste      || f.poste,
-          age:        d.age        ? String(d.age) : f.age,
-          club_actuel: d.club_actuel || f.club_actuel,
-          nationalite: d.nationalite || f.nationalite,
-        }));
+      if (res?.players?.length > 0) {
+        setSearchResults(res.players.slice(0, 6));
+      } else {
+        setSearchError('Aucun joueur trouvé. Remplissez manuellement.');
       }
-    } catch (e) {
-      // silently fail — user can still fill form manually
+    } catch {
+      setSearchError('Erreur de connexion. Remplissez manuellement.');
     } finally {
-      setFetchingTM(false);
+      setSearching(false);
     }
+  };
+
+  const selectPlayer = (p) => {
+    setForm({
+      nom:         p.nom_famille || p.nom || '',
+      prenom:      p.prenom || '',
+      poste:       p.poste || '',
+      age:         p.age ? String(p.age) : '',
+      club_actuel: p.club_actuel || '',
+      nationalite: p.nationalite || '',
+    });
+    setSearchResults([]);
+    setSearchQuery('');
   };
 
   const handleSubmit = () => {
     if (!form.nom || !form.poste) return;
-    const { tm_url, ...data } = form;
-    onSubmit({ ...data, age: data.age ? parseInt(data.age) : undefined, lien: tm_url || undefined });
+    onSubmit({ ...form, age: form.age ? parseInt(form.age) : undefined });
+  };
+
+  const handleClose = () => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setSearchError('');
+    setForm({ nom: '', prenom: '', poste: '', age: '', club_actuel: '', nationalite: '' });
+    onClose();
   };
 
   return (
-    <Modal visible={visible} onClose={onClose} title="Ajouter un joueur">
+    <Modal visible={visible} onClose={handleClose} title="Ajouter un joueur">
       <View className="gap-4">
-        {/* Lien Transfermarkt — pré-remplissage automatique */}
+
+        {/* Barre de recherche API-Football */}
         <View className="gap-2">
-          <Input
-            label="Lien Transfermarkt (optionnel)"
-            value={form.tm_url}
-            onChangeText={v => set('tm_url', v)}
-            placeholder="https://www.transfermarkt.com/.../spieler/12345"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          {form.tm_url.includes('transfermarkt') && (
-            <Button
-              variant="outline"
-              size="sm"
-              onPress={handleFetchFromTM}
-              loading={fetchingTM}
-              icon={fetchingTM ? null : <RefreshCw size={13} color="#3b82f6" />}
+          <Text className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+            Rechercher via API-Football
+          </Text>
+          <View className="flex-row gap-2">
+            <Input
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onSubmitEditing={handleSearch}
+              placeholder="Ex : Mbappé, Haaland…"
+              className="flex-1"
+              returnKeyType="search"
+            />
+            <TouchableOpacity
+              onPress={handleSearch}
+              disabled={searching || !searchQuery.trim()}
+              className="w-11 h-11 bg-green-600 rounded-xl items-center justify-center"
+              style={{ opacity: searching || !searchQuery.trim() ? 0.5 : 1 }}
             >
-              Récupérer les données depuis TM
-            </Button>
+              {searching
+                ? <ActivityIndicator size={16} color="white" />
+                : <Search size={18} color="white" />}
+            </TouchableOpacity>
+          </View>
+
+          {/* Résultats de recherche */}
+          {searchResults.length > 0 && (
+            <View className="border border-slate-200 rounded-xl overflow-hidden">
+              {searchResults.map((p, i) => (
+                <TouchableOpacity
+                  key={i}
+                  onPress={() => selectPlayer(p)}
+                  className={`flex-row items-center gap-3 px-3 py-2.5 ${i < searchResults.length - 1 ? 'border-b border-slate-100' : ''}`}
+                  activeOpacity={0.7}
+                >
+                  {p.photo_url ? (
+                    <View className="w-8 h-8 rounded-full overflow-hidden bg-slate-100">
+                      <View style={{ width: 32, height: 32 }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <Text className="text-xs text-slate-400 text-center mt-2">
+                          {p.prenom?.[0]}{p.nom?.[0]}
+                        </Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <View className="w-8 h-8 rounded-full bg-green-100 items-center justify-center">
+                      <Text className="text-xs font-bold text-green-700">
+                        {(p.prenom?.[0] || '') + (p.nom?.[0] || '')}
+                      </Text>
+                    </View>
+                  )}
+                  <View className="flex-1">
+                    <Text className="text-sm font-semibold text-slate-900" numberOfLines={1}>
+                      {p.prenom} {p.nom}
+                    </Text>
+                    <Text className="text-xs text-slate-400" numberOfLines={1}>
+                      {p.club_actuel || '—'} · {p.poste || '—'}
+                    </Text>
+                  </View>
+                  <Text className="text-xs text-slate-400">{p.age} ans</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           )}
+
+          {searchError ? (
+            <Text className="text-xs text-amber-600">{searchError}</Text>
+          ) : null}
         </View>
 
         <View className="h-px bg-slate-100" />
+        <Text className="text-xs font-semibold text-slate-500 uppercase tracking-wide -mb-1">
+          Ou remplir manuellement
+        </Text>
 
         <View className="flex-row gap-3">
           <Input label="Prénom" value={form.prenom} onChangeText={v => set('prenom', v)} className="flex-1" />
@@ -164,7 +234,7 @@ function AddPlayerModal({ visible, onClose, onSubmit, loading }) {
         </View>
         <Input label="Club actuel" value={form.club_actuel} onChangeText={v => set('club_actuel', v)} />
         <View className="flex-row gap-3 pt-2">
-          <Button variant="outline" onPress={onClose} className="flex-1">Annuler</Button>
+          <Button variant="outline" onPress={handleClose} className="flex-1">Annuler</Button>
           <Button onPress={handleSubmit} loading={loading} disabled={!form.nom || !form.poste} className="flex-1">Créer</Button>
         </View>
       </View>
@@ -195,7 +265,7 @@ export default function PlayersPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Player.create(data),
+    mutationFn: (data) => base44.entities.Player.create(sanitizePlayerData(data)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['players'] });
       setShowAdd(false);

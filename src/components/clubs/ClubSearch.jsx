@@ -26,7 +26,7 @@ export default function ClubSearch({ onClose }) {
   const [error, setError]             = useState(null);
   const [enriching, setEnriching]     = useState(false);
 
-  // ── Étape 1 : recherche via API-Football (fiable, logo inclus) ─────────────
+  // ── Étape 1 : recherche via FotMob ────────────────────────────────────────
   const handleSearch = async (e) => {
     e?.preventDefault();
     if (!query.trim()) return;
@@ -37,15 +37,15 @@ export default function ClubSearch({ onClose }) {
     setError(null);
 
     try {
-      const data = await base44.functions.invoke("apiFootballProxy", {
+      const data = await base44.functions.invoke("fotmobProxy", {
         action: "searchTeam",
-        name: query.trim(),
+        query:  query.trim(),
       });
 
       const list = data?.teams || [];
 
       if (list.length === 0) {
-        setError(`Aucun club trouvé pour "${query}". Essayez le nom en anglais (ex: "Paris Saint-Germain", "Real Madrid CF").`);
+        setError(`Aucun club trouvé pour "${query}".`);
         setLoading(false);
         return;
       }
@@ -64,17 +64,12 @@ export default function ClubSearch({ onClose }) {
   };
 
   // ── Étape 2 : sélection d'un club depuis la liste ──────────────────────────
-  const selectClub = (afTeam) => {
-    // Données 100% réelles depuis API-Football — pas de LLM
+  const selectClub = (team) => {
     setResult({
-      nom:             afTeam.nom,
-      pays:            afTeam.pays,
-      ville:           afTeam.ville,
-      stade:           afTeam.stade,
-      capacite_stade:  afTeam.capacite_stade,
-      annee_fondation: afTeam.annee_fondation,
-      logo_url:        afTeam.logo,       // CDN API-Football — pas de restriction CORS
-      _afId:           afTeam.id,
+      nom:     team.nom,
+      pays:    team.pays,
+      logo_url: team.logo,
+      _fmId:   team.id,
     });
   };
 
@@ -270,7 +265,7 @@ Champs attendus :
                     }>{result.categorie}</Badge>
                   )}
                   <span className="text-[10px] text-slate-400 border border-slate-200 rounded-full px-2 py-0.5">
-                    API-Football
+                    FotMob
                   </span>
                 </div>
               </div>

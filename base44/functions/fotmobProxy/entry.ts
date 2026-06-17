@@ -100,6 +100,22 @@ const getPlayerStats = async (playerId: number): Promise<Record<string, any>> =>
   return stats;
 };
 
+// ── Recherche équipe ──────────────────────────────────────────────────────────
+
+const searchTeam = async (name: string): Promise<any[]> => {
+  const json = await fmGet(`/search/suggest?hits=20&lang=en&term=${encodeURIComponent(name)}`);
+  const all: any[] = json.all || json.results || [];
+  return all
+    .filter((r: any) => r.type === "team" || (r.teamId == null && r.id && !r.teamId))
+    .map((r: any) => ({
+      id:    r.id,
+      nom:   r.name,
+      pays:  r.ccode || r.countryCode || null,
+      logo:  `https://images.fotmob.com/image_resources/logo/teamlogo/${r.id}.png`,
+    }))
+    .slice(0, 10);
+};
+
 // ── Handler ───────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
@@ -118,6 +134,12 @@ Deno.serve(async (req) => {
       if (!fotmob_id) return Response.json({ ok: false, error: "fotmob_id requis" });
       const stats = await getPlayerStats(parseInt(fotmob_id));
       return Response.json({ ok: true, stats });
+    }
+
+    if (action === "searchTeam") {
+      if (!query?.trim()) return Response.json({ ok: false, error: "query requis" });
+      const teams = await searchTeam(query.trim());
+      return Response.json({ ok: true, total: teams.length, teams });
     }
 
     return Response.json({ ok: false, error: `Action inconnue: ${action}` });

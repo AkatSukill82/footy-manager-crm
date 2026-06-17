@@ -36,11 +36,11 @@ function buildLinks(player) {
       style: "bg-orange-50 border-orange-200 hover:bg-orange-100 text-orange-900",
     },
     {
-      label: "FBref",
-      description: "Stats avancées : xG, passes clés, duels, pressing…",
-      href: `https://fbref.com/search/search.fcgi?search=${name}`,
+      label: "FotMob",
+      description: "Stats saison, titularisations, note par match",
+      href: `https://www.fotmob.com/search?q=${name}`,
       badge: "Recherche",
-      style: "bg-blue-50 border-blue-200 hover:bg-blue-100 text-blue-900",
+      style: "bg-orange-50 border-orange-200 hover:bg-orange-100 text-orange-900",
     },
   ];
 }
