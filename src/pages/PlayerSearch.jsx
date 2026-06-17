@@ -11,6 +11,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { useQueryClient } from "@tanstack/react-query";
+import { getCache, setCache, normalizeQuery } from "../lib/searchCache";
 
 const posteColors = {
   "Gardien":           "bg-yellow-100 text-yellow-800",
@@ -220,6 +221,18 @@ export default function PlayerSearchPage() {
     setSaved(false);
     setError(null);
 
+    const cacheKey = `search:${normalizeQuery(query)}`;
+    const cached   = getCache(cacheKey);
+
+    // Cache frais → résultat instantané, pas d'appel réseau
+    if (cached?.fresh && Array.isArray(cached.data) && cached.data.length > 0) {
+      const list = cached.data;
+      setLoading(false);
+      if (list.length === 1) fetchFullProfile(list[0]);
+      else                   setCandidates(list);
+      return;
+    }
+
     try {
       const body = await invokeFn("fotmobProxy", {
         action: "searchPlayer",
@@ -228,22 +241,46 @@ export default function PlayerSearchPage() {
       const list = Array.isArray(body?.players) ? body.players : [];
 
       if (list.length === 0) {
+        // Source vide mais on a une version en cache (même périmée) → on la ressert
+        if (cached?.data?.length) {
+          setLoading(false);
+          cached.data.length === 1 ? fetchFullProfile(cached.data[0]) : setCandidates(cached.data);
+          return;
+        }
         setError(`Aucun joueur trouvé pour "${query}". Essayez le nom complet en anglais sans accents.`);
         setLoading(false);
         return;
       }
+
+      setCache(cacheKey, list);
       if (list.length === 1) { setLoading(false); fetchFullProfile(list[0]); }
       else                   { setCandidates(list); setLoading(false); }
     } catch (err) {
+      // Source en échec → fallback sur le cache périmé si disponible
+      if (cached?.data?.length) {
+        setLoading(false);
+        cached.data.length === 1 ? fetchFullProfile(cached.data[0]) : setCandidates(cached.data);
+        return;
+      }
       setError("Erreur de recherche : " + (err?.message || "connexion impossible."));
       setLoading(false);
     }
   };
 
-  // ── 2. Profil : TM (principal) + TDB + BS + FM stats + SS stats en parallèle ─
+  // ── 2. Profil : TM (principal) + BS + FM stats + SS stats en parallèle ─
   const fetchFullProfile = async (candidate) => {
     setLoadingFull(true);
     setCandidates(null);
+
+    const profileKey = `profile:${candidate.fotmob_id || normalizeQuery(candidate.nom)}`;
+    const cachedProfile = getCache(profileKey);
+
+    // Cache frais → affichage instantané du profil
+    if (cachedProfile?.fresh && cachedProfile.data) {
+      setResult(cachedProfile.data);
+      setLoadingFull(false);
+      return;
+    }
 
     try {
       const nom  = candidate.nom;
@@ -280,9 +317,17 @@ export default function PlayerSearchPage() {
       if (!personal.date_naissance && fmStats?.date_naissance) personal.date_naissance = fmStats.date_naissance;
       if (!personal.club_actuel    && fmStats?.club_actuel)    personal.club_actuel = fmStats.club_actuel;
 
-      setResult({ ...personal, stats_saison: stats });
+      const full = { ...personal, stats_saison: stats };
+      // On ne met en cache que si on a obtenu des données exploitables
+      if (personal.poste || stats) setCache(profileKey, full);
+      setResult(full);
     } catch (err) {
-      setResult({ nom: candidate.nom, club_actuel: candidate.club_actuel, photo_url: candidate.photo_url, stats_saison: null, sources_perso: [] });
+      // Toutes les sources ont échoué → cache périmé en dernier recours
+      if (cachedProfile?.data) {
+        setResult(cachedProfile.data);
+      } else {
+        setResult({ nom: candidate.nom, club_actuel: candidate.club_actuel, photo_url: candidate.photo_url, stats_saison: null, sources_perso: [] });
+      }
     } finally {
       setLoadingFull(false);
     }
@@ -343,6 +388,20 @@ export default function PlayerSearchPage() {
       const created = await base44.entities.Player.create(clean);
       queryClient.invalidateQueries({ queryKey: ["players"] });
       setSaved(true);
+
+      // Photo manquante → recherche automatique en arrière-plan (non bloquant)
+      if (!clean.photo_url) {
+        invokeFn("fetchEntityPhoto", { type: "player", name: clean.nom, club: clean.club_actuel })
+          .then((res) => {
+            if (res?.photo_url) {
+              base44.entities.Player.update(created.id, { photo_url: res.photo_url })
+                .then(() => queryClient.invalidateQueries({ queryKey: ["players"] }))
+                .catch(() => {});
+            }
+          })
+          .catch(() => {});
+      }
+
       setTimeout(() => navigate(createPageUrl("PlayerDetail") + `?id=${created.id}`), 800);
     } catch (err) {
       setError("Erreur lors de la sauvegarde : " + (err.message || "inconnue"));
