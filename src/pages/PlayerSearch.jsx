@@ -144,7 +144,8 @@ export default function PlayerSearchPage() {
   const navigate    = useNavigate();
   const queryClient = useQueryClient();
 
-  // ── 1. Recherche : FotMob (grandes ligues) puis TheSportsDB (tous joueurs) ─
+  // ── 1. Recherche : FotMob + TheSportsDB en PARALLÈLE ─────────────────────
+  // (Base44 batch : les appels séquentiels reçoivent {"accepted":1} au lieu du résultat)
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -155,30 +156,27 @@ export default function PlayerSearchPage() {
     setError(null);
 
     try {
-      // Essai 1 : FotMob (rapide, couvre les grands championnats)
-      let list = [];
-      try {
-        const fmRes = await base44.functions.invoke("fotmobProxy", {
+      const [fmRes, tdbRes] = await Promise.allSettled([
+        base44.functions.invoke("fotmobProxy", {
           action: "searchPlayer",
           query:  query.trim(),
-        });
-        list = fmRes?.players || [];
-      } catch (_) { /* ignore, on essaie TheSportsDB */ }
-
-      // Essai 2 : TheSportsDB si FotMob ne trouve rien (couvre 1M+ joueurs)
-      if (list.length === 0) {
-        const tdbRes = await base44.functions.invoke("sofascoreProxy", {
+        }),
+        base44.functions.invoke("sofascoreProxy", {
           action: "searchPlayer",
           query:  query.trim(),
-        });
-        list = tdbRes?.players || [];
-      }
+        }),
+      ]);
+
+      const fmPlayers  = (fmRes.status  === "fulfilled" && Array.isArray(fmRes.value?.players))
+        ? fmRes.value.players  : [];
+      const tdbPlayers = (tdbRes.status === "fulfilled" && Array.isArray(tdbRes.value?.players))
+        ? tdbRes.value.players : [];
+
+      // FotMob en priorité (meilleure qualité pour joueurs connus), TDB en fallback
+      const list = fmPlayers.length > 0 ? fmPlayers : tdbPlayers;
 
       if (list.length === 0) {
-        setError(
-          `Aucun joueur trouvé pour "${query}". ` +
-          `Essayez le prénom + nom en anglais, ou cherchez directement sur BeSoccer.`
-        );
+        setError(`Aucun joueur trouvé pour "${query}".`);
         setLoading(false);
         return;
       }
