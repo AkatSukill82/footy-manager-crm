@@ -88,10 +88,36 @@ export default function ClubSquad({ club, crmPlayers = [] }) {
         <div className="flex items-center justify-center gap-2 py-6 text-slate-500 text-sm">
           <Loader2 className="w-4 h-4 animate-spin" /> Récupération de l'effectif…
         </div>
-      ) : isError ? (
-        <p className="text-sm text-slate-400 text-center py-4">Effectif introuvable pour le moment.</p>
-      ) : squad.length === 0 ? (
-        <p className="text-sm text-slate-400 text-center py-4">Aucun effectif trouvé pour {club.nom}.</p>
+      ) : (isError || squad.length === 0) ? (
+        // Repli : si la recherche web n'a rien donné, on montre au moins les
+        // joueurs du CRM rattachés à ce club.
+        crmPlayers.length > 0 ? (
+          <div>
+            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Vos joueurs ({crmPlayers.length})</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {crmPlayers.map((p) => (
+                <button key={p.id} onClick={() => navigate(createPageUrl("PlayerDetail") + `?id=${p.id}`)}
+                  className="flex items-center gap-2.5 p-2.5 rounded-xl border border-green-200 bg-green-50/50 hover:bg-green-50 cursor-pointer text-left transition-all">
+                  <div className="w-8 h-8 rounded-full bg-white border border-slate-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                    {p.photo_url
+                      ? <img src={p.photo_url} alt={p.nom} className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={(e) => (e.target.style.display = "none")} />
+                      : <User className="w-4 h-4 text-slate-400" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-slate-900 truncate">{p.nom}</p>
+                    <p className="text-[10px] text-slate-400 truncate">{p.poste}</p>
+                  </div>
+                  {p.valeur_marchande != null && (
+                    <span className="text-[10px] font-semibold text-slate-600 whitespace-nowrap">{p.valeur_marchande}M€</span>
+                  )}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-slate-300 pt-2">Effectif complet introuvable via le web — seuls vos joueurs suivis sont affichés.</p>
+          </div>
+        ) : (
+          <p className="text-sm text-slate-400 text-center py-4">Aucun effectif trouvé pour {club.nom}.</p>
+        )
       ) : (
         <div className="space-y-4">
           {grouped.map(({ line, items }) => (

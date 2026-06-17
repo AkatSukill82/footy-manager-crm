@@ -458,38 +458,8 @@ export default function ClubDetailPage() {
         </div>
       )}
 
-      {/* Joueurs du club */}
-      {players.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-100 p-4">
-          <p className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
-            <Users className="w-4 h-4 text-slate-400" /> {t(lang,'clubDetail.playersCount', { count: players.length })}
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {players.map(p => (
-              <button
-                key={p.id}
-                onClick={() => navigate(createPageUrl("PlayerDetail") + `?id=${p.id}`)}
-                className="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-100 hover:border-slate-300 hover:bg-slate-50 transition-all text-left"
-              >
-                <div className="w-9 h-9 rounded-full bg-slate-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
-                  {p.photo_url
-                    ? <img src={p.photo_url} alt={p.nom} className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={e => e.target.style.display = 'none'} />
-                    : <User className="w-4 h-4 text-slate-400" />}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-slate-900 truncate">{p.nom}</p>
-                  <p className="text-[10px] text-slate-400 truncate">{p.poste}</p>
-                  {p.valeur_marchande && (
-                    <p className="text-[10px] text-slate-600 font-semibold">{p.valeur_marchande}M€</p>
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Effectif complet (recherche web : Transfermarkt / FotMob) */}
+      {/* Effectif complet (recherche web : Transfermarkt / FotMob)
+          Les joueurs déjà dans le CRM y sont surlignés et cliquables. */}
       <ClubSquad club={club} crmPlayers={players} />
 
       {/* Prochains matchs du club */}
