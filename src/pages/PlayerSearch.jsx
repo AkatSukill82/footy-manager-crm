@@ -25,6 +25,12 @@ const posteColors = {
   "Attaquant":         "bg-red-100 text-red-800",
 };
 
+const POSTES = [
+  "Gardien", "Défenseur central", "Latéral droit", "Latéral gauche",
+  "Milieu défensif", "Milieu central", "Milieu offensif",
+  "Ailier droit", "Ailier gauche", "Attaquant",
+];
+
 // ── Helpers UI ────────────────────────────────────────────────────────────────
 
 function InfoRow({ label, value }) {
@@ -267,6 +273,13 @@ export default function PlayerSearchPage() {
       const personal = mergePersonal(tmData, null, bsData, candidate);
       const stats    = mergeStats(ssStats, fmStats, bsData);
 
+      // Poste : TM/BeSoccer prioritaires, sinon FotMob (fiable depuis le cloud)
+      if (!personal.poste && fmStats?.poste) personal.poste = fmStats.poste;
+      // Compléments FotMob si infos perso vides (TM/BeSoccer bloqués)
+      if (!personal.nom            && fmStats?.nom)            personal.nom = fmStats.nom;
+      if (!personal.date_naissance && fmStats?.date_naissance) personal.date_naissance = fmStats.date_naissance;
+      if (!personal.club_actuel    && fmStats?.club_actuel)    personal.club_actuel = fmStats.club_actuel;
+
       setResult({ ...personal, stats_saison: stats });
     } catch (err) {
       setResult({ nom: candidate.nom, club_actuel: candidate.club_actuel, photo_url: candidate.photo_url, stats_saison: null, sources_perso: [] });
@@ -275,10 +288,19 @@ export default function PlayerSearchPage() {
     }
   };
 
+  // Permet à l'utilisateur de corriger/renseigner le poste si manquant
+  const setPoste = (poste) => setResult(r => ({ ...r, poste }));
+
   // ── 3. Sauvegarder ────────────────────────────────────────────────────────
   const handleSaveToApp = async () => {
     if (!result) return;
+    // Le poste est requis par l'entité Player — on guide l'utilisateur au lieu de planter
+    if (!result.poste) {
+      setError("Le poste n'a pas été trouvé automatiquement. Sélectionnez-le ci-dessous avant d'ajouter le joueur.");
+      return;
+    }
     setSaving(true);
+    setError(null);
     const s = result.stats_saison;
     try {
       const raw = {
@@ -452,6 +474,21 @@ export default function PlayerSearchPage() {
                       {result.club_actuel && <Badge className="bg-slate-800 text-white">{result.club_actuel}</Badge>}
                       {result.ligue      && <Badge variant="outline" className="text-xs">{result.ligue}</Badge>}
                     </div>
+
+                    {/* Sélecteur de poste si introuvable (champ requis) */}
+                    {!result.poste && (
+                      <div className="mt-2 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
+                        <span className="text-xs text-amber-700 font-medium">Poste à confirmer :</span>
+                        <select
+                          value=""
+                          onChange={e => setPoste(e.target.value)}
+                          className="text-xs border border-amber-300 rounded-md px-2 py-1 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                        >
+                          <option value="" disabled>Choisir…</option>
+                          {POSTES.map(p => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                      </div>
+                    )}
                     {result.sources_perso?.length > 0 && (
                       <div className="flex items-center gap-1.5 mt-2">
                         <span className="text-[10px] text-slate-400">Sources infos :</span>

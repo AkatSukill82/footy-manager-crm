@@ -79,6 +79,27 @@ const STAT_MAP: Record<string, string> = {
   "xA":             "xa",
 };
 
+// Position FotMob (label EN) → poste entité Player (FR)
+const POS_MAP: Record<string, string> = {
+  "Goalkeeper": "Gardien",
+  "Centre Back": "Défenseur central", "Center Back": "Défenseur central",
+  "Right Back": "Latéral droit", "Left Back": "Latéral gauche",
+  "Right Wing Back": "Latéral droit", "Left Wing Back": "Latéral gauche",
+  "Defensive Midfield": "Milieu défensif", "Defensive Midfielder": "Milieu défensif",
+  "Central Midfield": "Milieu central", "Central Midfielder": "Milieu central",
+  "Midfielder": "Milieu central",
+  "Attacking Midfield": "Milieu offensif", "Attacking Midfielder": "Milieu offensif",
+  "Right Winger": "Ailier droit", "Right Wing": "Ailier droit",
+  "Left Winger": "Ailier gauche", "Left Wing": "Ailier gauche",
+  "Striker": "Attaquant", "Centre Forward": "Attaquant", "Center Forward": "Attaquant",
+  "Forward": "Attaquant", "Attacker": "Attaquant",
+};
+
+const mapFotmobPos = (label: string | null | undefined): string | null => {
+  if (!label) return null;
+  return POS_MAP[label] ?? null;
+};
+
 const getPlayerStats = async (playerId: number): Promise<Record<string, any>> => {
   const json  = await fmGet(`/playerData?id=${playerId}`);
   const stats: Record<string, any> = {};
@@ -96,6 +117,20 @@ const getPlayerStats = async (playerId: number): Promise<Record<string, any>> =>
       }
     }
   }
+
+  // Poste depuis playerData (fiable depuis le cloud, sert de filet pour le champ requis)
+  const posLabel = json?.positionDescription?.primaryPosition?.label
+                ?? json?.origin?.positionDesc?.primaryPosition?.label
+                ?? null;
+  const poste = mapFotmobPos(posLabel);
+  if (poste) stats.poste = poste;
+
+  // Infos perso basiques disponibles dans playerData (fallback si TM/BeSoccer bloqués)
+  if (json?.name) stats.nom = json.name;
+  if (json?.birthDate?.utcTime) {
+    stats.date_naissance = String(json.birthDate.utcTime).split("T")[0];
+  }
+  if (json?.primaryTeam?.teamName) stats.club_actuel = json.primaryTeam.teamName;
 
   stats.source    = "FotMob";
   stats.fotmob_id = String(playerId);
