@@ -85,32 +85,79 @@ const getSeasonStats = async (playerId: number): Promise<Record<string, any>> =>
     ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 100) / 100
     : null;
 
+  // Entier positif, sinon null
   const n = (key: string): number | null => {
     const v = sum[key];
-    return (v != null && v > 0) ? v : null;
+    return (v != null && v > 0) ? Math.round(v) : null;
   };
+  // Flottant 2 décimales positif, sinon null
   const f = (key: string): number | null => {
     const v = sum[key];
     return (v != null && v > 0) ? Math.round(v * 100) / 100 : null;
   };
+  // Pourcentage calculé depuis deux totaux
+  const pct = (a: string, b: string): number | null => {
+    const x = sum[a], y = sum[b];
+    if (x == null || !y) return null;
+    const p = Math.round((x / y) * 100);
+    return p > 0 && p <= 100 ? p : null;
+  };
+  // Premier total disponible parmi plusieurs noms de champs possibles
+  const pick = (...keys: string[]): number | null => {
+    for (const k of keys) if (sum[k] != null && sum[k] > 0) return Math.round(sum[k]);
+    return null;
+  };
+
+  const tirs       = n("totalShots");
+  const tirsCadres = n("shotsOnTarget");
 
   return {
+    // ── Synthèse ──
     matchs_joues:     n("appearances"),
+    titularisations:  null,
     minutes_jouees:   n("minutesPlayed"),
+    note_moyenne:     avgRating,
+    // ── Offensif ──
     buts:             n("goals"),
     passes_decisives: n("assists"),
-    cartons_jaunes:   n("yellowCards"),
-    cartons_rouges:   n("redCards"),
-    tirs:             n("totalShots"),
-    tirs_cadres:      n("shotsOnTarget"),
-    passes_cles:      n("keyPasses"),
-    dribbles_reussis: n("successfulDribbles"),
-    tacles:           n("tackles"),
-    interceptions:    n("interceptions"),
     xg:               f("expectedGoals"),
     xa:               f("expectedAssists"),
-    note_moyenne:     avgRating,
-    passes_reussies:  n("accuratePasses"),
+    tirs:             tirs,
+    tirs_cadres:      tirsCadres,
+    tirs_cadres_pct:  (tirs && tirsCadres) ? Math.round((tirsCadres / tirs) * 100) : null,
+    grandes_chances:         n("bigChancesCreated"),
+    grandes_chances_manquees: n("bigChancesMissed"),
+    penaltys_marques: pick("penaltyGoals", "penaltiesScored"),
+    // ── Passes ──
+    passes_reussies:    n("accuratePasses"),
+    passes_reussies_pct: pct("accuratePasses", "totalPasses"),
+    passes_cles:        n("keyPasses"),
+    passes_longues_pct: pct("accurateLongBalls", "totalLongBalls"),
+    centres:            pick("totalCross", "totalCrosses"),
+    centres_reussis_pct: pct("accurateCross", "totalCross") ?? pct("accurateCrosses", "totalCrosses"),
+    // ── Dribbles / possession ──
+    dribbles_reussis: n("successfulDribbles"),
+    dribbles_tentes:  pick("totalContests", "dribbleAttempts"),
+    dribbles_pct:     pct("successfulDribbles", "totalContests"),
+    touches_balle:    n("touches"),
+    pertes_balle:     pick("possessionLost", "dispossessed"),
+    duels_gagnes_pct:  pct("totalDuelsWon", "totalDuels") ?? pick("totalDuelsWonPercentage"),
+    duels_aeriens_pct: pct("aerialDuelsWon", "aerialDuelsTotal") ?? pct("aerialDuelsWon", "totalAerialDuels") ?? pick("aerialDuelsWonPercentage"),
+    // ── Défensif ──
+    tacles:           n("tackles"),
+    interceptions:    n("interceptions"),
+    degagements:      pick("totalClearances", "clearances"),
+    recuperations:    pick("ballRecovery", "recoveries"),
+    // ── Discipline ──
+    cartons_jaunes:   n("yellowCards"),
+    cartons_rouges:   n("redCards"),
+    fautes_commises:  n("fouls"),
+    fautes_subies:    pick("wasFouled", "fouled"),
+    hors_jeu:         n("offsides"),
+    // ── Gardien ──
+    arrets:           n("saves"),
+    buts_encaisses:   n("goalsConceded"),
+    clean_sheets:     n("cleanSheet"),
     source: "SofaScore",
     sofascore_id: String(playerId),
   };
