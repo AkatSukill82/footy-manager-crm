@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { invokeFn } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -45,7 +45,7 @@ export default function ImageSearchPicker({ open, onClose, onSelect, initialQuer
     setSelected(null);
     setBrokenImages(new Set());
     try {
-      const data = await base44.functions.invoke("searchGoogleImages", { query: q.trim(), type });
+      const data = await invokeFn("searchGoogleImages", { query: q.trim(), type });
       if (data?.error) {
         setError(data.error);
       } else {

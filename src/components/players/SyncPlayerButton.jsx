@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { invokeFn } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw, CheckCircle2, AlertCircle, Loader2, ChevronDown, ChevronUp, Zap } from "lucide-react";
@@ -46,28 +46,15 @@ export default function SyncPlayerButton({ player, onApply }) {
     const club = player.club_actuel;
 
     // Transfermarkt (infos perso) + FotMob + SofaScore (stats) en parallèle
-    const [tdbRes, fmRes, ssRes] = await Promise.allSettled([
-      base44.functions.invoke("transfermarktProxy", {
-        action: "searchAndGet",
-        query:  name,
-      }),
-      base44.functions.invoke("fotmobProxy", {
-        action: "searchAndGetStats",
-        query:  name,
-        club,
-      }),
-      base44.functions.invoke("sofascoreProxy", {
-        action: "searchAndGetStats",
-        query:  name,
-        club,
-      }),
+    const [tmRes, fmRes, ssRes] = await Promise.allSettled([
+      invokeFn("transfermarktProxy", { action: "searchAndGet",      query: name }),
+      invokeFn("fotmobProxy",        { action: "searchAndGetStats", query: name, club }),
+      invokeFn("sofascoreProxy",     { action: "searchAndGetStats", query: name, club }),
     ]);
 
-    // Le SDK Base44 enveloppe parfois le body dans res.data
-    const uw = (r) => (r && typeof r === "object" && r.data && typeof r.data === "object") ? r.data : r;
-    const tmV = tdbRes.status === "fulfilled" ? uw(tdbRes.value) : null;
-    const fmV = fmRes.status  === "fulfilled" ? uw(fmRes.value)  : null;
-    const ssV = ssRes.status  === "fulfilled" ? uw(ssRes.value)  : null;
+    const tmV = tmRes.status === "fulfilled" ? tmRes.value : null;
+    const fmV = fmRes.status === "fulfilled" ? fmRes.value : null;
+    const ssV = ssRes.status === "fulfilled" ? ssRes.value : null;
 
     const bs = tmV?.ok ? tmV.player : null;
     const fm = fmV?.ok ? fmV.stats  : null;
@@ -92,7 +79,10 @@ export default function SyncPlayerButton({ player, onApply }) {
         contrat_fin:      bs.contrat_fin,
         photo_url:        bs.photo_url,
         numero_maillot:   bs.numero_maillot,
+        transfermarkt_id: bs.transfermarkt_id,
       } : {}),
+      // IDs externes pour les tableaux de stats détaillés
+      sofascore_id:     ss?.sofascore_id,
       // Stats depuis SofaScore (prioritaire)
       matchs_joues:     ss?.matchs_joues     ?? fm?.matchs_joues,
       titularisations:  fm?.titularisations  ?? null,

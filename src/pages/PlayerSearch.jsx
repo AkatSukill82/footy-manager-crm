@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { base44, invokeFn } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -141,6 +141,9 @@ function mergeStats(ss, fm, bs) {
     xa:               a.xa,
     note_moyenne:     a.note_moyenne     ?? b.note_fotmob,
     besoccer_elo:     c.besoccer_elo,
+    // IDs externes (pour les tableaux de stats détaillés sur la fiche)
+    sofascore_id:     a.sofascore_id ?? null,
+    fotmob_id:        b.fotmob_id    ?? null,
     sources: [ss && "SofaScore", fm && "FotMob", (bsMatchs || bsButs) && "BeSoccer"].filter(Boolean),
   };
 }
@@ -187,10 +190,6 @@ function mergePersonal(tm, tdb, bs, candidate) {
   };
 }
 
-// ── Le SDK Base44 enveloppe parfois le body dans res.data ─────────────────────
-const unwrap = (res) => (res && typeof res === "object" && "data" in res && res.data && typeof res.data === "object")
-  ? res.data : res;
-
 // ═════════════════════════════════════════════════════════════════════════════
 
 export default function PlayerSearchPage() {
@@ -216,11 +215,10 @@ export default function PlayerSearchPage() {
     setError(null);
 
     try {
-      const res  = await base44.functions.invoke("fotmobProxy", {
+      const body = await invokeFn("fotmobProxy", {
         action: "searchPlayer",
         query:  query.trim(),
       });
-      const body = unwrap(res);
       const list = Array.isArray(body?.players) ? body.players : [];
 
       if (list.length === 0) {
@@ -245,26 +243,26 @@ export default function PlayerSearchPage() {
       const nom  = candidate.nom;
       const club = candidate.club_actuel;
 
-      const [tmRes, bsRes, fmStatsRes, ssStatsRes] = await Promise.allSettled([
+      const [tm, bs, fmS, ssS] = await Promise.allSettled([
         // Transfermarkt — infos perso + stats
-        base44.functions.invoke("transfermarktProxy", { action: "searchAndGet", query: nom }),
+        invokeFn("transfermarktProxy", { action: "searchAndGet", query: nom }),
         // BeSoccer — lien profil + ELO + stats
-        base44.functions.invoke("besoccerProxy", { action: "searchAndGetPlayer", query: nom }),
-        // FotMob — stats (recherche par nom car IDs différents de AF)
-        base44.functions.invoke("fotmobProxy", { action: "searchAndGetStats", query: nom, club }),
+        invokeFn("besoccerProxy", { action: "searchAndGetPlayer", query: nom }),
+        // FotMob — stats (recherche par nom)
+        invokeFn("fotmobProxy", { action: "searchAndGetStats", query: nom, club }),
         // SofaScore — stats avancées xG/xA (best effort)
-        base44.functions.invoke("sofascoreProxy", { action: "searchAndGetStats", query: nom, club }),
+        invokeFn("sofascoreProxy", { action: "searchAndGetStats", query: nom, club }),
       ]);
 
-      const tm  = tmRes.status      === "fulfilled" ? unwrap(tmRes.value)      : null;
-      const bs  = bsRes.status      === "fulfilled" ? unwrap(bsRes.value)      : null;
-      const fmS = fmStatsRes.status === "fulfilled" ? unwrap(fmStatsRes.value) : null;
-      const ssS = ssStatsRes.status === "fulfilled" ? unwrap(ssStatsRes.value) : null;
+      const tmV = tm.status  === "fulfilled" ? tm.value  : null;
+      const bsV = bs.status  === "fulfilled" ? bs.value  : null;
+      const fmV = fmS.status === "fulfilled" ? fmS.value : null;
+      const ssV = ssS.status === "fulfilled" ? ssS.value : null;
 
-      const tmData  = tm?.ok  ? tm.player  : null;
-      const bsData  = bs?.ok  ? bs.player  : null;
-      const fmStats = fmS?.ok ? fmS.stats  : null;
-      const ssStats = ssS?.ok ? ssS.stats  : null;
+      const tmData  = tmV?.ok ? tmV.player : null;
+      const bsData  = bsV?.ok ? bsV.player : null;
+      const fmStats = fmV?.ok ? fmV.stats  : null;
+      const ssStats = ssV?.ok ? ssV.stats  : null;
 
       const personal = mergePersonal(tmData, null, bsData, candidate);
       const stats    = mergeStats(ssStats, fmStats, bsData);
@@ -301,6 +299,7 @@ export default function PlayerSearchPage() {
         numero_maillot:   result.numero_maillot,
         agent:            result.agent,
         transfermarkt_id: result.transfermarkt_id,
+        sofascore_id:     s?.sofascore_id,
         matchs_joues:     s?.matchs_joues,
         titularisations:  s?.titularisations,
         minutes_jouees:   s?.minutes_jouees,

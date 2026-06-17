@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { base44, invokeFn } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -34,7 +34,7 @@ export default function ClubsPage() {
       setShowForm(false);
       // Auto-fetch logo en arrière-plan si pas déjà un logo
       if (club?.id && club?.nom && !club?.logo_url) {
-        base44.functions.invoke("fetchEntityPhoto", {
+        invokeFn("fetchEntityPhoto", {
           type: "club",
           name: club.nom,
         }).then(result => {

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { invokeFn } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BarChart2, Loader2, RefreshCw, ExternalLink, AlertCircle, Star } from "lucide-react";
@@ -42,7 +42,7 @@ export default function PlayerSofaStats({ player }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await base44.functions.invoke("proxySofaApi", {
+      const res = await invokeFn("proxySofaApi", {
         path: `/player/${ssId}/statistics/season`,
       });
       if (res?.error) throw new Error(res.error);

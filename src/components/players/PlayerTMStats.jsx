@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { invokeFn } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BarChart2, Loader2, RefreshCw, ExternalLink, AlertCircle, Trophy } from "lucide-react";
@@ -25,11 +25,11 @@ export default function PlayerTMStats({ player }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await base44.functions.invoke("proxyTMApi", {
+      const res = await invokeFn("proxyTMApi", {
         path: `/players/${tmId}/stats`
       });
       if (res?.error) throw new Error(res.error);
-      const rows = res?.stats || res?.data || [];
+      const rows = res?.stats || (Array.isArray(res) ? res : []);
       if (!Array.isArray(rows) || rows.length === 0) throw new Error("Aucune stat trouvée pour ce joueur");
       setStats(rows);
     } catch (err) {

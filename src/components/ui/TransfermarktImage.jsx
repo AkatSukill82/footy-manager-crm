@@ -5,7 +5,7 @@
  * Module-level cache avoids re-fetching the same URL on re-renders.
  */
 import React, { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { invokeFn } from "@/api/base44Client";
 
 // Module-level cache: url → { dataUrl } | { direct: true } | { error: true }
 const imageCache = new Map();
@@ -28,8 +28,8 @@ function needsProxy(url) {
 }
 
 async function fetchViaProxy(url) {
-  const res = await base44.functions.invoke("fetchTransfermarktImage", { imageUrl: url });
-  const dataUrl = res?.data?.dataUrl;
+  const res = await invokeFn("fetchTransfermarktImage", { imageUrl: url });
+  const dataUrl = res?.dataUrl;
   if (dataUrl && dataUrl.length > 30) return dataUrl;
   throw new Error("proxy returned empty");
 }

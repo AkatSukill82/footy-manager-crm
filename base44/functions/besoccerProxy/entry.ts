@@ -342,6 +342,8 @@ Deno.serve(async (req) => {
 
   } catch (err: any) {
     console.error("besoccerProxy:", err.message);
-    return Response.json({ ok: false, error: err.message }, { status: 500 });
+    // HTTP 200 obligatoire : le SDK Base44 throw sur tout status >= 400,
+    // ce qui masque le vrai message d'erreur côté client.
+    return Response.json({ ok: false, error: err.message });
   }
 });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { base44, invokeFn } from "@/api/base44Client";
 import { Camera, Loader2 } from "lucide-react";
 
 const COLORS = [
@@ -54,8 +54,8 @@ function PlayerAvatar({
     setFetching(true);
     setFetchError(false);
     try {
-      const res = await base44.functions.invoke("fetchEntityPhoto", { type, name, club });
-      const url = res?.data?.photo_url;
+      const res = await invokeFn("fetchEntityPhoto", { type, name, club });
+      const url = res?.photo_url;
       if (url) {
         setLocalSrc(url);
         setImgFailed(false);

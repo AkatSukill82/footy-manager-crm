@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { base44, invokeFn } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,11 +37,10 @@ export default function ClubSearch({ onClose }) {
     setError(null);
 
     try {
-      const res  = await base44.functions.invoke("fotmobProxy", {
+      const data = await invokeFn("fotmobProxy", {
         action: "searchTeam",
         query:  query.trim(),
       });
-      const data = (res && typeof res === "object" && res.data && typeof res.data === "object") ? res.data : res;
       const list = data?.teams || [];
 
       if (list.length === 0) {
