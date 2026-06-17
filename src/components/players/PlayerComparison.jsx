@@ -4,30 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { GitCompare, X, TrendingUp, User, Plus, Loader2 } from "lucide-react";
+import { GitCompare, X, TrendingUp, User, Plus, Loader2, BarChart2 } from "lucide-react";
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend
 } from "recharts";
 import { useLanguage } from "../../lib/LanguageContext";
 import { t } from "../../i18n/translations";
+import { buildPerformanceRadar } from "../../lib/playerStats";
 
 const COLORS = ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"];
-
-function normalizeVal(val, max) {
-  if (!val || !max) return 0;
-  return Math.round((val / max) * 100);
-}
-
-function buildRadarData(players) {
-  const maxVal = Math.max(...players.map(p => p.valeur_marchande || 0));
-
-  return [
-    { attribute: "Value", ...Object.fromEntries(players.map(p => [p.nom, normalizeVal(p.valeur_marchande, maxVal)])) },
-    { attribute: "Age inv.", ...Object.fromEntries(players.map(p => [p.nom, p.age ? Math.round((1 - p.age / 40) * 100) : 0])) },
-    { attribute: "Height", ...Object.fromEntries(players.map(p => [p.nom, p.taille ? normalizeVal(p.taille, 210) : 50])) },
-  ];
-}
 
 export default function PlayerComparison({ currentPlayer, allPlayers }) {
   const { lang } = useLanguage();
@@ -72,7 +58,10 @@ export default function PlayerComparison({ currentPlayer, allPlayers }) {
     setLoadingAI(false);
   };
 
-  const radarData = allComparePlayers.length >= 2 ? buildRadarData(allComparePlayers) : [];
+  const perfRadar = allComparePlayers.length >= 2
+    ? buildPerformanceRadar(allComparePlayers, allPlayers, currentPlayer.poste)
+    : { data: [], mode: "relatif" };
+  const radarData = perfRadar.data;
 
   const filters = [
     { value: "poste", labelKey: "comparison.filterPosition" },
@@ -202,30 +191,54 @@ export default function PlayerComparison({ currentPlayer, allPlayers }) {
               </ResponsiveContainer>
             </div>
 
-            {radarData.length > 0 && (
-              <div>
-                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{t(lang, 'comparison.radarTitle')}</h4>
-                <ResponsiveContainer width="100%" height={220}>
-                  <RadarChart data={radarData}>
-                    <PolarGrid stroke="#e2e8f0" />
-                    <PolarAngleAxis dataKey="attribute" tick={{ fontSize: 11 }} />
-                    {allComparePlayers.map((p, i) => (
-                      <Radar
-                        key={p.id}
-                        name={p.nom}
-                        dataKey={p.nom}
-                        stroke={COLORS[i]}
-                        fill={COLORS[i]}
-                        fillOpacity={0.15}
-                        strokeWidth={2}
-                      />
-                    ))}
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Tooltip />
-                  </RadarChart>
-                </ResponsiveContainer>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Radar de performance
+                </h4>
+                <Badge variant="outline" className="text-[10px]">
+                  {perfRadar.mode === "percentile"
+                    ? "Percentiles vs joueurs du même poste"
+                    : "Relatif aux joueurs comparés"}
+                </Badge>
               </div>
-            )}
+              {radarData.length > 0 ? (
+                <>
+                  <ResponsiveContainer width="100%" height={280}>
+                    <RadarChart data={radarData} outerRadius="72%">
+                      <PolarGrid stroke="#e2e8f0" />
+                      <PolarAngleAxis dataKey="attribute" tick={{ fontSize: 11 }} />
+                      {allComparePlayers.map((p, i) => (
+                        <Radar
+                          key={p.id}
+                          name={p.nom}
+                          dataKey={p.nom}
+                          stroke={COLORS[i]}
+                          fill={COLORS[i]}
+                          fillOpacity={0.15}
+                          strokeWidth={2}
+                        />
+                      ))}
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      <Tooltip formatter={(v) => `${v}/100`} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                  <p className="text-[10px] text-slate-400 text-center mt-1">
+                    {perfRadar.mode === "percentile"
+                      ? "100 = meilleur que tous les joueurs de votre base au même poste. Stats de volume ramenées à 90 min."
+                      : "Échelle relative : 100 = meilleur parmi les joueurs comparés."}
+                  </p>
+                </>
+              ) : (
+                <div className="text-center py-8 px-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  <BarChart2 className="w-7 h-7 text-slate-300 mx-auto mb-2" />
+                  <p className="text-xs text-slate-400">
+                    Pas assez de statistiques renseignées pour comparer ces joueurs.
+                    Synchronisez leurs stats (bouton « Actualiser ») sur leur fiche.
+                  </p>
+                </div>
+              )}
+            </div>
 
             <div className="border-t border-slate-100 pt-4">
               <Button
