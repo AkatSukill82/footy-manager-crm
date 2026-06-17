@@ -5,7 +5,7 @@ import {
   Users, Star, LogOut, BarChart3, Bell, Phone, Shield,
   FileText, Network, ArrowRightLeft, Menu, X, Building2,
   Sparkles, Newspaper, FileSpreadsheet, CalendarDays, UserCircle,
-  ClipboardList, Columns, ChevronDown, Search,
+  ClipboardList, Columns, ChevronDown, Search, GitCompare,
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Toaster } from "@/components/ui/sonner";
@@ -17,7 +17,7 @@ import GlobalSearch from "./components/ui/GlobalSearch";
 // Pages principales — toujours visibles
 const CORE_PAGES = ["Dashboard", "Players", "Clubs", "MyWatchList", "Pipeline", "ScoutingReports", "Alerts", "ClubContacts"];
 // Outils — groupe repliable
-const TOOLS_PAGES = ["TransferManagement", "Teams", "News", "ScoutingIA", "Calendar"];
+const TOOLS_PAGES = ["Comparator", "TransferManagement", "Teams", "News", "ScoutingIA", "Calendar"];
 // Avancé — groupe repliable
 const ADVANCED_PAGES = ["Reports", "PredictiveDashboard", "AgentNetwork", "ImportExcel", "Organization"];
 
@@ -28,6 +28,7 @@ const ALL_ITEMS = (lang) => [
   { name: "MyWatchList",         key: "watchlist",        icon: Star },
   { name: "Pipeline",            key: "pipeline",         icon: Columns,       label: "Pipeline" },
   { name: "ScoutingReports",     key: "scouting_reports", icon: ClipboardList, label: "Scouting" },
+  { name: "Comparator",          key: "comparator",       icon: GitCompare,    label: "Comparateur" },
   { name: "Alerts",              key: "alerts",           icon: Bell },
   { name: "ClubContacts",        key: "contacts",         icon: Phone },
   { name: "TransferManagement",  key: "transfers",        icon: ArrowRightLeft },

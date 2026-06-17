@@ -70,6 +70,7 @@ const Calendar          = lazy(() => import('./pages/Calendar'));
 const Profile           = lazy(() => import('./pages/Profile'));
 const ScoutingReports   = lazy(() => import('./pages/ScoutingReports'));
 const Pipeline          = lazy(() => import('./pages/Pipeline'));
+const Comparator        = lazy(() => import('./pages/Comparator'));
 
 
 export const PAGES = {
@@ -93,6 +94,7 @@ export const PAGES = {
     "Profile": Profile,
     "ScoutingReports": ScoutingReports,
     "Pipeline": Pipeline,
+    "Comparator": Comparator,
 }
 
 export const pagesConfig = {
