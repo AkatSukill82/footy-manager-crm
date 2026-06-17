@@ -1,0 +1,67 @@
+{
+  "name": "Opportunity",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": ["offre", "recherche"],
+      "default": "offre",
+      "description": "offre = joueur disponible proposé · recherche = besoin / profil recherché"
+    },
+    "titre": { "type": "string", "description": "Titre de l'annonce" },
+    "player_id": { "type": "string", "description": "Joueur concerné (pour une offre)" },
+    "player_nom": { "type": "string", "description": "Nom du joueur proposé" },
+    "poste": { "type": "string", "description": "Poste proposé ou recherché" },
+    "club": { "type": "string", "description": "Club qui recherche (pour une recherche)" },
+    "nationalite": { "type": "string", "description": "Nationalité du joueur / souhaitée" },
+    "pied_fort": { "type": "string", "enum": ["Droit", "Gauche", "Les deux"], "description": "Pied fort" },
+    "age_min": { "type": "number", "description": "Âge minimum recherché" },
+    "age_max": { "type": "number", "description": "Âge maximum recherché" },
+    "valeur": { "type": "number", "description": "Valeur / prix demandé en M€ (offre)" },
+    "budget_max": { "type": "number", "description": "Budget maximum en M€ (recherche)" },
+    "type_transfert": {
+      "type": "string",
+      "enum": ["transfert_sec", "pret", "fin_contrat", "indifferent"],
+      "default": "indifferent",
+      "description": "Type de transaction souhaité"
+    },
+    "description": { "type": "string", "description": "Détails de l'annonce" },
+    "contact": { "type": "string", "description": "Contact (nom / email / téléphone)" },
+    "statut": {
+      "type": "string",
+      "enum": ["ouverte", "en_discussion", "cloturee"],
+      "default": "ouverte",
+      "description": "Statut de l'annonce"
+    },
+    "date_limite": { "type": "string", "format": "date", "description": "Date limite" },
+    "organization_id": { "type": "string", "description": "Organisation ID pour le partage" }
+  },
+  "required": ["type", "titre", "statut"],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}",
+      "organization_id": "{{user.data.organization_id}}"
+    },
+    "read": {
+      "$or": [
+        { "created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } },
+        { "$and": [ { "data.organization_id": "{{user.data.organization_id}}" }, { "data.organization_id": { "$ne": null } } ] }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } },
+        { "$and": [ { "data.organization_id": "{{user.data.organization_id}}" }, { "data.organization_id": { "$ne": null } } ] }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } },
+        { "$and": [ { "data.organization_id": "{{user.data.organization_id}}" }, { "data.organization_id": { "$ne": null } } ] }
+      ]
+    }
+  }
+}
