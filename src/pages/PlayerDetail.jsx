@@ -35,6 +35,7 @@ import ActivityLogList from "../components/activity/ActivityLogList";
 import PlayerExternalLinks from "../components/players/PlayerExternalLinks";
 import PlayerTMStats from "../components/players/PlayerTMStats";
 import PlayerSofaStats from "../components/players/PlayerSofaStats";
+import PlayerVideos from "../components/players/PlayerVideos";
 
 const posteColors = {
   "Gardien": "bg-amber-50 text-amber-700",
@@ -452,6 +453,8 @@ export default function PlayerDetailPage() {
 
             {/* Charts & Evolution */}
             <PlayerChartsPanel playerId={playerId} player={player} />
+
+            <PlayerVideos player={player} />
 
             <PlayerTMStats player={player} />
 
