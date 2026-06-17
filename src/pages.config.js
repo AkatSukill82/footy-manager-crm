@@ -72,7 +72,6 @@ const ScoutingReports   = lazy(() => import('./pages/ScoutingReports'));
 const Pipeline          = lazy(() => import('./pages/Pipeline'));
 const Comparator        = lazy(() => import('./pages/Comparator'));
 const Finance           = lazy(() => import('./pages/Finance'));
-const Mandates          = lazy(() => import('./pages/Mandates'));
 const Marketplace       = lazy(() => import('./pages/Marketplace'));
 
 
@@ -99,7 +98,6 @@ export const PAGES = {
     "Pipeline": Pipeline,
     "Comparator": Comparator,
     "Finance": Finance,
-    "Mandates": Mandates,
     "Marketplace": Marketplace,
 }
 
