@@ -177,8 +177,9 @@ function mergePersonal(tm, tdb, bs, candidate) {
     contrat_fin:      t.contrat_fin   || b.contrat_fin,
     agent:            t.agent         || null,
     transfermarkt_id: t.transfermarkt_id || null,
-    // Photo : TM prioritaire, puis BeSoccer CDN, puis candidat (FotMob CDN)
-    photo_url:        t.photo_url     || b.photo_url  || c.photo_url,
+    // Photo : on GARDE celle vue/sélectionnée dans la recherche (candidat),
+    // car TM/BeSoccer peuvent renvoyer un autre joueur ou un mauvais portrait.
+    photo_url:        c.photo_url     || t.photo_url  || b.photo_url,
     // Liens
     transfermarkt_url:  t.transfermarkt_url || null,
     besoccer_url:       b.besoccer_url      || null,
