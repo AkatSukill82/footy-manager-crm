@@ -539,9 +539,9 @@ export default function PlayerDetailPage() {
             }
           } catch {
 
+
             // onError handlers on each mutation display the error banner
           }}} />
       
     </div>);
-
 }
