@@ -177,6 +177,7 @@ function mergePersonal(tm, tdb, bs, candidate) {
     contrat_fin:      t.contrat_fin   || b.contrat_fin,
     agent:            t.agent         || null,
     transfermarkt_id: t.transfermarkt_id || null,
+    besoccer_id:      b.besoccer_id   || null,
     // Photo : on GARDE celle vue/sélectionnée dans la recherche (candidat),
     // car TM/BeSoccer peuvent renvoyer un autre joueur ou un mauvais portrait.
     photo_url:        c.photo_url     || t.photo_url  || b.photo_url,
@@ -358,6 +359,8 @@ export default function PlayerSearchPage() {
         agent:            result.agent,
         transfermarkt_id: result.transfermarkt_id,
         sofascore_id:     s?.sofascore_id,
+        fotmob_id:        s?.fotmob_id,
+        besoccer_id:      result.besoccer_id,
         matchs_joues:     s?.matchs_joues,
         titularisations:  s?.titularisations,
         minutes_jouees:   s?.minutes_jouees,

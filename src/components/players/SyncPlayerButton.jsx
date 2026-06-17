@@ -87,10 +87,20 @@ export default function SyncPlayerButton({ player, onApply }) {
         const [tmRes, fmRes, ssRes, bsRes] = await Promise.allSettled([tmCall, fmCall, ssCall, bsCall]);
         if (cancelled) return;
 
-        const tm = tmRes.status === "fulfilled" && tmRes.value?.ok ? tmRes.value.player : null;
-        const fm = fmRes.status === "fulfilled" && fmRes.value?.ok ? fmRes.value.stats  : null;
-        const ss = ssRes.status === "fulfilled" && ssRes.value?.ok ? ssRes.value.stats  : null;
-        const bs = bsRes.status === "fulfilled" && bsRes.value?.ok ? bsRes.value.player : null;
+        const val = (r) => (r.status === "fulfilled" && r.value?.ok ? r.value : null);
+        const tmV = val(tmRes), fmV = val(fmRes), ssV = val(ssRes), bsV = val(bsRes);
+
+        // On ne fait confiance à une source que si elle a été résolue par un ID
+        // connu (pas de recherche par nom → confiance 1) OU si la confiance du
+        // match nom/club dépasse le seuil. Sinon : match probablement faux, on
+        // l'ignore complètement (ni stats, ni identité, ni ID persisté).
+        const MIN_CONF = 0.55;
+        const trusted = (v, knownId) => v && (knownId ? 1 : (v.confidence ?? 0)) >= MIN_CONF;
+
+        const tm = trusted(tmV, player.transfermarkt_id) ? tmV.player : null;
+        const fm = trusted(fmV, player.fotmob_id)        ? fmV.stats  : null;
+        const ss = trusted(ssV, player.sofascore_id)     ? ssV.stats  : null;
+        const bs = trusted(bsV, null)                    ? bsV.player : null;
 
         // Normaliser le nom de la note FotMob vers le champ commun.
         if (fm && fm.note_moyenne == null && fm.note_fotmob != null) fm.note_moyenne = fm.note_fotmob;

@@ -56,7 +56,7 @@ const overlap = (a: string, b: string): number => {
 
 // ── Recherche → meilleure URL joueur (scoring nom + club) ─────────────────────
 
-const searchPlayer = async (name: string, club?: string): Promise<string | null> => {
+const searchPlayer = async (name: string, club?: string): Promise<{ url: string; confidence: number } | null> => {
   const url = `${TM_BASE}/schnellsuche/ergebnis/schnellsuche?query=${encodeURIComponent(name)}`;
   const html = await fetchHtml(url);
 
@@ -71,7 +71,7 @@ const searchPlayer = async (name: string, club?: string): Promise<string | null>
   }
   if (cands.length === 0) return null;
 
-  let best: typeof cands[0] | null = null, bestScore = -1;
+  let best: typeof cands[0] | null = null, bestScore = -1, bestNameSim = 0;
   for (const c of cands) {
     const nameSim = overlap(c.name, name);
     if (nameSim < 0.5) continue;                        // le nom DOIT correspondre
@@ -81,12 +81,16 @@ const searchPlayer = async (name: string, club?: string): Promise<string | null>
       const clubName = clubM ? (clubM[1] ?? clubM[2] ?? "") : "";
       if (clubName) score += overlap(clubName, club) * 3;
     }
-    if (score > bestScore) { bestScore = score; best = c; }
+    if (score > bestScore) { bestScore = score; best = c; bestNameSim = nameSim; }
   }
-  // Fallback : si aucun nom ne passe le seuil mais qu'il y a des candidats,
-  // on garde le premier (l'ancien comportement) plutôt que d'échouer.
-  const chosen = best ?? cands[0];
-  return `${TM_BASE}${chosen.path}`;
+
+  if (best) {
+    const confidence = Math.min(1, bestNameSim * 0.6 + (bestScore - bestNameSim * 4) / 3 * 0.4 + 0.1);
+    return { url: `${TM_BASE}${best.path}`, confidence: Math.round(confidence * 100) / 100 };
+  }
+  // Aucun nom ne passe le seuil : on garde le 1er candidat mais en confiance
+  // basse (le client décidera s'il fait confiance aux champs d'identité).
+  return { url: `${TM_BASE}${cands[0].path}`, confidence: 0.3 };
 };
 
 // ── Parse profil joueur ───────────────────────────────────────────────────────
@@ -183,11 +187,11 @@ Deno.serve(async (req) => {
 
     if (action === "searchAndGet") {
       if (!query?.trim()) return Response.json({ ok: false, error: "query requis" });
-      const profileUrl = await searchPlayer(query.trim(), club);
-      if (!profileUrl) return Response.json({ ok: false, error: "Joueur non trouvé sur Transfermarkt." });
-      const html   = await fetchHtml(profileUrl);
-      const player = parseProfile(html, profileUrl);
-      return Response.json({ ok: true, player });
+      const hit = await searchPlayer(query.trim(), club);
+      if (!hit) return Response.json({ ok: false, error: "Joueur non trouvé sur Transfermarkt." });
+      const html   = await fetchHtml(hit.url);
+      const player = parseProfile(html, hit.url);
+      return Response.json({ ok: true, player, confidence: hit.confidence });
     }
 
     if (action === "getPlayer") {
