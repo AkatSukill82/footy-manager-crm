@@ -27,13 +27,5 @@ export default defineConfig({
       },
     },
   },
-  server: {
-    proxy: {
-      '/api/tm': {
-        target: 'https://transfermarkt-api.fly.dev',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/tm/, ''),
-      },
-    },
-  },
+  server: {},
 });

@@ -1,3 +1,2 @@
-// Transfermarkt API supprimé — utiliser API-Football via enrichPlayerFromAPI
-const TransfermarktAPI = {};
-export default TransfermarktAPI;
+// Transfermarkt API supprimée — utiliser besoccerProxy
+export default {};

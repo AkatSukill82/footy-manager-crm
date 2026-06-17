@@ -42,19 +42,77 @@ export default function SyncPlayerButton({ player, onApply }) {
   const [autoApplied, setAutoApplied] = useState(false);
 
   async function fetchData() {
-    const res = await base44.functions.invoke("enrichPlayerFromAPI", {
-      playerName: player.nom,
-    });
-    if (!res?.data || Object.keys(res.data).length === 0) {
-      throw new Error("Aucune donnée trouvée pour ce joueur sur les APIs disponibles.");
-    }
-    const toApply = {};
-    Object.entries(res.data).forEach(([k, v]) => {
+    const name = player.nom;
+    const club = player.club_actuel;
+
+    // Infos perso (BeSoccer) + stats (SofaScore + FotMob) en parallèle
+    const [bsRes, ssRes, fmRes] = await Promise.allSettled([
+      base44.functions.invoke("besoccerProxy", {
+        action: "searchAndGetPlayer",
+        query:  name,
+      }),
+      base44.functions.invoke("sofascoreProxy", {
+        action: "searchAndGetStats",
+        query:  name,
+        club,
+      }),
+      base44.functions.invoke("fotmobProxy", {
+        action: "searchAndGetStats",
+        query:  name,
+        club,
+      }),
+    ]);
+
+    const bs = bsRes.status === "fulfilled" && bsRes.value?.ok ? bsRes.value.player : null;
+    const ss = ssRes.status === "fulfilled" && ssRes.value?.ok ? ssRes.value.stats  : null;
+    const fm = fmRes.status === "fulfilled" && fmRes.value?.ok ? fmRes.value.stats  : null;
+
+    if (!bs && !ss && !fm) throw new Error("Aucune donnée trouvée (BeSoccer, SofaScore et FotMob ont échoué).");
+
+    const sources = [bs && "BeSoccer", ss && "SofaScore", fm && "FotMob"].filter(Boolean);
+
+    const flat: Record<string, any> = {
+      // Infos perso depuis BeSoccer
+      ...(bs ? {
+        age:              bs.age,
+        date_naissance:   bs.date_naissance,
+        nationalite:      bs.nationalite,
+        taille:           bs.taille,
+        poids:            bs.poids,
+        pied_fort:        bs.pied_fort,
+        club_actuel:      bs.club_actuel,
+        ligue:            bs.ligue,
+        valeur_marchande: bs.valeur_marchande,
+        contrat_fin:      bs.contrat_fin,
+        photo_url:        bs.photo_url,
+        numero_maillot:   bs.numero_maillot,
+      } : {}),
+      // Stats depuis SofaScore (prioritaire)
+      matchs_joues:     ss?.matchs_joues     ?? fm?.matchs_joues,
+      titularisations:  fm?.titularisations  ?? null,
+      minutes_jouees:   ss?.minutes_jouees   ?? fm?.minutes_jouees,
+      buts:             ss?.buts             ?? fm?.buts,
+      passes_decisives: ss?.passes_decisives ?? fm?.passes_decisives,
+      cartons_jaunes:   ss?.cartons_jaunes   ?? fm?.cartons_jaunes,
+      cartons_rouges:   ss?.cartons_rouges   ?? fm?.cartons_rouges,
+      tirs:             ss?.tirs,
+      tirs_cadres:      ss?.tirs_cadres,
+      passes_cles:      ss?.passes_cles,
+      dribbles_reussis: ss?.dribbles_reussis,
+      tacles:           ss?.tacles,
+      interceptions:    ss?.interceptions,
+      xg:               ss?.xg,
+      xa:               ss?.xa,
+      note_moyenne:     ss?.note_moyenne    ?? fm?.note_fotmob,
+    };
+
+    const toApply: Record<string, any> = {};
+    Object.entries(flat).forEach(([k, v]) => {
       if (v !== null && v !== undefined && v !== "" && String(v) !== String(player[k] ?? "")) {
         toApply[k] = v;
       }
     });
-    return { raw: res.data, toApply, sources: res.sources || [], fieldsFound: res.fieldsFound || 0 };
+    return { raw: flat, toApply, sources, fieldsFound: Object.keys(flat).length };
   }
 
   // Bouton 1 : actualiser les stats en 1 clic (auto-applique les champs stats)
@@ -142,7 +200,7 @@ export default function SyncPlayerButton({ player, onApply }) {
         </Button>
 
         {state === "loading" && (
-          <span className="text-xs text-slate-400 italic">TheSportsDB + API-Football…</span>
+          <span className="text-xs text-slate-400 italic">BeSoccer · SofaScore · FotMob…</span>
         )}
 
         {state === "done" && result && (

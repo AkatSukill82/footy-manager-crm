@@ -1,3 +1,3 @@
 Deno.serve(async () => {
-  return Response.json({ error: "Fonctionnalité retirée — utiliser API-Football." }, { status: 410 });
+  return Response.json({ error: "Fonctionnalité retirée." }, { status: 410 });
 });

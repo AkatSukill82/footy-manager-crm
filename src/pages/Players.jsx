@@ -9,7 +9,6 @@ import { t } from "../i18n/translations";
 import PlayerCard from "../components/players/PlayerCard";
 import AdvancedFilters from "../components/players/AdvancedFilters";
 import PlayerForm from "../components/players/PlayerForm";
-import TransfermarktSearch from "../components/players/TransfermarktSearch";
 import PlayerStatusModal from "../components/players/PlayerStatusModal";
 
 export default function PlayersPage() {
@@ -194,9 +193,10 @@ export default function PlayersPage() {
           </>
         )}
 
-        {/* ── AJOUTER VIA TRANSFERMARKT ── */}
         {activeTab === "recherche" && (
-          <TransfermarktSearch />
+          <div className="text-center py-12 text-slate-400 text-sm">
+            Utilisez la page <strong>Recherche Joueurs</strong> pour ajouter un joueur via BeSoccer.
+          </div>
         )}
 
       </div>
