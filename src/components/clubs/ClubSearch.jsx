@@ -37,11 +37,11 @@ export default function ClubSearch({ onClose }) {
     setError(null);
 
     try {
-      const data = await base44.functions.invoke("fotmobProxy", {
+      const res  = await base44.functions.invoke("fotmobProxy", {
         action: "searchTeam",
         query:  query.trim(),
       });
-
+      const data = (res && typeof res === "object" && res.data && typeof res.data === "object") ? res.data : res;
       const list = data?.teams || [];
 
       if (list.length === 0) {

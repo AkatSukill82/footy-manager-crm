@@ -127,27 +127,9 @@ Deno.serve(async (req) => {
     // ── Recherche candidats joueurs ──────────────────────────────────────────
     if (action === "searchPlayer") {
       if (!query?.trim()) return Response.json({ ok: false, error: "query requis" });
-
-      let rawJson: any = null;
-      let fetchError: string | null = null;
-
-      try {
-        rawJson = await fmGet(`/search/suggest?hits=20&lang=en&term=${encodeURIComponent(query.trim())}`);
-      } catch (e: any) {
-        fetchError = e.message;
-      }
-
-      // Debug complet — visible dans le network tab de l'app
-      if (fetchError || rawJson === null) {
-        return Response.json({
-          ok: false, error: fetchError ?? "FotMob n'a pas répondu",
-          _debug: { fetchError }
-        });
-      }
-
-      const isArray  = Array.isArray(rawJson);
-      const all      = parseSuggest(rawJson);
-      const players  = all
+      const json    = await fmGet(`/search/suggest?hits=20&lang=en&term=${encodeURIComponent(query.trim())}`);
+      const all     = parseSuggest(json);
+      const players = all
         .filter((r: any) => r.type === "player" && !r.isCoach)
         .slice(0, 10)
         .map((r: any) => ({
@@ -156,19 +138,7 @@ Deno.serve(async (req) => {
           club_actuel: r.teamName ?? null,
           photo_url:   `https://images.fotmob.com/image_resources/playerimages/${r.id}.png`,
         }));
-
-      return Response.json({
-        ok: true, total: players.length, players,
-        _debug: {
-          isArray,
-          rawType: typeof rawJson,
-          sectionCount: isArray ? rawJson.length : null,
-          firstSectionKey: isArray ? rawJson[0]?.title?.key : null,
-          suggestionCount: all.length,
-          // Extrait brut des 2 premiers items pour voir la structure réelle
-          rawSample: isArray ? (rawJson[0]?.suggestions?.slice(0, 2) ?? rawJson.slice(0, 2)) : rawJson,
-        }
-      });
+      return Response.json({ ok: true, total: players.length, players });
     }
 
     // ── Stats + recherche en un appel ────────────────────────────────────────

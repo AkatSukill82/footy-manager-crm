@@ -63,9 +63,15 @@ export default function SyncPlayerButton({ player, onApply }) {
       }),
     ]);
 
-    const bs = tdbRes.status === "fulfilled" && tdbRes.value?.ok ? tdbRes.value.player : null;
-    const fm = fmRes.status  === "fulfilled" && fmRes.value?.ok  ? fmRes.value.stats   : null;
-    const ss = ssRes.status  === "fulfilled" && ssRes.value?.ok  ? ssRes.value.stats   : null;
+    // Le SDK Base44 enveloppe parfois le body dans res.data
+    const uw = (r) => (r && typeof r === "object" && r.data && typeof r.data === "object") ? r.data : r;
+    const tmV = tdbRes.status === "fulfilled" ? uw(tdbRes.value) : null;
+    const fmV = fmRes.status  === "fulfilled" ? uw(fmRes.value)  : null;
+    const ssV = ssRes.status  === "fulfilled" ? uw(ssRes.value)  : null;
+
+    const bs = tmV?.ok ? tmV.player : null;
+    const fm = fmV?.ok ? fmV.stats  : null;
+    const ss = ssV?.ok ? ssV.stats  : null;
 
     if (!bs && !ss && !fm) throw new Error("Aucune donnée trouvée.");
 

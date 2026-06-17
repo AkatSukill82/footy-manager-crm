@@ -187,6 +187,10 @@ function mergePersonal(tm, tdb, bs, candidate) {
   };
 }
 
+// ── Le SDK Base44 enveloppe parfois le body dans res.data ─────────────────────
+const unwrap = (res) => (res && typeof res === "object" && "data" in res && res.data && typeof res.data === "object")
+  ? res.data : res;
+
 // ═════════════════════════════════════════════════════════════════════════════
 
 export default function PlayerSearchPage() {
@@ -212,12 +216,12 @@ export default function PlayerSearchPage() {
     setError(null);
 
     try {
-      const res = await base44.functions.invoke("fotmobProxy", {
+      const res  = await base44.functions.invoke("fotmobProxy", {
         action: "searchPlayer",
         query:  query.trim(),
       });
-
-      const list = Array.isArray(res?.players) ? res.players : [];
+      const body = unwrap(res);
+      const list = Array.isArray(body?.players) ? body.players : [];
 
       if (list.length === 0) {
         setError(`Aucun joueur trouvé pour "${query}". Essayez le nom complet en anglais sans accents.`);
@@ -252,10 +256,15 @@ export default function PlayerSearchPage() {
         base44.functions.invoke("sofascoreProxy", { action: "searchAndGetStats", query: nom, club }),
       ]);
 
-      const tmData  = tmRes.status      === "fulfilled" && tmRes.value?.ok      ? tmRes.value.player  : null;
-      const bsData  = bsRes.status      === "fulfilled" && bsRes.value?.ok      ? bsRes.value.player  : null;
-      const fmStats = fmStatsRes.status === "fulfilled" && fmStatsRes.value?.ok ? fmStatsRes.value.stats : null;
-      const ssStats = ssStatsRes.status === "fulfilled" && ssStatsRes.value?.ok ? ssStatsRes.value.stats : null;
+      const tm  = tmRes.status      === "fulfilled" ? unwrap(tmRes.value)      : null;
+      const bs  = bsRes.status      === "fulfilled" ? unwrap(bsRes.value)      : null;
+      const fmS = fmStatsRes.status === "fulfilled" ? unwrap(fmStatsRes.value) : null;
+      const ssS = ssStatsRes.status === "fulfilled" ? unwrap(ssStatsRes.value) : null;
+
+      const tmData  = tm?.ok  ? tm.player  : null;
+      const bsData  = bs?.ok  ? bs.player  : null;
+      const fmStats = fmS?.ok ? fmS.stats  : null;
+      const ssStats = ssS?.ok ? ssS.stats  : null;
 
       const personal = mergePersonal(tmData, null, bsData, candidate);
       const stats    = mergeStats(ssStats, fmStats, bsData);
