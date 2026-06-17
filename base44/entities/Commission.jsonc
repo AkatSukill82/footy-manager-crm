@@ -1,0 +1,135 @@
+{
+  "name": "Commission",
+  "type": "object",
+  "properties": {
+    "titre": {
+      "type": "string",
+      "description": "Libellé de la commission (ex: Transfert Mbappé → Real Madrid)"
+    },
+    "player_id": {
+      "type": "string",
+      "description": "ID du joueur concerné (optionnel)"
+    },
+    "player_nom": {
+      "type": "string",
+      "description": "Nom du joueur concerné"
+    },
+    "club": {
+      "type": "string",
+      "description": "Club concerné par l'opération"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "transfert",
+        "renouvellement_contrat",
+        "premier_contrat",
+        "sponsoring",
+        "commission_salaire",
+        "prime",
+        "autre"
+      ],
+      "default": "transfert",
+      "description": "Type de commission"
+    },
+    "montant_operation": {
+      "type": "number",
+      "description": "Montant de l'opération sous-jacente en M€ (montant du transfert / contrat)"
+    },
+    "taux": {
+      "type": "number",
+      "description": "Taux de commission appliqué (%)"
+    },
+    "montant": {
+      "type": "number",
+      "description": "Montant de la commission dû, en euros"
+    },
+    "devise": {
+      "type": "string",
+      "enum": ["EUR", "GBP", "USD"],
+      "default": "EUR",
+      "description": "Devise de la commission"
+    },
+    "statut": {
+      "type": "string",
+      "enum": [
+        "a_facturer",
+        "facturee",
+        "payee",
+        "en_retard",
+        "annulee"
+      ],
+      "default": "a_facturer",
+      "description": "Statut de la commission"
+    },
+    "date_echeance": {
+      "type": "string",
+      "format": "date",
+      "description": "Date d'échéance du paiement"
+    },
+    "date_paiement": {
+      "type": "string",
+      "format": "date",
+      "description": "Date effective de paiement"
+    },
+    "facture_ref": {
+      "type": "string",
+      "description": "Référence de la facture"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Notes internes"
+    },
+    "organization_id": {
+      "type": "string",
+      "description": "Organisation ID pour le partage entre membres"
+    }
+  },
+  "required": [
+    "titre",
+    "montant",
+    "statut"
+  ],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}",
+      "organization_id": "{{user.data.organization_id}}"
+    },
+    "read": {
+      "$or": [
+        { "created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } },
+        {
+          "$and": [
+            { "data.organization_id": "{{user.data.organization_id}}" },
+            { "data.organization_id": { "$ne": null } }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } },
+        {
+          "$and": [
+            { "data.organization_id": "{{user.data.organization_id}}" },
+            { "data.organization_id": { "$ne": null } }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } },
+        {
+          "$and": [
+            { "data.organization_id": "{{user.data.organization_id}}" },
+            { "data.organization_id": { "$ne": null } }
+          ]
+        }
+      ]
+    }
+  }
+}
