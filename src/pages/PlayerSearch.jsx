@@ -201,7 +201,7 @@ export default function PlayerSearchPage() {
   const navigate    = useNavigate();
   const queryClient = useQueryClient();
 
-  // ── 1. Recherche via FotMob ──────────────────────────────────────────────
+  // ── 1. Recherche via API-Football (clé API → fonctionne depuis cloud) ──────
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -212,15 +212,15 @@ export default function PlayerSearchPage() {
     setError(null);
 
     try {
-      const fmRes = await base44.functions.invoke("fotmobProxy", {
+      const res = await base44.functions.invoke("apiFootballProxy", {
         action: "searchPlayer",
-        query:  query.trim(),
+        name:   query.trim(),
       });
 
-      const list = Array.isArray(fmRes?.players) ? fmRes.players : [];
+      const list = Array.isArray(res?.players) ? res.players : [];
 
       if (list.length === 0) {
-        setError(`Aucun joueur trouvé pour "${query}".`);
+        setError(`Aucun joueur trouvé pour "${query}". Essayez le nom en anglais sans accents.`);
         setLoading(false);
         return;
       }
@@ -246,10 +246,8 @@ export default function PlayerSearchPage() {
         base44.functions.invoke("transfermarktProxy", { action: "searchAndGet", query: nom }),
         // BeSoccer — lien profil + ELO + stats
         base44.functions.invoke("besoccerProxy", { action: "searchAndGetPlayer", query: nom }),
-        // FotMob — stats (confirmé accessible depuis cloud)
-        candidate.fotmob_id
-          ? base44.functions.invoke("fotmobProxy", { action: "getStats",          fotmob_id: candidate.fotmob_id })
-          : base44.functions.invoke("fotmobProxy", { action: "searchAndGetStats", query: nom, club }),
+        // FotMob — stats (recherche par nom car IDs différents de AF)
+        base44.functions.invoke("fotmobProxy", { action: "searchAndGetStats", query: nom, club }),
         // SofaScore — stats avancées xG/xA (best effort)
         base44.functions.invoke("sofascoreProxy", { action: "searchAndGetStats", query: nom, club }),
       ]);
@@ -375,7 +373,7 @@ export default function PlayerSearchPage() {
         {loading && (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
-            <p className="text-slate-600 font-medium">Recherche sur FotMob…</p>
+            <p className="text-slate-600 font-medium">Recherche en cours…</p>
           </div>
         )}
 
