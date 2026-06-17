@@ -62,44 +62,70 @@ export default function ClubSearch({ onClose }) {
     }
   };
 
-  // ── Étape 2 : sélection d'un club depuis la liste ──────────────────────────
+  // ── Étape 2 : sélection + enrichissement automatique ──────────────────────
   const selectClub = (team) => {
-    setResult({
-      nom:     team.nom,
-      pays:    team.pays,
+    const base = {
+      nom:      team.nom,
+      pays:     team.pays,      // code pays FotMob — remplacé par le nom complet à l'enrichissement
       logo_url: team.logo,
-      _fmId:   team.id,
-    });
+      _fmId:    team.id,
+    };
+    setResult(base);
+    enrichClub(base);           // automatique : plus besoin de saisir le pays à la main
   };
 
-  // ── Enrichissement IA optionnel (bouton manuel) ────────────────────────────
-  const handleEnrichWithAI = async () => {
-    if (!result || enriching) return;
+  // ── Enrichissement automatique : un max d'infos via recherche web ──────────
+  // (Transfermarkt, SofaScore, FotMob, site officiel, Wikipédia)
+  const enrichClub = async (base) => {
     setEnriching(true);
+    setError(null);
     try {
       const llmResult = await base44.integrations.Core.InvokeLLM({
-        prompt: `Données complémentaires pour le club de football "${result.nom}" (${result.pays || ''}).
+        prompt: `Fiche complète et factuelle du club de football "${base.nom}".
 
-IMPORTANT : retourne uniquement ce que tu sais avec certitude. Si une information est incertaine ou inconnue → null. Ne génère jamais de données inventées.
+Croise les sources fiables : Transfermarkt, SofaScore, FotMob, le site officiel du club et Wikipédia.
+IMPORTANT : ne retourne que ce que tu sais avec certitude. Toute information incertaine ou inconnue → null. N'invente jamais.
 
 Champs attendus :
-- entraineur : entraîneur actuel (string ou null)
-- president : président du club (string ou null)
-- directeur_sportif : directeur sportif (string ou null)
-- budget_transfert : budget transfert en millions € (number ou null)
-- valeur_effectif : valeur totale de l'effectif en millions € selon Transfermarkt (number ou null)
-- palmares : palmarès collectif majeur, titres séparés par virgules (string ou null)
-- historique : description courte du club en 2-3 phrases (string ou null)
-- categorie : niveau du club parmi "Elite" | "Premier plan" | "Intermédiaire" | "En développement"`,
+- pays : pays du club, NOM COMPLET en français (ex: "Espagne", "Angleterre") — surtout pas un code
+- ville : ville du club
+- stade : nom du stade
+- capacite_stade : capacité du stade (number)
+- annee_fondation : année de fondation (number)
+- entraineur : entraîneur principal actuel
+- president : président du club
+- directeur_sportif : directeur sportif actuel
+- valeur_effectif : valeur totale de l'effectif en M€ selon Transfermarkt (number)
+- budget_transfert : budget transfert estimé en M€ (number)
+- site_web : URL du site officiel
+- instagram : @handle Instagram officiel
+- twitter : @handle Twitter/X officiel
+- email_general : email de contact général du club
+- telephone_general : téléphone général du club
+- adresse : adresse du siège / du stade
+- palmares : palmarès majeur, titres séparés par virgules
+- historique : description courte en 2-3 phrases
+- categorie : niveau parmi "Elite" | "Premier plan" | "Intermédiaire" | "En développement"`,
         add_context_from_internet: true,
         response_json_schema: {
           type: "object",
           properties: {
+            pays:              { type: "string" },
+            ville:             { type: "string" },
+            stade:             { type: "string" },
+            capacite_stade:    { type: "number" },
+            annee_fondation:   { type: "number" },
             entraineur:        { type: "string" },
             president:         { type: "string" },
             directeur_sportif: { type: "string" },
-            budget_transfert:  { type: "number" },
             valeur_effectif:   { type: "number" },
+            budget_transfert:  { type: "number" },
+            site_web:          { type: "string" },
+            instagram:         { type: "string" },
+            twitter:           { type: "string" },
+            email_general:     { type: "string" },
+            telephone_general: { type: "string" },
+            adresse:           { type: "string" },
             palmares:          { type: "string" },
             historique:        { type: "string" },
             categorie: {
@@ -112,11 +138,11 @@ Champs attendus :
       if (llmResult) {
         setResult(prev => ({
           ...prev,
-          ...Object.fromEntries(Object.entries(llmResult).filter(([, v]) => v != null)),
+          ...Object.fromEntries(Object.entries(llmResult).filter(([, v]) => v != null && v !== "")),
         }));
       }
     } catch {
-      // ignore
+      // enrichissement best-effort — l'utilisateur pourra compléter à la main
     } finally {
       setEnriching(false);
     }
@@ -147,6 +173,12 @@ Champs attendus :
           entraineur:        result.entraineur,
           president:         result.president,
           directeur_sportif: result.directeur_sportif,
+          email_general:     result.email_general,
+          telephone_general: result.telephone_general,
+          site_web:          result.site_web,
+          instagram:         result.instagram,
+          twitter:           result.twitter,
+          adresse:           result.adresse,
           palmares:          result.palmares,
           historique:        result.historique,
           categorie:         result.categorie,
@@ -278,8 +310,16 @@ Champs attendus :
           </CardHeader>
 
           <CardContent className="space-y-4">
-            {/* Pays à confirmer si introuvable (champ requis) */}
-            {(!result.pays || !String(result.pays).trim()) && (
+            {/* Enrichissement automatique en cours */}
+            {enriching && (
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-500">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-green-600 flex-shrink-0" />
+                Récupération des infos du club (Transfermarkt, SofaScore, site officiel…)
+              </div>
+            )}
+
+            {/* Pays à confirmer seulement si l'enrichissement n'a rien trouvé (champ requis) */}
+            {!enriching && (!result.pays || !String(result.pays).trim()) && (
               <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                 <Globe className="w-4 h-4 text-amber-600 flex-shrink-0" />
                 <span className="text-xs text-amber-700 font-medium whitespace-nowrap">Pays à renseigner :</span>
@@ -371,20 +411,18 @@ Champs attendus :
               </p>
             )}
 
-            {/* Bouton enrichissement IA optionnel */}
-            {!result.entraineur && !result.palmares && (
+            {/* Relancer l'enrichissement si l'auto n'a pas tout trouvé */}
+            {!enriching && !result.entraineur && !result.palmares && (
               <div className="flex flex-col sm:flex-row items-center gap-3 bg-slate-50 border border-dashed border-slate-200 rounded-lg px-4 py-3">
                 <div className="flex-1">
-                  <p className="font-medium text-slate-700 text-sm">Infos complémentaires IA (optionnel)</p>
+                  <p className="font-medium text-slate-700 text-sm">Infos incomplètes</p>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Entraîneur, président, palmarès, budget — généré par IA. À vérifier avant utilisation.
+                    L'enrichissement automatique n'a pas tout trouvé. Vous pouvez relancer la recherche.
                   </p>
                 </div>
-                <Button onClick={handleEnrichWithAI} disabled={enriching} variant="outline" size="sm"
+                <Button onClick={() => enrichClub(result)} disabled={enriching} variant="outline" size="sm"
                   className="flex-shrink-0 border-amber-300 text-amber-700 hover:bg-amber-50">
-                  {enriching
-                    ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Analyse…</>
-                    : <><Zap className="w-4 h-4 mr-2" />Enrichir avec IA</>}
+                  <Zap className="w-4 h-4 mr-2" />Relancer l'enrichissement
                 </Button>
               </div>
             )}
@@ -405,9 +443,11 @@ Champs attendus :
                   {t(lang, 'clubs.savedSuccess')}
                 </div>
               ) : (
-                <Button onClick={handleSave} disabled={saving} className="bg-green-600 hover:bg-green-700">
+                <Button onClick={handleSave} disabled={saving || enriching} className="bg-green-600 hover:bg-green-700">
                   {saving
                     ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />{t(lang, 'clubs.saveBtn')}</>
+                    : enriching
+                    ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Récupération…</>
                     : <><Plus className="w-4 h-4 mr-2" />{t(lang, 'clubs.saveBtn')}</>}
                 </Button>
               )}
