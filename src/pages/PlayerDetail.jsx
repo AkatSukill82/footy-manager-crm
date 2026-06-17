@@ -436,15 +436,15 @@ export default function PlayerDetailPage() {
                   {/* Complétude + Sync */}
                   <div className="flex items-center gap-3 mt-3">
                     <SyncPlayerButton player={player} onApply={(data) => updatePlayerMutation.mutate(data)} />
-                    <div className="flex items-center gap-1.5 flex-1 hidden" title={`Profil complété à ${completeness}%`}>
-                      <div className="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden max-w-[80px]">
-                        <div
-                          className={`h-full rounded-full transition-all ${completeness >= 80 ? "bg-slate-900" : completeness >= 50 ? "bg-slate-400" : "bg-slate-200"}`}
-                          style={{ width: `${completeness}%` }} />
-                        
-                      </div>
-                      <span className="text-[11px] text-slate-400">{completeness}%</span>
-                    </div>
+                    
+
+
+
+
+
+
+
+                    
                   </div>
                 </div>
               </div>
