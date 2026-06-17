@@ -5,15 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  Search, Loader2, User, MapPin, Calendar, TrendingUp,
-  Ruler, Trophy, Target, BarChart2, Clock, Plus, ArrowRight,
-  Activity, Shield, Zap, Heart, Globe, Star, Building2, ExternalLink
+  Search, Loader2, User, Trophy, BarChart2, Plus, ArrowRight,
+  Building2, ExternalLink
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLanguage } from "../lib/LanguageContext";
-import { t } from "../i18n/translations";
 
 const posteColors = {
   "Gardien":           "bg-yellow-100 text-yellow-800",
@@ -41,7 +39,7 @@ function InfoRow({ label, value }) {
 function StatBox({ label, value, color = "bg-slate-50", textColor = "text-slate-900", source }) {
   if (value == null) return null;
   return (
-    <div className={`${color} rounded-xl p-3 text-center relative`}>
+    <div className={`${color} rounded-xl p-3 text-center`}>
       <div className={`font-bold text-lg ${textColor}`}>{value}</div>
       <div className="text-xs text-slate-500 leading-tight mt-0.5">{label}</div>
       {source && <div className="text-[9px] text-slate-300 mt-0.5">{source}</div>}
@@ -52,10 +50,10 @@ function StatBox({ label, value, color = "bg-slate-50", textColor = "text-slate-
 function SourceBadge({ sources = [] }) {
   if (!sources.length) return null;
   const colors = {
-    "BeSoccer": "bg-emerald-100 text-emerald-700",
+    "SofaScore":     "bg-purple-100 text-purple-700",
+    "FotMob":        "bg-orange-100 text-orange-700",
     "Transfermarkt": "bg-blue-100 text-blue-700",
-    "SofaScore": "bg-purple-100 text-purple-700",
-    "FotMob": "bg-orange-100 text-orange-700",
+    "BeSoccer":      "bg-emerald-100 text-emerald-700",
   };
   return (
     <div className="flex flex-wrap gap-1 ml-auto">
@@ -68,80 +66,85 @@ function SourceBadge({ sources = [] }) {
   );
 }
 
-// ── Fusion stats SofaScore + FotMob (SofaScore prioritaire) ──────────────────
+// ── Fusion stats (SofaScore prioritaire, FotMob backup) ───────────────────────
 function mergeStats(ss, fm) {
   if (!ss && !fm) return null;
-  const base = ss || {};
-  const fallback = fm || {};
+  const a = ss || {};
+  const b = fm || {};
   return {
-    matchs_joues:     base.matchs_joues     ?? fallback.matchs_joues,
-    titularisations:  fallback.titularisations ?? null, // FotMob "Started"
-    minutes_jouees:   base.minutes_jouees   ?? fallback.minutes_jouees,
-    buts:             base.buts             ?? fallback.buts,
-    passes_decisives: base.passes_decisives ?? fallback.passes_decisives,
-    cartons_jaunes:   base.cartons_jaunes   ?? fallback.cartons_jaunes,
-    cartons_rouges:   base.cartons_rouges   ?? fallback.cartons_rouges,
-    tirs:             base.tirs             ?? fallback.tirs,
-    tirs_cadres:      base.tirs_cadres      ?? null,
-    passes_cles:      base.passes_cles      ?? fallback.passes_cles,
-    dribbles_reussis: base.dribbles_reussis ?? fallback.dribbles_reussis,
-    tacles:           base.tacles           ?? fallback.tacles,
-    interceptions:    base.interceptions    ?? fallback.interceptions,
-    xg:               base.xg,
-    xa:               base.xa,
-    note_moyenne:     base.note_moyenne     ?? fallback.note_fotmob,
+    matchs_joues:     a.matchs_joues     ?? b.matchs_joues,
+    titularisations:  b.titularisations  ?? null,
+    minutes_jouees:   a.minutes_jouees   ?? b.minutes_jouees,
+    buts:             a.buts             ?? b.buts,
+    passes_decisives: a.passes_decisives ?? b.passes_decisives,
+    cartons_jaunes:   a.cartons_jaunes   ?? b.cartons_jaunes,
+    cartons_rouges:   a.cartons_rouges   ?? b.cartons_rouges,
+    tirs:             a.tirs,
+    tirs_cadres:      a.tirs_cadres,
+    passes_cles:      a.passes_cles,
+    dribbles_reussis: a.dribbles_reussis,
+    tacles:           a.tacles,
+    interceptions:    a.interceptions,
+    xg:               a.xg,
+    xa:               a.xa,
+    note_moyenne:     a.note_moyenne     ?? b.note_fotmob,
     sources: [ss && "SofaScore", fm && "FotMob"].filter(Boolean),
   };
 }
 
-// ── Fusion infos perso BeSoccer + Transfermarkt (TM prioritaire pour valeur) ─
-function mergePersonal(bs, tm) {
-  const b = bs || {};
-  const t = tm || {};
+// ── Fusion infos perso (SofaScore principal, TM pour agent/valeur, BS pour lien/ELO) ─
+function mergePersonal(ssInfo, tmData, bsData, candidate) {
+  const ss = ssInfo   || {};
+  const tm = tmData   || {};
+  const bs = bsData   || {};
+  const ca = candidate || {};
+
   return {
-    nom:              b.nom || t.nom,
-    nom_complet:      b.nom_complet || b.nom || t.nom,
-    age:              b.age,
-    date_naissance:   b.date_naissance || t.date_naissance,
-    lieu_naissance:   b.lieu_naissance,
-    nationalite:      b.nationalite,
-    nationalite_secondaire: b.nationalite_secondaire,
-    taille:           b.taille || t.taille,
-    poids:            b.poids,
-    pied_fort:        b.pied_fort || t.pied_fort,
-    poste:            b.poste,
-    numero_maillot:   b.numero_maillot,
-    club_actuel:      b.club_actuel || t.club_actuel,
-    ligue:            b.ligue,
-    // Valeur marchande : TM prioritaire si disponible, sinon BeSoccer
-    valeur_marchande: t.valeur_marchande || b.valeur_marchande,
-    contrat_fin:      b.contrat_fin || t.contrat_fin,
-    agent:            t.agent,
-    photo_url:        b.photo_url,
-    besoccer_url:     b.besoccer_url,
-    besoccer_elo:     b.besoccer_elo,
-    transfermarkt_url: t.transfermarkt_url,
-    transfermarkt_id:  t.transfermarkt_id,
-    transfermarkt_search_url: b.transfermarkt_search_url,
-    sources: [bs && "BeSoccer", tm && "Transfermarkt"].filter(Boolean),
+    nom:              ss.nom            || ca.nom,
+    nom_complet:      ss.nom_complet    || ss.nom || ca.nom,
+    age:              ss.age            || ca.age,
+    date_naissance:   ss.date_naissance || tm.date_naissance,
+    lieu_naissance:   tm.lieu_naissance || null,
+    nationalite:      ss.nationalite    || ca.nationalite,
+    nationalite_secondaire: null,
+    taille:           ss.taille         || tm.taille,
+    poids:            tm.poids          || null,
+    pied_fort:        ss.pied_fort      || tm.pied_fort,
+    poste:            ss.poste          || ca.poste,
+    numero_maillot:   ss.numero_maillot || ca.numero_maillot,
+    club_actuel:      ss.club_actuel    || ca.club_actuel,
+    ligue:            bs.ligue          || null,
+    // Valeur marchande: TM prioritaire (leur spécialité), sinon SofaScore
+    valeur_marchande: tm.valeur_marchande || ss.valeur_marchande || bs.valeur_marchande,
+    contrat_fin:      ss.contrat_fin    || bs.contrat_fin || tm.contrat_fin,
+    agent:            tm.agent          || null,
+    transfermarkt_id: tm.transfermarkt_id || null,
+    photo_url:        ss.photo_url      || bs.photo_url || ca.photo_url,
+    // Liens externes
+    sofascore_url:       ss.sofascore_url || null,
+    besoccer_url:        bs.besoccer_url  || null,
+    transfermarkt_url:   tm.transfermarkt_url || null,
+    transfermarkt_search_url: `https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche?query=${encodeURIComponent(ss.nom || ca.nom || "")}`,
+    besoccer_elo:     bs.besoccer_elo   || null,
+    sofascore_id:     ss.sofascore_id   || String(ca.sofascore_id || ""),
+    sources: [ssInfo && "SofaScore", tmData && "Transfermarkt", bsData && "BeSoccer"].filter(Boolean),
   };
 }
 
 export default function PlayerSearchPage() {
-  const { lang } = useLanguage();
-  const [query, setQuery]         = useState("");
-  const [loading, setLoading]     = useState(false);
+  const [query, setQuery]           = useState("");
+  const [loading, setLoading]       = useState(false);
   const [loadingFull, setLoadingFull] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState("");
   const [candidates, setCandidates] = useState(null);
-  const [result, setResult]       = useState(null);
-  const [saving, setSaving]       = useState(false);
-  const [saved, setSaved]         = useState(false);
-  const [error, setError]         = useState(null);
-  const navigate      = useNavigate();
-  const queryClient   = useQueryClient();
+  const [result, setResult]         = useState(null);
+  const [saving, setSaving]         = useState(false);
+  const [saved, setSaved]           = useState(false);
+  const [error, setError]           = useState(null);
+  const navigate    = useNavigate();
+  const queryClient = useQueryClient();
 
-  // ── 1. Recherche via BeSoccer ─────────────────────────────────────────────
+  // ── 1. Recherche via SofaScore (JSON API — fiable depuis cloud) ────────────
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -152,7 +155,7 @@ export default function PlayerSearchPage() {
     setError(null);
 
     try {
-      const res = await base44.functions.invoke("besoccerProxy", {
+      const res = await base44.functions.invoke("sofascoreProxy", {
         action: "searchPlayer",
         query:  query.trim(),
       });
@@ -170,79 +173,82 @@ export default function PlayerSearchPage() {
         setLoading(false);
       }
     } catch (err) {
-      setError("Erreur de connexion. Vérifiez votre connexion.");
+      setError("Erreur de recherche : " + (err?.message || "connexion impossible."));
       setLoading(false);
     }
   };
 
-  // ── 2. Charge profil : 4 sources en parallèle ─────────────────────────────
+  // ── 2. Profil : SofaScore (perso + stats) + TM + BeSoccer en parallèle ────
   const fetchFullProfile = async (candidate) => {
     setLoadingFull(true);
     setCandidates(null);
-    setLoadingStatus("BeSoccer · Transfermarkt · SofaScore · FotMob…");
+    setLoadingStatus("SofaScore · Transfermarkt · FotMob · BeSoccer…");
 
     try {
-      const playerName  = candidate.nom;
-      const playerClub  = candidate.club_actuel;
+      const ssId = candidate.sofascore_id;
+      const nom  = candidate.nom;
+      const club = candidate.club_actuel;
 
-      const [bsRes, tmRes, ssRes, fmRes] = await Promise.allSettled([
-        base44.functions.invoke("besoccerProxy", {
-          action:       "getPlayer",
-          besoccer_url: candidate.besoccer_url,
-          besoccer_id:  candidate.besoccer_id,
-        }),
-        base44.functions.invoke("transfermarktProxy", {
-          action: "searchAndGet",
-          query:  playerName,
-        }),
+      const [ssInfoRes, ssStatsRes, fmRes, tmRes, bsRes] = await Promise.allSettled([
+        // SofaScore infos perso (fiable)
         base44.functions.invoke("sofascoreProxy", {
-          action: "searchAndGetStats",
-          query:  playerName,
-          club:   playerClub,
+          action:       "getPersonalInfo",
+          sofascore_id: ssId,
         }),
+        // SofaScore stats (fiable)
+        base44.functions.invoke("sofascoreProxy", {
+          action:       "getStats",
+          sofascore_id: ssId,
+        }),
+        // FotMob stats (backup + titularisations)
         base44.functions.invoke("fotmobProxy", {
           action: "searchAndGetStats",
-          query:  playerName,
-          club:   playerClub,
+          query:  nom,
+          club,
+        }),
+        // Transfermarkt (valeur marchande, agent — best effort)
+        base44.functions.invoke("transfermarktProxy", {
+          action: "searchAndGet",
+          query:  nom,
+        }),
+        // BeSoccer (lien profil + ELO — best effort)
+        base44.functions.invoke("besoccerProxy", {
+          action: "searchAndGetPlayer",
+          query:  nom,
         }),
       ]);
 
-      // Extraire les données (null si la source a échoué)
-      const bsData = bsRes.status === "fulfilled" && bsRes.value?.player
-        ? bsRes.value.player : (candidate || null);
-      const tmData = tmRes.status === "fulfilled" && tmRes.value?.ok
-        ? tmRes.value.player : null;
-      const ssStats = ssRes.status === "fulfilled" && ssRes.value?.ok
-        ? ssRes.value.stats : null;
-      const fmStats = fmRes.status === "fulfilled" && fmRes.value?.ok
-        ? fmRes.value.stats : null;
+      const ssInfo  = ssInfoRes.status  === "fulfilled" && ssInfoRes.value?.ok  ? ssInfoRes.value.player  : null;
+      const ssStats = ssStatsRes.status === "fulfilled" && ssStatsRes.value?.ok ? ssStatsRes.value.stats  : null;
+      const fmStats = fmRes.status      === "fulfilled" && fmRes.value?.ok      ? fmRes.value.stats       : null;
+      const tmData  = tmRes.status      === "fulfilled" && tmRes.value?.ok      ? tmRes.value.player      : null;
+      const bsData  = bsRes.status      === "fulfilled" && bsRes.value?.ok      ? bsRes.value.player      : null;
 
-      const personal = mergePersonal(bsData, tmData);
+      const personal = mergePersonal(ssInfo, tmData, bsData, candidate);
       const stats    = mergeStats(ssStats, fmStats);
 
       setResult({ ...personal, stats_saison: stats });
     } catch (err) {
-      setResult({ ...candidate, stats_saison: null });
+      setResult({ ...candidate, stats_saison: null, sources: [] });
     } finally {
       setLoadingFull(false);
       setLoadingStatus("");
     }
   };
 
-  // ── 3. Sauvegarder joueur ─────────────────────────────────────────────────
+  // ── 3. Sauvegarder ──────────────────────────────────────────────────────────
   const handleSaveToApp = async () => {
     if (!result) return;
     setSaving(true);
     const s = result.stats_saison;
 
     try {
-      const playerData = {
+      const raw = {
         nom:              result.nom || query,
         age:              result.age,
         date_naissance:   result.date_naissance,
         lieu_naissance:   result.lieu_naissance,
         nationalite:      result.nationalite,
-        nationalite_secondaire: result.nationalite_secondaire,
         poste:            result.poste,
         photo_url:        result.photo_url,
         club_actuel:      result.club_actuel,
@@ -255,6 +261,7 @@ export default function PlayerSearchPage() {
         numero_maillot:   result.numero_maillot,
         agent:            result.agent,
         transfermarkt_id: result.transfermarkt_id,
+        sofascore_id:     result.sofascore_id,
         matchs_joues:     s?.matchs_joues,
         titularisations:  s?.titularisations,
         minutes_jouees:   s?.minutes_jouees,
@@ -272,7 +279,7 @@ export default function PlayerSearchPage() {
         xa:               s?.xa,
         note_moyenne:     s?.note_moyenne,
       };
-      const cleanData = Object.fromEntries(Object.entries(playerData).filter(([, v]) => v != null && v !== ""));
+      const cleanData = Object.fromEntries(Object.entries(raw).filter(([, v]) => v != null && v !== ""));
       const created = await base44.entities.Player.create(cleanData);
       queryClient.invalidateQueries({ queryKey: ["players"] });
       setSaved(true);
@@ -296,17 +303,18 @@ export default function PlayerSearchPage() {
             <Search className="w-7 h-7 text-green-500" />
             Recherche Joueurs
           </h1>
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            <span className="text-[11px] text-slate-400">Infos perso :</span>
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">BeSoccer</span>
+          <div className="flex flex-wrap gap-1.5 mt-2 items-center">
+            <span className="text-[11px] text-slate-400">Infos :</span>
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">SofaScore</span>
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">Transfermarkt</span>
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">BeSoccer</span>
             <span className="text-[11px] text-slate-400 ml-2">Stats :</span>
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">SofaScore</span>
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-medium">FotMob</span>
           </div>
         </div>
 
-        {/* Barre de recherche */}
+        {/* Recherche */}
         <form onSubmit={handleSearch} className="flex gap-2">
           <Input
             value={query}
@@ -323,11 +331,10 @@ export default function PlayerSearchPage() {
           <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">{error}</div>
         )}
 
-        {/* Loading recherche */}
         {loading && (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
             <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
-            <p className="text-slate-600 font-medium">Recherche sur BeSoccer…</p>
+            <p className="text-slate-600 font-medium">Recherche sur SofaScore…</p>
           </div>
         )}
 
@@ -342,7 +349,7 @@ export default function PlayerSearchPage() {
             </CardHeader>
             <CardContent className="space-y-2">
               {candidates.map((c, i) => (
-                <button key={c.besoccer_url || i} onClick={() => fetchFullProfile(c)}
+                <button key={c.sofascore_id || i} onClick={() => fetchFullProfile(c)}
                   className="w-full flex items-center gap-4 p-3 rounded-xl border border-slate-200 hover:border-green-400 hover:bg-green-50 transition-all text-left group">
                   <div className="w-14 h-14 rounded-xl bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-200">
                     {c.photo_url
@@ -355,7 +362,6 @@ export default function PlayerSearchPage() {
                       {c.poste       && <Badge className={`text-xs ${posteColors[c.poste] || "bg-slate-100 text-slate-700"}`}>{c.poste}</Badge>}
                       {c.nationalite && <Badge variant="outline" className="text-xs">{c.nationalite}</Badge>}
                       {c.club_actuel && <Badge className="bg-slate-800 text-white text-xs">{c.club_actuel}</Badge>}
-                      {c.age         && <Badge variant="outline" className="text-xs">{c.age} ans</Badge>}
                     </div>
                   </div>
                   <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-green-500 flex-shrink-0" />
@@ -371,8 +377,8 @@ export default function PlayerSearchPage() {
             <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
             <p className="text-slate-600 font-medium">{loadingStatus}</p>
             <div className="flex gap-2">
-              {["BeSoccer", "Transfermarkt", "SofaScore", "FotMob"].map(s => (
-                <span key={s} className="text-xs px-2 py-1 bg-white rounded-full border border-slate-200 text-slate-500 animate-pulse">{s}</span>
+              {["SofaScore", "Transfermarkt", "FotMob", "BeSoccer"].map(src => (
+                <span key={src} className="text-xs px-2 py-1 bg-white rounded-full border border-slate-200 text-slate-500 animate-pulse">{src}</span>
               ))}
             </div>
           </div>
@@ -401,9 +407,8 @@ export default function PlayerSearchPage() {
                       {result.ligue       && <Badge variant="outline" className="text-xs">{result.ligue}</Badge>}
                       {result.besoccer_elo && <Badge className="bg-emerald-100 text-emerald-800 text-xs">ELO {result.besoccer_elo}</Badge>}
                     </div>
-                    {/* Sources infos perso */}
                     <div className="flex flex-wrap gap-1.5 mt-2 items-center">
-                      <span className="text-[10px] text-slate-400">Infos :</span>
+                      <span className="text-[10px] text-slate-400">Sources :</span>
                       <SourceBadge sources={result.sources || []} />
                     </div>
                     {/* Liens externes */}
@@ -414,16 +419,16 @@ export default function PlayerSearchPage() {
                           <ExternalLink className="w-3.5 h-3.5" /> BeSoccer
                         </a>
                       )}
-                      {result.transfermarkt_url && (
-                        <a href={result.transfermarkt_url} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-100 transition-colors font-medium">
-                          <ExternalLink className="w-3.5 h-3.5" /> Transfermarkt
+                      {result.sofascore_url && (
+                        <a href={result.sofascore_url} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-xs bg-purple-50 text-purple-700 border border-purple-200 rounded-lg px-3 py-1.5 hover:bg-purple-100 transition-colors font-medium">
+                          <ExternalLink className="w-3.5 h-3.5" /> SofaScore
                         </a>
                       )}
-                      {!result.transfermarkt_url && result.transfermarkt_search_url && (
-                        <a href={result.transfermarkt_search_url} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-xs bg-slate-50 text-slate-600 border border-slate-200 rounded-lg px-3 py-1.5 hover:bg-slate-100 transition-colors">
-                          <ExternalLink className="w-3.5 h-3.5" /> Rechercher sur Transfermarkt
+                      {(result.transfermarkt_url || result.transfermarkt_search_url) && (
+                        <a href={result.transfermarkt_url || result.transfermarkt_search_url} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-100 transition-colors font-medium">
+                          <ExternalLink className="w-3.5 h-3.5" /> Transfermarkt
                         </a>
                       )}
                     </div>
@@ -436,36 +441,34 @@ export default function PlayerSearchPage() {
                   </Button>
                 </div>
 
-                {/* Stats identité rapides */}
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-4">
-                  <StatBox label="Âge"            value={result.age ? `${result.age} ans` : null} />
-                  <StatBox label="Taille"          value={result.taille ? `${result.taille} cm` : null} />
-                  <StatBox label="Poids"           value={result.poids  ? `${result.poids} kg`  : null} />
-                  <StatBox label="Pied fort"       value={result.pied_fort} />
+                  <StatBox label="Âge"             value={result.age ? `${result.age} ans` : null} />
+                  <StatBox label="Taille"           value={result.taille ? `${result.taille} cm` : null} />
+                  <StatBox label="Poids"            value={result.poids  ? `${result.poids} kg`  : null} />
+                  <StatBox label="Pied fort"        value={result.pied_fort} />
                   <StatBox label="Valeur marchande" value={result.valeur_marchande ? `${result.valeur_marchande} M€` : null} color="bg-green-50" textColor="text-green-700"
-                    source={result.sources?.includes("Transfermarkt") ? "TM" : "BeSoccer"} />
-                  <StatBox label="ELO BeSoccer"    value={result.besoccer_elo} color="bg-emerald-50" textColor="text-emerald-700" source="BeSoccer" />
+                    source={result.sources?.includes("Transfermarkt") ? "TM" : "SofaScore"} />
+                  <StatBox label="ELO BeSoccer"     value={result.besoccer_elo} color="bg-emerald-50" textColor="text-emerald-700" source="BeSoccer" />
                 </div>
               </CardContent>
             </Card>
 
-            {/* Infos perso + Contrat */}
+            {/* Identité + Contrat */}
             <div className="grid md:grid-cols-2 gap-4">
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <User className="w-4 h-4 text-blue-500" /> Identité
-                    <SourceBadge sources={result.sources?.filter(s => ["BeSoccer","Transfermarkt"].includes(s)) || []} />
+                    <SourceBadge sources={["SofaScore"]} />
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <InfoRow label="Date de naissance"  value={result.date_naissance} />
-                  <InfoRow label="Lieu de naissance"  value={result.lieu_naissance} />
-                  <InfoRow label="Nationalité"        value={result.nationalite} />
-                  <InfoRow label="2ème nationalité"   value={result.nationalite_secondaire} />
-                  <InfoRow label="Taille"             value={result.taille ? `${result.taille} cm` : null} />
-                  <InfoRow label="Poids"              value={result.poids  ? `${result.poids} kg`  : null} />
-                  <InfoRow label="Pied fort"          value={result.pied_fort} />
+                  <InfoRow label="Date de naissance" value={result.date_naissance} />
+                  <InfoRow label="Lieu de naissance" value={result.lieu_naissance} />
+                  <InfoRow label="Nationalité"       value={result.nationalite} />
+                  <InfoRow label="Taille"            value={result.taille ? `${result.taille} cm` : null} />
+                  <InfoRow label="Poids"             value={result.poids  ? `${result.poids} kg`  : null} />
+                  <InfoRow label="Pied fort"         value={result.pied_fort} />
                 </CardContent>
               </Card>
 
@@ -473,7 +476,7 @@ export default function PlayerSearchPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <Building2 className="w-4 h-4 text-orange-500" /> Club &amp; Contrat
-                    <SourceBadge sources={result.sources?.filter(s => ["BeSoccer","Transfermarkt"].includes(s)) || []} />
+                    <SourceBadge sources={result.sources?.filter(s => ["SofaScore","Transfermarkt","BeSoccer"].includes(s)) || []} />
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -487,7 +490,7 @@ export default function PlayerSearchPage() {
               </Card>
             </div>
 
-            {/* Stats saison — SofaScore + FotMob */}
+            {/* Stats saison */}
             {s && (
               <Card>
                 <CardHeader className="pb-2">
@@ -499,26 +502,23 @@ export default function PlayerSearchPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
-                    <StatBox label="Matchs"         value={s.matchs_joues}     source="SofaScore" />
-                    <StatBox label="Titularisations" value={s.titularisations}  source="FotMob" />
-                    <StatBox label="Minutes"         value={s.minutes_jouees}   source="SofaScore" />
-                    <StatBox label="Buts"            value={s.buts}             color="bg-green-50" textColor="text-green-700" source="SofaScore" />
-                    <StatBox label="Passes déc."     value={s.passes_decisives} color="bg-blue-50"  textColor="text-blue-700" source="SofaScore" />
-                    <StatBox label="CJ"              value={s.cartons_jaunes}   color="bg-yellow-50" source="SofaScore" />
-                    <StatBox label="Note"            value={s.note_moyenne}     color="bg-indigo-50" textColor="text-indigo-700" source="SofaScore" />
+                    <StatBox label="Matchs"          value={s.matchs_joues}      source="SS" />
+                    <StatBox label="Titularisations"  value={s.titularisations}   source="FM" />
+                    <StatBox label="Minutes"          value={s.minutes_jouees}    source="SS" />
+                    <StatBox label="Buts"             value={s.buts}              color="bg-green-50" textColor="text-green-700" source="SS" />
+                    <StatBox label="Passes déc."      value={s.passes_decisives}  color="bg-blue-50"  textColor="text-blue-700"  source="SS" />
+                    <StatBox label="Cartons J."       value={s.cartons_jaunes}    color="bg-yellow-50" source="SS" />
+                    <StatBox label="Note"             value={s.note_moyenne}      color="bg-indigo-50" textColor="text-indigo-700" source="SS" />
                   </div>
-
-                  {/* Stats avancées SofaScore */}
                   {(s.xg != null || s.tirs != null || s.passes_cles != null) && (
                     <div className="grid grid-cols-3 sm:grid-cols-7 gap-2 mt-2">
-                      <StatBox label="xG"             value={s.xg}               color="bg-green-50"  textColor="text-green-700" source="SofaScore" />
-                      <StatBox label="xA"             value={s.xa}               color="bg-blue-50"   textColor="text-blue-700"  source="SofaScore" />
-                      <StatBox label="Tirs"           value={s.tirs}             source="SofaScore" />
-                      <StatBox label="Tirs cadrés"    value={s.tirs_cadres}      source="SofaScore" />
-                      <StatBox label="Passes clés"    value={s.passes_cles}      source="SofaScore" />
-                      <StatBox label="Dribbles"       value={s.dribbles_reussis} source="SofaScore" />
-                      <StatBox label="Tacles"         value={s.tacles}           source="SofaScore" />
-                      <StatBox label="Interceptions"  value={s.interceptions}    source="SofaScore" />
+                      <StatBox label="xG"             value={s.xg}               color="bg-green-50" textColor="text-green-700" source="SS" />
+                      <StatBox label="xA"             value={s.xa}               color="bg-blue-50"  textColor="text-blue-700"  source="SS" />
+                      <StatBox label="Tirs"           value={s.tirs}             source="SS" />
+                      <StatBox label="Tirs cadrés"    value={s.tirs_cadres}      source="SS" />
+                      <StatBox label="Passes clés"    value={s.passes_cles}      source="SS" />
+                      <StatBox label="Dribbles"       value={s.dribbles_reussis} source="SS" />
+                      <StatBox label="Tacles"         value={s.tacles}           source="SS" />
                     </div>
                   )}
                 </CardContent>

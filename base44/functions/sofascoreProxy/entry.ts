@@ -136,6 +136,71 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true, stats });
     }
 
+    // ── Recherche joueurs (candidats pour PlayerSearch) ───────────────────────
+    if (action === "searchPlayer") {
+      if (!query?.trim()) return Response.json({ ok: false, error: "query requis" });
+      const json = await ssGet(`/search/all?q=${encodeURIComponent(query.trim())}`);
+      const results = (json.results || []).filter((r: any) => r.type === "player");
+
+      const POS: Record<string, string> = {
+        F: "Attaquant", G: "Gardien", D: "Défenseur central", M: "Milieu central",
+      };
+
+      const players = results.slice(0, 10).map((r: any) => {
+        const e = r.entity || r;
+        return {
+          sofascore_id: e.id,
+          nom:          e.name || e.shortName,
+          poste:        POS[e.position] || e.position || null,
+          numero_maillot: e.jerseyNumber ? String(e.jerseyNumber) : null,
+          club_actuel:  e.team?.name || null,
+          nationalite:  e.country?.name || e.nationality || null,
+          photo_url:    `https://api.sofascore.com/api/v1/player/${e.id}/image`,
+        };
+      });
+
+      return Response.json({ ok: true, total: players.length, players });
+    }
+
+    // ── Infos personnelles depuis profil joueur ───────────────────────────────
+    if (action === "getPersonalInfo") {
+      if (!sofascore_id) return Response.json({ ok: false, error: "sofascore_id requis" });
+      const json = await ssGet(`/player/${sofascore_id}`);
+      const p = json.player;
+      if (!p) return Response.json({ ok: false, error: "Joueur non trouvé sur SofaScore." });
+
+      const POS: Record<string, string> = {
+        F: "Attaquant", G: "Gardien", D: "Défenseur central", M: "Milieu central",
+      };
+
+      const toDate = (ts: number | null | undefined): string | null => {
+        if (!ts) return null;
+        return new Date(ts * 1000).toISOString().split("T")[0];
+      };
+
+      const mv = p.proposedMarketValue ? Math.round((p.proposedMarketValue / 1_000_000) * 100) / 100 : null;
+
+      return Response.json({ ok: true, player: {
+        sofascore_id:   String(sofascore_id),
+        nom:            p.name || p.shortName,
+        nom_complet:    p.name,
+        age:            p.age ?? null,
+        date_naissance: toDate(p.dateOfBirthTimestamp),
+        nationalite:    p.country?.name || p.nationality || null,
+        taille:         p.height ?? null,
+        pied_fort:      p.preferredFoot === "Right" || p.preferredFoot === "right" ? "Droit"
+                        : p.preferredFoot === "Left" || p.preferredFoot === "left" ? "Gauche"
+                        : null,
+        poste:          POS[p.position] || null,
+        numero_maillot: p.jerseyNumber ? Number(p.jerseyNumber) : null,
+        club_actuel:    p.team?.name || null,
+        valeur_marchande: mv,
+        contrat_fin:    toDate(p.contractUntilTimestamp),
+        photo_url:      `https://api.sofascore.com/api/v1/player/${sofascore_id}/image`,
+        sofascore_url:  p.slug ? `https://www.sofascore.com/football/player/${p.slug}/${sofascore_id}` : null,
+      }});
+    }
+
     return Response.json({ ok: false, error: `Action inconnue: ${action}` });
 
   } catch (err: any) {
