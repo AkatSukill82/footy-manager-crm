@@ -4,7 +4,7 @@
   "properties": {
     "player_id": {
       "type": "string",
-      "description": "ID du joueur concern\u00e9"
+      "description": "ID du joueur concerné"
     },
     "club_vendeur": {
       "type": "string",
@@ -16,11 +16,11 @@
     },
     "montant_propose": {
       "type": "number",
-      "description": "Montant propos\u00e9 en millions"
+      "description": "Montant proposé en millions"
     },
     "montant_demande": {
       "type": "number",
-      "description": "Montant demand\u00e9 en millions"
+      "description": "Montant demandé en millions"
     },
     "statut": {
       "type": "string",
@@ -33,21 +33,21 @@
         "annule"
       ],
       "default": "demande_initiale",
-      "description": "Statut de la n\u00e9gociation"
+      "description": "Statut de la négociation"
     },
     "date_debut": {
       "type": "string",
       "format": "date",
-      "description": "Date de d\u00e9but de la n\u00e9gociation"
+      "description": "Date de début de la négociation"
     },
     "date_limite": {
       "type": "string",
       "format": "date",
-      "description": "Date limite de la n\u00e9gociation"
+      "description": "Date limite de la négociation"
     },
     "notes_negociation": {
       "type": "string",
-      "description": "Notes sur la n\u00e9gociation"
+      "description": "Notes sur la négociation"
     },
     "priorite": {
       "type": "string",
@@ -57,7 +57,23 @@
         "basse"
       ],
       "default": "moyenne",
-      "description": "Priorit\u00e9 de la n\u00e9gociation"
+      "description": "Priorité de la négociation"
+    },
+    "clause_revente": {
+      "type": "number",
+      "description": "Pourcentage de clause de revente (%)"
+    },
+    "bonus_performance": {
+      "type": "number",
+      "description": "Bonus de performance en millions d'euros"
+    },
+    "commission_agent": {
+      "type": "number",
+      "description": "Commission agent en pourcentage (%)"
+    },
+    "organization_id": {
+      "type": "string",
+      "description": "Organisation ID pour le partage entre membres"
     }
   },
   "required": [
@@ -68,7 +84,8 @@
   ],
   "rls": {
     "create": {
-      "created_by_id": "{{user.id}}"
+      "created_by_id": "{{user.id}}",
+      "organization_id": "{{user.data.organization_id}}"
     },
     "read": {
       "$or": [
@@ -79,6 +96,18 @@
           "user_condition": {
             "role": "admin"
           }
+        },
+        {
+          "$and": [
+            {
+              "data.organization_id": "{{user.data.organization_id}}"
+            },
+            {
+              "data.organization_id": {
+                "$ne": null
+              }
+            }
+          ]
         }
       ]
     },
@@ -91,6 +120,18 @@
           "user_condition": {
             "role": "admin"
           }
+        },
+        {
+          "$and": [
+            {
+              "data.organization_id": "{{user.data.organization_id}}"
+            },
+            {
+              "data.organization_id": {
+                "$ne": null
+              }
+            }
+          ]
         }
       ]
     },
@@ -103,6 +144,18 @@
           "user_condition": {
             "role": "admin"
           }
+        },
+        {
+          "$and": [
+            {
+              "data.organization_id": "{{user.data.organization_id}}"
+            },
+            {
+              "data.organization_id": {
+                "$ne": null
+              }
+            }
+          ]
         }
       ]
     }

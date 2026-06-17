@@ -25,7 +25,7 @@ function getInitials(name) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export default function PlayerAvatar({
+function PlayerAvatar({
   src,
   name,
   type = "player",
@@ -106,7 +106,7 @@ export default function PlayerAvatar({
           onClick={handleFetch}
           title="Chercher photo automatiquement"
           className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center shadow-md transition-all
-            ${fetchError ? "bg-red-500" : "bg-white border border-slate-200 hover:bg-green-500 hover:border-green-500"}
+            ${fetchError ? "bg-red-500" : "bg-white border border-slate-200 hover:bg-slate-800 hover:border-slate-800"}
             opacity-0 group-hover/avatar:opacity-100`}
         >
           <Camera className={`w-2.5 h-2.5 ${fetchError ? "text-white" : "text-slate-500 group-hover/avatar:text-white"}`} />
@@ -115,3 +115,5 @@ export default function PlayerAvatar({
     </div>
   );
 }
+
+export default React.memo(PlayerAvatar);

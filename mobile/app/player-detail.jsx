@@ -15,7 +15,7 @@ import Input from '../src/components/ui/Input';
 import Select from '../src/components/ui/Select';
 import LoadingSpinner from '../src/components/ui/LoadingSpinner';
 import VoiceNoteRecorder from '../src/components/ui/VoiceNoteRecorder';
-import { formatCurrency, formatDate, daysUntil, getPositionColor, sanitizePlayerData } from '../src/utils';
+import { formatCurrency, formatDate, daysUntil, getPositionColor } from '../src/utils';
 
 const STATUTS_TRANSFER = [
   { value: 'disponible', label: 'Disponible' },
@@ -56,6 +56,8 @@ export default function PlayerDetailPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [showQuickContact, setShowQuickContact] = useState(false);
+  const [showEnrichModal, setShowEnrichModal] = useState(false);
+  const [tmUrlInput, setTmUrlInput] = useState('');
   const [enriching, setEnriching] = useState(false);
   const [enrichResult, setEnrichResult] = useState(null);
   const [noteText, setNoteText] = useState('');
@@ -121,7 +123,7 @@ export default function PlayerDetailPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.Player.update(id, sanitizePlayerData(data)),
+    mutationFn: (data) => base44.entities.Player.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['player', id] });
       queryClient.invalidateQueries({ queryKey: ['players'] });
@@ -217,49 +219,57 @@ Réponds en JSON: {"note": "texte complet du rapport ici"}`,
     addNoteMutation.mutate(noteData);
   };
 
-  const handleEnrich = async () => {
+  const handleEnrich = async (tmUrl = '') => {
     if (!player) return;
+    setShowEnrichModal(false);
     setEnriching(true);
     setEnrichResult(null);
     const fullName = [player.prenom, player.nom].filter(Boolean).join(' ');
+    const errors = [];
+    let totalFields = 0;
+    const allSources = [];
 
     try {
-      setEnrichResult({ pending: true, step: 'Recherche API-Football…' });
-
-      const res = await base44.functions.invoke('enrichPlayerFromAPI', {
-        playerName: fullName,
-      });
-
-      if (res?.data && Object.keys(res.data).length > 0) {
-        await base44.entities.Player.update(id, sanitizePlayerData(res.data));
-        queryClient.invalidateQueries({ queryKey: ['player', id] });
-        queryClient.invalidateQueries({ queryKey: ['players'] });
-
-        // Créer les transferts depuis les données AF
-        if (res?.transferts?.length > 0) {
-          for (const t of res.transferts.slice(0, 10)) {
-            try {
-              const exists = await base44.entities.Transfer.filter({ player_id: id, date_transfert: t.date });
-              if (!exists?.length) {
-                await base44.entities.Transfer.create({
-                  player_id: id,
-                  club_depart: t.club_depart || '',
-                  club_arrivee: t.club_arrivee || '',
-                  date_transfert: t.date,
-                  type_transfert: t.type || 'Inconnu',
-                });
-              }
-            } catch {}
-          }
-          queryClient.invalidateQueries({ queryKey: ['player-transfers', id] });
+      // Étape 1 — Transfermarkt (profil + valeur marchande)
+      setEnrichResult({ pending: true, step: 'Transfermarkt…' });
+      try {
+        const tmRes = await base44.functions.invoke('enrichPlayerFromAPI', {
+          playerName: fullName,
+          source: 'transfermarkt',
+          ...(tmUrl ? { tmUrl } : {}),
+        });
+        if (tmRes?.data && Object.keys(tmRes.data).length > 0) {
+          await base44.entities.Player.update(id, tmRes.data);
+          queryClient.invalidateQueries({ queryKey: ['player', id] });
+          queryClient.invalidateQueries({ queryKey: ['players'] });
+          totalFields += tmRes.fieldsFound || 0;
+          if (tmRes.sources?.length) allSources.push(...tmRes.sources);
         }
+        if (tmRes?.errors?.length) errors.push(...tmRes.errors);
+      } catch (e) { errors.push(`Transfermarkt: ${e.message}`); }
 
-        setEnrichResult({ ok: true, fields: res.fieldsFound, sources: res.sources });
-      } else {
-        setEnrichResult({ ok: false, errors: res?.errors });
-      }
-    } catch (e) {
-      setEnrichResult({ ok: false, errors: [e.message] });
+      // Étape 2 — SofaScore + FotMob (stats de match, en parallèle côté serveur)
+      setEnrichResult({ pending: true, step: 'Stats (SofaScore + FotMob)…' });
+      try {
+        const ssRes = await base44.functions.invoke('enrichPlayerFromAPI', {
+          playerName: fullName,
+          source: 'stats',
+        });
+        if (ssRes?.data && Object.keys(ssRes.data).length > 0) {
+          await base44.entities.Player.update(id, ssRes.data);
+          queryClient.invalidateQueries({ queryKey: ['player', id] });
+          queryClient.invalidateQueries({ queryKey: ['players'] });
+          totalFields += ssRes.fieldsFound || 0;
+          if (ssRes.sources?.length) allSources.push(...ssRes.sources);
+        }
+        if (ssRes?.errors?.length) errors.push(...ssRes.errors);
+      } catch (e) { errors.push(`SofaScore: ${e.message}`); }
+
+      setEnrichResult(
+        totalFields > 0
+          ? { ok: true, fields: totalFields, sources: [...new Set(allSources)] }
+          : { ok: false, errors }
+      );
     } finally {
       setEnriching(false);
     }
@@ -296,7 +306,7 @@ Réponds en JSON: {"note": "texte complet du rapport ici"}`,
                 <Star size={20} color={watchEntry ? '#f59e0b' : '#94a3b8'} fill={watchEntry ? '#f59e0b' : 'none'} />
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => enriching ? null : handleEnrich()}
+                onPress={() => enriching ? null : setShowEnrichModal(true)}
                 disabled={enriching}
                 className="p-2 bg-blue-50 rounded-xl"
               >
@@ -368,7 +378,7 @@ Réponds en JSON: {"note": "texte complet du rapport ici"}`,
                   </>
                 ) : (
                   <Text className="text-sm text-red-700">
-                    Joueur introuvable sur API-Football
+                    Joueur introuvable sur Transfermarkt / SofaScore
                   </Text>
                 )}
               </View>
@@ -566,6 +576,49 @@ Réponds en JSON: {"note": "texte complet du rapport ici"}`,
           )}
         </View>
       </ScrollView>
+
+      {/* Modal enrichissement — lien Transfermarkt */}
+      <Modal visible={showEnrichModal} onClose={() => setShowEnrichModal(false)} title="Enrichir les données">
+        <View className="gap-4">
+          <View className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+            <Text className="text-xs text-blue-700 leading-relaxed">
+              Colle le lien Transfermarkt du joueur pour des données <Text className="font-bold">précises et garanties</Text>.{'\n'}
+              Sans lien, la recherche se fait par nom (peut parfois trouver le mauvais joueur).
+            </Text>
+          </View>
+
+          <Input
+            label="Lien Transfermarkt (optionnel)"
+            value={tmUrlInput}
+            onChangeText={setTmUrlInput}
+            placeholder="https://www.transfermarkt.com/kylian-mbappe/profil/spieler/342229"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+
+          {tmUrlInput.length > 0 && !tmUrlInput.includes('transfermarkt') && (
+            <View className="bg-amber-50 rounded-xl px-3 py-2">
+              <Text className="text-xs text-amber-700">⚠ Ce lien ne semble pas être une URL Transfermarkt valide.</Text>
+            </View>
+          )}
+
+          <Text className="text-xs text-slate-400 text-center -mt-1">
+            Exemple : ouvre la fiche du joueur sur transfermarkt.com et copie l'URL
+          </Text>
+
+          <View className="flex-row gap-3 pt-1">
+            <Button variant="outline" onPress={() => setShowEnrichModal(false)} className="flex-1">
+              Annuler
+            </Button>
+            <Button
+              onPress={() => { handleEnrich(tmUrlInput.trim()); setTmUrlInput(''); }}
+              className="flex-1"
+            >
+              {tmUrlInput.includes('transfermarkt') ? 'Enrichir via lien TM' : 'Enrichir par nom'}
+            </Button>
+          </View>
+        </View>
+      </Modal>
 
       {/* Edit modal */}
       {editForm && (

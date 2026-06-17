@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "../lib/useCurrentUser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Users, Search, Shield } from "lucide-react";
+import { Plus, Users, Search, Shield, AlertCircle, X } from "lucide-react";
 import TeamCard from "../components/teams/TeamCard";
 import TeamForm from "../components/teams/TeamForm";
 import { useLanguage } from "../lib/LanguageContext";
@@ -14,6 +14,7 @@ export default function TeamsPage() {
   const { lang } = useLanguage();
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState("");
+  const [mutationError, setMutationError] = useState(null);
   const queryClient = useQueryClient();
   const currentUser = useCurrentUser();
   const userEmail = currentUser?.email;
@@ -35,6 +36,7 @@ export default function TeamsPage() {
       queryClient.invalidateQueries({ queryKey: ['teams'] });
       setShowForm(false);
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la création de l'équipe"),
   });
 
   const deleteTeamMutation = useMutation({
@@ -48,6 +50,7 @@ export default function TeamsPage() {
       queryClient.invalidateQueries({ queryKey: ['teams'] });
       queryClient.invalidateQueries({ queryKey: ['team-players'] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la suppression de l'équipe"),
   });
 
   const getPlayerCount = (teamId) => teamPlayers.filter(tp => tp.team_id === teamId).length;
@@ -67,6 +70,13 @@ export default function TeamsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+        {mutationError && (
+          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span className="flex-1">{mutationError}</span>
+            <button onClick={() => setMutationError(null)} className="hover:text-red-900"><X className="w-3.5 h-3.5" /></button>
+          </div>
+        )}
         {/* Header */}
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">

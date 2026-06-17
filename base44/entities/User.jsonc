@@ -22,5 +22,10 @@
       "type": "string",
       "description": "ID de l'organisation li\u00e9e"
     }
-  }
+  },
+  "required": [
+    "organisation",
+    "poste",
+    "organization_id"
+  ]
 }

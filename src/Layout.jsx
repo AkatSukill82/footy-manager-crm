@@ -1,51 +1,108 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "./utils";
 import {
   Users, Star, LogOut, BarChart3, Bell, Phone, Shield,
   FileText, Network, ArrowRightLeft, Menu, X, Building2,
   Sparkles, Newspaper, FileSpreadsheet, CalendarDays, UserCircle,
-  ClipboardList, Columns,
+  ClipboardList, Columns, ChevronDown, Search,
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Toaster } from "@/components/ui/sonner";
 import { useLanguage } from "./lib/LanguageContext";
 import { t } from "./i18n/translations";
 import { useQuery } from "@tanstack/react-query";
+import GlobalSearch from "./components/ui/GlobalSearch";
 
-const navItems = (lang) => [
-  { name: "Dashboard",           key: "dashboard",  icon: BarChart3 },
-  { name: "Players",             key: "players",    icon: Users },
-  { name: "Clubs",               key: "clubs",      icon: Building2 },
-  { name: "MyWatchList",         key: "watchlist",  icon: Star },
-  { name: "Alerts",              key: "alerts",     icon: Bell },
-  { name: "ClubContacts",        key: "contacts",   icon: Phone },
-  { name: "Teams",               key: "teams",      icon: Shield },
-  { name: "TransferManagement",  key: "transfers",  icon: ArrowRightLeft },
-  { name: "Reports",             key: "reports",    icon: FileText },
-  { name: "AgentNetwork",        key: "network",    icon: Network },
-  { name: "Calendar",            key: "calendar",   icon: CalendarDays },
-  { name: "PredictiveDashboard", key: "predictive", icon: Sparkles },
-  { name: "News",                key: "news",       icon: Newspaper },
-  { name: "ScoutingIA",          key: "scouting",   icon: Sparkles },
-  { name: "ImportExcel",         key: "import",     icon: FileSpreadsheet },
-  { name: "Organization",        key: "organization",    icon: Building2 },
+// Pages principales — toujours visibles
+const CORE_PAGES = ["Dashboard", "Players", "Clubs", "MyWatchList", "Pipeline", "ScoutingReports", "Alerts", "ClubContacts"];
+// Outils — groupe repliable
+const TOOLS_PAGES = ["TransferManagement", "Teams", "News", "ScoutingIA", "Calendar"];
+// Avancé — groupe repliable
+const ADVANCED_PAGES = ["Reports", "PredictiveDashboard", "AgentNetwork", "ImportExcel", "Organization"];
+
+const ALL_ITEMS = (lang) => [
+  { name: "Dashboard",           key: "dashboard",        icon: BarChart3 },
+  { name: "Players",             key: "players",          icon: Users },
+  { name: "Clubs",               key: "clubs",            icon: Building2 },
+  { name: "MyWatchList",         key: "watchlist",        icon: Star },
+  { name: "Pipeline",            key: "pipeline",         icon: Columns,       label: "Pipeline" },
   { name: "ScoutingReports",     key: "scouting_reports", icon: ClipboardList, label: "Scouting" },
-  { name: "Pipeline",            key: "pipeline",        icon: Columns,       label: "Pipeline" },
-
+  { name: "Alerts",              key: "alerts",           icon: Bell },
+  { name: "ClubContacts",        key: "contacts",         icon: Phone },
+  { name: "TransferManagement",  key: "transfers",        icon: ArrowRightLeft },
+  { name: "Teams",               key: "teams",            icon: Shield },
+  { name: "News",                key: "news",             icon: Newspaper },
+  { name: "ScoutingIA",          key: "scouting",         icon: Sparkles },
+  { name: "Calendar",            key: "calendar",         icon: CalendarDays },
+  { name: "Reports",             key: "reports",          icon: FileText },
+  { name: "PredictiveDashboard", key: "predictive",       icon: Sparkles },
+  { name: "AgentNetwork",        key: "network",          icon: Network },
+  { name: "ImportExcel",         key: "import",           icon: FileSpreadsheet },
+  { name: "Organization",        key: "organization",     icon: Building2 },
 ].map(item => ({ ...item, label: item.label || t(lang, `nav.${item.key}`) }));
 
-const bottomPrimary = ["Dashboard", "Players", "Teams", "TransferManagement", "Clubs"];
+const navItems = (lang) => ALL_ITEMS(lang);
+const bottomPrimary_items = ["Dashboard", "Players", "Pipeline", "Alerts", "Clubs"];
+
+const bottomPrimary = bottomPrimary_items;
+
+function NavGroup({ label, items, currentPageName, open, onToggle }) {
+  return (
+    <div>
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-3 py-1.5 text-xs font-semibold text-slate-400 uppercase tracking-wider hover:text-slate-600 transition-colors"
+      >
+        {label}
+        <ChevronDown className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && items.map((item) => {
+        const Icon = item.icon;
+        const isActive = currentPageName === item.name;
+        return (
+          <Link
+            key={item.name}
+            to={createPageUrl(item.name)}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+              isActive
+                ? "bg-slate-100 text-slate-900 font-semibold"
+                : "text-slate-400 hover:bg-slate-50 hover:text-slate-800"
+            }`}
+          >
+            <Icon className="w-4 h-4 flex-shrink-0" />
+            <span className="font-medium text-sm truncate">{item.label}</span>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function Layout({ children, currentPageName }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const { lang } = useLanguage();
   const items = navItems(lang);
+
+  // Cmd+K / Ctrl+K global shortcut
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen(o => !o);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   const { data: user } = useQuery({
     queryKey: ["currentUser"],
     queryFn: () => base44.auth.me(),
-    staleTime: 5 * 60 * 1000,
+    staleTime: Infinity,
   });
 
   const initials = user?.email ? user.email.slice(0, 2).toUpperCase() : "??";
@@ -59,19 +116,32 @@ export default function Layout({ children, currentPageName }) {
         {/* Logo */}
         <div className="p-5 border-b border-slate-100 flex-shrink-0">
           <Link to={createPageUrl("Dashboard")} className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/30">
-              <Users className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center">
+              <Users className="w-5 h-5 text-white" />
             </div>
             <div>
-              <div className="font-bold text-lg text-slate-900">FDM</div>
+              <div className="font-bold text-lg tracking-tight text-slate-900">FDM</div>
               <div className="text-xs text-slate-400">Football Data Manager</div>
             </div>
           </Link>
         </div>
 
+        {/* Search button */}
+        <div className="px-3 pb-2 flex-shrink-0">
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-400 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors"
+          >
+            <Search className="w-4 h-4" />
+            <span className="flex-1 text-left">Rechercher…</span>
+            <kbd className="text-[10px] bg-white border border-slate-200 px-1.5 py-0.5 rounded font-mono">⌘K</kbd>
+          </button>
+        </div>
+
         {/* Nav items */}
-        <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-          {items.map((item) => {
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+          {/* Core pages — toujours visibles */}
+          {items.filter(i => CORE_PAGES.includes(i.name)).map((item) => {
             const Icon = item.icon;
             const isActive = currentPageName === item.name;
             return (
@@ -80,8 +150,8 @@ export default function Layout({ children, currentPageName }) {
                 to={createPageUrl(item.name)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
                   isActive
-                    ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md shadow-green-500/25"
-                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                    ? "bg-slate-100 text-slate-900 font-semibold"
+                    : "text-slate-400 hover:bg-slate-50 hover:text-slate-800"
                 }`}
               >
                 <Icon className="w-4 h-4 flex-shrink-0" />
@@ -89,6 +159,26 @@ export default function Layout({ children, currentPageName }) {
               </Link>
             );
           })}
+
+          <div className="pt-1">
+            <NavGroup
+              label="Outils"
+              items={items.filter(i => TOOLS_PAGES.includes(i.name))}
+              currentPageName={currentPageName}
+              open={toolsOpen || TOOLS_PAGES.includes(currentPageName)}
+              onToggle={() => setToolsOpen(o => !o)}
+            />
+          </div>
+
+          <div className="pt-1">
+            <NavGroup
+              label="Avancé"
+              items={items.filter(i => ADVANCED_PAGES.includes(i.name))}
+              currentPageName={currentPageName}
+              open={advancedOpen || ADVANCED_PAGES.includes(currentPageName)}
+              onToggle={() => setAdvancedOpen(o => !o)}
+            />
+          </div>
         </nav>
 
         {/* Bottom: Profile + Logout */}
@@ -97,11 +187,11 @@ export default function Layout({ children, currentPageName }) {
             to={createPageUrl("Profile")}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
               currentPageName === "Profile"
-                ? "bg-slate-100 text-slate-900"
-                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                ? "bg-slate-100 text-slate-900 font-semibold"
+                : "text-slate-400 hover:bg-slate-50 hover:text-slate-800"
             }`}
           >
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center flex-shrink-0">
+            <div className="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center flex-shrink-0">
               <span className="text-white text-xs font-bold">{initials}</span>
             </div>
             <span className="font-medium text-sm truncate">{t(lang, "nav.profile")}</span>
@@ -135,7 +225,7 @@ export default function Layout({ children, currentPageName }) {
                 key={item.name}
                 to={createPageUrl(item.name)}
                 className={`flex-1 flex flex-col items-center justify-center h-full gap-0.5 transition-all ${
-                  isActive ? "text-green-600" : "text-slate-400"
+                  isActive ? "text-slate-900" : "text-slate-400"
                 }`}
               >
                 <Icon className={`w-5 h-5 ${isActive ? "scale-110" : ""} transition-transform`} />
@@ -143,7 +233,7 @@ export default function Layout({ children, currentPageName }) {
                   {item.label}
                 </span>
                 {isActive && (
-                  <div className="absolute bottom-0 h-0.5 w-8 bg-green-500 rounded-full" />
+                  <div className="absolute bottom-0 h-0.5 w-8 bg-slate-900 rounded-full" />
                 )}
               </Link>
             );
@@ -153,7 +243,7 @@ export default function Layout({ children, currentPageName }) {
           <button
             onClick={() => setDrawerOpen(true)}
             className={`flex-1 flex flex-col items-center justify-center h-full gap-0.5 transition-all ${
-              drawerOpen ? "text-green-600" : "text-slate-400"
+              drawerOpen ? "text-slate-900" : "text-slate-400"
             }`}
           >
             <Menu className="w-5 h-5" />
@@ -172,7 +262,7 @@ export default function Layout({ children, currentPageName }) {
           <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center">
                   <Users className="w-4 h-4 text-white" />
                 </div>
                 <span className="font-bold text-slate-900">FDM</span>
@@ -193,8 +283,8 @@ export default function Layout({ children, currentPageName }) {
                     onClick={() => setDrawerOpen(false)}
                     className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${
                       isActive
-                        ? "bg-green-50 text-green-700"
-                        : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+                        ? "bg-slate-100 text-slate-900"
+                        : "bg-slate-50 text-slate-500 hover:bg-slate-100"
                     }`}
                   >
                     <Icon className="w-6 h-6" />
@@ -209,8 +299,8 @@ export default function Layout({ children, currentPageName }) {
                 onClick={() => setDrawerOpen(false)}
                 className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${
                   currentPageName === "Profile"
-                    ? "bg-green-50 text-green-700"
-                    : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+                    ? "bg-slate-100 text-slate-900"
+                    : "bg-slate-50 text-slate-500 hover:bg-slate-100"
                 }`}
               >
                 <UserCircle className="w-6 h-6" />
@@ -231,6 +321,7 @@ export default function Layout({ children, currentPageName }) {
         </>
       )}
 
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
       <Toaster position="top-right" richColors />
     </div>
   );

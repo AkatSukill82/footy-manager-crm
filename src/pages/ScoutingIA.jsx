@@ -150,7 +150,18 @@ export default function ScoutingIAPage() {
       return;
     }
 
-    const playersContext = players.map(pl => ({
+    // Pré-filtrer avant d'envoyer à l'IA — réduit la taille du prompt et le coût
+    const preFiltered = players.filter(pl => {
+      if (pl.poste !== criteria.poste && pl.poste_secondaire !== criteria.poste) return false;
+      if (criteria.age_max && pl.age && pl.age > Number(criteria.age_max)) return false;
+      if (criteria.budget_max && pl.valeur_marchande && pl.valeur_marchande > Number(criteria.budget_max) * 1.5) return false;
+      if (criteria.ligue && pl.ligue && !pl.ligue.toLowerCase().includes(criteria.ligue.toLowerCase())) return false;
+      return true;
+    });
+
+    const pool = preFiltered.length > 0 ? preFiltered : players;
+
+    const playersContext = pool.map(pl => ({
       id: pl.id,
       nom: pl.nom,
       poste: pl.poste,
@@ -180,7 +191,7 @@ export default function ScoutingIAPage() {
 - Priorité principale: ${criteria.priorite}
 ${criteria.ligue ? `- Ligue préférée: ${criteria.ligue}` : ""}
 
-Voici la liste des joueurs disponibles dans la base (JSON):
+Voici la liste pré-filtrée des joueurs disponibles dans la base (${pool.length} joueurs, JSON):
 ${JSON.stringify(playersContext, null, 2)}
 
 Analyse ces joueurs et sélectionne les 3 à 5 meilleurs profils correspondant aux critères du manager.
@@ -211,49 +222,57 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks. Format exact:
   ]
 }`;
 
-    const raw = await base44.integrations.Core.InvokeLLM({
-      prompt,
-      model: "claude_sonnet_4_6",
-      response_json_schema: {
-        type: "object",
-        properties: {
-          analyse_globale: { type: "string" },
-          joueurs: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                player_id: { type: "string" },
-                nom: { type: "string" },
-                poste: { type: "string" },
-                club: { type: "string" },
-                age: { type: "number" },
-                valeur: { type: "number" },
-                score_compatibilite: { type: "number" },
-                points_forts: { type: "array", items: { type: "string" } },
-                point_vigilance: { type: "string" },
-                recommandation: { type: "string" },
-                justification: { type: "string" },
+    try {
+      const raw = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        model: "claude_sonnet_4_6",
+        response_json_schema: {
+          type: "object",
+          properties: {
+            analyse_globale: { type: "string" },
+            joueurs: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  player_id: { type: "string" },
+                  nom: { type: "string" },
+                  poste: { type: "string" },
+                  club: { type: "string" },
+                  age: { type: "number" },
+                  valeur: { type: "number" },
+                  score_compatibilite: { type: "number" },
+                  points_forts: { type: "array", items: { type: "string" } },
+                  point_vigilance: { type: "string" },
+                  recommandation: { type: "string" },
+                  justification: { type: "string" },
+                }
               }
             }
           }
         }
-      }
-    });
-
-    setResults(raw);
-    setLoading(false);
+      });
+      setResults(raw);
+    } catch (err) {
+      setError(t(lang, 'scouting.analysisError') || "L'analyse IA a échoué. Veuillez réessayer.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleWatchlist = async (playerId) => {
     if (!playerId || watchlisted[playerId]) return;
-    await base44.entities.WatchList.create({
-      player_id: playerId,
-      priorite: "Haute",
-      statut: "En observation",
-    });
-    setWatchlisted(prev => ({ ...prev, [playerId]: true }));
-    queryClient.invalidateQueries({ queryKey: ['watchList'] });
+    try {
+      await base44.entities.WatchList.create({
+        player_id: playerId,
+        priorite: "Haute",
+        statut: "En observation",
+      });
+      setWatchlisted(prev => ({ ...prev, [playerId]: true }));
+      queryClient.invalidateQueries({ queryKey: ['watchList'] });
+    } catch (err) {
+      setError(err.message || "Erreur lors de l'ajout à la watchlist");
+    }
   };
 
   const InputClass = "w-full bg-slate-800 border border-slate-600 text-slate-100 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent placeholder:text-slate-500";

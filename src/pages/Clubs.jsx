@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Plus, Search, Filter, Globe } from "lucide-react";
+import { Building2, Plus, Search, Filter, Globe, AlertCircle, X } from "lucide-react";
 import ClubCard from "../components/clubs/ClubCard";
 import ClubForm from "../components/clubs/ClubForm";
 import ClubSearch from "../components/clubs/ClubSearch";
@@ -20,6 +20,7 @@ export default function ClubsPage() {
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategorie, setFilterCategorie] = useState("all");
+  const [mutationError, setMutationError] = useState(null);
 
   const { data: clubs = [], isLoading } = useQuery({
     queryKey: ['clubs'],
@@ -28,11 +29,28 @@ export default function ClubsPage() {
 
   const createClubMutation = useMutation({
     mutationFn: (data) => base44.entities.Club.create(data),
-    onSuccess: () => {
+    onSuccess: (club) => {
       queryClient.invalidateQueries({ queryKey: ['clubs'] });
       setShowForm(false);
+      // Auto-fetch logo en arrière-plan si pas déjà un logo
+      if (club?.id && club?.nom && !club?.logo_url) {
+        base44.functions.invoke("fetchEntityPhoto", {
+          type: "club",
+          name: club.nom,
+        }).then(result => {
+          if (result?.photo_url) {
+            base44.entities.Club.update(club.id, { logo_url: result.photo_url })
+              .then(() => queryClient.invalidateQueries({ queryKey: ['clubs'] }))
+              .catch(() => {});
+          }
+        }).catch(() => {});
+      }
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la création du club"),
   });
+
+  const PAGE_SIZE = 18;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const filteredClubs = clubs.filter(club => {
     const matchesSearch = club.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -40,6 +58,9 @@ export default function ClubsPage() {
     const matchesCategorie = filterCategorie === "all" || club.categorie === filterCategorie;
     return matchesSearch && matchesCategorie;
   });
+
+  // Reset pagination quand les filtres changent
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [searchQuery, filterCategorie]);
 
   if (showForm) {
     return (
@@ -68,7 +89,15 @@ export default function ClubsPage() {
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-4 md:space-y-8">
+    <div className="min-h-screen bg-slate-50">
+    <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+      {mutationError && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span className="flex-1">{mutationError}</span>
+          <button onClick={() => setMutationError(null)} className="hover:text-red-900"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
@@ -80,7 +109,7 @@ export default function ClubsPage() {
             onClick={() => setShowSearch(true)}
             variant="outline"
             size="sm"
-            className="border-green-300 text-green-700 hover:bg-green-50"
+            className="border-slate-200 text-slate-600 hover:bg-slate-50"
           >
             <Globe className="w-4 h-4 md:mr-2" />
             <span className="hidden md:inline">{t(lang, 'clubs.searchOnline')}</span>
@@ -135,12 +164,22 @@ export default function ClubsPage() {
           <p className="text-slate-500">{t(lang, 'clubs.noResults')}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredClubs.map(club => (
-            <ClubCard key={club.id} club={club} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredClubs.slice(0, visibleCount).map(club => (
+              <ClubCard key={club.id} club={club} />
+            ))}
+          </div>
+          {visibleCount < filteredClubs.length && (
+            <div className="text-center pt-4">
+              <Button variant="outline" onClick={() => setVisibleCount(c => c + PAGE_SIZE)}>
+                Voir plus ({filteredClubs.length - visibleCount} restants)
+              </Button>
+            </div>
+          )}
+        </>
       )}
+    </div>
     </div>
   );
 }

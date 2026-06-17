@@ -32,18 +32,24 @@ export default function PlayerChartsPanel({ playerId, player }) {
     queryKey: ["marketValues", playerId],
     queryFn: () => base44.entities.PlayerMarketValue.filter({ player_id: playerId }, "date", 50),
     enabled: !!playerId,
+    staleTime: Infinity,
+    gcTime: 4 * 60 * 60 * 1000,
   });
 
   const { data: seasonStats = [] } = useQuery({
     queryKey: ["seasonStats", playerId],
     queryFn: () => base44.entities.PlayerSeasonStats.filter({ player_id: playerId }, "-saison", 20),
     enabled: !!playerId,
+    staleTime: Infinity,
+    gcTime: 4 * 60 * 60 * 1000,
   });
 
   const { data: careerHistory = [] } = useQuery({
     queryKey: ["careerHistory", playerId],
     queryFn: () => base44.entities.PlayerCareerHistory.filter({ player_id: playerId }, "debut", 30),
     enabled: !!playerId,
+    staleTime: Infinity,
+    gcTime: 4 * 60 * 60 * 1000,
   });
 
   // Trier les valeurs marchandes par date

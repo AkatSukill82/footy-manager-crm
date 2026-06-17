@@ -30,21 +30,40 @@ const AuthenticatedApp = () => {
   // Dès que l'auth est confirmée, prefetch les données les plus utilisées
   useEffect(() => {
     if (isLoadingAuth || isLoadingPublicSettings || authError) return;
-    // Prefetch silencieux — remplit le cache avant que l'utilisateur navigue
-    queryClient.prefetchQuery({
+
+    // currentUser en premier — on en a besoin pour les requêtes suivantes
+    queryClient.fetchQuery({
       queryKey: ['currentUser'],
       queryFn: () => base44.auth.me(),
       staleTime: Infinity,
-    });
+    }).then(user => {
+      if (!user) return;
+      // Prefetch joueurs + watchlist dès l'auth — Dashboard et Players s'affichent instantanément
+      if (user.id) {
+        queryClient.prefetchQuery({
+          queryKey: ['players', user.id],
+          queryFn: () => base44.entities.Player.filter({ created_by_id: user.id }, '-created_date'),
+          staleTime: Infinity,
+        });
+      }
+      if (user.email) {
+        queryClient.prefetchQuery({
+          queryKey: ['watchList', user.email],
+          queryFn: () => base44.entities.WatchList.filter({ created_by: user.email }),
+          staleTime: Infinity,
+        });
+      }
+    }).catch(() => {});
+
     queryClient.prefetchQuery({
       queryKey: ['clubs'],
       queryFn: () => base44.entities.Club.list('-created_date'),
-      staleTime: 3 * 60 * 1000,
+      staleTime: Infinity,
     });
     queryClient.prefetchQuery({
       queryKey: ['club-contacts'],
       queryFn: () => base44.entities.ClubContact.list(),
-      staleTime: 3 * 60 * 1000,
+      staleTime: Infinity,
     });
   }, [isLoadingAuth, isLoadingPublicSettings, authError]);
 

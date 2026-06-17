@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Search, Mail, Building2, Trash2, ExternalLink,
-  Plus, Users, Globe, Phone, ChevronDown, X, Filter
+  Plus, Users, Globe, Phone, ChevronDown, X, Filter, AlertCircle
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -259,6 +259,7 @@ export default function ClubContactsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editContact, setEditContact] = useState(null);
+  const [mutationError, setMutationError] = useState(null);
 
   const { data: contacts = [], isLoading } = useQuery({
     queryKey: ["club-contacts"],
@@ -268,16 +269,19 @@ export default function ClubContactsPage() {
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.ClubContact.create(data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["club-contacts"] }),
+    onError: (err) => setMutationError(err.message || "Erreur lors de la création"),
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.ClubContact.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["club-contacts"] }),
+    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour"),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.ClubContact.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["club-contacts"] }),
+    onError: (err) => setMutationError(err.message || "Erreur lors de la suppression"),
   });
 
   const handleSave = (form) => {
@@ -327,21 +331,24 @@ export default function ClubContactsPage() {
   const activeFilters = [filterPays, filterPoste].filter(Boolean).length;
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
+    <div className="min-h-screen bg-slate-50">
+    <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+      {mutationError && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span className="flex-1">{mutationError}</span>
+          <button onClick={() => setMutationError(null)} className="hover:text-red-900"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <div className="w-9 h-9 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center shadow-md">
-              <Users className="w-5 h-5 text-white" />
-            </div>
-            Contacts clubs
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-900">Contacts clubs</h1>
           <p className="text-slate-500 text-sm mt-1">
             Dirigeants, entraîneurs, directeurs sportifs, agents importés
           </p>
         </div>
-        <Button onClick={handleNew} className="bg-orange-500 hover:bg-orange-600 text-white gap-2 flex-shrink-0">
+        <Button onClick={handleNew} className="bg-slate-900 hover:bg-slate-800 text-white gap-2 flex-shrink-0">
           <Plus className="w-4 h-4" />
           Ajouter
         </Button>
@@ -351,19 +358,17 @@ export default function ClubContactsPage() {
       {contacts.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "Contacts", value: contacts.length, icon: Users, color: "text-orange-600 bg-orange-50" },
-            { label: "Clubs couverts", value: nbClubs, icon: Building2, color: "text-blue-600 bg-blue-50" },
-            { label: "Pays", value: nbPays, icon: Globe, color: "text-green-600 bg-green-50" },
-            { label: "Avec WhatsApp", value: nbAvecTel, icon: Phone, color: "text-emerald-600 bg-emerald-50" },
-          ].map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className="bg-white rounded-xl border border-slate-100 p-3 flex items-center gap-3 shadow-sm">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${color}`}>
-                <Icon className="w-4 h-4" />
+            { label: "Contacts", value: contacts.length, icon: Users },
+            { label: "Clubs couverts", value: nbClubs, icon: Building2 },
+            { label: "Pays", value: nbPays, icon: Globe },
+            { label: "Avec WhatsApp", value: nbAvecTel, icon: Phone },
+          ].map(({ label, value, icon: Icon }) => (
+            <div key={label} className="bg-white rounded-xl border border-slate-100 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{label}</span>
+                <Icon className="w-3.5 h-3.5 text-slate-300" />
               </div>
-              <div>
-                <div className="font-bold text-lg text-slate-900 leading-none">{value}</div>
-                <div className="text-xs text-slate-400 mt-0.5">{label}</div>
-              </div>
+              <div className="text-2xl font-bold text-slate-900 leading-none">{value}</div>
             </div>
           ))}
         </div>
@@ -460,7 +465,7 @@ export default function ClubContactsPage() {
               ? "Essayez d'autres filtres ou termes de recherche"
               : "Ajoutez un contact manuellement ou importez un fichier Excel"}
           </p>
-          <Button onClick={handleNew} className="bg-orange-500 hover:bg-orange-600 text-white gap-2">
+          <Button onClick={handleNew} className="bg-slate-900 hover:bg-slate-800 text-white gap-2">
             <Plus className="w-4 h-4" /> Ajouter un contact
           </Button>
         </div>
@@ -485,6 +490,7 @@ export default function ClubContactsPage() {
         initial={editContact}
         onSave={handleSave}
       />
+    </div>
     </div>
   );
 }

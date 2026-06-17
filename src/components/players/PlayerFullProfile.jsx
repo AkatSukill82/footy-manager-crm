@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   User, Clock, Globe, Heart, Activity, Star, Zap, Trophy,
   Shield, Target, Dumbbell, BarChart2, Phone, Mail, MessageCircle,
-  Instagram, Twitter, Linkedin, MapPin
+  Instagram, Twitter, Linkedin, MapPin, ExternalLink
 } from "lucide-react";
 import { useLanguage } from "../../lib/LanguageContext";
 import { t } from "../../i18n/translations";
@@ -37,9 +37,42 @@ function SectionTitle({ icon: Icon, label, color = "text-slate-700" }) {
   );
 }
 
+function ExternalNotice({ tmHref, fbrefHref, sofaHref }) {
+  return (
+    <div className="flex items-start gap-3 px-4 py-3 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-sm text-slate-500">
+      <BarChart2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-slate-400" />
+      <div>
+        <p className="text-slate-600 mb-1.5">Données non disponibles — retrouvez-les sur :</p>
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          <a href={tmHref} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1 text-green-600 hover:underline font-medium text-xs">
+            <ExternalLink className="w-3 h-3" />Transfermarkt
+          </a>
+          <a href={fbrefHref} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1 text-blue-600 hover:underline font-medium text-xs">
+            <ExternalLink className="w-3 h-3" />FBref
+          </a>
+          <a href={sofaHref} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1 text-orange-500 hover:underline font-medium text-xs">
+            <ExternalLink className="w-3 h-3" />SofaScore
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PlayerFullProfile({ player }) {
   const { lang } = useLanguage();
   if (!player) return null;
+
+  const _name = encodeURIComponent(player.nom || "");
+  const _tmId = player.transfermarkt_id;
+  const tmHref = _tmId
+    ? `https://www.transfermarkt.com/a/profil/spieler/${_tmId}`
+    : `https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche?query=${_name}&Feld=spieler`;
+  const fbrefHref = `https://fbref.com/search/search.fcgi?search=${_name}`;
+  const sofaHref  = `https://www.google.com/search?q=sofascore+${_name}+football`;
 
   const hasContacts = player.email || player.telephone || player.whatsapp || player.instagram || player.twitter || player.linkedin;
   const hasAddress = player.adresse || player.ville_residence || player.pays_residence;
@@ -204,6 +237,18 @@ export default function PlayerFullProfile({ player }) {
         </div>
       )}
 
+      {/* ── Valeur marchande manquante ── */}
+      {player.valeur_marchande == null && (
+        <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-sm text-slate-500">
+          <span className="text-slate-400">💰</span>
+          <span>Valeur marchande non renseignée —</span>
+          <a href={tmHref} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1 text-green-600 hover:underline font-medium">
+            <ExternalLink className="w-3 h-3" />Voir sur Transfermarkt
+          </a>
+        </div>
+      )}
+
       {/* ── Stats saison en cours ── */}
       {hasSaisonStats && (
         <Card>
@@ -315,6 +360,9 @@ export default function PlayerFullProfile({ player }) {
             )}
           </CardContent>
         </Card>
+      )}
+      {!hasSaisonStats && (
+        <ExternalNotice tmHref={tmHref} fbrefHref={fbrefHref} sofaHref={sofaHref} />
       )}
 
       {/* ── Sélection + Blessures + Carrière ── */}

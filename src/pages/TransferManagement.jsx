@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { TrendingUp, Plus, Calculator, History } from "lucide-react";
+import { TrendingUp, Plus, Calculator, History, AlertCircle, X } from "lucide-react";
 import NegociationCard from "../components/transfers/NegociationCard";
 import BudgetSimulator from "../components/transfers/BudgetSimulator";
 import PlayerTransferHistory from "../components/transfers/PlayerTransferHistory";
@@ -19,8 +19,9 @@ export default function TransferManagementPage() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("negociations");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [mutationError, setMutationError] = useState(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState("");
-  const [formData, setFormData] = useState({
+  const FORM_EMPTY = {
     player_id: "",
     club_vendeur: "",
     club_acheteur: "",
@@ -29,8 +30,12 @@ export default function TransferManagementPage() {
     date_debut: new Date().toISOString().split('T')[0],
     date_limite: "",
     notes_negociation: "",
-    priorite: "moyenne"
-  });
+    priorite: "moyenne",
+    clause_revente: "",
+    bonus_performance: "",
+    commission_agent: "",
+  };
+  const [formData, setFormData] = useState(FORM_EMPTY);
   const { lang } = useLanguage();
   const user = useCurrentUser();
   const userEmail = user?.email;
@@ -70,18 +75,9 @@ export default function TransferManagementPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['negociations'] });
       setShowAddModal(false);
-      setFormData({
-        player_id: "",
-        club_vendeur: "",
-        club_acheteur: "",
-        montant_propose: "",
-        montant_demande: "",
-        date_debut: new Date().toISOString().split('T')[0],
-        date_limite: "",
-        notes_negociation: "",
-        priorite: "moyenne"
-      });
+      setFormData(FORM_EMPTY);
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la création de la négociation"),
   });
 
   const updateNegociationMutation = useMutation({
@@ -89,6 +85,7 @@ export default function TransferManagementPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['negociations'] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour du statut"),
   });
 
   const finalizeTransferMutation = useMutation({
@@ -112,6 +109,7 @@ export default function TransferManagementPage() {
       queryClient.invalidateQueries({ queryKey: ['transfers'] });
       queryClient.invalidateQueries({ queryKey: ['players'] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la finalisation du transfert"),
   });
 
   const handleSubmit = (e) => {
@@ -120,6 +118,9 @@ export default function TransferManagementPage() {
       ...formData,
       montant_propose: parseFloat(formData.montant_propose),
       montant_demande: formData.montant_demande ? parseFloat(formData.montant_demande) : null,
+      clause_revente: formData.clause_revente ? parseFloat(formData.clause_revente) : null,
+      bonus_performance: formData.bonus_performance ? parseFloat(formData.bonus_performance) : null,
+      commission_agent: formData.commission_agent ? parseFloat(formData.commission_agent) : null,
       statut: "demande_initiale"
     });
   };
@@ -131,7 +132,15 @@ export default function TransferManagementPage() {
   const selectedPlayer = players.find(p => p.id === selectedPlayerId);
 
   return (
-    <div className="p-4 md:p-8 space-y-4 md:space-y-8">
+    <div className="min-h-screen bg-slate-50">
+    <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+      {mutationError && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span className="flex-1">{mutationError}</span>
+          <button onClick={() => setMutationError(null)} className="hover:text-red-900"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
@@ -344,6 +353,50 @@ export default function TransferManagementPage() {
               />
             </div>
 
+            {/* Financial deal terms */}
+            <div className="border-t border-slate-100 pt-4">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Conditions financières</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-slate-500">Clause de revente (%)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={formData.clause_revente || ""}
+                    onChange={(e) => setFormData({...formData, clause_revente: e.target.value})}
+                    placeholder="Ex: 20"
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-slate-500">Bonus de performance (M€)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={formData.bonus_performance || ""}
+                    onChange={(e) => setFormData({...formData, bonus_performance: e.target.value})}
+                    placeholder="Ex: 2.5"
+                    className="mt-1.5"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label className="text-xs text-slate-500">Commission agent (%)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="20"
+                    step="0.5"
+                    value={formData.commission_agent || ""}
+                    onChange={(e) => setFormData({...formData, commission_agent: e.target.value})}
+                    placeholder="Ex: 5"
+                    className="mt-1.5"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="flex gap-3 pt-4">
               <Button type="button" variant="outline" onClick={() => setShowAddModal(false)} className="flex-1">
                 {t(lang, 'common.cancel')}
@@ -355,6 +408,7 @@ export default function TransferManagementPage() {
           </form>
         </DialogContent>
       </Dialog>
+    </div>
     </div>
   );
 }

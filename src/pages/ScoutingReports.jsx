@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   ClipboardList, Plus, Search, Trash2, Eye,
-  Star, Calendar, MapPin, Trophy, ChevronRight
+  Star, Calendar, MapPin, Trophy, ChevronRight, AlertCircle, X
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -60,11 +60,7 @@ function RatingPicker({ value, onChange, label }) {
             type="button"
             onClick={() => onChange(n)}
             className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${
-              value === n
-                ? n >= 8 ? "bg-green-500 text-white"
-                  : n >= 5 ? "bg-blue-500 text-white"
-                  : "bg-red-400 text-white"
-                : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+              value === n ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
             }`}
           >
             {n}
@@ -238,13 +234,13 @@ function ReportForm({ initial, players, onSave, onClose }) {
 
 // ── Carte rapport ─────────────────────────────────────────────────────────────
 function ReportCard({ report, onView, onDelete }) {
-  const noteColor = report.note_globale >= 8 ? "text-green-600" : report.note_globale >= 6 ? "text-blue-600" : "text-red-500";
+  const noteColor = "text-slate-900";
   return (
     <Card className="hover:shadow-md transition-all cursor-pointer group" onClick={() => onView(report)}>
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           {report.player_photo
-            ? <img src={report.player_photo} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" referrerPolicy="no-referrer" />
+            ? <img src={report.player_photo} alt={report.player_nom || ""} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" referrerPolicy="no-referrer" />
             : <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
                 <ClipboardList className="w-6 h-6 text-slate-400" />
               </div>
@@ -315,6 +311,7 @@ export default function ScoutingReportsPage() {
   const [filterReco, setFilterReco] = useState("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [viewReport, setViewReport] = useState(null);
+  const [mutationError, setMutationError] = useState(null);
 
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ["scouting-reports"],
@@ -329,11 +326,13 @@ export default function ScoutingReportsPage() {
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.ScoutingReport.create(data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["scouting-reports"] }); setModalOpen(false); },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la création du rapport"),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.ScoutingReport.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["scouting-reports"] }),
+    onError: (err) => setMutationError(err.message || "Erreur lors de la suppression"),
   });
 
   const filtered = useMemo(() => reports.filter(r => {
@@ -351,19 +350,22 @@ export default function ScoutingReportsPage() {
   }), [reports]);
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
+    <div className="min-h-screen bg-slate-50">
+    <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+      {mutationError && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span className="flex-1">{mutationError}</span>
+          <button onClick={() => setMutationError(null)} className="hover:text-red-900"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <div className="w-9 h-9 bg-gradient-to-br from-violet-500 to-violet-600 rounded-xl flex items-center justify-center shadow-md">
-              <ClipboardList className="w-5 h-5 text-white" />
-            </div>
-            Rapports de scouting
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-900">Rapports de scouting</h1>
           <p className="text-slate-500 text-sm mt-1">Évaluations de joueurs observés sur le terrain</p>
         </div>
-        <Button onClick={() => setModalOpen(true)} className="bg-violet-600 hover:bg-violet-700 text-white gap-2 flex-shrink-0">
+        <Button onClick={() => setModalOpen(true)} className="bg-slate-900 hover:bg-slate-800 text-white gap-2 flex-shrink-0">
           <Plus className="w-4 h-4" /> Nouveau rapport
         </Button>
       </div>
@@ -372,19 +374,14 @@ export default function ScoutingReportsPage() {
       {reports.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "Rapports", value: stats.total, color: "text-violet-600 bg-violet-50" },
-            { label: "À signer", value: stats.signer, color: "text-green-600 bg-green-50" },
-            { label: "À suivre", value: stats.suivre, color: "text-blue-600 bg-blue-50" },
-            { label: "Note moy.", value: `${stats.moyNote}/10`, color: "text-orange-600 bg-orange-50" },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="bg-white rounded-xl border border-slate-100 p-3 flex items-center gap-3 shadow-sm">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${color}`}>
-                <Star className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="font-bold text-lg text-slate-900 leading-none">{value}</div>
-                <div className="text-xs text-slate-400 mt-0.5">{label}</div>
-              </div>
+            { label: "Rapports", value: stats.total },
+            { label: "À signer", value: stats.signer },
+            { label: "À suivre", value: stats.suivre },
+            { label: "Note moy.", value: `${stats.moyNote}/10` },
+          ].map(({ label, value }) => (
+            <div key={label} className="bg-white rounded-xl border border-slate-100 p-4">
+              <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-2">{label}</div>
+              <div className="text-2xl font-bold text-slate-900 leading-none">{value}</div>
             </div>
           ))}
         </div>
@@ -412,10 +409,10 @@ export default function ScoutingReportsPage() {
         <div className="grid gap-3">{[1,2,3].map(i => <div key={i} className="h-28 bg-slate-100 rounded-xl animate-pulse" />)}</div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-24 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-          <ClipboardList className="w-12 h-12 text-violet-300 mx-auto mb-4" />
+          <ClipboardList className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <p className="text-slate-600 font-semibold">Aucun rapport trouvé</p>
           <p className="text-slate-400 text-sm mt-1 mb-5">Créez votre premier rapport de scouting après avoir observé un joueur</p>
-          <Button onClick={() => setModalOpen(true)} className="bg-violet-600 hover:bg-violet-700 text-white gap-2">
+          <Button onClick={() => setModalOpen(true)} className="bg-slate-900 hover:bg-slate-800 text-white gap-2">
             <Plus className="w-4 h-4" /> Nouveau rapport
           </Button>
         </div>
@@ -437,7 +434,7 @@ export default function ScoutingReportsPage() {
         <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <ClipboardList className="w-5 h-5 text-violet-600" />
+              <ClipboardList className="w-5 h-5 text-slate-500" />
               Nouveau rapport de scouting
             </DialogTitle>
           </DialogHeader>
@@ -478,7 +475,7 @@ export default function ScoutingReportsPage() {
                 <div className="grid grid-cols-4 gap-2">
                   {CRITERES.map(c => viewReport[c.key] ? (
                     <div key={c.key} className="bg-slate-50 rounded-lg p-3 text-center border border-slate-100">
-                      <div className={`text-xl font-black ${viewReport[c.key] >= 8 ? "text-green-600" : viewReport[c.key] >= 5 ? "text-blue-600" : "text-red-500"}`}>
+                      <div className="text-xl font-black text-slate-900">
                         {viewReport[c.key]}
                       </div>
                       <div className="text-[10px] text-slate-500 mt-0.5">{c.label}</div>
@@ -486,9 +483,9 @@ export default function ScoutingReportsPage() {
                   ) : null)}
                 </div>
                 {viewReport.points_forts && (
-                  <div className="bg-green-50 border border-green-100 rounded-xl p-3">
-                    <p className="text-xs font-semibold text-green-700 mb-1">Points forts</p>
-                    <p className="text-sm text-green-800 whitespace-pre-line">{viewReport.points_forts}</p>
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <p className="text-xs font-semibold text-slate-600 mb-1">Points forts</p>
+                    <p className="text-sm text-slate-700 whitespace-pre-line">{viewReport.points_forts}</p>
                   </div>
                 )}
                 {viewReport.points_faibles && (
@@ -508,6 +505,7 @@ export default function ScoutingReportsPage() {
           )}
         </DialogContent>
       </Dialog>
+    </div>
     </div>
   );
 }

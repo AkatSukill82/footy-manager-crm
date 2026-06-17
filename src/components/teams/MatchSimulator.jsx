@@ -13,7 +13,7 @@ export default function MatchSimulator({ currentTeamId, allTeams, onSimulate }) 
   const [simulating, setSimulating] = useState(false);
   const [result, setResult] = useState(null);
 
-  const opponents = allTeams.filter((tm) => tm.id !== currentTeamId);
+  const opponents = allTeams.filter(tm => tm.id !== currentTeamId);
 
   const simulateMatch = async () => {
     if (!opponentId) return;
@@ -40,7 +40,7 @@ export default function MatchSimulator({ currentTeamId, allTeams, onSimulate }) 
   };
 
   return (
-    <Card className="hidden">
+    <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Swords className="w-5 h-5 text-orange-600" />
@@ -57,11 +57,11 @@ export default function MatchSimulator({ currentTeamId, allTeams, onSimulate }) 
               <SelectValue placeholder={t(lang, 'teams.selectOpponent')} />
             </SelectTrigger>
             <SelectContent>
-              {opponents.map((team) =>
-              <SelectItem key={team.id} value={team.id}>
+              {opponents.map(team => (
+                <SelectItem key={team.id} value={team.id}>
                   {team.nom} ({team.formation})
                 </SelectItem>
-              )}
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -69,13 +69,13 @@ export default function MatchSimulator({ currentTeamId, allTeams, onSimulate }) 
         <Button
           onClick={simulateMatch}
           disabled={!opponentId || simulating}
-          className="w-full">
-          
+          className="w-full"
+        >
           {simulating ? t(lang, 'teams.simulating') : t(lang, 'teams.simulateBtn')}
         </Button>
 
-        {result && !simulating &&
-        <div className="p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border-2 border-blue-200">
+        {result && !simulating && (
+          <div className="p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border-2 border-blue-200">
             <div className="flex items-center justify-center gap-4 mb-2">
               <Trophy className="w-6 h-6 text-yellow-600" />
               <span className="font-bold text-lg">{t(lang, 'teams.simTitle')}</span>
@@ -88,13 +88,13 @@ export default function MatchSimulator({ currentTeamId, allTeams, onSimulate }) 
               </div>
               <div className="mt-2 text-sm text-slate-600">
                 {result.score1 > result.score2 ? t(lang, 'teams.win') :
-              result.score1 < result.score2 ? t(lang, 'teams.loss') :
-              t(lang, 'teams.draw')}
+                 result.score1 < result.score2 ? t(lang, 'teams.loss') :
+                 t(lang, 'teams.draw')}
               </div>
             </div>
           </div>
-        }
+        )}
       </CardContent>
-    </Card>);
-
+    </Card>
+  );
 }

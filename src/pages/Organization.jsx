@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, UserPlus, Trash2, Crown, Check, Copy } from "lucide-react";
+import { Building2, Users, UserPlus, Trash2, Crown, Check, Copy, AlertCircle, X } from "lucide-react";
 import { useLanguage } from "../lib/LanguageContext";
 
 export default function OrganizationPage() {
@@ -14,6 +14,7 @@ export default function OrganizationPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [newOrgName, setNewOrgName] = useState("");
   const [copied, setCopied] = useState(false);
+  const [mutationError, setMutationError] = useState(null);
 
   const { data: currentUser } = useQuery({
     queryKey: ["currentUser"],
@@ -48,7 +49,6 @@ export default function OrganizationPage() {
   const createOrgMutation = useMutation({
     mutationFn: async (nom) => {
       const org = await base44.entities.Organization.create({ nom });
-      // Update current user's organization_id
       await base44.auth.updateMe({ organization_id: org.id });
       return org;
     },
@@ -58,9 +58,9 @@ export default function OrganizationPage() {
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });
       setNewOrgName("");
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la création de l'organisation"),
   });
 
-  // Invite (add) member by email
   const inviteMutation = useMutation({
     mutationFn: async (email) => {
       const target = allUsers.find(u => u.email === email);
@@ -71,9 +71,9 @@ export default function OrganizationPage() {
       queryClient.invalidateQueries({ queryKey: ["allUsers"] });
       setInviteEmail("");
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de l'invitation"),
   });
 
-  // Remove member
   const removeMemberMutation = useMutation({
     mutationFn: async (userId) => {
       await base44.entities.User.update(userId, { organization_id: null });
@@ -81,9 +81,9 @@ export default function OrganizationPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["allUsers"] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors du retrait du membre"),
   });
 
-  // Leave / dissolve org
   const leaveOrgMutation = useMutation({
     mutationFn: async () => {
       await base44.auth.updateMe({ organization_id: null });
@@ -92,6 +92,7 @@ export default function OrganizationPage() {
       queryClient.invalidateQueries({ queryKey: ["allUsers"] });
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors du départ de l'organisation"),
   });
 
   const handleInvite = () => {
@@ -107,6 +108,14 @@ export default function OrganizationPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-8">
       <div className="max-w-2xl mx-auto space-y-6">
+
+        {mutationError && (
+          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span className="flex-1">{mutationError}</span>
+            <button onClick={() => setMutationError(null)} className="hover:text-red-900"><X className="w-3.5 h-3.5" /></button>
+          </div>
+        )}
 
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -200,6 +209,7 @@ export default function OrganizationPage() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          title="Retirer le membre"
                           className="h-7 w-7 text-red-400 hover:text-red-600"
                           onClick={() => removeMemberMutation.mutate(member.id)}
                         >

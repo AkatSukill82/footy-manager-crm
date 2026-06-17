@@ -5,7 +5,7 @@ import { useCurrentUser } from "../lib/useCurrentUser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Share2, Sparkles, Search, Filter } from "lucide-react";
+import { Share2, Sparkles, Search, Filter, AlertCircle, X } from "lucide-react";
 import ShareContentModal from "../components/network/ShareContentModal";
 import SharedContentCard from "../components/network/SharedContentCard";
 import InsightCard from "../components/network/InsightCard";
@@ -20,22 +20,24 @@ export default function AgentNetworkPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [activeTab, setActiveTab] = useState("shared");
+  const [mutationError, setMutationError] = useState(null);
 
   const user = useCurrentUser();
 
-  const { data: sharedContents = [] } = useQuery({
+  const { data: sharedContents = [], isLoading: loadingShared } = useQuery({
     queryKey: ['sharedContents'],
     queryFn: () => base44.entities.SharedContent.list('-created_date'),
   });
 
-  const { data: agentInsights = [] } = useQuery({
+  const { data: agentInsights = [], isLoading: loadingInsights } = useQuery({
     queryKey: ['agentInsights'],
     queryFn: () => base44.entities.AgentInsight.list('-created_date'),
   });
 
   const { data: players = [] } = useQuery({
-    queryKey: ['players'],
-    queryFn: () => base44.entities.Player.list(),
+    queryKey: ['players', user?.id],
+    queryFn: () => base44.entities.Player.filter({ created_by_id: user.id }),
+    enabled: !!user?.id,
   });
 
   const userEmail = user?.email;
@@ -51,6 +53,7 @@ export default function AgentNetworkPage() {
       queryClient.invalidateQueries({ queryKey: ['sharedContents'] });
       setShowShareModal(false);
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors du partage"),
   });
 
   const likeContentMutation = useMutation({
@@ -62,23 +65,33 @@ export default function AgentNetworkPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sharedContents'] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors du like"),
   });
 
   const filteredSharedContents = sharedContents.filter(content => {
-    const matchesSearch = content.titre.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         content.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase();
+    const matchesSearch = !q || (content.titre || "").toLowerCase().includes(q) ||
+                         (content.description || "").toLowerCase().includes(q);
     const matchesType = filterType === "all" || content.type === filterType;
     return matchesSearch && matchesType;
   });
 
   const filteredInsights = agentInsights.filter(insight => {
-    const matchesSearch = insight.titre.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         insight.contenu.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase();
+    const matchesSearch = !q || (insight.titre || "").toLowerCase().includes(q) ||
+                         (insight.contenu || "").toLowerCase().includes(q);
     return matchesSearch;
   });
 
   return (
     <div className="p-8 space-y-8">
+      {mutationError && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span className="flex-1">{mutationError}</span>
+          <button onClick={() => setMutationError(null)} className="hover:text-red-900"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold text-slate-900">{t(lang, 'network.title')}</h1>
@@ -151,7 +164,12 @@ export default function AgentNetworkPage() {
         </div>
       </div>
 
-      {activeTab === "shared" && (
+      {activeTab === "shared" && loadingShared && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {[1,2,3,4].map(i => <div key={i} className="h-40 bg-slate-100 rounded-2xl animate-pulse" />)}
+        </div>
+      )}
+      {activeTab === "shared" && !loadingShared && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {filteredSharedContents.map(content => {
             const player = content.player_id ? players.find(p => p.id === content.player_id) : null;
@@ -170,7 +188,12 @@ export default function AgentNetworkPage() {
         </div>
       )}
 
-      {activeTab === "insights" && (
+      {activeTab === "insights" && loadingInsights && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {[1,2].map(i => <div key={i} className="h-40 bg-slate-100 rounded-2xl animate-pulse" />)}
+        </div>
+      )}
+      {activeTab === "insights" && !loadingInsights && (
         <div className="space-y-6">
           <AgentInsightGenerator 
             onInsightGenerated={() => queryClient.invalidateQueries({ queryKey: ['agentInsights'] })}

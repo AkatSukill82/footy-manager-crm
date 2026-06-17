@@ -69,6 +69,9 @@ const FIELD_MAP = {
   agence: "agence", agency: "agence",
   photo: "photo_url", image: "photo_url", picture: "photo_url", avatar: "photo_url",
   league: "ligue", competition: "ligue", division: "ligue",
+  liens: "lien", link: "lien", links: "lien",
+  lien_externe: "lien", lien_profil: "lien", profil_url: "lien",
+  profile: "lien", profil: "lien", profile_url: "lien",
 };
 
 // ── Parsing XLSX ──────────────────────────────────────────────────────────────
@@ -113,6 +116,7 @@ const EMAIL_WORDS   = new Set(["email","mail","courriel"]);
 const INSTA_WORDS   = new Set(["instagram","insta"]);
 const TWITTER_WORDS = new Set(["twitter","x"]);
 const LI_WORDS      = new Set(["linkedin"]);
+const LIEN_WORDS    = new Set(["lien","liens","link","links","profil","profile","url"]);
 
 const guessCanonical = (key) => {
   const parts = key.split("_");
@@ -122,6 +126,7 @@ const guessCanonical = (key) => {
   if (parts.some(p => INSTA_WORDS.has(p)))   return "instagram";
   if (parts.some(p => TWITTER_WORDS.has(p))) return "twitter";
   if (parts.some(p => LI_WORDS.has(p)))      return "linkedin";
+  if (parts.some(p => LIEN_WORDS.has(p)))    return "lien";
   return null;
 };
 
@@ -226,7 +231,6 @@ export default function ImportDropzone({ onExtracted }) {
 
       onExtracted({ clubs, contacts, nom_fichier: file.name });
     } catch (err) {
-      console.error("Import error:", err);
       setError(err.message || "Une erreur est survenue lors de l'analyse du fichier.");
     } finally {
       setLoading(false);

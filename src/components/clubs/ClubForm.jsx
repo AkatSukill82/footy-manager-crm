@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Phone, Mail, Globe, User, Instagram, Twitter, ChevronDown, ChevronUp } from "lucide-react";
+import { Building2, Phone, Mail, Globe, User, Instagram, Twitter, ChevronDown, ChevronUp, Search } from "lucide-react";
 import { useLanguage } from "../../lib/LanguageContext";
 import { t } from "../../i18n/translations";
+import ImageSearchPicker from "../ui/ImageSearchPicker";
 
 export default function ClubForm({ club, onSubmit, onCancel }) {
   const { lang } = useLanguage();
@@ -22,6 +23,7 @@ export default function ClubForm({ club, onSubmit, onCancel }) {
     palmares: "", historique: "", logo_url: "", categorie: "Intermédiaire",
   });
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [logoPickerOpen, setLogoPickerOpen] = useState(false);
 
   const set = (field) => (e) => setFormData({ ...formData, [field]: e.target.value });
 
@@ -108,7 +110,19 @@ export default function ClubForm({ club, onSubmit, onCancel }) {
                 <Input value={formData.couleurs} onChange={set("couleurs")} placeholder={t(lang,'clubForm.colorsPlh')} />
               </F>
               <F label={t(lang,'clubForm.logoUrl')}>
-                <Input value={formData.logo_url} onChange={set("logo_url")} placeholder="https://..." />
+                <div className="flex gap-2">
+                  <Input value={formData.logo_url} onChange={set("logo_url")} placeholder="https://..." className="flex-1" />
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="outline"
+                    onClick={() => setLogoPickerOpen(true)}
+                    title="Rechercher sur Google Images"
+                    className="flex-shrink-0 border-slate-200"
+                  >
+                    <Search className="w-4 h-4" />
+                  </Button>
+                </div>
               </F>
             </div>
             {formData.logo_url && (
@@ -117,6 +131,13 @@ export default function ClubForm({ club, onSubmit, onCancel }) {
                 <span className="text-xs text-slate-400">{t(lang,'clubForm.logoPreview')}</span>
               </div>
             )}
+            <ImageSearchPicker
+              open={logoPickerOpen}
+              onClose={() => setLogoPickerOpen(false)}
+              onSelect={url => setFormData(f => ({ ...f, logo_url: url }))}
+              initialQuery={formData.nom ? `${formData.nom} football club` : ""}
+              type="club"
+            />
             <F label={t(lang,'clubForm.headquarters')}>
               <Input value={formData.adresse} onChange={set("adresse")} placeholder={t(lang,'clubForm.headquartersPlh')} />
             </F>

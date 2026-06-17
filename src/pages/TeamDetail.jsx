@@ -7,7 +7,7 @@ import { t } from "../i18n/translations";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Edit2, Trash2, Trophy } from "lucide-react";
+import { ArrowLeft, Edit2, Trash2, Trophy, AlertCircle, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import TeamForm from "../components/teams/TeamForm";
@@ -23,6 +23,7 @@ export default function TeamDetailPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const teamId = urlParams.get('id');
   const [isEditing, setIsEditing] = useState(false);
+  const [mutationError, setMutationError] = useState(null);
 
   const { data: team } = useQuery({
     queryKey: ['team', teamId],
@@ -69,6 +70,7 @@ export default function TeamDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['teams'] });
       setIsEditing(false);
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour de l'équipe"),
   });
 
   const deleteTeamMutation = useMutation({
@@ -76,6 +78,7 @@ export default function TeamDetailPage() {
     onSuccess: () => {
       navigate(createPageUrl("Teams"));
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la suppression de l'équipe"),
   });
 
   const addPlayerMutation = useMutation({
@@ -83,6 +86,7 @@ export default function TeamDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['team-players'] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de l'ajout du joueur"),
   });
 
   const removePlayerMutation = useMutation({
@@ -90,6 +94,7 @@ export default function TeamDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['team-players'] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors du retrait du joueur"),
   });
 
   const simulateMatchMutation = useMutation({
@@ -137,6 +142,7 @@ export default function TeamDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['teams'] });
       queryClient.invalidateQueries({ queryKey: ['matches'] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la simulation du match"),
   });
 
   const { lang } = useLanguage();
@@ -166,6 +172,13 @@ export default function TeamDetailPage() {
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
+      {mutationError && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span className="flex-1">{mutationError}</span>
+          <button onClick={() => setMutationError(null)} className="hover:text-red-900"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
       <Button variant="ghost" onClick={() => navigate(createPageUrl("Teams"))} size="sm">
         <ArrowLeft className="w-4 h-4 mr-2" />
         {t(lang,'common.back')}

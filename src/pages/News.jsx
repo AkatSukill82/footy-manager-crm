@@ -6,8 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Newspaper, Loader2, RefreshCw, TrendingUp, ArrowRightLeft,
-  FileText, Eye, Star, Clock, AlertCircle, ChevronRight,
-  Calendar, Zap, Trophy, Users, DollarSign, X, UserSearch, ChevronDown
+  FileText, Eye, Star, Clock, AlertCircle, ExternalLink,
+  Zap, Trophy, Users, UserSearch, ChevronDown
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr, es, enUS } from "date-fns/locale";
@@ -101,129 +101,63 @@ const LOADING_MSGS_PLAYER = {
   ],
 };
 
-function NewsCard({ item, onExpand }) {
+function NewsCard({ item }) {
   const { lang } = useLanguage();
   const style = CATEGORY_STYLES[item.categorie] || CATEGORY_STYLES.default;
   const Icon = style.icon;
   const urgency = URGENCY_CONFIG[item.urgence] || URGENCY_CONFIG.basse;
 
+  // Direct URL if provided, otherwise Google News search on the title
+  const searchQuery = [item.titre, item.source_nom].filter(Boolean).join(" ");
+  const href = item.source_url || `https://news.google.com/search?q=${encodeURIComponent(searchQuery)}&hl=fr`;
+  const isDirectLink = !!item.source_url;
+
   return (
-    <Card className={`border ${style.border} hover:shadow-md transition-all cursor-pointer group`} onClick={() => onExpand(item)}>
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
-          <div className={`w-10 h-10 rounded-xl ${style.bg} flex items-center justify-center flex-shrink-0`}>
-            <Icon className={`w-5 h-5 ${style.iconColor}`} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2 mb-1">
-              <h3 className="font-semibold text-slate-900 text-sm leading-snug group-hover:text-green-700 transition-colors line-clamp-2">{item.titre}</h3>
-              <Badge className={`text-[10px] px-1.5 py-0.5 flex-shrink-0 ${urgency.color}`}>{t(lang, urgency.labelKey)}</Badge>
+    <a href={href} target="_blank" rel="noopener noreferrer" className="block group">
+      <Card className={`border ${style.border} hover:shadow-md transition-all cursor-pointer`}>
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <div className={`w-10 h-10 rounded-xl ${style.bg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
+              <Icon className={`w-5 h-5 ${style.iconColor}`} />
             </div>
-            <p className="text-xs text-slate-500 line-clamp-2 mb-2">{item.resume}</p>
-            <div className="flex items-center justify-between">
-              <div className="flex gap-1 flex-wrap">
-                <Badge className={`text-[10px] px-1.5 py-0.5 ${style.badge}`}>{item.categorie}</Badge>
-                {item.joueurs_concernes?.slice(0, 2).map((j, i) => (
-                  <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0.5">{j}</Badge>
-                ))}
-                {item.joueurs_concernes?.length > 2 && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">+{item.joueurs_concernes.length - 2}</Badge>
-                )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <h3 className="font-semibold text-slate-900 text-sm leading-snug group-hover:text-green-700 transition-colors line-clamp-2">{item.titre}</h3>
+                <Badge className={`text-[10px] px-1.5 py-0.5 flex-shrink-0 ${urgency.color}`}>{t(lang, urgency.labelKey)}</Badge>
               </div>
-              <ChevronRight className="w-3 h-3 text-slate-300 group-hover:text-green-500 transition-colors flex-shrink-0" />
+              {item.resume && (
+                <p className="text-xs text-slate-500 line-clamp-2 mb-2">{item.resume}</p>
+              )}
+              <div className="flex items-center justify-between gap-2 mt-2">
+                <div className="flex gap-1 flex-wrap">
+                  <Badge className={`text-[10px] px-1.5 py-0.5 ${style.badge}`}>{item.categorie}</Badge>
+                  {item.joueurs_concernes?.slice(0, 2).map((j, i) => (
+                    <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0.5">{j}</Badge>
+                  ))}
+                  {item.joueurs_concernes?.length > 2 && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">+{item.joueurs_concernes.length - 2}</Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {item.source_nom && (
+                    <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{item.source_nom}</span>
+                  )}
+                  {!isDirectLink && (
+                    <span className="text-[10px] text-slate-400 italic">Google News</span>
+                  )}
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-300 group-hover:text-green-500 transition-colors" />
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </a>
   );
 }
 
-function NewsModal({ item, onClose }) {
-  const { lang } = useLanguage();
-  if (!item) return null;
-  const style = CATEGORY_STYLES[item.categorie] || CATEGORY_STYLES.default;
-  const Icon = style.icon;
-  const urgency = URGENCY_CONFIG[item.urgence] || URGENCY_CONFIG.basse;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className={`h-1.5 rounded-t-2xl bg-gradient-to-r ${
-          item.categorie === 'transfert'   ? 'from-blue-500 to-blue-600' :
-          item.categorie === 'contrat'     ? 'from-orange-400 to-orange-500' :
-          item.categorie === 'performance' ? 'from-green-500 to-green-600' :
-          item.categorie === 'alerte'      ? 'from-purple-500 to-purple-600' :
-          'from-slate-400 to-slate-500'
-        }`} />
-        <div className="p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl ${style.bg} flex items-center justify-center`}>
-                <Icon className={`w-5 h-5 ${style.iconColor}`} />
-              </div>
-              <div>
-                <Badge className={`text-xs ${style.badge} mb-1`}>{item.categorie}</Badge>
-                <Badge className={`text-xs ${urgency.color} ml-1 mb-1`}>{t(lang, urgency.labelKey)}</Badge>
-              </div>
-            </div>
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 transition-colors">
-              <X className="w-4 h-4 text-slate-500" />
-            </button>
-          </div>
-
-          <h2 className="text-xl font-bold text-slate-900 mb-3">{item.titre}</h2>
-          <p className="text-sm text-slate-600 mb-5 leading-relaxed">{item.resume}</p>
-
-          {item.details && (
-            <div className="bg-slate-50 rounded-xl p-4 mb-4">
-              <p className="text-xs font-semibold text-slate-400 uppercase mb-2">{t(lang, 'news.detailAnalysis')}</p>
-              <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{item.details}</p>
-            </div>
-          )}
-
-          {item.impact_marche && (
-            <div className="bg-green-50 rounded-xl p-4 mb-4">
-              <p className="text-xs font-semibold text-green-600 uppercase mb-2 flex items-center gap-1"><DollarSign className="w-3 h-3" /> {t(lang, 'news.marketImpact')}</p>
-              <p className="text-sm text-slate-700">{item.impact_marche}</p>
-            </div>
-          )}
-
-          {item.conseil_scout && (
-            <div className="bg-purple-50 rounded-xl p-4 mb-4">
-              <p className="text-xs font-semibold text-purple-600 uppercase mb-2 flex items-center gap-1"><Star className="w-3 h-3" /> {t(lang, 'news.scoutAdvice')}</p>
-              <p className="text-sm text-slate-700">{item.conseil_scout}</p>
-            </div>
-          )}
-
-          {item.joueurs_concernes?.length > 0 && (
-            <div className="mb-4">
-              <p className="text-xs font-semibold text-slate-400 uppercase mb-2 flex items-center gap-1"><Users className="w-3 h-3" /> {t(lang, 'news.playersInvolved')}</p>
-              <div className="flex flex-wrap gap-2">
-                {item.joueurs_concernes.map((j, i) => (
-                  <Badge key={i} variant="outline" className="text-xs">{j}</Badge>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {item.clubs_concernes?.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase mb-2">{t(lang, 'news.clubsInvolved')}</p>
-              <div className="flex flex-wrap gap-2">
-                {item.clubs_concernes.map((c, i) => (
-                  <Badge key={i} className="bg-slate-100 text-slate-700 text-xs">{c}</Badge>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ArticlesList({ articles, selectedCategory, onCategoryChange, onExpand }) {
+function ArticlesList({ articles, selectedCategory, onCategoryChange }) {
   const { lang } = useLanguage();
   const filtered = selectedCategory === "all"
     ? articles
@@ -260,7 +194,7 @@ function ArticlesList({ articles, selectedCategory, onCategoryChange, onExpand }
           </h2>
           <div className="grid md:grid-cols-2 gap-3">
             {filtered.filter(a => a.urgence === "haute").map((item, i) => (
-              <NewsCard key={i} item={item} onExpand={onExpand} />
+              <NewsCard key={i} item={item} />
             ))}
           </div>
         </div>
@@ -272,7 +206,7 @@ function ArticlesList({ articles, selectedCategory, onCategoryChange, onExpand }
           </h2>
           <div className="grid md:grid-cols-2 gap-3">
             {filtered.filter(a => a.urgence === "moyenne").map((item, i) => (
-              <NewsCard key={i} item={item} onExpand={onExpand} />
+              <NewsCard key={i} item={item} />
             ))}
           </div>
         </div>
@@ -284,7 +218,7 @@ function ArticlesList({ articles, selectedCategory, onCategoryChange, onExpand }
           </h2>
           <div className="grid md:grid-cols-2 gap-3">
             {filtered.filter(a => a.urgence === "basse").map((item, i) => (
-              <NewsCard key={i} item={item} onExpand={onExpand} />
+              <NewsCard key={i} item={item} />
             ))}
           </div>
         </div>
@@ -310,6 +244,8 @@ const NEWS_SCHEMA = {
           clubs_concernes:   { type: "array", items: { type: "string" } },
           impact_marche:     { type: "string" },
           conseil_scout:     { type: "string" },
+          source_nom:        { type: "string" },
+          source_url:        { type: "string" },
         },
       },
     },
@@ -336,11 +272,10 @@ export default function NewsPage() {
   const [loadingMsgPlayer, setLoadingMsgPlayer] = useState("");
   const [playerSearchDone, setPlayerSearchDone] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [expanded, setExpanded] = useState(null);
 
   const { data: players = [] } = useQuery({
     queryKey: ['players'],
-    queryFn: () => base44.entities.Player.list('-created_date'),
+    queryFn: () => base44.entities.Player.list(),
   });
 
   const fetchJournal = async () => {
@@ -358,31 +293,34 @@ export default function NewsPage() {
 
     const today = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
-    const data = await base44.integrations.Core.InvokeLLM({
-      prompt: `Tu es un journaliste sportif expert en football. Nous sommes le ${today}.
+    try {
+      const data = await base44.integrations.Core.InvokeLLM({
+        prompt: `Tu es un agrégateur de news football. Nous sommes le ${today}.
 
-Consulte les journaux et sources sportives du jour : L'Équipe, RMC Sport, Sky Sports, BBC Sport, Transfermarkt, Fabrizio Romano, Goal.com, Marca, AS, Gazzetta dello Sport, Le Parisien Sport.
+Cherche sur le web les vrais articles publiés aujourd'hui ou cette semaine sur : L'Équipe, RMC Sport, Sky Sports, BBC Sport, Transfermarkt, Goal.com, Marca, AS, Gazzetta dello Sport, Le Parisien Sport, Fabrizio Romano (X/Twitter), 90min, The Athletic.
 
-Génère un journal complet du football du jour avec 15 à 20 articles couvrant :
-1. Transferts confirmés ou rumeurs sérieuses
-2. Fins de contrat imminentes
-3. Joueurs à surveiller pour les prochains mercatos
-4. Performances marquantes de la semaine
-5. Blessures importantes impactant le marché
-6. Signatures officielles récentes
-7. Joueurs en conflit avec leur club
-8. Révélations et jeunes talents
+Pour chaque article trouvé, retourne :
+- "titre" : le titre exact de l'article tel qu'il est publié sur le site source (ne reformule pas)
+- "resume" : le chapeau ou premier paragraphe de l'article, tel quel, sans réécriture
+- "source_nom" : le nom du média (ex: "L'Équipe", "Sky Sports")
+- "source_url" : l'URL exacte et complète de l'article (commence par https://)
+- "categorie" : "transfert", "contrat", "performance", "alerte" ou "palmares"
+- "urgence" : "haute" si info du jour, "moyenne" si cette semaine, "basse" sinon
+- "joueurs_concernes" : liste des joueurs nommés dans l'article
+- "clubs_concernes" : liste des clubs mentionnés
 
-Pour chaque article, sois TRÈS DÉTAILLÉ dans les "details" : chiffres, montants, durée de contrat, statistiques, contexte, sources.
-IMPORTANT: urgence = "haute" si transfert imminent ou fin de contrat < 6 mois, "moyenne" si dans les 6-12 mois, "basse" sinon.`,
-      add_context_from_internet: true,
-      response_json_schema: NEWS_SCHEMA,
-    });
-
-    clearInterval(interval);
-    setArticlesJournal(data?.articles || []);
-    setLastUpdate(new Date());
-    setLoadingJournal(false);
+RÈGLE ABSOLUE : ne retourne que des articles qui existent vraiment avec une URL valide. Si tu n'es pas sûr de l'URL exacte, ne l'inclus pas. Vise 15 à 20 articles.`,
+        add_context_from_internet: true,
+        response_json_schema: NEWS_SCHEMA,
+      });
+      setArticlesJournal(data?.articles || []);
+      setLastUpdate(new Date());
+    } catch (err) {
+      setArticlesJournal([]);
+    } finally {
+      clearInterval(interval);
+      setLoadingJournal(false);
+    }
   };
 
   const fetchPlayerNews = async () => {
@@ -417,36 +355,38 @@ IMPORTANT: urgence = "haute" si transfert imminent ou fin de contrat < 6 mois, "
       pl.contrat_fin && `Fin de contrat : ${pl.contrat_fin}`,
     ].filter(Boolean).join(", ");
 
-    const data = await base44.integrations.Core.InvokeLLM({
-      prompt: `Tu es un analyste sportif expert. Nous sommes le ${today}.
+    try {
+      const data = await base44.integrations.Core.InvokeLLM({
+        prompt: `Tu es un agrégateur de news football. Nous sommes le ${today}.
 
-Recherche toutes les informations et actualités concernant le joueur de football **${pl.nom}** sur les ${periodLabel} écoulés (depuis le ${fromLabel}).
-${context ? `\nContexte du joueur dans notre CRM : ${context}` : ""}
+Recherche sur le web les vrais articles publiés sur **${pl.nom}** entre le ${fromLabel} et aujourd'hui.
+${context ? `Contexte : ${context}` : ""}
 
-Fouille toutes les sources : L'Équipe, RMC Sport, Sky Sports, Transfermarkt, SofaScore, Fabrizio Romano, Goal.com, Marca, AS, Gazzetta dello Sport, BBC Sport, les journaux locaux de son club.
+Sources à fouiller : L'Équipe, RMC Sport, Sky Sports, BBC Sport, Transfermarkt (page joueur), SofaScore, Goal.com, Marca, AS, Gazzetta dello Sport, journaux locaux du club de ce joueur, Fabrizio Romano (X/Twitter).
 
-Génère entre 8 et 15 articles couvrant TOUT ce qui concerne ce joueur sur cette période :
-- Ses performances matchs par matchs importantes
-- Les rumeurs de transfert le concernant
-- Son contrat (renouvellement, négociations, expiration)
-- Ses statistiques et évolutions
-- Ses blessures ou retours de blessure
-- Les déclarations le concernant (entraîneur, agent, dirigeants)
-- Sa valeur marchande et son évolution
-- Sa situation en équipe nationale
-- Tout événement marquant (but décisif, récompense, incident, etc.)
+Pour chaque article trouvé, retourne :
+- "titre" : le titre exact de l'article tel qu'il est publié (ne reformule pas)
+- "resume" : le premier paragraphe ou chapeau de l'article, tel quel
+- "source_nom" : le nom du média
+- "source_url" : l'URL exacte et complète de l'article (commence par https://)
+- "categorie" : "transfert", "contrat", "performance", "alerte" ou "palmares"
+- "urgence" : "haute" si < 2 semaines, "moyenne" si dans le mois, "basse" sinon
+- "joueurs_concernes" : [\"${pl.nom}\"]
+- "clubs_concernes" : clubs mentionnés
 
-Sois PRÉCIS dans les dates (mois/année), les montants et les statistiques.
-Si tu ne trouves pas d'info récente sur une catégorie, ne l'invente pas.
-urgence = "haute" si c'est une info très récente (< 2 semaines) ou critique, "moyenne" si dans le dernier mois, "basse" sinon.`,
-      add_context_from_internet: true,
-      response_json_schema: NEWS_SCHEMA,
-    });
-
-    clearInterval(interval);
-    setArticlesPlayer(data?.articles || []);
-    setPlayerSearchDone(true);
-    setLoadingPlayer(false);
+RÈGLE ABSOLUE : ne retourne que des articles qui existent vraiment avec une URL valide. Si tu n'es pas sûr de l'URL exacte, ne l'inclus pas. Vise 8 à 15 articles.`,
+        add_context_from_internet: true,
+        response_json_schema: NEWS_SCHEMA,
+      });
+      setArticlesPlayer(data?.articles || []);
+      setPlayerSearchDone(true);
+    } catch (err) {
+      setArticlesPlayer([]);
+      setPlayerSearchDone(true);
+    } finally {
+      clearInterval(interval);
+      setLoadingPlayer(false);
+    }
   };
 
   const urgentCountJournal = articlesJournal.filter(a => a.urgence === "haute").length;
@@ -564,7 +504,6 @@ urgence = "haute" si c'est une info très récente (< 2 semaines) ou critique, "
                   articles={articlesJournal}
                   selectedCategory={categoryJournal}
                   onCategoryChange={setCategoryJournal}
-                  onExpand={setExpanded}
                 />
               </>
             )}
@@ -691,7 +630,6 @@ urgence = "haute" si c'est une info très récente (< 2 semaines) ou critique, "
                   articles={articlesPlayer}
                   selectedCategory={categoryPlayer}
                   onCategoryChange={setCategoryPlayer}
-                  onExpand={setExpanded}
                 />
               </>
             )}
@@ -699,7 +637,6 @@ urgence = "haute" si c'est une info très récente (< 2 semaines) ou critique, "
         )}
       </div>
 
-      {expanded && <NewsModal item={expanded} onClose={() => setExpanded(null)} />}
     </div>
   );
 }

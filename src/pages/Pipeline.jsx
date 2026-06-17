@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, GripVertical, User, Loader2 } from "lucide-react";
+import { Plus, Trash2, GripVertical, User, Loader2, Pencil } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 
 // ── Colonnes du pipeline ──────────────────────────────────────────────────────
@@ -37,15 +38,25 @@ const EMPTY = {
 
 // ── Carte joueur dans le Kanban ───────────────────────────────────────────────
 function PipelineCard({ card, onDelete, onEdit, onDragStart }) {
+  const navigate = useNavigate();
+
+  const handleCardClick = () => {
+    if (card.player_id) {
+      navigate(`/player-detail?id=${card.player_id}`);
+    } else {
+      onEdit(card);
+    }
+  };
+
   return (
     <div
       draggable
       onDragStart={e => onDragStart(e, card.id)}
-      onClick={() => onEdit(card)}
-      className="bg-white rounded-xl border border-slate-200 p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-all group select-none"
+      onClick={handleCardClick}
+      className="bg-white rounded-xl border border-slate-200 p-3 cursor-pointer hover:shadow-md hover:border-slate-300 transition-all group select-none"
     >
       <div className="flex items-start gap-2">
-        <GripVertical className="w-3.5 h-3.5 text-slate-300 flex-shrink-0 mt-0.5" />
+        <GripVertical className="w-3.5 h-3.5 text-slate-300 flex-shrink-0 mt-0.5 cursor-grab active:cursor-grabbing" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap mb-1">
             {card.priorite && card.priorite !== "Moyenne" && (
@@ -56,7 +67,7 @@ function PipelineCard({ card, onDelete, onEdit, onDragStart }) {
 
           <div className="flex items-center gap-2">
             {card.player_photo
-              ? <img src={card.player_photo} className="w-8 h-8 rounded-lg object-cover flex-shrink-0" referrerPolicy="no-referrer" />
+              ? <img src={card.player_photo} alt={card.player_nom || ""} className="w-8 h-8 rounded-lg object-cover flex-shrink-0" referrerPolicy="no-referrer" />
               : <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
                   <User className="w-4 h-4 text-slate-400" />
                 </div>
@@ -67,19 +78,37 @@ function PipelineCard({ card, onDelete, onEdit, onDragStart }) {
             </div>
           </div>
 
-          {card.valeur_marchande != null && (
-            <p className="text-[11px] text-green-600 font-semibold mt-1.5">{card.valeur_marchande} M€</p>
-          )}
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            {card.valeur_marchande != null && (
+              <span className="text-[11px] text-emerald-700 font-semibold">{card.valeur_marchande}M€</span>
+            )}
+            {card.age && (
+              <span className="text-[11px] text-slate-400">{card.age} ans</span>
+            )}
+            {card.nationalite && (
+              <span className="text-[11px] text-slate-400">{card.nationalite}</span>
+            )}
+          </div>
           {card.notes && (
             <p className="text-[10px] text-slate-400 mt-1 line-clamp-2 leading-snug">{card.notes}</p>
           )}
         </div>
-        <button
-          onClick={e => { e.stopPropagation(); onDelete(card.id); }}
-          className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-400 transition-all p-0.5 flex-shrink-0"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0">
+          <button
+            onClick={e => { e.stopPropagation(); onEdit(card); }}
+            className="text-slate-300 hover:text-slate-600 p-0.5"
+            title="Modifier"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={e => { e.stopPropagation(); onDelete(card.id); }}
+            className="text-slate-300 hover:text-red-400 p-0.5"
+            title="Supprimer"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -228,6 +257,7 @@ export default function PipelinePage() {
   const deleteMutation = useMutation({
     mutationFn: id => base44.entities.Pipeline.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pipeline"] }),
+    onError: (err) => toast({ title: "Erreur lors de la suppression", description: err?.message || String(err), variant: "destructive" }),
   });
 
   const cardsByCol = useMemo(() => {

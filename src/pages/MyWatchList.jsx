@@ -1,12 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Star, Loader2, Trash2, UserCheck, Zap, FileText, Eye, Edit2 } from "lucide-react";
+import { Star, Loader2, Trash2, UserCheck, Zap, FileText, Eye, Edit2, AlertCircle, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import TransfermarktImage from "../components/ui/TransfermarktImage";
@@ -28,9 +27,9 @@ function PlayerRow({ item, player, note, onEditStatus, onRemove, lang }) {
   const Icon = sc.Icon || Eye;
 
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow">
-      <div className={`h-1 ${sc.bg.split(' ')[0]}`} />
-      <CardContent className="p-4">
+    <div className="bg-white rounded-xl border border-slate-100 overflow-hidden hover:border-slate-200 hover:shadow-sm transition-all">
+      <div className={`h-0.5 ${sc.bg.split(' ')[0]}`} />
+      <div className="p-4">
         <div className="flex items-center gap-4">
           {/* Photo */}
           <div
@@ -74,7 +73,7 @@ function PlayerRow({ item, player, note, onEditStatus, onRemove, lang }) {
                 </span>
               )}
               {player.valeur_marchande && (
-                <span className="text-xs text-green-700 bg-green-50 px-1.5 py-0.5 rounded font-medium">
+                <span className="text-xs text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded font-medium">
                   {player.valeur_marchande} M€
                 </span>
               )}
@@ -83,10 +82,10 @@ function PlayerRow({ item, player, note, onEditStatus, onRemove, lang }) {
             {note && (
               <div className="flex items-center gap-2 mt-1.5">
                 {note.evaluation != null && (
-                  <span className="text-sm font-bold text-blue-600">{note.evaluation}/10</span>
+                  <span className="text-sm font-bold text-slate-800">{note.evaluation}/10</span>
                 )}
                 {note.interet && (
-                  <Badge className="text-[10px] bg-blue-50 text-blue-700 border-blue-200">
+                  <Badge className="text-[10px] bg-slate-100 text-slate-600 border-slate-200">
                     Intérêt : {note.interet}
                   </Badge>
                 )}
@@ -111,6 +110,7 @@ function PlayerRow({ item, player, note, onEditStatus, onRemove, lang }) {
             <Button
               variant="ghost"
               size="sm"
+              title="Retirer de la watchlist"
               className="h-8 text-red-400 hover:text-red-600 hover:bg-red-50"
               onClick={() => onRemove(item.id)}
             >
@@ -136,8 +136,8 @@ function PlayerRow({ item, player, note, onEditStatus, onRemove, lang }) {
           );
           return null;
         })()}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -146,6 +146,7 @@ export default function MyWatchListPage() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("all");
   const [modalData, setModalData] = useState(null); // { item, player }
+  const [mutationError, setMutationError] = useState(null);
   const user = useCurrentUser();
   const userEmail = user?.email;
 
@@ -169,37 +170,49 @@ export default function MyWatchListPage() {
 
   const updateWatchListMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.WatchList.update(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['watchList'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['watchList', userEmail] }),
+    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour"),
   });
 
   const removeFromWatchListMutation = useMutation({
     mutationFn: (id) => base44.entities.WatchList.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['watchList'] });
+      queryClient.invalidateQueries({ queryKey: ['watchList', userEmail] });
       queryClient.invalidateQueries({ queryKey: ['watchListItem'] });
     },
+    onError: (err) => setMutationError(err.message || "Erreur lors de la suppression"),
   });
 
-  const playersMap = Object.fromEntries(players.map(p => [p.id, p]));
-  const notesMap   = Object.fromEntries(notes.map(n => [n.player_id, n]));
+  const playersMap = useMemo(() => Object.fromEntries(players.map(p => [p.id, p])), [players]);
+  const notesMap   = useMemo(() => Object.fromEntries(notes.map(n => [n.player_id, n])), [notes]);
 
-  const enriched = watchList
-    .map(w => ({ ...w, player: playersMap[w.player_id], note: notesMap[w.player_id] }))
-    .filter(w => w.player);
+  const enriched = useMemo(() =>
+    watchList
+      .map(w => ({ ...w, player: playersMap[w.player_id], note: notesMap[w.player_id] }))
+      .filter(w => w.player),
+    [watchList, playersMap, notesMap]
+  );
 
-  const filtered = activeTab === "all"
-    ? enriched
-    : enriched.filter(w => w.statut === activeTab);
+  const filtered = useMemo(() =>
+    activeTab === "all" ? enriched : enriched.filter(w => w.statut === activeTab),
+    [enriched, activeTab]
+  );
 
-  // Counts per tab
-  const counts = Object.fromEntries(
-    STATUTS.map(s => [s.value, enriched.filter(w => w.statut === s.value).length])
+  const counts = useMemo(() =>
+    Object.fromEntries(STATUTS.map(s => [s.value, enriched.filter(w => w.statut === s.value).length])),
+    [enriched]
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-slate-50">
       <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-6">
-
+        {mutationError && (
+          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span className="flex-1">{mutationError}</span>
+            <button onClick={() => setMutationError(null)} className="hover:text-red-900"><X className="w-3.5 h-3.5" /></button>
+          </div>
+        )}
         {/* Header */}
         <div className="flex items-center gap-3">
           <Star className="w-8 h-8 fill-yellow-400 text-yellow-400 flex-shrink-0" />
@@ -264,19 +277,17 @@ export default function MyWatchListPage() {
             <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
           </div>
         ) : filtered.length === 0 ? (
-          <Card>
-            <CardContent className="py-20 text-center">
-              <Star className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-              <p className="text-slate-500 text-lg font-medium">
-                {activeTab === "all"
-                  ? t(lang, 'watchlist.emptyAll')
-                  : t(lang, 'watchlist.emptyStatus', { status: activeTab })}
-              </p>
-              <p className="text-slate-400 mt-2 text-sm">
-                {t(lang, 'watchlist.emptyHint')}
-              </p>
-            </CardContent>
-          </Card>
+          <div className="bg-white rounded-2xl border border-slate-100 py-20 text-center">
+            <Star className="w-16 h-16 mx-auto text-slate-300 mb-4" />
+            <p className="text-slate-500 text-lg font-medium">
+              {activeTab === "all"
+                ? t(lang, 'watchlist.emptyAll')
+                : t(lang, 'watchlist.emptyStatus', { status: activeTab })}
+            </p>
+            <p className="text-slate-400 mt-2 text-sm">
+              {t(lang, 'watchlist.emptyHint')}
+            </p>
+          </div>
         ) : (
           <div className="space-y-3">
             {filtered.map((item) => (
@@ -302,7 +313,7 @@ export default function MyWatchListPage() {
           open={!!modalData}
           onClose={() => setModalData(null)}
           onConfirm={(statut) =>
-            updateWatchListMutation.mutateAsync({ id: modalData.item.id, data: { statut } })
+            updateWatchListMutation.mutateAsync({ id: modalData.item.id, data: { statut } }).catch(() => {})
           }
         />
       )}
