@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "../../lib/LanguageContext";
 import { t } from "../../i18n/translations";
+import { playerExternalLinks } from "../../lib/externalLinks";
 
 function InfoRow({ label, value }) {
   if (value == null || value === "") return null;
@@ -70,14 +71,11 @@ export default function PlayerFullProfile({ player }) {
   const { lang } = useLanguage();
   if (!player) return null;
 
-  const _name = encodeURIComponent(player.nom || "");
-  const _tmId = player.transfermarkt_id;
-  const tmHref = _tmId
-    ? `https://www.transfermarkt.com/a/profil/spieler/${_tmId}`
-    : `https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche?query=${_name}&Feld=spieler`;
-  const bsHref    = `https://www.besoccer.com/search/${_name}`;
-  const sofaHref  = `https://www.sofascore.com/search#query=${_name}`;
-  const fmHref    = `https://www.fotmob.com/search?q=${_name}`;
+  const _links = Object.fromEntries(playerExternalLinks(player).map(l => [l.label, l.url]));
+  const tmHref   = _links["Transfermarkt"];
+  const bsHref   = _links["BeSoccer"];
+  const sofaHref = _links["SofaScore"];
+  const fmHref   = _links["FotMob"];
 
   const hasContacts = player.email || player.telephone || player.whatsapp || player.instagram || player.twitter || player.linkedin;
   const hasAddress = player.adresse || player.ville_residence || player.pays_residence;

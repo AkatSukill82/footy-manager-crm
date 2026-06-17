@@ -36,6 +36,7 @@ import PlayerTMStats from "../components/players/PlayerTMStats";
 import PlayerSofaStats from "../components/players/PlayerSofaStats";
 import PlayerVideos from "../components/players/PlayerVideos";
 import PlayerMatches from "../components/players/PlayerMatches";
+import { playerExternalLinks } from "../lib/externalLinks";
 
 const posteColors = {
   "Gardien": "bg-amber-50 text-amber-700",
@@ -413,31 +414,15 @@ export default function PlayerDetailPage() {
                   )}
 
                   {/* Liens externes — directement sous les stats */}
-                  {(() => {
-                    const q = encodeURIComponent(player.nom || "");
-                    const links = [
-                      { label: "Transfermarkt", url: tmUrl || `https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche?query=${q}`,
-                        color: "text-blue-700 border-blue-200 hover:bg-blue-50", direct: !!tmUrl },
-                      { label: "BeSoccer", url: `https://www.besoccer.com/search/${q}`,
-                        color: "text-emerald-700 border-emerald-200 hover:bg-emerald-50", direct: false },
-                      { label: "SofaScore", url: player.sofascore_id ? `https://www.sofascore.com/player/${player.sofascore_id}` : `https://www.sofascore.com/search#query=${q}`,
-                        color: "text-purple-700 border-purple-200 hover:bg-purple-50", direct: !!player.sofascore_id },
-                      { label: "FotMob", url: `https://www.fotmob.com/search?q=${q}`,
-                        color: "text-orange-700 border-orange-200 hover:bg-orange-50", direct: false },
-                    ];
-                    return (
-                      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                        {links.map(l => (
-                          <a key={l.label} href={l.url} target="_blank" rel="noopener noreferrer"
-                            className={`inline-flex items-center gap-1 text-[11px] border rounded-md px-2 py-0.5 transition-colors ${l.color}`}>
-                            <ExternalLink className="w-3 h-3" />
-                            {l.label}
-                            {!l.direct && <span className="text-[9px] opacity-50">↗</span>}
-                          </a>
-                        ))}
-                      </div>
-                    );
-                  })()}
+                  <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                    {playerExternalLinks({ ...player, transfermarkt_url: tmUrl }).map(l => (
+                      <a key={l.label} href={l.url} target="_blank" rel="noopener noreferrer"
+                        className={`inline-flex items-center gap-1 text-[11px] border rounded-md px-2 py-0.5 transition-colors ${l.color}`}>
+                        <ExternalLink className="w-3 h-3" />
+                        {l.label}
+                      </a>
+                    ))}
+                  </div>
 
                   {/* Complétude + Sync */}
                   <div className="flex items-center gap-3 mt-3">

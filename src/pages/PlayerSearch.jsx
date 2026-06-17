@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { getCache, setCache, normalizeQuery } from "../lib/searchCache";
+import { playerExternalLinks } from "../lib/externalLinks";
 
 const posteColors = {
   "Gardien":           "bg-yellow-100 text-yellow-800",
@@ -75,43 +76,24 @@ function SourceBadge({ sources = [] }) {
   );
 }
 
-// ── Liens externes (toujours affichés, direct si disponible, recherche sinon) ─
-function ExternalLinks({ nom, tmUrl, bsUrl, sofaUrl, fmUrl }) {
-  const q = encodeURIComponent(nom || "");
-  const links = [
-    {
-      label: "Transfermarkt",
-      url: tmUrl || `https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche?query=${q}`,
-      color: "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100",
-      direct: !!tmUrl,
-    },
-    {
-      label: "BeSoccer",
-      url: bsUrl || `https://www.besoccer.com/search/${q}`,
-      color: "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100",
-      direct: !!bsUrl,
-    },
-    {
-      label: "SofaScore",
-      url: sofaUrl || `https://www.sofascore.com/search#query=${q}`,
-      color: "bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100",
-      direct: !!sofaUrl,
-    },
-    {
-      label: "FotMob",
-      url: fmUrl || `https://www.fotmob.com/search?q=${q}`,
-      color: "bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100",
-      direct: !!fmUrl,
-    },
-  ];
+// ── Liens externes (toujours affichés, direct si dispo sinon recherche Google site:) ─
+function ExternalLinks({ nom, tmUrl, bsUrl, sofaUrl }) {
+  const links = playerExternalLinks({
+    nom, transfermarkt_url: tmUrl, besoccer_url: bsUrl, sofascore_url: sofaUrl,
+  });
   return (
     <div className="flex flex-wrap gap-2">
-      {links.map(({ label, url, color, direct }) => (
+      {links.map(({ label, url, direct }) => (
         <a key={label} href={url} target="_blank" rel="noopener noreferrer"
-          className={`flex items-center gap-1.5 text-xs border rounded-lg px-2.5 py-1.5 font-medium transition-colors ${color}`}>
+          className={`flex items-center gap-1.5 text-xs border rounded-lg px-2.5 py-1.5 font-medium transition-colors bg-white ${
+            label === "Transfermarkt" ? "border-blue-200 text-blue-700 hover:bg-blue-50" :
+            label === "BeSoccer"     ? "border-emerald-200 text-emerald-700 hover:bg-emerald-50" :
+            label === "SofaScore"    ? "border-purple-200 text-purple-700 hover:bg-purple-50" :
+                                       "border-orange-200 text-orange-700 hover:bg-orange-50"
+          }`}>
           <ExternalLink className="w-3 h-3" />
           {label}
-          {!direct && <span className="text-[9px] opacity-50">recherche</span>}
+          {!direct && <span className="text-[9px] opacity-50">↗</span>}
         </a>
       ))}
     </div>
