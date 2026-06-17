@@ -31,7 +31,7 @@ export function playerExternalLinks(player = {}) {
     {
       label: "BeSoccer",
       color: "text-emerald-700 border-emerald-200 hover:bg-emerald-50",
-      url: player.besoccer_url || google("besoccer.com", name, "futbolista"),
+      url: player.besoccer_url || google("besoccer.com", name),
       direct: !!player.besoccer_url,
     },
     {
