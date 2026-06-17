@@ -123,11 +123,11 @@ const parseProfile = (html: string, url: string): Record<string, any> => {
   const clubM = html.match(/href="\/[^"]+\/(?:verein|club)\/\d+"[^>]*>\s*(?:<[^>]+>)*\s*([A-Z][^<\n]{2,40}?)\s*(?:<|$)/im);
   if (clubM) d.club_actuel = clubM[1].replace(/<[^>]+>/g, "").trim();
 
-  // Photo
-  const photoM = html.match(/(?:spielerheader|player-image)[^>]*>[\s\S]*?<img[^>]+src="([^"]+)"[^>]*>/i) ||
-                 html.match(/<img[^>]+class="[^"]*spielerbild[^"]*"[^>]+src="([^"]+)"[^>]*>/i) ||
-                 html.match(/cdn\.transfermarkt\.com\/[^"]+spieler\/[^"]+jpg[^"]*/i);
-  if (photoM) d.photo_url = photoM[1] || photoM[0];
+  // Photo — cherche l'URL portrait TM (format CDN fiable)
+  const photoM = html.match(/https:\/\/img\.a\.transfermarkt\.technology\/portrait\/(?:medium|big)\/[^"'\s>]+\.jpg/i) ||
+                 html.match(/https:\/\/img\.a\.transfermarkt\.technology\/portrait\/[^"'\s>]+\.jpg/i) ||
+                 html.match(/(https:\/\/[^"']+transfermarkt[^"']+(?:portrait|spieler)[^"'\s>]+\.(?:jpg|png|webp))/i);
+  if (photoM) d.photo_url = photoM[0] || photoM[1];
 
   // ID Transfermarkt depuis l'URL
   const idM = url.match(/\/spieler\/(\d+)/);
