@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "../lib/useCurrentUser";
+import { ensureClubForPlayer } from "../lib/ensureClub";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2, List, Search } from "lucide-react";
 import { useLanguage } from "../lib/LanguageContext";
@@ -47,9 +48,16 @@ export default function PlayersPage() {
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Player.create(data),
-    onSuccess: () => {
+    onSuccess: (created, data) => {
       queryClient.invalidateQueries({ queryKey: ['players'] });
       setShowForm(false);
+      // Crée automatiquement le club du joueur s'il n'existe pas (pour avoir
+      // notamment ses prochains matchs). Non bloquant.
+      if (data?.club_actuel) {
+        ensureClubForPlayer(data.club_actuel)
+          .then((c) => { if (c) queryClient.invalidateQueries({ queryKey: ['clubs'] }); })
+          .catch(() => {});
+      }
     },
   });
 

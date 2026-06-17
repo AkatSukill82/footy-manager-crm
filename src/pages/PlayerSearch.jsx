@@ -13,6 +13,7 @@ import { createPageUrl } from "../utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { getCache, setCache, normalizeQuery } from "../lib/searchCache";
 import { playerExternalLinks } from "../lib/externalLinks";
+import { ensureClubForPlayer } from "../lib/ensureClub";
 
 const posteColors = {
   "Gardien":           "bg-yellow-100 text-yellow-800",
@@ -405,6 +406,14 @@ export default function PlayerSearchPage() {
       const created = await base44.entities.Player.create(clean);
       queryClient.invalidateQueries({ queryKey: ["players"] });
       setSaved(true);
+
+      // Crée automatiquement le club du joueur s'il n'existe pas encore
+      // (permet notamment d'avoir ses prochains matchs). Non bloquant.
+      if (clean.club_actuel) {
+        ensureClubForPlayer(clean.club_actuel)
+          .then((c) => { if (c) queryClient.invalidateQueries({ queryKey: ["clubs"] }); })
+          .catch(() => {});
+      }
 
       // Photo manquante → recherche automatique en arrière-plan (non bloquant)
       if (!clean.photo_url) {
