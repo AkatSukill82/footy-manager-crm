@@ -1,0 +1,59 @@
+{
+  "name": "Mandate",
+  "type": "object",
+  "properties": {
+    "player_id": { "type": "string", "description": "ID du joueur représenté" },
+    "player_nom": { "type": "string", "description": "Nom du joueur représenté" },
+    "type": {
+      "type": "string",
+      "enum": [
+        "representation_exclusive",
+        "representation_non_exclusive",
+        "droits_image",
+        "mandat_ponctuel"
+      ],
+      "default": "representation_exclusive",
+      "description": "Type de mandat"
+    },
+    "date_debut": { "type": "string", "format": "date", "description": "Date de début du mandat" },
+    "date_fin": { "type": "string", "format": "date", "description": "Date d'expiration du mandat" },
+    "commission_pct": { "type": "number", "description": "Commission convenue (%)" },
+    "exclusif": { "type": "boolean", "default": true, "description": "Mandat exclusif" },
+    "statut": {
+      "type": "string",
+      "enum": ["actif", "resilie", "expire"],
+      "default": "actif",
+      "description": "Statut du mandat"
+    },
+    "notes": { "type": "string", "description": "Notes internes" },
+    "organization_id": { "type": "string", "description": "Organisation ID pour le partage" }
+  },
+  "required": ["player_nom", "date_fin", "statut"],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}",
+      "organization_id": "{{user.data.organization_id}}"
+    },
+    "read": {
+      "$or": [
+        { "created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } },
+        { "$and": [ { "data.organization_id": "{{user.data.organization_id}}" }, { "data.organization_id": { "$ne": null } } ] }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } },
+        { "$and": [ { "data.organization_id": "{{user.data.organization_id}}" }, { "data.organization_id": { "$ne": null } } ] }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } },
+        { "$and": [ { "data.organization_id": "{{user.data.organization_id}}" }, { "data.organization_id": { "$ne": null } } ] }
+      ]
+    }
+  }
+}

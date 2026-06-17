@@ -1,0 +1,60 @@
+{
+  "name": "Document",
+  "type": "object",
+  "properties": {
+    "titre": { "type": "string", "description": "Nom du document" },
+    "player_id": { "type": "string", "description": "ID du joueur lié (optionnel)" },
+    "player_nom": { "type": "string", "description": "Nom du joueur lié" },
+    "type": {
+      "type": "string",
+      "enum": [
+        "contrat",
+        "passeport",
+        "carte_identite",
+        "permis_travail",
+        "visa",
+        "certificat_medical",
+        "licence",
+        "autre"
+      ],
+      "default": "contrat",
+      "description": "Type de document"
+    },
+    "url": { "type": "string", "description": "Lien vers le document (Drive, Dropbox…)" },
+    "date_expiration": {
+      "type": "string",
+      "format": "date",
+      "description": "Date d'expiration (passeport, permis de travail, visa…)"
+    },
+    "notes": { "type": "string", "description": "Notes" },
+    "organization_id": { "type": "string", "description": "Organisation ID pour le partage" }
+  },
+  "required": ["titre", "type"],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}",
+      "organization_id": "{{user.data.organization_id}}"
+    },
+    "read": {
+      "$or": [
+        { "created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } },
+        { "$and": [ { "data.organization_id": "{{user.data.organization_id}}" }, { "data.organization_id": { "$ne": null } } ] }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } },
+        { "$and": [ { "data.organization_id": "{{user.data.organization_id}}" }, { "data.organization_id": { "$ne": null } } ] }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } },
+        { "$and": [ { "data.organization_id": "{{user.data.organization_id}}" }, { "data.organization_id": { "$ne": null } } ] }
+      ]
+    }
+  }
+}
