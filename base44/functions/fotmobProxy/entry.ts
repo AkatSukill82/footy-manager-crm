@@ -136,6 +136,23 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true, stats });
     }
 
+    // ── Liste de candidats joueurs (sans stats) ─────────────────────────────
+    if (action === "searchPlayer") {
+      if (!query?.trim()) return Response.json({ ok: false, error: "query requis" });
+      const json = await fmGet(`/search/suggest?hits=20&lang=en&term=${encodeURIComponent(query.trim())}`);
+      const all: any[] = json.all || json.results || [];
+      const players = all
+        .filter((r: any) => r.type === "player" || r.teamId != null)
+        .slice(0, 10)
+        .map((r: any) => ({
+          fotmob_id:   String(r.id),
+          nom:         r.name,
+          club_actuel: r.teamName || null,
+          photo_url:   `https://images.fotmob.com/image_resources/playerimages/${r.id}.png`,
+        }));
+      return Response.json({ ok: true, total: players.length, players });
+    }
+
     if (action === "searchTeam") {
       if (!query?.trim()) return Response.json({ ok: false, error: "query requis" });
       const teams = await searchTeam(query.trim());

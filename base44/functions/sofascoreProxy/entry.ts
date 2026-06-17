@@ -136,68 +136,60 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true, stats });
     }
 
-    // ── Recherche joueurs (candidats pour PlayerSearch) ───────────────────────
-    if (action === "searchPlayer") {
-      if (!query?.trim()) return Response.json({ ok: false, error: "query requis" });
-      const json = await ssGet(`/search/all?q=${encodeURIComponent(query.trim())}`);
-      const results = (json.results || []).filter((r: any) => r.type === "player");
-
-      const POS: Record<string, string> = {
-        F: "Attaquant", G: "Gardien", D: "Défenseur central", M: "Milieu central",
-      };
-
-      const players = results.slice(0, 10).map((r: any) => {
-        const e = r.entity || r;
-        return {
-          sofascore_id: e.id,
-          nom:          e.name || e.shortName,
-          poste:        POS[e.position] || e.position || null,
-          numero_maillot: e.jerseyNumber ? String(e.jerseyNumber) : null,
-          club_actuel:  e.team?.name || null,
-          nationalite:  e.country?.name || e.nationality || null,
-          photo_url:    `https://api.sofascore.com/api/v1/player/${e.id}/image`,
-        };
-      });
-
-      return Response.json({ ok: true, total: players.length, players });
-    }
-
-    // ── Infos personnelles depuis profil joueur ───────────────────────────────
+    // ── Infos personnelles via TheSportsDB (pas de blocage cloud) ─────────────
     if (action === "getPersonalInfo") {
-      if (!sofascore_id) return Response.json({ ok: false, error: "sofascore_id requis" });
-      const json = await ssGet(`/player/${sofascore_id}`);
-      const p = json.player;
-      if (!p) return Response.json({ ok: false, error: "Joueur non trouvé sur SofaScore." });
+      if (!query?.trim()) return Response.json({ ok: false, error: "query (nom joueur) requis" });
+
+      const TDB_HEADERS: HeadersInit = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+        "Accept": "application/json",
+      };
+
+      const tdbRes = await fetch(
+        `https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(query.trim())}`,
+        { headers: TDB_HEADERS, signal: AbortSignal.timeout(8000) }
+      );
+      if (!tdbRes.ok) throw new Error(`TheSportsDB HTTP ${tdbRes.status}`);
+      const tdbJson = await tdbRes.json();
+
+      const players: any[] = tdbJson.player || [];
+      if (players.length === 0) return Response.json({ ok: false, error: "Joueur non trouvé sur TheSportsDB." });
+
+      // Prendre le résultat dont le club correspond si fourni
+      const clubHint = (club || "").toLowerCase();
+      const p = clubHint
+        ? (players.find((pl: any) => (pl.strTeam || "").toLowerCase().includes(clubHint.split(" ")[0])) || players[0])
+        : players[0];
 
       const POS: Record<string, string> = {
-        F: "Attaquant", G: "Gardien", D: "Défenseur central", M: "Milieu central",
+        "centre-forward": "Attaquant", "forward": "Attaquant", "striker": "Attaquant",
+        "attacker": "Attaquant", "winger": "Ailier droit",
+        "left wing": "Ailier gauche", "right wing": "Ailier droit",
+        "midfielder": "Milieu central", "central midfield": "Milieu central",
+        "defensive midfield": "Milieu défensif", "attacking midfield": "Milieu offensif",
+        "defender": "Défenseur central", "centre-back": "Défenseur central",
+        "left back": "Latéral gauche", "right back": "Latéral droit",
+        "goalkeeper": "Gardien",
       };
+      const rawPos = (p.strPosition || "").toLowerCase();
+      const poste = POS[rawPos] || null;
 
-      const toDate = (ts: number | null | undefined): string | null => {
-        if (!ts) return null;
-        return new Date(ts * 1000).toISOString().split("T")[0];
-      };
-
-      const mv = p.proposedMarketValue ? Math.round((p.proposedMarketValue / 1_000_000) * 100) / 100 : null;
+      // Taille : "6 ft 0 in" → cm
+      let taille: number | null = null;
+      const heightM = (p.strHeight || "").match(/(\d+)\s*ft\s*(\d+)/i);
+      if (heightM) taille = Math.round(parseInt(heightM[1]) * 30.48 + parseInt(heightM[2]) * 2.54);
 
       return Response.json({ ok: true, player: {
-        sofascore_id:   String(sofascore_id),
-        nom:            p.name || p.shortName,
-        nom_complet:    p.name,
-        age:            p.age ?? null,
-        date_naissance: toDate(p.dateOfBirthTimestamp),
-        nationalite:    p.country?.name || p.nationality || null,
-        taille:         p.height ?? null,
-        pied_fort:      p.preferredFoot === "Right" || p.preferredFoot === "right" ? "Droit"
-                        : p.preferredFoot === "Left" || p.preferredFoot === "left" ? "Gauche"
-                        : null,
-        poste:          POS[p.position] || null,
-        numero_maillot: p.jerseyNumber ? Number(p.jerseyNumber) : null,
-        club_actuel:    p.team?.name || null,
-        valeur_marchande: mv,
-        contrat_fin:    toDate(p.contractUntilTimestamp),
-        photo_url:      `https://api.sofascore.com/api/v1/player/${sofascore_id}/image`,
-        sofascore_url:  p.slug ? `https://www.sofascore.com/football/player/${p.slug}/${sofascore_id}` : null,
+        nom:            p.strPlayer,
+        nom_complet:    p.strPlayer,
+        date_naissance: p.dateBorn || null,
+        nationalite:    p.strNationality || null,
+        taille,
+        poste,
+        club_actuel:    p.strTeam || null,
+        photo_url:      p.strCutout || p.strThumb || null,
+        thesportsdb_id: p.idPlayer || null,
+        source: "TheSportsDB",
       }});
     }
 

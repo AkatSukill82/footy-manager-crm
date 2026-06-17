@@ -45,14 +45,10 @@ export default function SyncPlayerButton({ player, onApply }) {
     const name = player.nom;
     const club = player.club_actuel;
 
-    // Infos perso (BeSoccer) + stats (SofaScore + FotMob) en parallèle
-    const [bsRes, ssRes, fmRes] = await Promise.allSettled([
-      base44.functions.invoke("besoccerProxy", {
-        action: "searchAndGetPlayer",
-        query:  name,
-      }),
+    // Infos perso (TheSportsDB) + stats FotMob primary + SofaScore best-effort
+    const [tdbRes, fmRes, ssRes] = await Promise.allSettled([
       base44.functions.invoke("sofascoreProxy", {
-        action: "searchAndGetStats",
+        action: "getPersonalInfo",
         query:  name,
         club,
       }),
@@ -61,15 +57,20 @@ export default function SyncPlayerButton({ player, onApply }) {
         query:  name,
         club,
       }),
+      base44.functions.invoke("sofascoreProxy", {
+        action: "searchAndGetStats",
+        query:  name,
+        club,
+      }),
     ]);
 
-    const bs = bsRes.status === "fulfilled" && bsRes.value?.ok ? bsRes.value.player : null;
-    const ss = ssRes.status === "fulfilled" && ssRes.value?.ok ? ssRes.value.stats  : null;
-    const fm = fmRes.status === "fulfilled" && fmRes.value?.ok ? fmRes.value.stats  : null;
+    const bs = tdbRes.status === "fulfilled" && tdbRes.value?.ok ? tdbRes.value.player : null;
+    const fm = fmRes.status  === "fulfilled" && fmRes.value?.ok  ? fmRes.value.stats   : null;
+    const ss = ssRes.status  === "fulfilled" && ssRes.value?.ok  ? ssRes.value.stats   : null;
 
-    if (!bs && !ss && !fm) throw new Error("Aucune donnée trouvée (BeSoccer, SofaScore et FotMob ont échoué).");
+    if (!bs && !ss && !fm) throw new Error("Aucune donnée trouvée.");
 
-    const sources = [bs && "BeSoccer", ss && "SofaScore", fm && "FotMob"].filter(Boolean);
+    const sources = [bs && "TheSportsDB", fm && "FotMob", ss && "SofaScore"].filter(Boolean);
 
     const flat = {
       // Infos perso depuis BeSoccer

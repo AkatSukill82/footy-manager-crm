@@ -125,9 +125,9 @@ function mergePersonal(ssInfo, tmData, bsData, candidate) {
     besoccer_url:        bs.besoccer_url  || null,
     transfermarkt_url:   tm.transfermarkt_url || null,
     transfermarkt_search_url: `https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche?query=${encodeURIComponent(ss.nom || ca.nom || "")}`,
+    besoccer_url:        bs.besoccer_url  || (ca.nom ? `https://www.besoccer.com/search/${encodeURIComponent(ca.nom)}` : null),
     besoccer_elo:     bs.besoccer_elo   || null,
-    sofascore_id:     ss.sofascore_id   || String(ca.sofascore_id || ""),
-    sources: [ssInfo && "SofaScore", tmData && "Transfermarkt", bsData && "BeSoccer"].filter(Boolean),
+    sources: [ss && "TheSportsDB", tmData && "Transfermarkt", bsData && "BeSoccer"].filter(Boolean),
   };
 }
 
@@ -144,7 +144,7 @@ export default function PlayerSearchPage() {
   const navigate    = useNavigate();
   const queryClient = useQueryClient();
 
-  // ── 1. Recherche via SofaScore (JSON API — fiable depuis cloud) ────────────
+  // ── 1. Recherche via FotMob (JSON API — fonctionne depuis cloud) ──────────
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -155,7 +155,7 @@ export default function PlayerSearchPage() {
     setError(null);
 
     try {
-      const res = await base44.functions.invoke("sofascoreProxy", {
+      const res = await base44.functions.invoke("fotmobProxy", {
         action: "searchPlayer",
         query:  query.trim(),
       });
@@ -178,53 +178,53 @@ export default function PlayerSearchPage() {
     }
   };
 
-  // ── 2. Profil : SofaScore (perso + stats) + TM + BeSoccer en parallèle ────
+  // ── 2. Profil : TheSportsDB (perso) + FotMob (stats) + TM/BS best-effort ──
   const fetchFullProfile = async (candidate) => {
     setLoadingFull(true);
     setCandidates(null);
-    setLoadingStatus("SofaScore · Transfermarkt · FotMob · BeSoccer…");
+    setLoadingStatus("TheSportsDB · FotMob · Transfermarkt · BeSoccer…");
 
     try {
-      const ssId = candidate.sofascore_id;
       const nom  = candidate.nom;
       const club = candidate.club_actuel;
 
-      const [ssInfoRes, ssStatsRes, fmRes, tmRes, bsRes] = await Promise.allSettled([
-        // SofaScore infos perso (fiable)
+      const [tdbRes, fmStatsRes, tmRes, bsRes, ssStatsRes] = await Promise.allSettled([
+        // TheSportsDB infos perso (confirmé accessible depuis cloud)
         base44.functions.invoke("sofascoreProxy", {
-          action:       "getPersonalInfo",
-          sofascore_id: ssId,
-        }),
-        // SofaScore stats (fiable)
-        base44.functions.invoke("sofascoreProxy", {
-          action:       "getStats",
-          sofascore_id: ssId,
-        }),
-        // FotMob stats (backup + titularisations)
-        base44.functions.invoke("fotmobProxy", {
-          action: "searchAndGetStats",
+          action: "getPersonalInfo",
           query:  nom,
           club,
+        }),
+        // FotMob stats (confirmé accessible depuis cloud)
+        base44.functions.invoke("fotmobProxy", {
+          action:    "getStats",
+          fotmob_id: candidate.fotmob_id,
         }),
         // Transfermarkt (valeur marchande, agent — best effort)
         base44.functions.invoke("transfermarktProxy", {
           action: "searchAndGet",
           query:  nom,
         }),
-        // BeSoccer (lien profil + ELO — best effort)
+        // BeSoccer (lien + ELO — best effort)
         base44.functions.invoke("besoccerProxy", {
           action: "searchAndGetPlayer",
           query:  nom,
         }),
+        // SofaScore stats — best effort (peut être 403 depuis cloud)
+        base44.functions.invoke("sofascoreProxy", {
+          action: "searchAndGetStats",
+          query:  nom,
+          club,
+        }),
       ]);
 
-      const ssInfo  = ssInfoRes.status  === "fulfilled" && ssInfoRes.value?.ok  ? ssInfoRes.value.player  : null;
-      const ssStats = ssStatsRes.status === "fulfilled" && ssStatsRes.value?.ok ? ssStatsRes.value.stats  : null;
-      const fmStats = fmRes.status      === "fulfilled" && fmRes.value?.ok      ? fmRes.value.stats       : null;
-      const tmData  = tmRes.status      === "fulfilled" && tmRes.value?.ok      ? tmRes.value.player      : null;
-      const bsData  = bsRes.status      === "fulfilled" && bsRes.value?.ok      ? bsRes.value.player      : null;
+      const tdbInfo  = tdbRes.status     === "fulfilled" && tdbRes.value?.ok     ? tdbRes.value.player  : null;
+      const fmStats  = fmStatsRes.status === "fulfilled" && fmStatsRes.value?.ok ? fmStatsRes.value.stats : null;
+      const tmData   = tmRes.status      === "fulfilled" && tmRes.value?.ok      ? tmRes.value.player   : null;
+      const bsData   = bsRes.status      === "fulfilled" && bsRes.value?.ok      ? bsRes.value.player   : null;
+      const ssStats  = ssStatsRes.status === "fulfilled" && ssStatsRes.value?.ok ? ssStatsRes.value.stats : null;
 
-      const personal = mergePersonal(ssInfo, tmData, bsData, candidate);
+      const personal = mergePersonal(tdbInfo, tmData, bsData, candidate);
       const stats    = mergeStats(ssStats, fmStats);
 
       setResult({ ...personal, stats_saison: stats });
@@ -305,12 +305,12 @@ export default function PlayerSearchPage() {
           </h1>
           <div className="flex flex-wrap gap-1.5 mt-2 items-center">
             <span className="text-[11px] text-slate-400">Infos :</span>
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">SofaScore</span>
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-medium">TheSportsDB</span>
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">Transfermarkt</span>
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">BeSoccer</span>
             <span className="text-[11px] text-slate-400 ml-2">Stats :</span>
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">SofaScore</span>
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-medium">FotMob</span>
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">SofaScore</span>
           </div>
         </div>
 
@@ -377,7 +377,7 @@ export default function PlayerSearchPage() {
             <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
             <p className="text-slate-600 font-medium">{loadingStatus}</p>
             <div className="flex gap-2">
-              {["SofaScore", "Transfermarkt", "FotMob", "BeSoccer"].map(src => (
+              {["FotMob", "TheSportsDB", "Transfermarkt", "BeSoccer"].map(src => (
                 <span key={src} className="text-xs px-2 py-1 bg-white rounded-full border border-slate-200 text-slate-500 animate-pulse">{src}</span>
               ))}
             </div>
