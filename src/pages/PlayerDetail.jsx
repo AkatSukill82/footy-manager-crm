@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, User, Edit2, Star, Trash2, FileDown, AlertCircle, X, MoreHorizontal, ExternalLink } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuSeparator, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  DropdownMenuSeparator, DropdownMenuTrigger } from
+"@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import PlayerForm from "../components/players/PlayerForm";
@@ -50,7 +50,7 @@ const posteColors = {
   "Milieu offensif": "bg-slate-100 text-slate-700",
   "Ailier droit": "bg-slate-100 text-slate-700",
   "Ailier gauche": "bg-slate-100 text-slate-700",
-  "Attaquant": "bg-slate-900 text-white",
+  "Attaquant": "bg-slate-900 text-white"
 };
 
 function profileCompleteness(player) {
@@ -85,13 +85,13 @@ export default function PlayerDetailPage() {
       const players = await base44.entities.Player.filter({ id: playerId });
       return players[0];
     },
-    enabled: !!playerId,
+    enabled: !!playerId
   });
 
   const { data: transfers = [] } = useQuery({
     queryKey: ['transfers', playerId],
     queryFn: () => base44.entities.Transfer.filter({ player_id: playerId }),
-    enabled: !!playerId,
+    enabled: !!playerId
   });
 
   // Réutilise le cache global — zéro requête réseau supplémentaire
@@ -107,13 +107,13 @@ export default function PlayerDetailPage() {
       });
       return items[0] ?? null;
     },
-    enabled: !!playerId && !!userEmail,
+    enabled: !!playerId && !!userEmail
   });
 
   const { data: playerNotes = [] } = useQuery({
     queryKey: ['playerNotes', playerId],
     queryFn: () => base44.entities.PlayerNote.filter({ player_id: playerId }),
-    enabled: !!playerId,
+    enabled: !!playerId
   });
 
   // Réutilise le cache de la page Players — pas de requête réseau si déjà chargé
@@ -121,7 +121,7 @@ export default function PlayerDetailPage() {
     queryKey: ['players', currentUser?.id],
     queryFn: () => base44.entities.Player.filter({ created_by_id: currentUser.id }, '-created_date'),
     enabled: !!currentUser?.id,
-    staleTime: Infinity,
+    staleTime: Infinity
   });
 
   const { data: contacts = [] } = useQuery({
@@ -130,7 +130,7 @@ export default function PlayerDetailPage() {
       player_id: playerId,
       created_by: userEmail
     }),
-    enabled: !!playerId && !!userEmail,
+    enabled: !!playerId && !!userEmail
   });
 
   const { data: reminders = [] } = useQuery({
@@ -139,14 +139,14 @@ export default function PlayerDetailPage() {
       player_id: playerId,
       created_by: userEmail
     }),
-    enabled: !!playerId && !!userEmail,
+    enabled: !!playerId && !!userEmail
   });
 
   const updatePlayerMutation = useMutation({
     mutationFn: async (data) => {
       await base44.entities.Player.update(playerId, data);
       // Log the change
-      const changedFields = Object.keys(data).filter(k => player && data[k] !== player[k]);
+      const changedFields = Object.keys(data).filter((k) => player && data[k] !== player[k]);
       if (currentUser && changedFields.length > 0) {
         base44.entities.ActivityLog.create({
           entity_type: "Player",
@@ -155,7 +155,7 @@ export default function PlayerDetailPage() {
           action: "update",
           champs_modifies: JSON.stringify(changedFields),
           user_email: currentUser.email,
-          user_name: currentUser.full_name || currentUser.email,
+          user_name: currentUser.full_name || currentUser.email
         });
       }
     },
@@ -165,7 +165,7 @@ export default function PlayerDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['activityLogs', 'Player', playerId] });
       setIsEditing(false);
     },
-    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour du joueur"),
+    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour du joueur")
   });
 
   const deletePlayerMutation = useMutation({
@@ -184,20 +184,20 @@ export default function PlayerDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['pipeline'] });
       navigate(createPageUrl("Players"));
     },
-    onError: (err) => setMutationError(err.message || "Erreur lors de la suppression du joueur"),
+    onError: (err) => setMutationError(err.message || "Erreur lors de la suppression du joueur")
   });
 
   const addToWatchListMutation = useMutation({
     mutationFn: (statut) => base44.entities.WatchList.create({
       player_id: playerId,
       priorite: "Moyenne",
-      statut: statut || "Prospect",
+      statut: statut || "Prospect"
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchListItem', playerId] });
       queryClient.invalidateQueries({ queryKey: ['watchList', userEmail] });
     },
-    onError: (err) => setMutationError(err.message || "Erreur lors de l'ajout à la watchlist"),
+    onError: (err) => setMutationError(err.message || "Erreur lors de l'ajout à la watchlist")
   });
 
   const updateWatchListStatusMutation = useMutation({
@@ -206,7 +206,7 @@ export default function PlayerDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['watchListItem', playerId] });
       queryClient.invalidateQueries({ queryKey: ['watchList', userEmail] });
     },
-    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour du statut"),
+    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour du statut")
   });
 
   const removeFromWatchListMutation = useMutation({
@@ -215,7 +215,7 @@ export default function PlayerDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['watchListItem', playerId] });
       queryClient.invalidateQueries({ queryKey: ['watchList', userEmail] });
     },
-    onError: (err) => setMutationError(err.message || "Erreur lors du retrait de la watchlist"),
+    onError: (err) => setMutationError(err.message || "Erreur lors du retrait de la watchlist")
   });
 
   const createTransferMutation = useMutation({
@@ -223,25 +223,25 @@ export default function PlayerDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transfers', playerId] });
     },
-    onError: (err) => setMutationError(err.message || "Erreur lors de la création du transfert"),
+    onError: (err) => setMutationError(err.message || "Erreur lors de la création du transfert")
   });
 
   const createNoteMutation = useMutation({
     mutationFn: (data) => base44.entities.PlayerNote.create({ ...data, player_id: playerId }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['playerNotes', playerId] }),
-    onError: (err) => setMutationError(err.message || "Erreur lors de la création de la note"),
+    onError: (err) => setMutationError(err.message || "Erreur lors de la création de la note")
   });
 
   const updateNoteMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.PlayerNote.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['playerNotes', playerId] }),
-    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour de la note"),
+    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour de la note")
   });
 
   const deleteNoteMutation = useMutation({
     mutationFn: (id) => base44.entities.PlayerNote.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['playerNotes', playerId] }),
-    onError: (err) => setMutationError(err.message || "Erreur lors de la suppression de la note"),
+    onError: (err) => setMutationError(err.message || "Erreur lors de la suppression de la note")
   });
 
   const updateReminderMutation = useMutation({
@@ -249,7 +249,7 @@ export default function PlayerDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reminders', playerId] });
     },
-    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour du rappel"),
+    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour du rappel")
   });
 
   if (!player) return null;
@@ -261,49 +261,49 @@ export default function PlayerDetailPage() {
           <Button
             variant="ghost"
             onClick={() => setIsEditing(false)}
-            className="mb-4"
-          >
+            className="mb-4">
+            
             <ArrowLeft className="w-4 h-4 mr-2" />
             {t(lang, 'common.cancel')}
           </Button>
           <PlayerForm
             player={player}
             onSubmit={(data) => updatePlayerMutation.mutate(data)}
-            onCancel={() => setIsEditing(false)}
-          />
+            onCancel={() => setIsEditing(false)} />
+          
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   const completeness = profileCompleteness(player);
 
-  const tmUrl = player.lien ||
-    (player.transfermarkt_id
-      ? `https://www.transfermarkt.fr/${
-          (player.nom || "joueur")
-            .toLowerCase()
-            .normalize("NFD").replace(/[̀-ͯ]/g, "")
-            .replace(/[^a-z0-9\s-]/g, "")
-            .trim().replace(/\s+/g, "-")
-        }/profil/spieler/${player.transfermarkt_id}`
-      : null);
+  const tmUrl = player.lien || (
+  player.transfermarkt_id ?
+  `https://www.transfermarkt.fr/${
+  (player.nom || "joueur").
+  toLowerCase().
+  normalize("NFD").replace(/[̀-ͯ]/g, "").
+  replace(/[^a-z0-9\s-]/g, "").
+  trim().replace(/\s+/g, "-")}/profil/spieler/${
+  player.transfermarkt_id}` :
+  null);
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-6">
       <div className="max-w-6xl mx-auto">
-        {mutationError && (
-          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-4">
+        {mutationError &&
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-4">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span className="flex-1">{mutationError}</span>
             <button onClick={() => setMutationError(null)} className="hover:text-red-900"><X className="w-3.5 h-3.5" /></button>
           </div>
-        )}
+        }
         <Button
           variant="ghost"
           onClick={() => navigate(createPageUrl("Players"))}
-          className="mb-4"
-        >
+          className="mb-4">
+          
           <ArrowLeft className="w-4 h-4 mr-2" />
           {t(lang, 'common.back')}
         </Button>
@@ -317,16 +317,16 @@ export default function PlayerDetailPage() {
 
                 {/* Photo */}
                 <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                  {player.photo_url ? (
-                    <TransfermarktImage
-                      src={player.photo_url}
-                      alt={player.nom}
-                      className="w-full h-full object-cover"
-                      fallback={<User className="w-7 h-7 text-slate-400" />}
-                    />
-                  ) : (
-                    <User className="w-7 h-7 text-slate-400" />
-                  )}
+                  {player.photo_url ?
+                  <TransfermarktImage
+                    src={player.photo_url}
+                    alt={player.nom}
+                    className="w-full h-full object-cover"
+                    fallback={<User className="w-7 h-7 text-slate-400" />} /> :
+
+
+                  <User className="w-7 h-7 text-slate-400" />
+                  }
                 </div>
 
                 {/* Identity */}
@@ -337,11 +337,11 @@ export default function PlayerDetailPage() {
 
                       {/* Ligne 1 : poste · club · ligue */}
                       <p className="text-sm text-slate-500 mt-0.5 flex flex-wrap items-center gap-x-1.5">
-                        {player.poste && (
-                          <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-md ${posteColors[player.poste] || "bg-slate-100 text-slate-600"}`}>
+                        {player.poste &&
+                        <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-md ${posteColors[player.poste] || "bg-slate-100 text-slate-600"}`}>
                             {player.poste}
                           </span>
-                        )}
+                        }
                         {player.club_actuel && <><span className="text-slate-300">·</span><span>{player.club_actuel}</span></>}
                         {player.ligue && <><span className="text-slate-300">·</span><span className="text-slate-400">{player.ligue}</span></>}
                       </p>
@@ -374,11 +374,11 @@ export default function PlayerDetailPage() {
                       <button
                         onClick={() => setStatusModalOpen(true)}
                         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                          watchListItem
-                            ? "bg-slate-900 text-white border-slate-900"
-                            : "border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-800"
-                        }`}
-                      >
+                        watchListItem ?
+                        "bg-slate-900 text-white border-slate-900" :
+                        "border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-800"}`
+                        }>
+                        
                         <Star className={`w-3 h-3 ${watchListItem ? "fill-white" : ""}`} />
                         <span className="hidden sm:inline">{watchListItem ? watchListItem.statut : "Suivre"}</span>
                       </button>
@@ -401,8 +401,8 @@ export default function PlayerDetailPage() {
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                            onClick={() => { if (confirm(t(lang, 'players.deleteConfirm'))) deletePlayerMutation.mutate(); }}
-                          >
+                            onClick={() => {if (confirm(t(lang, 'players.deleteConfirm'))) deletePlayerMutation.mutate();}}>
+                            
                             <Trash2 className="w-3.5 h-3.5 mr-2" />
                             Supprimer
                           </DropdownMenuItem>
@@ -412,36 +412,36 @@ export default function PlayerDetailPage() {
                   </div>
 
                   {/* Stats clés inline */}
-                  {(player.matchs_joues != null || player.buts != null || player.passes_decisives != null || player.note_moyenne != null || player.xg != null) && (
-                    <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-50 flex-wrap">
+                  {(player.matchs_joues != null || player.buts != null || player.passes_decisives != null || player.note_moyenne != null || player.xg != null) &&
+                  <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-50 flex-wrap">
                       {player.matchs_joues != null && <span className="text-xs text-slate-500"><span className="font-bold text-slate-900 text-sm">{player.matchs_joues}</span> MJ</span>}
                       {player.buts != null && <span className="text-xs text-slate-500"><span className="font-bold text-slate-900 text-sm">{player.buts}</span> ⚽</span>}
                       {player.passes_decisives != null && <span className="text-xs text-slate-500"><span className="font-bold text-slate-900 text-sm">{player.passes_decisives}</span> 🅰</span>}
                       {player.note_moyenne != null && <span className="text-xs text-slate-500"><span className="font-bold text-slate-900 text-sm">{player.note_moyenne}</span> ★</span>}
                       {player.xg != null && <span className="text-xs text-slate-500"><span className="font-bold text-slate-900 text-sm">{player.xg}</span> xG</span>}
                     </div>
-                  )}
+                  }
 
                   {/* Liens externes — directement sous les stats */}
                   <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                    {playerExternalLinks({ ...player, transfermarkt_url: tmUrl }).map(l => (
-                      <a key={l.label} href={l.url} target="_blank" rel="noopener noreferrer"
-                        className={`inline-flex items-center gap-1 text-[11px] border rounded-md px-2 py-0.5 transition-colors ${l.color}`}>
+                    {playerExternalLinks({ ...player, transfermarkt_url: tmUrl }).map((l) =>
+                    <a key={l.label} href={l.url} target="_blank" rel="noopener noreferrer"
+                    className={`inline-flex items-center gap-1 text-[11px] border rounded-md px-2 py-0.5 transition-colors ${l.color}`}>
                         <ExternalLink className="w-3 h-3" />
                         {l.label}
                       </a>
-                    ))}
+                    )}
                   </div>
 
                   {/* Complétude + Sync */}
                   <div className="flex items-center gap-3 mt-3">
                     <SyncPlayerButton player={player} onApply={(data) => updatePlayerMutation.mutate(data)} />
-                    <div className="flex items-center gap-1.5 flex-1" title={`Profil complété à ${completeness}%`}>
+                    <div className="flex items-center gap-1.5 flex-1 hidden" title={`Profil complété à ${completeness}%`}>
                       <div className="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden max-w-[80px]">
                         <div
                           className={`h-full rounded-full transition-all ${completeness >= 80 ? "bg-slate-900" : completeness >= 50 ? "bg-slate-400" : "bg-slate-200"}`}
-                          style={{ width: `${completeness}%` }}
-                        />
+                          style={{ width: `${completeness}%` }} />
+                        
                       </div>
                       <span className="text-[11px] text-slate-400">{completeness}%</span>
                     </div>
@@ -473,8 +473,8 @@ export default function PlayerDetailPage() {
             
             <TransferForm
               playerId={playerId}
-              onSubmit={(data) => createTransferMutation.mutate(data)}
-            />
+              onSubmit={(data) => createTransferMutation.mutate(data)} />
+            
 
             <ContactHistory contacts={contacts} />
           </div>
@@ -484,28 +484,28 @@ export default function PlayerDetailPage() {
               notes={playerNotes}
               onCreate={(data) => createNoteMutation.mutate(data)}
               onUpdate={(id, data) => updateNoteMutation.mutate({ id, data })}
-              onDelete={(id) => deleteNoteMutation.mutate(id)}
-            />
+              onDelete={(id) => deleteNoteMutation.mutate(id)} />
+            
 
             <PlayerScoutingRatings
               player={player}
-              onSave={(data) => updatePlayerMutation.mutateAsync(data)}
-            />
+              onSave={(data) => updatePlayerMutation.mutateAsync(data)} />
+            
 
             <SimilarPlayers
               currentPlayer={player}
-              allPlayers={allPlayers}
-            />
+              allPlayers={allPlayers} />
+            
 
-            <RemindersList 
+            <RemindersList
               reminders={reminders}
-              onUpdateStatus={(id, statut) => updateReminderMutation.mutate({ id, statut })}
-            />
+              onUpdateStatus={(id, statut) => updateReminderMutation.mutate({ id, statut })} />
+            
 
             <ImportTransfermarktPhoto
               player={player}
-              onApply={(data) => updatePlayerMutation.mutate(data)}
-            />
+              onApply={(data) => updatePlayerMutation.mutate(data)} />
+            
 
             <UpcomingMatches playerClub={player.club_actuel} playerName={player.nom} />
 
@@ -518,8 +518,8 @@ export default function PlayerDetailPage() {
           <div className="lg:col-span-3">
             <PlayerComparison
               currentPlayer={player}
-              allPlayers={allPlayers}
-            />
+              allPlayers={allPlayers} />
+            
           </div>
         </div>
       </div>
@@ -538,10 +538,10 @@ export default function PlayerDetailPage() {
               await addToWatchListMutation.mutateAsync(statut);
             }
           } catch {
+
             // onError handlers on each mutation display the error banner
-          }
-        }}
-      />
-    </div>
-  );
+          }}} />
+      
+    </div>);
+
 }
