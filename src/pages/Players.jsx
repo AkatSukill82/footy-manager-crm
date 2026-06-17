@@ -10,6 +10,7 @@ import PlayerCard from "../components/players/PlayerCard";
 import AdvancedFilters from "../components/players/AdvancedFilters";
 import PlayerForm from "../components/players/PlayerForm";
 import PlayerStatusModal from "../components/players/PlayerStatusModal";
+import PlayerSearchPage from "./PlayerSearch";
 
 export default function PlayersPage() {
   const { lang } = useLanguage();
@@ -194,9 +195,7 @@ export default function PlayersPage() {
         )}
 
         {activeTab === "recherche" && (
-          <div className="text-center py-12 text-slate-400 text-sm">
-            Utilisez la page <strong>Recherche Joueurs</strong> pour ajouter un joueur via BeSoccer.
-          </div>
+          <PlayerSearchPage />
         )}
 
       </div>
