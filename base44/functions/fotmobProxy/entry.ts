@@ -1,9 +1,9 @@
 /**
- * Proxy FotMob — stats joueur saison en cours (JSON API non-officielle).
+ * Proxy FotMob — recherche joueurs + stats saison.
  *
- * Actions :
- *   searchAndGetStats  — recherche joueur par nom puis stats
- *   getStats           — stats depuis un ID FotMob connu
+ * IMPORTANT — structure réelle de l'endpoint suggest :
+ *   FotMob retourne un ARRAY, pas un objet.
+ *   Exemple : [{title:{key:"all"}, suggestions:[{type:"player", id:"30893", name:"Ronaldo", teamName:"Al Nassr", teamId:101918}]}]
  */
 
 const FM_BASE = "https://www.fotmob.com/api/data";
@@ -18,7 +18,6 @@ const FM_HEADERS: HeadersInit = {
   "Sec-Fetch-Mode": "cors",
   "Sec-Fetch-Site": "same-origin",
   "Cache-Control": "no-cache",
-  "x-mas": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
 };
 
 const fmGet = async (path: string) => {
@@ -30,25 +29,34 @@ const fmGet = async (path: string) => {
   return res.json();
 };
 
-// ── Recherche joueur ──────────────────────────────────────────────────────────
+// ── Parse la réponse suggest (array de sections) ──────────────────────────────
+
+const parseSuggest = (json: any): any[] => {
+  // FotMob retourne un array : [{title:{key:"all"}, suggestions:[...]}, {title:{key:"players"}, suggestions:[...]}]
+  if (Array.isArray(json)) {
+    // Prend la section "all" en priorité, sinon la première section
+    const section = json.find((s: any) => s.title?.key === "all") ?? json[0];
+    return section?.suggestions ?? [];
+  }
+  // Fallback si la structure change un jour
+  return json.all ?? json.results ?? json.suggestions ?? [];
+};
+
+// ── Recherche joueur interne ───────────────────────────────────────────────────
 
 const searchPlayer = async (name: string, club?: string): Promise<{ id: number; name: string } | null> => {
-  const json = await fmGet(`/search/suggest?hits=20&lang=en&term=${encodeURIComponent(name)}`);
-
-  // FotMob retourne un objet avec "all" et "players" (ou similaire)
-  const all: any[] = json.all || json.results || [];
-  const players = all.filter((r: any) => r.type === "player" || r.teamId != null);
+  const json    = await fmGet(`/search/suggest?hits=20&lang=en&term=${encodeURIComponent(name)}`);
+  const all     = parseSuggest(json);
+  const players = all.filter((r: any) => r.type === "player" && !r.isCoach);
   if (players.length === 0) return null;
 
-  // Matching par club si fourni
   if (club) {
-    const hit = players.find((r: any) =>
-      (r.teamName || r.club || "").toLowerCase().includes(club.toLowerCase().split(" ")[0])
-    );
-    if (hit) return { id: hit.id, name: hit.name };
+    const hint = club.toLowerCase().split(" ")[0];
+    const hit  = players.find((r: any) => (r.teamName ?? "").toLowerCase().includes(hint));
+    if (hit) return { id: parseInt(hit.id), name: hit.name };
   }
 
-  return { id: players[0].id, name: players[0].name };
+  return { id: parseInt(players[0].id), name: players[0].name };
 };
 
 // ── Stats joueur ──────────────────────────────────────────────────────────────
@@ -72,21 +80,16 @@ const STAT_MAP: Record<string, string> = {
 };
 
 const getPlayerStats = async (playerId: number): Promise<Record<string, any>> => {
-  const json = await fmGet(`/playerData?id=${playerId}`);
-
+  const json  = await fmGet(`/playerData?id=${playerId}`);
   const stats: Record<string, any> = {};
 
-  // Stats ligue principale
-  const mainStats: any[] = json.mainLeague?.stats || [];
-  for (const item of mainStats) {
+  for (const item of (json.mainLeague?.stats ?? [])) {
     const field = STAT_MAP[item.title];
     if (field && item.value != null) stats[field] = item.value;
   }
 
-  // Additionner les autres compétitions si disponibles
-  const otherLeagues: any[] = json.otherLeagues || [];
-  for (const league of otherLeagues) {
-    for (const item of (league.stats || [])) {
+  for (const league of (json.otherLeagues ?? [])) {
+    for (const item of (league.stats ?? [])) {
       const field = STAT_MAP[item.title];
       if (field && item.value != null && field !== "note_fotmob") {
         stats[field] = (stats[field] ?? 0) + item.value;
@@ -96,7 +99,6 @@ const getPlayerStats = async (playerId: number): Promise<Record<string, any>> =>
 
   stats.source    = "FotMob";
   stats.fotmob_id = String(playerId);
-
   return stats;
 };
 
@@ -104,16 +106,16 @@ const getPlayerStats = async (playerId: number): Promise<Record<string, any>> =>
 
 const searchTeam = async (name: string): Promise<any[]> => {
   const json = await fmGet(`/search/suggest?hits=20&lang=en&term=${encodeURIComponent(name)}`);
-  const all: any[] = json.all || json.results || [];
+  const all  = parseSuggest(json);
   return all
-    .filter((r: any) => r.type === "team" || (r.teamId == null && r.id && !r.teamId))
+    .filter((r: any) => r.type === "team")
+    .slice(0, 10)
     .map((r: any) => ({
-      id:    r.id,
-      nom:   r.name,
-      pays:  r.ccode || r.countryCode || null,
-      logo:  `https://images.fotmob.com/image_resources/logo/teamlogo/${r.id}.png`,
-    }))
-    .slice(0, 10);
+      id:   r.id,
+      nom:  r.name,
+      pays: r.ccode ?? r.countryCode ?? null,
+      logo: `https://images.fotmob.com/image_resources/logo/teamlogo/${r.id}.png`,
+    }));
 };
 
 // ── Handler ───────────────────────────────────────────────────────────────────
@@ -122,6 +124,24 @@ Deno.serve(async (req) => {
   try {
     const { action, query, club, fotmob_id } = await req.json();
 
+    // ── Recherche candidats joueurs ──────────────────────────────────────────
+    if (action === "searchPlayer") {
+      if (!query?.trim()) return Response.json({ ok: false, error: "query requis" });
+      const json    = await fmGet(`/search/suggest?hits=20&lang=en&term=${encodeURIComponent(query.trim())}`);
+      const all     = parseSuggest(json);
+      const players = all
+        .filter((r: any) => r.type === "player" && !r.isCoach)
+        .slice(0, 10)
+        .map((r: any) => ({
+          fotmob_id:   String(r.id),
+          nom:         r.name,
+          club_actuel: r.teamName ?? null,
+          photo_url:   `https://images.fotmob.com/image_resources/playerimages/${r.id}.png`,
+        }));
+      return Response.json({ ok: true, total: players.length, players });
+    }
+
+    // ── Stats + recherche en un appel ────────────────────────────────────────
     if (action === "searchAndGetStats") {
       if (!query?.trim()) return Response.json({ ok: false, error: "query requis" });
       const player = await searchPlayer(query.trim(), club);
@@ -130,29 +150,14 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true, player_name: player.name, stats });
     }
 
+    // ── Stats depuis ID connu ────────────────────────────────────────────────
     if (action === "getStats") {
       if (!fotmob_id) return Response.json({ ok: false, error: "fotmob_id requis" });
       const stats = await getPlayerStats(parseInt(fotmob_id));
       return Response.json({ ok: true, stats });
     }
 
-    // ── Liste de candidats joueurs (sans stats) ─────────────────────────────
-    if (action === "searchPlayer") {
-      if (!query?.trim()) return Response.json({ ok: false, error: "query requis" });
-      const json = await fmGet(`/search/suggest?hits=20&lang=en&term=${encodeURIComponent(query.trim())}`);
-      const all: any[] = json.all || json.results || [];
-      const players = all
-        .filter((r: any) => r.type === "player" || r.teamId != null)
-        .slice(0, 10)
-        .map((r: any) => ({
-          fotmob_id:   String(r.id),
-          nom:         r.name,
-          club_actuel: r.teamName || null,
-          photo_url:   `https://images.fotmob.com/image_resources/playerimages/${r.id}.png`,
-        }));
-      return Response.json({ ok: true, total: players.length, players });
-    }
-
+    // ── Recherche équipe ─────────────────────────────────────────────────────
     if (action === "searchTeam") {
       if (!query?.trim()) return Response.json({ ok: false, error: "query requis" });
       const teams = await searchTeam(query.trim());

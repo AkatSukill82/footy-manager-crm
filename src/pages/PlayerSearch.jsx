@@ -201,7 +201,7 @@ export default function PlayerSearchPage() {
   const navigate    = useNavigate();
   const queryClient = useQueryClient();
 
-  // ── 1. Recherche via API-Football (clé API → fonctionne depuis cloud) ──────
+  // ── 1. Recherche via FotMob (JSON array parsé correctement) ────────────────
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -212,15 +212,15 @@ export default function PlayerSearchPage() {
     setError(null);
 
     try {
-      const res = await base44.functions.invoke("apiFootballProxy", {
+      const res = await base44.functions.invoke("fotmobProxy", {
         action: "searchPlayer",
-        name:   query.trim(),
+        query:  query.trim(),
       });
 
       const list = Array.isArray(res?.players) ? res.players : [];
 
       if (list.length === 0) {
-        setError(`Aucun joueur trouvé pour "${query}". Essayez le nom en anglais sans accents.`);
+        setError(`Aucun joueur trouvé pour "${query}". Essayez le nom complet en anglais sans accents.`);
         setLoading(false);
         return;
       }
