@@ -144,7 +144,7 @@ export default function PlayerSearchPage() {
   const navigate    = useNavigate();
   const queryClient = useQueryClient();
 
-  // ── 1. Recherche via FotMob (JSON API — fonctionne depuis cloud) ──────────
+  // ── 1. Recherche : FotMob (grandes ligues) puis TheSportsDB (tous joueurs) ─
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -155,13 +155,30 @@ export default function PlayerSearchPage() {
     setError(null);
 
     try {
-      const res = await base44.functions.invoke("fotmobProxy", {
-        action: "searchPlayer",
-        query:  query.trim(),
-      });
-      const list = res?.players || [];
+      // Essai 1 : FotMob (rapide, couvre les grands championnats)
+      let list = [];
+      try {
+        const fmRes = await base44.functions.invoke("fotmobProxy", {
+          action: "searchPlayer",
+          query:  query.trim(),
+        });
+        list = fmRes?.players || [];
+      } catch (_) { /* ignore, on essaie TheSportsDB */ }
+
+      // Essai 2 : TheSportsDB si FotMob ne trouve rien (couvre 1M+ joueurs)
       if (list.length === 0) {
-        setError(`Aucun joueur trouvé pour "${query}".`);
+        const tdbRes = await base44.functions.invoke("sofascoreProxy", {
+          action: "searchPlayer",
+          query:  query.trim(),
+        });
+        list = tdbRes?.players || [];
+      }
+
+      if (list.length === 0) {
+        setError(
+          `Aucun joueur trouvé pour "${query}". ` +
+          `Essayez le prénom + nom en anglais, ou cherchez directement sur BeSoccer.`
+        );
         setLoading(false);
         return;
       }
@@ -195,11 +212,17 @@ export default function PlayerSearchPage() {
           query:  nom,
           club,
         }),
-        // FotMob stats (confirmé accessible depuis cloud)
-        base44.functions.invoke("fotmobProxy", {
-          action:    "getStats",
-          fotmob_id: candidate.fotmob_id,
-        }),
+        // FotMob stats — si on a un ID direct on l'utilise, sinon on cherche par nom
+        candidate.fotmob_id
+          ? base44.functions.invoke("fotmobProxy", {
+              action:    "getStats",
+              fotmob_id: candidate.fotmob_id,
+            })
+          : base44.functions.invoke("fotmobProxy", {
+              action: "searchAndGetStats",
+              query:  nom,
+              club,
+            }),
         // Transfermarkt (valeur marchande, agent — best effort)
         base44.functions.invoke("transfermarktProxy", {
           action: "searchAndGet",
@@ -362,6 +385,7 @@ export default function PlayerSearchPage() {
                       {c.poste       && <Badge className={`text-xs ${posteColors[c.poste] || "bg-slate-100 text-slate-700"}`}>{c.poste}</Badge>}
                       {c.nationalite && <Badge variant="outline" className="text-xs">{c.nationalite}</Badge>}
                       {c.club_actuel && <Badge className="bg-slate-800 text-white text-xs">{c.club_actuel}</Badge>}
+                      {c.date_naissance && <Badge variant="outline" className="text-xs">{c.date_naissance?.slice(0,4)}</Badge>}
                     </div>
                   </div>
                   <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-green-500 flex-shrink-0" />

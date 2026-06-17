@@ -136,6 +136,45 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true, stats });
     }
 
+    // ── Recherche joueurs via TheSportsDB (fallback FotMob) ──────────────────
+    if (action === "searchPlayer") {
+      if (!query?.trim()) return Response.json({ ok: false, error: "query requis" });
+
+      const TDB_HEADERS: HeadersInit = {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json",
+      };
+      const tdbRes = await fetch(
+        `https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(query.trim())}`,
+        { headers: TDB_HEADERS, signal: AbortSignal.timeout(8000) }
+      );
+      if (!tdbRes.ok) throw new Error(`TheSportsDB HTTP ${tdbRes.status}`);
+      const tdbJson = await tdbRes.json();
+      const raw: any[] = tdbJson.player || [];
+
+      const POS: Record<string, string> = {
+        "Centre-Forward": "Attaquant", "Forward": "Attaquant", "Striker": "Attaquant",
+        "Midfielder": "Milieu central", "Central Midfield": "Milieu central",
+        "Defensive Midfield": "Milieu défensif", "Attacking Midfield": "Milieu offensif",
+        "Left Wing": "Ailier gauche", "Right Wing": "Ailier droit", "Winger": "Ailier droit",
+        "Defender": "Défenseur central", "Centre-Back": "Défenseur central",
+        "Left Back": "Latéral gauche", "Right Back": "Latéral droit", "Goalkeeper": "Gardien",
+      };
+
+      const players = raw.slice(0, 10).map((p: any) => ({
+        thesportsdb_id: p.idPlayer,
+        nom:            p.strPlayer,
+        club_actuel:    p.strTeam?.startsWith("_") ? null : (p.strTeam || null),
+        nationalite:    p.strNationality || null,
+        poste:          POS[p.strPosition] || p.strPosition || null,
+        date_naissance: p.dateBorn || null,
+        photo_url:      p.strCutout || p.strThumb || null,
+        source:         "TheSportsDB",
+      }));
+
+      return Response.json({ ok: true, total: players.length, players });
+    }
+
     // ── Infos personnelles via TheSportsDB (pas de blocage cloud) ─────────────
     if (action === "getPersonalInfo") {
       if (!query?.trim()) return Response.json({ ok: false, error: "query (nom joueur) requis" });
