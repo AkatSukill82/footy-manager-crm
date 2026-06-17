@@ -25,7 +25,7 @@ import PlayerChartsPanel from "../components/players/PlayerChartsPanel";
 import PlayerStatsPanel from "../components/players/PlayerStatsPanel";
 import SyncPlayerButton from "../components/players/SyncPlayerButton";
 import UpcomingMatches from "../components/players/UpcomingMatches";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import TransfermarktImage from "../components/ui/TransfermarktImage";
 import { exportPlayerPDF } from "../lib/exportPlayerPDF";
 import { useLanguage } from "../lib/LanguageContext";
@@ -347,6 +347,7 @@ export default function PlayerDetailPage() {
                       <p className="text-xs text-slate-400 mt-0.5 flex flex-wrap items-center gap-x-1.5">
                         {player.contrat_fin && (() => {
                           const d = new Date(player.contrat_fin);
+                          if (!isValid(d)) return null;
                           const days = Math.floor((d - new Date()) / (1000 * 60 * 60 * 24));
                           const label = `Contrat ${format(d, "MM/yyyy")}`;
                           const urgent = days < 180;
