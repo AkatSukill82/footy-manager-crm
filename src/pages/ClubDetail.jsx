@@ -16,6 +16,8 @@ import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
 import ActivityLogList from "../components/activity/ActivityLogList";
 import ClubExternalLinks from "../components/clubs/ClubExternalLinks";
+import ClubSquad from "../components/clubs/ClubSquad";
+import UpcomingMatches from "../components/players/UpcomingMatches";
 
 function Row({ label, value, valueClass = "font-medium text-slate-900" }) {
   if (!value) return null;
@@ -486,6 +488,12 @@ export default function ClubDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Effectif complet (recherche web : Transfermarkt / FotMob) */}
+      <ClubSquad club={club} crmPlayers={players} />
+
+      {/* Prochains matchs du club */}
+      <UpcomingMatches playerClub={club.nom} />
 
       {/* Historique + Palmarès */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
