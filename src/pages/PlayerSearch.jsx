@@ -10,7 +10,7 @@ import {
   Activity, Shield, Zap, Heart, Globe, Star, Building2, ExternalLink
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { createPageUrl, sanitizePlayerData } from "../utils";
+import { createPageUrl } from "../utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
@@ -272,7 +272,8 @@ export default function PlayerSearchPage() {
         xa:               s?.xa,
         note_moyenne:     s?.note_moyenne,
       };
-      const created = await base44.entities.Player.create(sanitizePlayerData(playerData));
+      const cleanData = Object.fromEntries(Object.entries(playerData).filter(([, v]) => v != null && v !== ""));
+      const created = await base44.entities.Player.create(cleanData);
       queryClient.invalidateQueries({ queryKey: ["players"] });
       setSaved(true);
       setTimeout(() => navigate(createPageUrl("PlayerDetail") + `?id=${created.id}`), 800);

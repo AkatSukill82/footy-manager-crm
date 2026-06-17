@@ -71,7 +71,7 @@ export default function SyncPlayerButton({ player, onApply }) {
 
     const sources = [bs && "BeSoccer", ss && "SofaScore", fm && "FotMob"].filter(Boolean);
 
-    const flat: Record<string, any> = {
+    const flat = {
       // Infos perso depuis BeSoccer
       ...(bs ? {
         age:              bs.age,
@@ -106,7 +106,7 @@ export default function SyncPlayerButton({ player, onApply }) {
       note_moyenne:     ss?.note_moyenne    ?? fm?.note_fotmob,
     };
 
-    const toApply: Record<string, any> = {};
+    const toApply = {};
     Object.entries(flat).forEach(([k, v]) => {
       if (v !== null && v !== undefined && v !== "" && String(v) !== String(player[k] ?? "")) {
         toApply[k] = v;
