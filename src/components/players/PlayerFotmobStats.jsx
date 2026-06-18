@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { invokeFn } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,17 @@ export default function PlayerFotmobStats({ player, onApply }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [applied, setApplied] = useState(false);
+  // Évite de relancer le chargement auto plusieurs fois pour le même joueur.
+  const autoLoadedFor = useRef(null);
+
+  // Chargement automatique à l'ouverture de la fiche (une fois par joueur).
+  useEffect(() => {
+    const key = player?.fotmob_id || player?.nom;
+    if (!key || autoLoadedFor.current === key) return;
+    autoLoadedFor.current = key;
+    fetchStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player?.id, player?.fotmob_id, player?.nom]);
 
   if (!player?.nom) return null;
 

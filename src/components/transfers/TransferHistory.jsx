@@ -1,8 +1,11 @@
 import React, { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { invokeFn } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRight, Calendar, Clock, Banknote, Filter, TrendingUp, Building2, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import { ArrowRight, Calendar, Clock, Banknote, Filter, TrendingUp, Building2, ChevronDown, ChevronUp, ExternalLink, Loader2, RefreshCw, AlertCircle } from "lucide-react";
 import { format, differenceInMonths } from "date-fns";
 import { useLanguage } from "../../lib/LanguageContext";
 import { t } from "../../i18n/translations";
@@ -95,11 +98,21 @@ function TransferCard({ transfer, index, total, isExpanded, onToggle }) {
         </button>
 
         {/* Expanded details */}
-        {isExpanded && (transfer.notes || transfer.montant) && (
-          <div className="px-4 pb-4 border-t border-white/60 bg-white/50 space-y-3">
+        {isExpanded && (transfer.notes || transfer.valeur_marche || transfer.saison || transfer.url) && (
+          <div className="px-4 pb-4 border-t border-white/60 bg-white/50 space-y-2 pt-3">
             {transfer.notes && (
-              <p className="text-xs text-slate-600 leading-relaxed pt-3 italic">"{transfer.notes}"</p>
+              <p className="text-xs text-slate-600 leading-relaxed italic">"{transfer.notes}"</p>
             )}
+            <div className="flex items-center gap-4 flex-wrap text-xs text-slate-500">
+              {transfer.saison && <span>Saison {transfer.saison}</span>}
+              {transfer.valeur_marche && <span>Valeur : {transfer.valeur_marche}</span>}
+              {transfer.url && (
+                <a href={transfer.url} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-blue-600 hover:underline">
+                  <ExternalLink className="w-3 h-3" /> Transfermarkt
+                </a>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -134,11 +147,31 @@ function SummaryBar({ transfers }) {
   );
 }
 
-export default function TransferHistory({ transfers, player }) {
+export default function TransferHistory({ player }) {
   const { lang } = useLanguage();
   const [filterYear, setFilterYear] = useState("all");
   const [filterClub, setFilterClub] = useState("all");
   const [expandedIndex, setExpandedIndex] = useState(null);
+
+  // Source unique : Transfermarkt (API ceapi). Aucune autre source ni saisie manuelle.
+  const hasRef = !!(player?.transfermarkt_id || player?.nom);
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
+    queryKey: ["tm-transfers", "player", player?.id],
+    enabled: hasRef,
+    staleTime: 1000 * 60 * 60,   // 1h
+    retry: false,
+    queryFn: async () => {
+      const res = await invokeFn("transfermarktProxy", {
+        action: "getTransfers",
+        transfermarkt_id: player.transfermarkt_id || undefined,
+        query: player.nom,
+        club: player.club_actuel,
+      });
+      if (!res?.ok) throw new Error(res?.error || "Transfermarkt indisponible");
+      return res;
+    },
+  });
+  const transfers = data?.transfers || [];
 
   const sorted = useMemo(() =>
     [...(transfers || [])].sort((a, b) => new Date(a.date_transfert) - new Date(b.date_transfert)),
@@ -162,6 +195,20 @@ export default function TransferHistory({ transfers, player }) {
     return matchYear && matchClub;
   }), [sorted, filterYear, filterClub]);
 
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><ArrowRight className="w-4 h-4 text-blue-600" />{t(lang,'transfers.historyTitle')}</CardTitle></CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center gap-2 py-10 text-slate-500">
+            <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+            <span className="text-sm">Transfermarkt…</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!transfers || transfers.length === 0) {
     const _name = encodeURIComponent(player?.nom || "");
     const _tmId = player?.transfermarkt_id;
@@ -170,10 +217,19 @@ export default function TransferHistory({ transfers, player }) {
       : `https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche?query=${_name}&Feld=spieler`;
     return (
       <Card>
-        <CardHeader><CardTitle className="text-base">{t(lang,'transfers.historyTitle')}</CardTitle></CardHeader>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="text-base flex items-center gap-2"><ArrowRight className="w-4 h-4 text-blue-600" />{t(lang,'transfers.historyTitle')}</CardTitle>
+            <Button onClick={() => refetch()} disabled={isFetching} variant="ghost" size="sm" className="h-7 w-7 p-0">
+              <RefreshCw className={`w-3 h-3 ${isFetching ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
+        </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center gap-3 py-8 text-sm text-slate-400">
-            <p>{t(lang,'transfers.noTransfers')}</p>
+            {isError
+              ? <p className="flex items-center gap-1.5 text-amber-600"><AlertCircle className="w-4 h-4" />{error?.message || t(lang,'transfers.noTransfers')}</p>
+              : <p>{t(lang,'transfers.noTransfers')}</p>}
             {player?.nom && (
               <a
                 href={tmHref}
@@ -198,8 +254,12 @@ export default function TransferHistory({ transfers, player }) {
           <CardTitle className="text-base flex items-center gap-2">
             <ArrowRight className="w-4 h-4 text-blue-600" />
             {t(lang,'transfers.historyTitle')}
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700">Transfermarkt</span>
           </CardTitle>
           <div className="flex items-center gap-2 flex-wrap">
+            <Button onClick={() => refetch()} disabled={isFetching} variant="ghost" size="sm" className="h-7 w-7 p-0">
+              <RefreshCw className={`w-3 h-3 ${isFetching ? "animate-spin" : ""}`} />
+            </Button>
             <Filter className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
             <Select value={filterYear} onValueChange={setFilterYear}>
               <SelectTrigger className="w-28 h-8 text-xs">

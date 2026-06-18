@@ -12,10 +12,8 @@ import { createPageUrl } from "../utils";
 import PlayerForm from "../components/players/PlayerForm";
 import PlayerStatusModal from "../components/players/PlayerStatusModal";
 import TransferHistory from "../components/transfers/TransferHistory";
-import TransferForm from "../components/transfers/TransferForm";
 import PlayerNoteCard from "../components/notes/PlayerNoteCard";
 import SimilarPlayers from "../components/players/SimilarPlayers";
-import ContactHistory from "../components/contacts/ContactHistory";
 import RemindersList from "../components/contacts/RemindersList";
 import PlayerComparison from "../components/players/PlayerComparison";
 import ImportTransfermarktPhoto from "../components/players/ImportTransfermarktPhoto";
@@ -27,6 +25,7 @@ import SyncPlayerButton from "../components/players/SyncPlayerButton";
 import UpcomingMatches from "../components/players/UpcomingMatches";
 import PlayerMandates from "../components/players/PlayerMandates";
 import PlayerRumors from "../components/players/PlayerRumors";
+import PlayerNews from "../components/players/PlayerNews";
 import { format, isValid } from "date-fns";
 import TransfermarktImage from "../components/ui/TransfermarktImage";
 import { exportPlayerPDF } from "../lib/exportPlayerPDF";
@@ -34,7 +33,6 @@ import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
 import { useCurrentUser } from "../lib/useCurrentUser";
 import ActivityLogList from "../components/activity/ActivityLogList";
-import PlayerTMStats from "../components/players/PlayerTMStats";
 import PlayerSofaStats from "../components/players/PlayerSofaStats";
 import PlayerFotmobStats from "../components/players/PlayerFotmobStats";
 import PlayerVideos from "../components/players/PlayerVideos";
@@ -89,12 +87,6 @@ export default function PlayerDetailPage() {
     enabled: !!playerId
   });
 
-  const { data: transfers = [] } = useQuery({
-    queryKey: ['transfers', playerId],
-    queryFn: () => base44.entities.Transfer.filter({ player_id: playerId }),
-    enabled: !!playerId
-  });
-
   // Réutilise le cache global — zéro requête réseau supplémentaire
   const currentUser = useCurrentUser();
   const userEmail = currentUser?.email;
@@ -123,15 +115,6 @@ export default function PlayerDetailPage() {
     queryFn: () => base44.entities.Player.filter({ created_by_id: currentUser.id }, '-created_date'),
     enabled: !!currentUser?.id,
     staleTime: Infinity
-  });
-
-  const { data: contacts = [] } = useQuery({
-    queryKey: ['contacts', playerId, userEmail],
-    queryFn: () => base44.entities.Contact.filter({
-      player_id: playerId,
-      created_by: userEmail
-    }),
-    enabled: !!playerId && !!userEmail
   });
 
   const { data: reminders = [] } = useQuery({
@@ -217,14 +200,6 @@ export default function PlayerDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['watchList', userEmail] });
     },
     onError: (err) => setMutationError(err.message || "Erreur lors du retrait de la watchlist")
-  });
-
-  const createTransferMutation = useMutation({
-    mutationFn: (data) => base44.entities.Transfer.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transfers', playerId] });
-    },
-    onError: (err) => setMutationError(err.message || "Erreur lors de la création du transfert")
   });
 
   const createNoteMutation = useMutation({
@@ -462,22 +437,11 @@ export default function PlayerDetailPage() {
 
             <PlayerMatches player={player} />
 
-            <PlayerVideos player={player} />
-
-            <PlayerTMStats player={player} />
-
             <PlayerSofaStats player={player} />
 
             <PlayerFotmobStats player={player} onApply={(data) => updatePlayerMutation.mutate(data)} />
 
-            <TransferHistory transfers={transfers} player={player} />
-            
-            <TransferForm
-              playerId={playerId}
-              onSubmit={(data) => createTransferMutation.mutate(data)} />
-            
-
-            <ContactHistory contacts={contacts} />
+            <TransferHistory player={player} />
           </div>
 
           <div className="space-y-6">
@@ -512,9 +476,16 @@ export default function PlayerDetailPage() {
 
             <PlayerMandates player={player} />
 
+            <PlayerNews player={player} />
+
             <PlayerRumors player={player} />
 
             <ActivityLogList entityId={playerId} entityType="Player" />
+          </div>
+
+          {/* Vidéos — pleine largeur, juste au-dessus de l'analyse comparative */}
+          <div className="lg:col-span-3">
+            <PlayerVideos player={player} />
           </div>
 
           {/* Comparison section - full width below */}

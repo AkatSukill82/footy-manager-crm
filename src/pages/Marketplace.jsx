@@ -27,7 +27,7 @@ const STATUTS = {
 };
 const tLabel = (v) => TRANSFERT.find(t => t.v === v)?.label || v;
 
-function OppForm({ open, onClose, onSave, initial, players, saving }) {
+function OppForm({ open, onClose, onSave, initial, players, saving, error }) {
   const [f, setF] = useState(() => initial || {
     type: "offre", titre: "", player_id: "", player_nom: "", poste: "", club: "",
     nationalite: "", pied_fort: "", age_min: "", age_max: "", valeur: "", budget_max: "",
@@ -126,6 +126,11 @@ function OppForm({ open, onClose, onSave, initial, players, saving }) {
             <div><Label className="text-xs">Date limite</Label><Input type="date" value={f.date_limite || ""} onChange={set("date_limite")} /></div>
           </div>
         </div>
+        {error && (
+          <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            <span className="flex-1">{error}</span>
+          </div>
+        )}
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Annuler</Button>
           <Button onClick={submit} disabled={saving || !f.titre.trim()} className="bg-slate-900 hover:bg-slate-700">
@@ -206,10 +211,16 @@ export default function MarketplacePage() {
     enabled: !!user?.id,
   });
 
+  const [formError, setFormError] = useState(null);
+
   const inval = () => qc.invalidateQueries({ queryKey: ["opportunities"] });
-  const createMut = useMutation({ mutationFn: (d) => base44.entities.Opportunity.create(d), onSuccess: () => { inval(); setShowForm(false); setEditing(null); } });
-  const updateMut = useMutation({ mutationFn: ({ id, data }) => base44.entities.Opportunity.update(id, data), onSuccess: () => { inval(); setShowForm(false); setEditing(null); } });
-  const deleteMut = useMutation({ mutationFn: (id) => base44.entities.Opportunity.delete(id), onSuccess: inval });
+  const onErr = (err) => setFormError(err?.message || "Échec de l'enregistrement de l'annonce. Réessayez.");
+  const createMut = useMutation({ mutationFn: (d) => base44.entities.Opportunity.create(d), onSuccess: () => { setFormError(null); inval(); setShowForm(false); setEditing(null); }, onError: onErr });
+  const updateMut = useMutation({ mutationFn: ({ id, data }) => base44.entities.Opportunity.update(id, data), onSuccess: () => { setFormError(null); inval(); setShowForm(false); setEditing(null); }, onError: onErr });
+  const deleteMut = useMutation({ mutationFn: (id) => base44.entities.Opportunity.delete(id), onSuccess: inval, onError: onErr });
+
+  // Rattache l'annonce à l'organisation de l'agent si elle existe (sinon création solo).
+  const withOrg = (d) => ({ ...d, organization_id: user?.organization_id ?? null });
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -273,9 +284,9 @@ export default function MarketplacePage() {
       </div>
 
       {showForm && (
-        <OppForm open={showForm} onClose={() => { setShowForm(false); setEditing(null); }}
-          onSave={(data) => editing?.id ? updateMut.mutate({ id: editing.id, data }) : createMut.mutate(data)}
-          initial={editing} players={players} saving={saving} />
+        <OppForm open={showForm} onClose={() => { setShowForm(false); setEditing(null); setFormError(null); }}
+          onSave={(data) => editing?.id ? updateMut.mutate({ id: editing.id, data: withOrg(data) }) : createMut.mutate(withOrg(data))}
+          initial={editing} players={players} saving={saving} error={formError} />
       )}
     </div>
   );

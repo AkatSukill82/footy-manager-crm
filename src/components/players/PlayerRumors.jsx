@@ -69,6 +69,8 @@ export default function PlayerRumors({ player }) {
           <p className="text-xs text-slate-400 py-2">{t(lang, "session.rumors.empty")}</p>
         ) : (
           <>
+            {/* 3 rumeurs visibles, le reste accessible par scroll interne au bloc */}
+            <div className="max-h-[210px] overflow-y-auto space-y-2 pr-1">
             {rumors.map((r, i) => (
               <a
                 key={`${r.club_id}-${i}`}
@@ -98,6 +100,7 @@ export default function PlayerRumors({ player }) {
                 <ExternalLink className="w-3.5 h-3.5 text-slate-300 group-hover:text-rose-500 flex-shrink-0" />
               </a>
             ))}
+            </div>
             <a
               href={sourceUrl}
               target="_blank"

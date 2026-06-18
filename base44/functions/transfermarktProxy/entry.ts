@@ -8,6 +8,7 @@
  *   searchAndGet  — recherche par nom + scrape profil
  *   getPlayer     — scrape profil depuis une URL TM connue
  *   getRumors     — scrape les rumeurs de transfert (par id TM ou recherche nom)
+ *   getTransfers  — historique des transferts via l'API JSON ceapi (par id TM ou nom)
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
@@ -246,6 +247,47 @@ const parseRumors = (html: string): any[] => {
   return rumors;
 };
 
+// ── Parse historique transferts (API JSON ceapi/transferHistory) ──────────────
+// Renvoie un format directement consommable par le composant TransferHistory.
+
+const parseTransferFee = (raw: string): { type: string; montant: number | null } => {
+  const s = String(raw || "").toLowerCase();
+  let type = "Transfert définitif";
+  if (s.includes("loan")) type = s.includes("end") ? "Fin de prêt" : "Prêt";
+  else if (s.includes("free")) type = "Libre";
+
+  let montant: number | null = null;
+  const m = s.replace(/,/g, "").match(/(\d+(?:\.\d+)?)\s*(bn|m|k)\b/);
+  if (m) {
+    let v = parseFloat(m[1]);
+    if (m[2] === "k") v = v / 1000;
+    else if (m[2] === "bn") v = v * 1000;
+    montant = Math.round(v * 100) / 100;            // en M€
+  }
+  return { type, montant };
+};
+
+const parseTransfers = (json: any): any[] => {
+  const list: any[] = Array.isArray(json?.transfers) ? json.transfers : [];
+  return list
+    .filter((t) => t?.dateUnformatted && t?.to?.clubName)
+    .map((t) => {
+      const { type, montant } = parseTransferFee(t.fee);
+      return {
+        date_transfert:    t.dateUnformatted,
+        saison:            t.season ?? null,
+        club_depart:       t.from?.clubName ?? null,
+        club_arrivee:      t.to?.clubName ?? null,
+        club_depart_logo:  t.from?.["clubEmblem-1x"] ?? null,
+        club_arrivee_logo: t.to?.["clubEmblem-1x"] ?? null,
+        type_transfert:    type,
+        montant,
+        valeur_marche:     typeof t.marketValue === "string" ? t.marketValue.replace(/\s+/g, "") : null,
+        url:               t.url ? `${TM_BASE}${t.url}` : null,
+      };
+    });
+};
+
 // ── Handler ───────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
@@ -289,6 +331,27 @@ Deno.serve(async (req) => {
       const html   = await fetchHtml(url);
       const rumors = parseRumors(html);
       return Response.json({ ok: true, total: rumors.length, rumors, transfermarkt_id: id, source_url: url });
+    }
+
+    if (action === "getTransfers") {
+      let id: string | null = transfermarkt_id ? String(transfermarkt_id) : null;
+      if (!id) {
+        if (!query?.trim()) return Response.json({ ok: false, error: "transfermarkt_id ou query requis" });
+        const hit = await searchPlayer(query.trim(), club);
+        const idM = hit?.url.match(/\/spieler\/(\d+)/);
+        id = idM ? idM[1] : null;
+      }
+      if (!id) return Response.json({ ok: false, error: "Joueur introuvable sur Transfermarkt." });
+
+      // API JSON officielle interne (pas de scraping HTML).
+      const res = await fetch(`${TM_BASE}/ceapi/transferHistory/list/${id}`, {
+        headers: { ...TM_HEADERS, "Accept": "application/json" },
+        signal: AbortSignal.timeout(12000),
+      });
+      if (!res.ok) throw new Error(`Transfermarkt HTTP ${res.status}`);
+      const json      = await res.json();
+      const transfers = parseTransfers(json);
+      return Response.json({ ok: true, total: transfers.length, transfers, transfermarkt_id: id });
     }
 
     return Response.json({ ok: false, error: `Action inconnue: ${action}` });
