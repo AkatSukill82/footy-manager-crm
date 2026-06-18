@@ -31,7 +31,8 @@ const NEWS_SCHEMA = {
 export default function PlayerNews({ player }) {
   const { lang } = useLanguage();
   const name = player?.nom;
-  const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(`info ${name || ""}`)}`;
+  // Recherche Google du joueur directement sur l'onglet "Actualités" (tbm=nws).
+  const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(name || "")}&tbm=nws&hl=fr`;
 
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["player-news", player?.id],
