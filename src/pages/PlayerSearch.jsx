@@ -115,6 +115,7 @@ const STAT_FIELDS = [
   "touches_balle", "touches_surface_adverse", "pertes_balle",
   "duels_gagnes", "duels_gagnes_pct", "duels_aeriens_pct",
   "actions_defensives", "tacles", "interceptions", "degagements", "recuperations",
+  "buts_encaisses_terrain", "xg_concede_terrain",
   "fautes_commises", "fautes_subies", "hors_jeu",
   "arrets", "buts_encaisses", "clean_sheets",
 ];
@@ -443,6 +444,8 @@ export default function PlayerSearchPage() {
         interceptions:    s?.interceptions,
         degagements:      s?.degagements,
         recuperations:    s?.recuperations,
+        buts_encaisses_terrain: s?.buts_encaisses_terrain,
+        xg_concede_terrain:     s?.xg_concede_terrain,
         cartons_jaunes:   s?.cartons_jaunes,
         cartons_rouges:   s?.cartons_rouges,
         fautes_commises:  s?.fautes_commises,

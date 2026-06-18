@@ -152,6 +152,13 @@ const STAT_MAP: Record<string, string> = {
   "Was dribbled past":                    "dribbles_subis",
   "Dribbles attempted":                   "dribbles_tentes",
   "Possession lost":                      "pertes_balle",
+  "Goals conceded while on pitch":        "buts_encaisses_terrain",
+  "Goals conceded on pitch":              "buts_encaisses_terrain",
+  "Goals conceded (team)":                "buts_encaisses_terrain",
+  "Expected goals conceded":              "xg_concede_terrain",
+  "Expected goals conceded (xGC)":        "xg_concede_terrain",
+  "xG conceded while on pitch":           "xg_concede_terrain",
+  "xGC":                                  "xg_concede_terrain",
 };
 
 // Titres dont la valeur FotMob contient un pourcentage à extraire (ex: "8 (80.5%)").

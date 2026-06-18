@@ -8,13 +8,14 @@ import { t } from "../../i18n/translations";
 
 // Groupes d'affichage : clé i18n du groupe + liste des clés de stats.
 // Les libellés sont traduits via session.fotmob.l.<clé>.
+// Structure calquée sur le panneau "Performances de la saison" de FotMob.
 const GROUPS = [
   { key: "gSynth", items: ["matchs_joues", "titularisations", "minutes_jouees", "note_moyenne"] },
-  { key: "gOff",   items: ["buts", "xg", "xg_hors_penalty", "xgot", "passes_decisives", "xa", "tirs", "tirs_cadres", "tirs_cadres_pct", "grandes_chances", "grandes_chances_manquees", "penaltys_marques"] },
-  { key: "gPass",  items: ["passes_cles", "passes_reussies", "passes_reussies_pct", "passes_longues", "passes_longues_pct", "centres", "centres_reussis_pct"] },
-  { key: "gPoss",  items: ["touches_balle", "touches_surface_adverse", "duels_gagnes", "duels_gagnes_pct", "dribbles_reussis", "dribbles_pct", "pertes_balle"] },
-  { key: "gDef",   items: ["actions_defensives", "tacles", "interceptions", "recuperations", "degagements", "dribbles_subis"] },
-  { key: "gDisc",  items: ["cartons_jaunes", "cartons_rouges", "fautes_commises", "fautes_subies", "hors_jeu"] },
+  { key: "gShot",  items: ["buts", "xg", "xgot", "xg_hors_penalty", "tirs", "tirs_cadres"] },
+  { key: "gPass",  items: ["passes_decisives", "xa", "passes_reussies", "passes_reussies_pct", "passes_longues", "passes_longues_pct", "passes_cles", "grandes_chances", "centres", "centres_reussis_pct"] },
+  { key: "gPoss",  items: ["duels_gagnes", "duels_gagnes_pct", "touches_balle", "touches_surface_adverse", "pertes_balle", "fautes_subies"] },
+  { key: "gDef",   items: ["actions_defensives", "interceptions", "tacles", "recuperations", "dribbles_subis", "degagements", "buts_encaisses_terrain", "xg_concede_terrain"] },
+  { key: "gDisc",  items: ["cartons_jaunes", "cartons_rouges"] },
   { key: "gGk",    items: ["arrets", "buts_encaisses", "clean_sheets"] },
 ];
 const SUFFIX = {

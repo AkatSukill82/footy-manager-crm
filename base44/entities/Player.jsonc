@@ -325,6 +325,14 @@
       "type": "number",
       "description": "Touches dans la surface adverse (saison)"
     },
+    "buts_encaisses_terrain": {
+      "type": "number",
+      "description": "Buts encaissés par l'équipe quand le joueur est sur le terrain (saison)"
+    },
+    "xg_concede_terrain": {
+      "type": "number",
+      "description": "xG concédés par l'équipe quand le joueur est sur le terrain (saison)"
+    },
     "duels_aeriens_pct": {
       "type": "number",
       "description": "% duels a\u00e9riens gagn\u00e9s (saison)"
