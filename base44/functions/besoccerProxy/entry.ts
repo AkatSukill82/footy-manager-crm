@@ -7,6 +7,13 @@
  *   getPlayer           — profil de /player/{slug}-{id}
  *   searchAndGetPlayer  — searchPlayer + getPlayer en 1 appel (pour SyncPlayerButton)
  */
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+
+// Anti-SSRF : n'autorise que les URLs BeSoccer en https.
+const isBesoccerUrl = (u: string): boolean => {
+  try { const x = new URL(u); return x.protocol === "https:" && (x.hostname === "besoccer.com" || x.hostname.endsWith(".besoccer.com")); }
+  catch { return false; }
+};
 
 const HEADERS: HeadersInit = {
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
@@ -331,6 +338,10 @@ const parseProfile = (html: string, url: string, id: string): Record<string, any
 
 Deno.serve(async (req) => {
   try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    if (!user) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+
     const { action, query, club, nationality, age, besoccer_url, besoccer_id } = await req.json();
 
     // ── Recherche joueurs
@@ -345,6 +356,7 @@ Deno.serve(async (req) => {
     // ── Profil première page
     if (action === "getPlayer") {
       if (!besoccer_url) return Response.json({ ok: false, error: "besoccer_url requis" });
+      if (!isBesoccerUrl(besoccer_url)) return Response.json({ ok: false, error: "URL BeSoccer non autorisée" });
       const idM = besoccer_url.match(/-(\d{4,8})(?:$|\/)/);
       const id  = idM ? idM[1] : (besoccer_id ?? "0");
       const html   = await fetchHtml(besoccer_url);

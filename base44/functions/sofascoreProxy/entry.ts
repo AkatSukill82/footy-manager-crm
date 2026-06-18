@@ -6,6 +6,8 @@
  *   getStats           — stats depuis un ID SofaScore connu
  */
 
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+
 const SS_BASE = "https://www.sofascore.com/api/v1";
 
 const SS_HEADERS: HeadersInit = {
@@ -223,6 +225,10 @@ const getSeasonStats = async (playerId: number): Promise<Record<string, any>> =>
 
 Deno.serve(async (req) => {
   try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    if (!user) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+
     const { action, query, club, nationality, birthYear, sofascore_id } = await req.json();
 
     if (action === "searchAndGetStats") {

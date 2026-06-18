@@ -8,8 +8,15 @@
  *   searchAndGet  — recherche par nom + scrape profil
  *   getPlayer     — scrape profil depuis une URL TM connue
  */
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const TM_BASE = "https://www.transfermarkt.com";
+
+// Anti-SSRF : n'autorise que les URLs Transfermarkt en https.
+const isTmUrl = (u: string): boolean => {
+  try { const x = new URL(u); return x.protocol === "https:" && (x.hostname === "transfermarkt.com" || x.hostname.endsWith(".transfermarkt.com")); }
+  catch { return false; }
+};
 
 const TM_HEADERS: HeadersInit = {
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
@@ -183,6 +190,10 @@ const parseProfile = (html: string, url: string): Record<string, any> => {
 
 Deno.serve(async (req) => {
   try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    if (!user) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+
     const { action, query, club, transfermarkt_url } = await req.json();
 
     if (action === "searchAndGet") {
@@ -196,6 +207,7 @@ Deno.serve(async (req) => {
 
     if (action === "getPlayer") {
       if (!transfermarkt_url) return Response.json({ ok: false, error: "transfermarkt_url requis" });
+      if (!isTmUrl(transfermarkt_url)) return Response.json({ ok: false, error: "URL Transfermarkt non autorisée" });
       const html   = await fetchHtml(transfermarkt_url);
       const player = parseProfile(html, transfermarkt_url);
       return Response.json({ ok: true, player });

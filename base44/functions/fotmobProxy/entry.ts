@@ -6,6 +6,8 @@
  *   Exemple : [{title:{key:"all"}, suggestions:[{type:"player", id:"30893", name:"Ronaldo", teamName:"Al Nassr", teamId:101918}]}]
  */
 
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+
 const FM_BASE = "https://www.fotmob.com/api/data";
 
 const FM_HEADERS: HeadersInit = {
@@ -233,6 +235,10 @@ const searchTeam = async (name: string): Promise<any[]> => {
 
 Deno.serve(async (req) => {
   try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    if (!user) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+
     const { action, query, club, fotmob_id } = await req.json();
     const hint: Hint = { name: (query ?? "").trim(), club };
 
