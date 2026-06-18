@@ -17,6 +17,7 @@ import { t } from "../i18n/translations";
 import ActivityLogList from "../components/activity/ActivityLogList";
 import ClubExternalLinks from "../components/clubs/ClubExternalLinks";
 import ClubSquad from "../components/clubs/ClubSquad";
+import ClubOverview from "../components/clubs/ClubOverview";
 import UpcomingMatches from "../components/players/UpcomingMatches";
 
 function Row({ label, value, valueClass = "font-medium text-slate-900" }) {
@@ -457,6 +458,9 @@ export default function ClubDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Classement, forme, derniers résultats, prochain match, staff (recherche web) */}
+      <ClubOverview club={club} />
 
       {/* Effectif complet (recherche web : Transfermarkt / FotMob)
           Les joueurs déjà dans le CRM y sont surlignés et cliquables. */}

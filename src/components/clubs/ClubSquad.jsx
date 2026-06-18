@@ -78,10 +78,7 @@ function SquadPlayer({ j, crmPlayer, club, lang }) {
   const qc = useQueryClient();
   const [adding, setAdding] = useState(false);
 
-  const view = () => { if (crmPlayer) navigate(createPageUrl("PlayerDetail") + `?id=${crmPlayer.id}`); };
-
-  const add = async (e) => {
-    e.stopPropagation();
+  const add = async () => {
     if (adding) return;
     setAdding(true);
     try {
@@ -104,12 +101,21 @@ function SquadPlayer({ j, crmPlayer, club, lang }) {
     }
   };
 
-  const Tag = crmPlayer ? "button" : "div";
+  // Clic sur la carte : voir (si dans le CRM) ou confirmer l'intégration (sinon).
+  const onClick = () => {
+    if (adding) return;
+    if (crmPlayer) { navigate(createPageUrl("PlayerDetail") + `?id=${crmPlayer.id}`); return; }
+    if (confirm(t(lang, "session.squad.addConfirm", { nom: j.nom }))) add();
+  };
+
   return (
-    <Tag
-      onClick={crmPlayer ? view : undefined}
-      className={`group flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all ${
-        crmPlayer ? "border-green-200 bg-green-50/50 hover:bg-green-50 cursor-pointer" : "border-slate-100 bg-slate-50/50"
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={adding}
+      title={crmPlayer ? t(lang, "session.squad.inCrm") : t(lang, "session.squad.addTooltip")}
+      className={`group flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all w-full cursor-pointer ${
+        crmPlayer ? "border-green-200 bg-green-50/50 hover:bg-green-50" : "border-slate-100 bg-slate-50/50 hover:border-indigo-200 hover:bg-indigo-50/40"
       }`}
     >
       <div className="w-8 h-8 rounded-full bg-white border border-slate-100 flex items-center justify-center flex-shrink-0 text-xs font-bold text-slate-500 overflow-hidden">
@@ -129,13 +135,13 @@ function SquadPlayer({ j, crmPlayer, club, lang }) {
       {j.valeur_marchande != null && (
         <span className="text-[10px] font-semibold text-slate-600 whitespace-nowrap">{j.valeur_marchande}M€</span>
       )}
+      {/* Affordance discrète : icône d'ajout au survol (joueur hors CRM) ou spinner pendant l'ajout */}
       {!crmPlayer && (
-        <button onClick={add} disabled={adding} title={t(lang, "session.squad.addTooltip")}
-          className="p-1 rounded-lg text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 flex-shrink-0">
-          {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
-        </button>
+        adding
+          ? <Loader2 className="w-4 h-4 animate-spin text-indigo-500 flex-shrink-0" />
+          : <UserPlus className="w-4 h-4 text-slate-300 group-hover:text-indigo-500 flex-shrink-0 transition-colors" />
       )}
-    </Tag>
+    </button>
   );
 }
 
