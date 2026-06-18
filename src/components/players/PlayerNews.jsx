@@ -31,8 +31,15 @@ const NEWS_SCHEMA = {
 export default function PlayerNews({ player }) {
   const { lang } = useLanguage();
   const name = player?.nom;
+  // Nom propre pour la recherche : on retire le numéro de maillot (#10, 30, …)
+  // et on ne garde que prénom + nom.
+  const cleanName = (name || "")
+    .replace(/#\s*\d+/g, "")     // "#10"
+    .replace(/\b\d+\b/g, "")     // numéros isolés
+    .replace(/\s+/g, " ")
+    .trim();
   // Recherche Google du joueur directement sur l'onglet "Actualités" (tbm=nws).
-  const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(name || "")}&tbm=nws&hl=fr`;
+  const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(cleanName)}&tbm=nws&hl=fr`;
 
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["player-news", player?.id],
@@ -49,7 +56,7 @@ export default function PlayerNews({ player }) {
 
       const res = await base44.integrations.Core.InvokeLLM({
         prompt: `Tu es un agrégateur de news football. Nous sommes le ${today}.
-Recherche sur le web les vrais articles de presse récents (3 derniers mois) qui parlent du joueur **${name}**.
+Recherche sur le web les vrais articles de presse récents (3 derniers mois) qui parlent du joueur **${cleanName}**.
 ${ctx ? `Contexte : ${ctx}.` : ""}
 Sources à fouiller : L'Équipe, RMC Sport, Sky Sports, BBC Sport, Transfermarkt, Goal.com, Marca, AS, Gazzetta dello Sport, journaux locaux du club, Fabrizio Romano (X).
 Pour chaque article : "titre" (le titre exact, ne reformule pas), "resume" (1 phrase), "source_nom" (le média), "source_url" (l'URL exacte commençant par https://), "date" (AAAA-MM-JJ si connue).
