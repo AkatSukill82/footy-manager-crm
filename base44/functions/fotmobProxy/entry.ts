@@ -7,6 +7,7 @@
  */
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createHash } from 'node:crypto';
 
 const FM_BASE = "https://www.fotmob.com/api/data";
 
@@ -243,6 +244,113 @@ const mapFotmobPos = (label: string | null | undefined): string | null => {
   return POS_MAP[label] ?? null;
 };
 
+// ── Deep stats (panneau "Performances de la saison" de FotMob) ────────────────
+// Les stats détaillées ne sont PAS dans playerData ; elles viennent de
+//   pub.fotmob.com/beta/db/api/player/{id}/stats/stage/{stageId}
+// qui exige le header signé "fotmob-client" = md5(yyyyMMdd_UTC + "nnarbfotmob") MAJ.
+// Le stageId (compétition principale) provient du profil data.fotmob.com.
+
+const fotmobClient = (): string => {
+  const ymd = new Date().toISOString().slice(0, 10).replace(/-/g, "");   // yyyyMMdd UTC
+  return createHash("md5").update(ymd + "nnarbfotmob").digest("hex").toUpperCase();
+};
+
+// localizedTitleId FotMob → champ entité Player (clés stables, indépendantes de la langue).
+const LID_MAP: Record<string, string> = {
+  // Tir
+  goals:                       "buts",
+  expected_goals:              "xg",
+  expected_goals_on_target:    "xgot",
+  non_penalty_xg:              "xg_hors_penalty",
+  shots:                       "tirs",
+  ShotsOnTarget:               "tirs_cadres",
+  // Passes
+  assists:                     "passes_decisives",
+  expected_assists:            "xa",
+  successful_passes:           "passes_reussies",
+  successful_passes_accuracy:  "passes_reussies_pct",
+  long_balls_accurate:         "passes_longues",
+  long_ball_succeeeded_accuracy: "passes_longues_pct",
+  chances_created:             "passes_cles",
+  big_chance_created_team_title:"grandes_chances",
+  accurate_crosses:            "centres",
+  accurate_crosses_accuracy:   "centres_reussis_pct",
+  // Possession
+  dribbles_succeeded:          "dribbles_reussis",
+  won_contest_subtitle:        "dribbles_pct",
+  duel_won:                    "duels_gagnes",
+  duel_won_percent:            "duels_gagnes_pct",
+  aerials_won_percent:         "duels_aeriens_pct",
+  touches:                     "touches_balle",
+  touches_opp_box:             "touches_surface_adverse",
+  dispossessed:                "pertes_balle",
+  fouls_won:                   "fautes_subies",
+  penalty_won_title:           "penaltys_provoques",
+  // Défense
+  defensive_actions:           "actions_defensives",
+  "matchstats.headers.tackles":"tacles",
+  interceptions:               "interceptions",
+  fouls:                       "fautes_commises",
+  recoveries:                  "recuperations",
+  dribbled_past:               "dribbles_subis",
+  goals_conceded_while_on_pitch:"buts_encaisses_terrain",
+  expected_goals_against_while_on_pitch: "xg_concede_terrain",
+  // Gardien
+  saves:                       "arrets",
+  goals_conceded:              "buts_encaisses",
+  clean_sheet:                 "clean_sheets",
+  // Discipline
+  yellow_cards:                "cartons_jaunes",
+  red_cards:                   "cartons_rouges",
+};
+
+const toNum = (v: any): number | null => {
+  if (v == null) return null;
+  const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ""));
+  return Number.isFinite(n) ? n : null;
+};
+
+// Récupère le profil (data.fotmob.com) puis les deep stats de la compétition
+// principale (PrimaryStageId). Best-effort : renvoie {} si quoi que ce soit échoue.
+const getDeepStats = async (playerId: number): Promise<Record<string, any>> => {
+  const out: Record<string, any> = {};
+  try {
+    const pRes = await fetch(`https://data.fotmob.com/webcl/profiles/players/${playerId}.json`, {
+      headers: FM_HEADERS, signal: AbortSignal.timeout(10000),
+    });
+    if (!pRes.ok) return out;
+    const profile = await pRes.json();
+
+    // Bonus identité/valeur depuis le profil.
+    if (typeof profile?.TransferValue === "number" && profile.TransferValue > 0) {
+      out.valeur_marchande = Math.round(profile.TransferValue / 1e6 * 100) / 100;  // M€
+    }
+    if (profile?.Height) out.taille = toNum(profile.Height);
+    if (profile?.Weight) out.poids  = toNum(profile.Weight);
+    if (profile?.Foot)   out.pied_fort = profile.Foot === "left" ? "Gauche" : profile.Foot === "right" ? "Droit" : "Les deux";
+
+    const stageId = profile?.PrimaryStageId;
+    if (!stageId) return out;
+
+    const dRes = await fetch(`https://pub.fotmob.com/beta/db/api/player/${playerId}/stats/stage/${stageId}`, {
+      headers: { ...FM_HEADERS, "fotmob-client": fotmobClient() },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!dRes.ok) return out;
+    const deep = await dRes.json();
+
+    for (const group of (deep?.statsSection?.items ?? [])) {
+      for (const it of (group.items ?? [])) {
+        const field = LID_MAP[it.localizedTitleId];
+        if (!field) continue;
+        const n = toNum(it.statValue);
+        if (n != null) out[field] = n;
+      }
+    }
+  } catch (_) { /* deep stats best-effort */ }
+  return out;
+};
+
 const getPlayerStats = async (playerId: number): Promise<Record<string, any>> => {
   const json  = await fmGet(`/playerData?id=${playerId}`);
   const stats: Record<string, any> = {};
@@ -272,6 +380,11 @@ const getPlayerStats = async (playerId: number): Promise<Record<string, any>> =>
     stats.date_naissance = String(json.birthDate.utcTime).split("T")[0];
   }
   if (json?.primaryTeam?.teamName) stats.club_actuel = json.primaryTeam.teamName;
+
+  // Deep stats (panneau détaillé FotMob) — overlay des stats granulaires de la
+  // compétition principale. Best-effort : si indisponible, on garde le résumé.
+  const deep = await getDeepStats(playerId);
+  Object.assign(stats, deep);
 
   stats.source    = "FotMob";
   // Périmètre : saison en cours, ligue principale + autres compétitions (cf. boucles ci-dessus).
