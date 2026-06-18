@@ -37,17 +37,38 @@ export default function PlayerFotmobStats({ player, onApply }) {
   const autoLoadedFor = useRef(null);
 
   // Chargement automatique à l'ouverture de la fiche (une fois par joueur).
+  // Ancré sur player.id (stable) pour éviter de relancer après l'auto-application.
   useEffect(() => {
-    const key = player?.fotmob_id || player?.nom;
+    const key = player?.id || player?.nom;
     if (!key || autoLoadedFor.current === key) return;
     autoLoadedFor.current = key;
-    fetchStats();
+    fetchStats({ auto: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [player?.id, player?.fotmob_id, player?.nom]);
+  }, [player?.id]);
 
   if (!player?.nom) return null;
 
-  const fetchStats = async () => {
+  // Construit le payload complet des stats à écrire dans l'entité Player.
+  const buildPayload = (s) => {
+    const data = {};
+    for (const k of APPLY_FIELDS) {
+      if (s[k] != null && s[k] !== "") data[k] = s[k];
+    }
+    if (s.fotmob_id) data.fotmob_id = s.fotmob_id;
+    return data;
+  };
+
+  // Ne garde que les champs dont la valeur a changé par rapport à la fiche actuelle.
+  const changedPayload = (s) => {
+    const full = buildPayload(s);
+    const diff = {};
+    for (const k of Object.keys(full)) {
+      if (String(full[k]) !== String(player?.[k] ?? "")) diff[k] = full[k];
+    }
+    return diff;
+  };
+
+  const fetchStats = async ({ auto = false } = {}) => {
     setLoading(true);
     setError(null);
     setApplied(false);
@@ -60,6 +81,18 @@ export default function PlayerFotmobStats({ player, onApply }) {
       // Note FotMob → champ commun.
       if (s.note_moyenne == null && s.note_fotmob != null) s.note_moyenne = s.note_fotmob;
       setStats(s);
+
+      // Persistance automatique : on enregistre sur la fiche les stats qui ont
+      // changé, pour qu'elles restent et se mettent à jour toutes seules.
+      if (onApply) {
+        const diff = changedPayload(s);
+        if (Object.keys(diff).length > 0) {
+          onApply(diff);
+          setApplied(true);
+        } else if (!auto) {
+          setApplied(true);   // rien à changer mais l'utilisateur a cliqué : feedback
+        }
+      }
     } catch (err) {
       setError(err.message || "Erreur lors du chargement des stats FotMob");
     } finally {
@@ -67,13 +100,10 @@ export default function PlayerFotmobStats({ player, onApply }) {
     }
   };
 
+  // Application manuelle : réécrit toutes les stats FotMob sur la fiche.
   const applyStats = () => {
     if (!stats || !onApply) return;
-    const data = {};
-    for (const k of APPLY_FIELDS) {
-      if (stats[k] != null && stats[k] !== "") data[k] = stats[k];
-    }
-    if (stats.fotmob_id) data.fotmob_id = stats.fotmob_id;
+    const data = buildPayload(stats);
     if (Object.keys(data).length > 0) {
       onApply(data);
       setApplied(true);
