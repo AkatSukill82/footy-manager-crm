@@ -10,42 +10,42 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileSignature, FolderOpen, Plus, Loader2, Pencil, Trash2, ExternalLink, Upload, CheckCircle2 } from "lucide-react";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
-// ── Référentiels ──────────────────────────────────────────────────────────────
+// ── Référentiels (codes ; libellés traduits via session.mandates.*) ───────────
 
-const MANDATE_TYPES = [
-  { v: "representation_exclusive",     label: "Représentation exclusive" },
-  { v: "representation_non_exclusive", label: "Représentation non-exclusive" },
-  { v: "droits_image",                 label: "Droits à l'image" },
-  { v: "mandat_ponctuel",              label: "Mandat ponctuel" },
-];
-const DOC_TYPES = [
-  { v: "contrat",            label: "Contrat" },
-  { v: "passeport",          label: "Passeport" },
-  { v: "carte_identite",     label: "Carte d'identité" },
-  { v: "permis_travail",     label: "Permis de travail" },
-  { v: "visa",               label: "Visa" },
-  { v: "certificat_medical", label: "Certificat médical" },
-  { v: "licence",            label: "Licence" },
-  { v: "autre",              label: "Autre" },
-];
-const label = (list, v) => list.find(x => x.v === v)?.label || v;
+const MANDATE_TYPE_CODES = ["representation_exclusive", "representation_non_exclusive", "droits_image", "mandat_ponctuel"];
+const DOC_TYPE_CODES = ["contrat", "passeport", "carte_identite", "permis_travail", "visa", "certificat_medical", "licence", "autre"];
+const mtypeLabel = (lang, v) => t(lang, `session.mandates.mtypes.${v}`);
+const dtypeLabel = (lang, v) => t(lang, `session.mandates.dtypes.${v}`);
 
 const todayISO = () => new Date().toISOString().split("T")[0];
 const daysUntil = (iso) => iso ? Math.floor((new Date(iso) - new Date(todayISO())) / 86400000) : null;
 
+// Renvoie l'état + la couleur ; le libellé est traduit via expiryLabel().
 function expiryState(dateISO, resilie = false) {
-  if (resilie) return { key: "resilie", label: "Résilié", color: "bg-slate-100 text-slate-400" };
+  if (resilie) return { key: "resilie", d: null, color: "bg-slate-100 text-slate-400" };
   const d = daysUntil(dateISO);
-  if (d == null) return { key: "na", label: "—", color: "bg-slate-100 text-slate-500" };
-  if (d < 0)   return { key: "expire", label: "Expiré", color: "bg-red-100 text-red-700" };
-  if (d <= 90) return { key: "bientot", label: `Expire dans ${d}j`, color: "bg-amber-100 text-amber-700" };
-  return { key: "ok", label: "Actif", color: "bg-green-100 text-green-700" };
+  if (d == null) return { key: "na", d: null, color: "bg-slate-100 text-slate-500" };
+  if (d < 0)   return { key: "expire", d, color: "bg-red-100 text-red-700" };
+  if (d <= 90) return { key: "bientot", d, color: "bg-amber-100 text-amber-700" };
+  return { key: "ok", d, color: "bg-green-100 text-green-700" };
+}
+function expiryLabel(lang, st) {
+  switch (st.key) {
+    case "resilie": return t(lang, "session.mandates.badges.terminated");
+    case "expire":  return t(lang, "session.mandates.badges.expired");
+    case "bientot": return t(lang, "session.mandates.badges.expiresIn", { d: st.d });
+    case "ok":      return t(lang, "session.mandates.badges.active");
+    default:        return "—";
+  }
 }
 
 // ── Formulaire Mandat (joueur pré-rempli) ─────────────────────────────────────
 
 function MandateForm({ open, onClose, onSave, initial, saving }) {
+  const { lang } = useLanguage();
   const [f, setF] = useState(() => initial || {
     type: "representation_exclusive", date_debut: "", date_fin: "",
     commission_pct: "", exclusif: true, statut: "actif", notes: "",
@@ -64,38 +64,38 @@ function MandateForm({ open, onClose, onSave, initial, saving }) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>{initial?.id ? "Modifier le mandat" : "Nouveau mandat"}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{initial?.id ? t(lang, "session.mandates.editMandate") : t(lang, "session.mandates.newMandate")}</DialogTitle></DialogHeader>
         <div className="space-y-3 py-2">
           <div>
-            <Label className="text-xs">Type de mandat</Label>
+            <Label className="text-xs">{t(lang, "session.mandates.type")}</Label>
             <Select value={f.type} onValueChange={set("type")}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{MANDATE_TYPES.map(t => <SelectItem key={t.v} value={t.v}>{t.label}</SelectItem>)}</SelectContent>
+              <SelectContent>{MANDATE_TYPE_CODES.map(code => <SelectItem key={code} value={code}>{mtypeLabel(lang, code)}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div><Label className="text-xs">Début</Label><Input type="date" value={f.date_debut || ""} onChange={set("date_debut")} /></div>
-            <div><Label className="text-xs">Expiration *</Label><Input type="date" value={f.date_fin || ""} onChange={set("date_fin")} /></div>
+            <div><Label className="text-xs">{t(lang, "session.mandates.start")}</Label><Input type="date" value={f.date_debut || ""} onChange={set("date_debut")} /></div>
+            <div><Label className="text-xs">{t(lang, "session.mandates.expiry")} *</Label><Input type="date" value={f.date_fin || ""} onChange={set("date_fin")} /></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div><Label className="text-xs">Commission (%)</Label><Input type="number" value={f.commission_pct} onChange={set("commission_pct")} placeholder="10" /></div>
+            <div><Label className="text-xs">{t(lang, "session.mandates.commission")}</Label><Input type="number" value={f.commission_pct} onChange={set("commission_pct")} placeholder="10" /></div>
             <div>
-              <Label className="text-xs">Statut</Label>
+              <Label className="text-xs">{t(lang, "session.mandates.status")}</Label>
               <Select value={f.statut} onValueChange={set("statut")}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="actif">Actif</SelectItem>
-                  <SelectItem value="resilie">Résilié</SelectItem>
+                  <SelectItem value="actif">{t(lang, "session.mandates.active")}</SelectItem>
+                  <SelectItem value="resilie">{t(lang, "session.mandates.terminated")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
-          <div><Label className="text-xs">Notes</Label><Textarea value={f.notes} onChange={set("notes")} rows={2} /></div>
+          <div><Label className="text-xs">{t(lang, "session.mandates.notes")}</Label><Textarea value={f.notes} onChange={set("notes")} rows={2} /></div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Annuler</Button>
+          <Button variant="outline" onClick={onClose}>{t(lang, "common.cancel")}</Button>
           <Button onClick={submit} disabled={saving || !f.date_fin} className="bg-slate-900 hover:bg-slate-700">
-            {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}{initial?.id ? "Enregistrer" : "Ajouter"}
+            {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}{initial?.id ? t(lang, "common.save") : t(lang, "common.add")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -106,6 +106,7 @@ function MandateForm({ open, onClose, onSave, initial, saving }) {
 // ── Formulaire Document (joueur pré-rempli) ───────────────────────────────────
 
 function DocumentForm({ open, onClose, onSave, initial, saving }) {
+  const { lang } = useLanguage();
   const [f, setF] = useState(() => initial || {
     titre: "", type: "contrat", url: "", date_expiration: "", notes: "",
   });
@@ -124,8 +125,8 @@ function DocumentForm({ open, onClose, onSave, initial, saving }) {
       if (!file_url) throw new Error("upload vide");
       // Le fichier hébergé devient le lien du document ; titre pré-rempli si vide.
       setF(s => ({ ...s, url: file_url, titre: s.titre?.trim() ? s.titre : file.name }));
-    } catch (err) {
-      setUploadError("Échec de l'import : " + (err?.message || "réessayez"));
+    } catch {
+      setUploadError(t(lang, "session.mandates.uploadError"));
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -141,49 +142,49 @@ function DocumentForm({ open, onClose, onSave, initial, saving }) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>{initial?.id ? "Modifier le document" : "Nouveau document"}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{initial?.id ? t(lang, "session.mandates.editDoc") : t(lang, "session.mandates.newDoc")}</DialogTitle></DialogHeader>
         <div className="space-y-3 py-2">
-          <div><Label className="text-xs">Titre *</Label><Input value={f.titre} onChange={set("titre")} placeholder="Ex: Passeport" /></div>
+          <div><Label className="text-xs">{t(lang, "session.mandates.docTitleLabel")} *</Label><Input value={f.titre} onChange={set("titre")} placeholder="Ex: Passeport" /></div>
           <div>
-            <Label className="text-xs">Type</Label>
+            <Label className="text-xs">{t(lang, "session.mandates.docType")}</Label>
             <Select value={f.type} onValueChange={set("type")}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{DOC_TYPES.map(t => <SelectItem key={t.v} value={t.v}>{t.label}</SelectItem>)}</SelectContent>
+              <SelectContent>{DOC_TYPE_CODES.map(code => <SelectItem key={code} value={code}>{dtypeLabel(lang, code)}</SelectItem>)}</SelectContent>
             </Select>
           </div>
 
           {/* Fichier : importer depuis le PC OU coller un lien */}
           <div>
-            <Label className="text-xs">Fichier</Label>
+            <Label className="text-xs">{t(lang, "session.mandates.file")}</Label>
             <input ref={fileRef} type="file" className="hidden"
               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.xls,.xlsx,.csv,.txt"
               onChange={handleFile} />
             <Button type="button" variant="outline" className="w-full justify-start mt-1"
               onClick={() => fileRef.current?.click()} disabled={uploading}>
               {uploading
-                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Import en cours…</>
-                : <><Upload className="w-4 h-4 mr-2" /> Importer un fichier depuis mon PC</>}
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t(lang, "session.mandates.importing")}</>
+                : <><Upload className="w-4 h-4 mr-2" /> {t(lang, "session.mandates.importFile")}</>}
             </Button>
             {f.url && !uploading && (
               <a href={f.url} target="_blank" rel="noopener noreferrer"
                 className="mt-1 flex items-center gap-1.5 text-xs text-green-600 hover:text-green-700 truncate">
-                <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" /> Fichier joint <ExternalLink className="w-3 h-3" />
+                <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" /> {t(lang, "session.mandates.fileAttached")} <ExternalLink className="w-3 h-3" />
               </a>
             )}
             {uploadError && <p className="text-xs text-red-600 mt-1">{uploadError}</p>}
           </div>
           <div>
-            <Label className="text-xs">… ou lien externe (Drive, Dropbox…)</Label>
+            <Label className="text-xs">{t(lang, "session.mandates.orLink")}</Label>
             <Input value={f.url || ""} onChange={set("url")} placeholder="https://…" />
           </div>
 
-          <div><Label className="text-xs">Date d'expiration (passeport, permis…)</Label><Input type="date" value={f.date_expiration || ""} onChange={set("date_expiration")} /></div>
-          <div><Label className="text-xs">Notes</Label><Textarea value={f.notes} onChange={set("notes")} rows={2} /></div>
+          <div><Label className="text-xs">{t(lang, "session.mandates.expiryDate")}</Label><Input type="date" value={f.date_expiration || ""} onChange={set("date_expiration")} /></div>
+          <div><Label className="text-xs">{t(lang, "session.mandates.notes")}</Label><Textarea value={f.notes} onChange={set("notes")} rows={2} /></div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Annuler</Button>
+          <Button variant="outline" onClick={onClose}>{t(lang, "common.cancel")}</Button>
           <Button onClick={submit} disabled={saving || uploading || !f.titre?.trim()} className="bg-slate-900 hover:bg-slate-700">
-            {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}{initial?.id ? "Enregistrer" : "Ajouter"}
+            {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}{initial?.id ? t(lang, "common.save") : t(lang, "common.add")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -194,6 +195,7 @@ function DocumentForm({ open, onClose, onSave, initial, saving }) {
 // ── Carte fiche joueur : Mandats & Documents ──────────────────────────────────
 
 export default function PlayerMandates({ player }) {
+  const { lang } = useLanguage();
   const qc = useQueryClient();
   const playerId = player?.id;
   const [showMandate, setShowMandate] = useState(false);
@@ -233,7 +235,7 @@ export default function PlayerMandates({ player }) {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
-          <FileSignature className="w-4 h-4 text-indigo-600" /> Mandats & Documents
+          <FileSignature className="w-4 h-4 text-indigo-600" /> {t(lang, "session.mandates.title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -241,16 +243,16 @@ export default function PlayerMandates({ player }) {
         {/* ── Mandats ── */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Mandats</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t(lang, "session.mandates.mandates")}</span>
             <Button size="sm" variant="ghost" className="h-7 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
               onClick={() => { setEditMandate(null); setShowMandate(true); }}>
-              <Plus className="w-3.5 h-3.5 mr-1" /> Ajouter
+              <Plus className="w-3.5 h-3.5 mr-1" /> {t(lang, "session.mandates.add")}
             </Button>
           </div>
           {loadingM ? (
             <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 text-indigo-500 animate-spin" /></div>
           ) : mandates.length === 0 ? (
-            <p className="text-xs text-slate-400 py-2">Aucun mandat pour ce joueur.</p>
+            <p className="text-xs text-slate-400 py-2">{t(lang, "session.mandates.noMandates")}</p>
           ) : (
             <div className="space-y-2">
               {mandates.map(m => {
@@ -259,19 +261,19 @@ export default function PlayerMandates({ player }) {
                   <div key={m.id} className="flex items-start gap-2 p-2.5 rounded-lg border border-slate-100 bg-slate-50/50 group">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium text-slate-800">{label(MANDATE_TYPES, m.type)}</span>
-                        <Badge className={`${st.color} border-0 text-[11px]`}>{st.label}</Badge>
+                        <span className="text-sm font-medium text-slate-800">{mtypeLabel(lang, m.type)}</span>
+                        <Badge className={`${st.color} border-0 text-[11px]`}>{expiryLabel(lang, st)}</Badge>
                       </div>
                       <div className="text-xs text-slate-500 mt-0.5">
                         {m.commission_pct != null ? `${m.commission_pct}% · ` : ""}
-                        {m.date_fin ? `expire le ${m.date_fin}` : "sans échéance"}
-                        {m.exclusif ? " · exclusif" : ""}
+                        {m.date_fin ? `${t(lang, "session.mandates.expiresOn")} ${m.date_fin}` : t(lang, "session.mandates.noExpiry")}
+                        {m.exclusif ? ` · ${t(lang, "session.mandates.exclusive")}` : ""}
                       </div>
                       {m.notes && <div className="text-xs text-slate-400 mt-0.5 truncate">{m.notes}</div>}
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => { setEditMandate(m); setShowMandate(true); }} className="p-1 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700"><Pencil className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => { if (confirm("Supprimer ce mandat ?")) mMut.del.mutate(m.id); }} className="p-1 rounded text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => { if (confirm(t(lang, "session.mandates.confirmMandate"))) mMut.del.mutate(m.id); }} className="p-1 rounded text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   </div>
                 );
@@ -283,16 +285,16 @@ export default function PlayerMandates({ player }) {
         {/* ── Documents ── */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Documents</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t(lang, "session.mandates.documents")}</span>
             <Button size="sm" variant="ghost" className="h-7 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
               onClick={() => { setEditDoc(null); setShowDoc(true); }}>
-              <Plus className="w-3.5 h-3.5 mr-1" /> Ajouter
+              <Plus className="w-3.5 h-3.5 mr-1" /> {t(lang, "session.mandates.add")}
             </Button>
           </div>
           {loadingD ? (
             <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 text-indigo-500 animate-spin" /></div>
           ) : documents.length === 0 ? (
-            <p className="text-xs text-slate-400 py-2">Aucun document pour ce joueur.</p>
+            <p className="text-xs text-slate-400 py-2">{t(lang, "session.mandates.noDocs")}</p>
           ) : (
             <div className="space-y-2">
               {documents.map(d => {
@@ -304,14 +306,14 @@ export default function PlayerMandates({ player }) {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-medium text-slate-800">{d.titre}</span>
                         {d.url && <a href={d.url} target="_blank" rel="noopener noreferrer" className="text-indigo-500 hover:text-indigo-700"><ExternalLink className="w-3.5 h-3.5" /></a>}
-                        {d.date_expiration && <Badge className={`${st.color} border-0 text-[11px]`}>{st.key === "ok" ? d.date_expiration : st.label}</Badge>}
+                        {d.date_expiration && <Badge className={`${st.color} border-0 text-[11px]`}>{st.key === "ok" ? d.date_expiration : expiryLabel(lang, st)}</Badge>}
                       </div>
-                      <div className="text-xs text-slate-500 mt-0.5">{label(DOC_TYPES, d.type)}</div>
+                      <div className="text-xs text-slate-500 mt-0.5">{dtypeLabel(lang, d.type)}</div>
                       {d.notes && <div className="text-xs text-slate-400 mt-0.5 truncate">{d.notes}</div>}
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => { setEditDoc(d); setShowDoc(true); }} className="p-1 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700"><Pencil className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => { if (confirm(`Supprimer "${d.titre}" ?`)) dMut.del.mutate(d.id); }} className="p-1 rounded text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => { if (confirm(t(lang, "session.mandates.confirmDoc"))) dMut.del.mutate(d.id); }} className="p-1 rounded text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   </div>
                 );

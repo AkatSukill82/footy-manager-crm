@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { createPageUrl } from "../../utils";
 import { Users, Loader2, RefreshCw, User, CheckCircle2 } from "lucide-react";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 const SQUAD_SCHEMA = {
   type: "object",
@@ -49,11 +51,13 @@ const lineOf = (poste = "") => {
   return "Autres";
 };
 const LINE_ORDER = ["Gardiens", "Défenseurs", "Milieux", "Attaquants", "Autres"];
+const LINE_KEY = { Gardiens: "gk", Défenseurs: "def", Milieux: "mid", Attaquants: "att", Autres: "other" };
 
 const norm = (s) => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
 
 export default function ClubSquad({ club, crmPlayers = [] }) {
   const navigate = useNavigate();
+  const { lang } = useLanguage();
   const { data: squad = [], isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["clubSquad", club?.nom],
     queryFn: () => fetchSquad(club.nom),
@@ -76,24 +80,24 @@ export default function ClubSquad({ club, crmPlayers = [] }) {
     <div className="bg-white rounded-2xl border border-slate-100 p-4">
       <div className="flex items-center justify-between mb-3">
         <p className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-          <Users className="w-4 h-4 text-slate-400" /> Effectif{squad.length > 0 ? ` (${squad.length})` : ""}
+          <Users className="w-4 h-4 text-slate-400" /> {t(lang, "session.squad.title")}{squad.length > 0 ? ` (${squad.length})` : ""}
         </p>
         <button onClick={() => refetch()} disabled={isFetching}
-          className="text-slate-400 hover:text-slate-600 disabled:opacity-50" title="Actualiser l'effectif">
+          className="text-slate-400 hover:text-slate-600 disabled:opacity-50" title={t(lang, "session.squad.refresh")}>
           <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
         </button>
       </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center gap-2 py-6 text-slate-500 text-sm">
-          <Loader2 className="w-4 h-4 animate-spin" /> Récupération de l'effectif…
+          <Loader2 className="w-4 h-4 animate-spin" /> {t(lang, "session.squad.loading")}
         </div>
       ) : (isError || squad.length === 0) ? (
         // Repli : si la recherche web n'a rien donné, on montre au moins les
         // joueurs du CRM rattachés à ce club.
         crmPlayers.length > 0 ? (
           <div>
-            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Vos joueurs ({crmPlayers.length})</p>
+            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">{t(lang, "session.squad.yourPlayers")} ({crmPlayers.length})</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {crmPlayers.map((p) => (
                 <button key={p.id} onClick={() => navigate(createPageUrl("PlayerDetail") + `?id=${p.id}`)}
@@ -113,16 +117,16 @@ export default function ClubSquad({ club, crmPlayers = [] }) {
                 </button>
               ))}
             </div>
-            <p className="text-[10px] text-slate-300 pt-2">Effectif complet introuvable via le web — seuls vos joueurs suivis sont affichés.</p>
+            <p className="text-[10px] text-slate-300 pt-2">{t(lang, "session.squad.fallbackNote")}</p>
           </div>
         ) : (
-          <p className="text-sm text-slate-400 text-center py-4">Aucun effectif trouvé pour {club.nom}.</p>
+          <p className="text-sm text-slate-400 text-center py-4">{t(lang, "session.squad.none")}</p>
         )
       ) : (
         <div className="space-y-4">
           {grouped.map(({ line, items }) => (
             <div key={line}>
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">{line}</p>
+              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">{t(lang, `session.squad.${LINE_KEY[line]}`)}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {items.map((j, i) => {
                   const inCrm = crmByName.get(norm(j.nom));
@@ -141,10 +145,10 @@ export default function ClubSquad({ club, crmPlayers = [] }) {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1">
                           <p className="text-xs font-semibold text-slate-900 truncate">{j.nom}</p>
-                          {inCrm && <CheckCircle2 className="w-3 h-3 text-green-600 flex-shrink-0" title="Dans votre CRM" />}
+                          {inCrm && <CheckCircle2 className="w-3 h-3 text-green-600 flex-shrink-0" title={t(lang, "session.squad.inCrm")} />}
                         </div>
                         <p className="text-[10px] text-slate-400 truncate">
-                          {[j.poste, j.age ? `${j.age} ans` : null, j.nationalite].filter(Boolean).join(" · ")}
+                          {[j.poste, j.age ? `${j.age} ${t(lang, "session.squad.years")}` : null, j.nationalite].filter(Boolean).join(" · ")}
                         </p>
                       </div>
                       {j.valeur_marchande != null && (
@@ -156,7 +160,7 @@ export default function ClubSquad({ club, crmPlayers = [] }) {
               </div>
             </div>
           ))}
-          <p className="text-[10px] text-slate-300 pt-1">Effectif récupéré via recherche web — à vérifier.</p>
+          <p className="text-[10px] text-slate-300 pt-1">{t(lang, "session.squad.disclaimer")}</p>
         </div>
       )}
     </div>

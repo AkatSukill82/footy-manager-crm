@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { CalendarDays, Trophy, MapPin, CalendarPlus, Loader2, Check, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 const MATCHES_SCHEMA = {
   type: "object",
@@ -52,6 +54,7 @@ RÈGLE ABSOLUE : ne retourne que des matchs réellement programmés et datés da
 }
 
 function MatchRow({ match, club }) {
+  const { lang } = useLanguage();
   const [state, setState] = useState("idle"); // idle | adding | added | error
   const home = match.domicile ? club : match.adversaire;
   const away = match.domicile ? match.adversaire : club;
@@ -94,7 +97,7 @@ function MatchRow({ match, club }) {
           <div className="flex items-center gap-1">
             <CalendarDays className="w-3 h-3" />
             <span>
-              {isToday ? "Aujourd'hui" : isTomorrow ? "Demain" : format(matchDate, "EEEE d MMMM", { locale: fr })}
+              {isToday ? t(lang, "session.upcoming.today") : isTomorrow ? t(lang, "session.upcoming.tomorrow") : format(matchDate, "EEEE d MMMM", { locale: fr })}
               {match.heure && /^\d{1,2}:\d{2}$/.test(match.heure) ? ` · ${match.heure}` : ""}
             </span>
           </div>
@@ -113,18 +116,19 @@ function MatchRow({ match, club }) {
         className={`flex-shrink-0 h-8 text-xs ${state === "added" ? "text-green-700 border-green-200" : "text-green-600 hover:text-green-700 hover:bg-green-50"}`}
         onClick={addToAgenda}
         disabled={state === "adding" || state === "added"}
-        title="Ajouter ce match à mon Google Agenda"
+        title={t(lang, "session.upcoming.addTooltip")}
       >
         {state === "adding" ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          : state === "added" ? <><Check className="w-3.5 h-3.5 mr-1" /> Ajouté</>
-          : state === "error" ? "Réessayer"
-          : <><CalendarPlus className="w-3.5 h-3.5 mr-1" /> Agenda</>}
+          : state === "added" ? <><Check className="w-3.5 h-3.5 mr-1" /> {t(lang, "session.upcoming.added")}</>
+          : state === "error" ? t(lang, "session.upcoming.retry")
+          : <><CalendarPlus className="w-3.5 h-3.5 mr-1" /> {t(lang, "session.upcoming.agenda")}</>}
       </Button>
     </div>
   );
 }
 
 export default function UpcomingMatches({ playerClub, playerName }) {
+  const { lang } = useLanguage();
   const { data: matches = [], isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["upcomingMatches", playerClub],
     queryFn: () => fetchUpcomingMatches(playerClub, playerName),
@@ -142,10 +146,10 @@ export default function UpcomingMatches({ playerClub, playerName }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CalendarDays className="w-5 h-5 text-green-600" />
-            <h3 className="font-semibold text-slate-900">Prochains matchs</h3>
+            <h3 className="font-semibold text-slate-900">{t(lang, "session.upcoming.title")}</h3>
           </div>
           <button onClick={() => refetch()} disabled={isFetching}
-            className="text-slate-400 hover:text-slate-600 disabled:opacity-50" title="Actualiser">
+            className="text-slate-400 hover:text-slate-600 disabled:opacity-50" title={t(lang, "session.upcoming.refresh")}>
             <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
           </button>
         </div>
@@ -153,12 +157,12 @@ export default function UpcomingMatches({ playerClub, playerName }) {
       <CardContent className="space-y-3">
         {isLoading ? (
           <div className="flex items-center justify-center gap-2 py-6 text-slate-500 text-sm">
-            <Loader2 className="w-4 h-4 animate-spin" /> Recherche du calendrier…
+            <Loader2 className="w-4 h-4 animate-spin" /> {t(lang, "session.upcoming.searching")}
           </div>
         ) : isError ? (
-          <div className="text-slate-500 text-sm text-center py-4">Recherche impossible pour le moment.</div>
+          <div className="text-slate-500 text-sm text-center py-4">{t(lang, "session.upcoming.error")}</div>
         ) : matches.length === 0 ? (
-          <div className="text-slate-500 text-sm text-center py-4">Aucun match à venir trouvé pour {playerClub}.</div>
+          <div className="text-slate-500 text-sm text-center py-4">{t(lang, "session.upcoming.none")}</div>
         ) : (
           matches.map((match, i) => <MatchRow key={`${match.date}-${i}`} match={match} club={playerClub} />)
         )}

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { invokeFn } from "@/api/base44Client";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Loader2 } from "lucide-react";
+import { useLanguage } from "../../lib/LanguageContext";
+import { t } from "../../i18n/translations";
 
 // Champs de stats appliqués automatiquement (pas l'identité, pour ne pas écraser)
 const STATS_FIELDS = new Set([
@@ -49,6 +51,7 @@ const syncedRecently = (id) => {
 const markSynced = (id) => { try { localStorage.setItem(`fdm_sync_${id}`, String(Date.now())); } catch { /* quota */ } };
 
 export default function SyncPlayerButton({ player, onApply }) {
+  const { lang } = useLanguage();
   const [state, setState] = useState("idle"); // idle | loading | applied | done
   const [count, setCount] = useState(0);
   const ranFor = useRef(null);
@@ -155,14 +158,14 @@ export default function SyncPlayerButton({ player, onApply }) {
   if (state === "loading") {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
-        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Mise à jour des stats…
+        <Loader2 className="w-3.5 h-3.5 animate-spin" /> {t(lang, "session.sync.updating")}
       </span>
     );
   }
   if (state === "applied") {
     return (
       <Badge className="bg-green-100 text-green-700 border-0 text-xs">
-        <CheckCircle2 className="w-3 h-3 mr-1" /> {count} stat{count > 1 ? "s" : ""} mise{count > 1 ? "s" : ""} à jour
+        <CheckCircle2 className="w-3 h-3 mr-1" /> {t(lang, "session.sync.updated", { count })}
       </Badge>
     );
   }
