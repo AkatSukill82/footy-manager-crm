@@ -197,6 +197,7 @@ export default function PlayerSearchPage() {
   const [loading, setLoading]         = useState(false);
   const [loadingFull, setLoadingFull] = useState(false);
   const [candidates, setCandidates]   = useState(null);
+  const [searchSource, setSearchSource] = useState(null);   // source qui a trouvé les candidats
   const [result, setResult]           = useState(null);
   const [saving, setSaving]           = useState(false);
   const [saved, setSaved]             = useState(false);
@@ -204,13 +205,57 @@ export default function PlayerSearchPage() {
   const navigate    = useNavigate();
   const queryClient = useQueryClient();
 
-  // ── 1. Recherche via FotMob (JSON array parsé correctement) ────────────────
+  // ── Recherche de candidats multi-sources (chaîne de fallback) ───────────────
+  // FotMob couvre surtout les grands championnats ; quand il ne renvoie rien
+  // (jeunes, divisions inférieures, orthographe différente), on enchaîne
+  // automatiquement sur BeSoccer (large index) puis Transfermarkt.
+  // Chaque source est défensive : un échec réseau renvoie [] sans casser la chaîne.
+  const searchCandidates = async (q) => {
+    // 1. FotMob
+    try {
+      const body = await invokeFn("fotmobProxy", { action: "searchPlayer", query: q });
+      const list = Array.isArray(body?.players) ? body.players : [];
+      if (list.length) return { list, source: "FotMob" };
+    } catch { /* on tente la source suivante */ }
+
+    // 2. BeSoccer — meilleur index pour les joueurs peu connus
+    try {
+      const body = await invokeFn("besoccerProxy", { action: "searchPlayer", query: q });
+      const list = Array.isArray(body?.players) ? body.players : [];
+      if (list.length) return { list, source: "BeSoccer" };
+    } catch { /* on tente la source suivante */ }
+
+    // 3. Transfermarkt — dernier recours, ne renvoie qu'un profil → 1 candidat
+    try {
+      const body = await invokeFn("transfermarktProxy", { action: "searchAndGet", query: q });
+      const p = body?.ok ? body.player : null;
+      if (p?.nom) {
+        return {
+          list: [{
+            nom:              p.nom,
+            poste:            p.poste ?? null,
+            nationalite:      p.nationalite ?? null,
+            club_actuel:      p.club_actuel ?? null,
+            photo_url:        p.photo_url ?? null,
+            date_naissance:   p.date_naissance ?? null,
+            transfermarkt_id: p.transfermarkt_id ?? null,
+          }],
+          source: "Transfermarkt",
+        };
+      }
+    } catch { /* aucune source n'a abouti */ }
+
+    return { list: [], source: null };
+  };
+
+  // ── 1. Recherche (FotMob → BeSoccer → Transfermarkt) ───────────────────────
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
     setLoading(true);
     setResult(null);
     setCandidates(null);
+    setSearchSource(null);
     setSaved(false);
     setError(null);
 
@@ -227,29 +272,26 @@ export default function PlayerSearchPage() {
     }
 
     try {
-      const body = await invokeFn("fotmobProxy", {
-        action: "searchPlayer",
-        query:  query.trim(),
-      });
-      const list = Array.isArray(body?.players) ? body.players : [];
+      const { list, source } = await searchCandidates(query.trim());
 
       if (list.length === 0) {
-        // Source vide mais on a une version en cache (même périmée) → on la ressert
+        // Toutes les sources vides → on ressert le cache périmé s'il existe
         if (cached?.data?.length) {
           setLoading(false);
           cached.data.length === 1 ? fetchFullProfile(cached.data[0]) : setCandidates(cached.data);
           return;
         }
-        setError(`Aucun joueur trouvé pour "${query}". Essayez le nom complet en anglais sans accents.`);
+        setError(`Aucun joueur trouvé pour "${query}" sur FotMob, BeSoccer ni Transfermarkt. Essayez le nom complet sans accents, ou un seul nom de famille.`);
         setLoading(false);
         return;
       }
 
       setCache(cacheKey, list);
+      setSearchSource(source);
       if (list.length === 1) { setLoading(false); fetchFullProfile(list[0]); }
       else                   { setCandidates(list); setLoading(false); }
     } catch (err) {
-      // Source en échec → fallback sur le cache périmé si disponible
+      // Échec global → fallback sur le cache périmé si disponible
       if (cached?.data?.length) {
         setLoading(false);
         cached.data.length === 1 ? fetchFullProfile(cached.data[0]) : setCandidates(cached.data);
@@ -499,6 +541,7 @@ export default function PlayerSearchPage() {
               <CardTitle className="text-base flex items-center gap-2">
                 <Search className="w-4 h-4 text-green-500" />
                 {candidates.length} joueur{candidates.length > 1 ? "s" : ""} trouvé{candidates.length > 1 ? "s" : ""}
+                {searchSource && <SourceBadge sources={[searchSource]} />}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
