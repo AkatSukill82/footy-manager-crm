@@ -133,6 +133,86 @@ const STAT_MAP: Record<string, string> = {
   "Saves":                "arrets",
   "Goals conceded":       "buts_encaisses",
   "Clean sheets":         "clean_sheets",
+  // ── Stats avancées (granularité fiche FotMob) ──
+  "Non-penalty xG":                       "xg_hors_penalty",
+  "Non-penalty expected goals (xG)":      "xg_hors_penalty",
+  "Expected goals (xG) excluding penalties": "xg_hors_penalty",
+  "xGOT":                                 "xgot",
+  "Expected goals on target":             "xgot",
+  "Expected goals on target (xGOT)":      "xgot",
+  "Accurate long balls":                  "passes_longues",
+  "Successful long balls":                "passes_longues",
+  "Touches in opposition box":            "touches_surface_adverse",
+  "Touches in opp. box":                  "touches_surface_adverse",
+  "Penalty area touches":                 "touches_surface_adverse",
+  "Duels won":                            "duels_gagnes",
+  "Ground duels won":                     "duels_gagnes",
+  "Defensive actions":                    "actions_defensives",
+  "Dribbled past":                        "dribbles_subis",
+  "Was dribbled past":                    "dribbles_subis",
+  "Dribbles attempted":                   "dribbles_tentes",
+  "Possession lost":                      "pertes_balle",
+};
+
+// Titres dont la valeur FotMob contient un pourcentage à extraire (ex: "8 (80.5%)").
+// Le champ "compte" reste géré par STAT_MAP ci-dessus.
+const STAT_PCT_MAP: Record<string, string> = {
+  "Accurate passes":       "passes_reussies_pct",
+  "Pass accuracy":         "passes_reussies_pct",
+  "Accurate long balls":   "passes_longues_pct",
+  "Successful long balls": "passes_longues_pct",
+  "Successful crosses":    "centres_reussis_pct",
+  "Accurate crosses":      "centres_reussis_pct",
+  "Shots on target":       "tirs_cadres_pct",
+  "Duels won":             "duels_gagnes_pct",
+  "Ground duels won":      "duels_gagnes_pct",
+  "Successful dribbles":   "dribbles_pct",
+  "Dribbles":              "dribbles_pct",
+  "Tackles won":           "tacles_reussis_pct",
+};
+
+// Champs cumulables sur plusieurs compétitions (compteurs). Les % et notes ne se
+// somment pas : ils ne sont pris que sur la ligue principale.
+const NO_SUM = new Set([
+  "note_fotmob", "note_moyenne",
+  "tirs_cadres_pct", "passes_reussies_pct", "passes_longues_pct",
+  "centres_reussis_pct", "duels_gagnes_pct", "dribbles_pct", "tacles_reussis_pct",
+]);
+
+// Extrait la valeur numérique principale + un éventuel pourcentage.
+// FotMob renvoie selon la stat : un nombre, une string "8 (80.5%)" ou "80.5%",
+// ou un objet { value, total, percent }.
+const parseStatValue = (raw: any): { num: number | null; pct: number | null } => {
+  if (raw == null) return { num: null, pct: null };
+  if (typeof raw === "number") return { num: Number.isFinite(raw) ? raw : null, pct: null };
+  if (typeof raw === "object") {
+    const inner = parseStatValue(raw.value ?? raw.statValue ?? raw.total ?? raw.num ?? null);
+    const pctRaw = raw.percent ?? raw.percentage ?? null;
+    const pct = typeof pctRaw === "number" ? pctRaw : parseStatValue(pctRaw).num;
+    return { num: inner.num, pct: pct ?? inner.pct };
+  }
+  const s = String(raw);
+  const pctM = s.match(/([\d.]+)\s*%/);
+  const pct = pctM ? parseFloat(pctM[1]) : null;
+  // Premier nombre en dehors d'une parenthèse de pourcentage
+  const numM = s.replace(/\([^)]*\)/g, " ").match(/-?\d+(?:\.\d+)?/);
+  const num = numM ? parseFloat(numM[0]) : null;
+  return { num: Number.isFinite(num as number) ? num : null, pct };
+};
+
+// Applique une stat (compte + %) dans l'accumulateur.
+// sum=true : autres compétitions, on additionne les compteurs uniquement.
+const applyStat = (stats: Record<string, any>, title: string, raw: any, sum: boolean) => {
+  const field    = STAT_MAP[title];
+  const pctField = STAT_PCT_MAP[title];
+  if (!field && !pctField) return;
+  const { num, pct } = parseStatValue(raw);
+  if (field && num != null) {
+    if (sum) { if (!NO_SUM.has(field)) stats[field] = (stats[field] ?? 0) + num; }
+    else stats[field] = num;
+  }
+  // Pourcentages : ligue principale uniquement (la somme n'a pas de sens).
+  if (pctField && pct != null && !sum && stats[pctField] == null) stats[pctField] = pct;
 };
 
 // Position FotMob (label EN) → poste entité Player (FR)
@@ -160,17 +240,15 @@ const getPlayerStats = async (playerId: number): Promise<Record<string, any>> =>
   const json  = await fmGet(`/playerData?id=${playerId}`);
   const stats: Record<string, any> = {};
 
+  // Ligue principale : valeurs de référence (compteurs + pourcentages).
   for (const item of (json.mainLeague?.stats ?? [])) {
-    const field = STAT_MAP[item.title];
-    if (field && item.value != null) stats[field] = item.value;
+    applyStat(stats, item.title, item.value, false);
   }
 
+  // Autres compétitions : on additionne uniquement les compteurs (cf. NO_SUM).
   for (const league of (json.otherLeagues ?? [])) {
     for (const item of (league.stats ?? [])) {
-      const field = STAT_MAP[item.title];
-      if (field && item.value != null && field !== "note_fotmob") {
-        stats[field] = (stats[field] ?? 0) + item.value;
-      }
+      applyStat(stats, item.title, item.value, true);
     }
   }
 

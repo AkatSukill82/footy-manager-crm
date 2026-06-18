@@ -7,6 +7,7 @@
  * Actions :
  *   searchAndGet  — recherche par nom + scrape profil
  *   getPlayer     — scrape profil depuis une URL TM connue
+ *   getRumors     — scrape les rumeurs de transfert (par id TM ou recherche nom)
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
@@ -186,6 +187,65 @@ const parseProfile = (html: string, url: string): Record<string, any> => {
   return d;
 };
 
+// ── Parse rumeurs de transfert ────────────────────────────────────────────────
+// La page /geruechte/spieler/{id} contient une table "Rumours" (rumeurs ouvertes,
+// souvent vide) et une table "Rumour archive" (clubs intéressés + dates + source).
+// Les deux partagent la même structure <table class="items"> ; on parse toutes les
+// lignes et on déduplique par club + lien source.
+
+const decodeEntities = (s: string): string =>
+  (s || "")
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'").replace(/&nbsp;/g, " ")
+    .replace(/&([a-z]+);/gi, " ").replace(/\s+/g, " ").trim();
+
+const parseRumors = (html: string): any[] => {
+  const rumors: any[] = [];
+  const seen = new Set<string>();
+
+  const rowRe = /<tr class="(?:odd|even)">([\s\S]*?)<\/tr>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = rowRe.exec(html)) !== null) {
+    const row = m[1];
+
+    // Club intéressé : cellule "hauptlink" avec lien /verein/{id}
+    const clubM = row.match(/<td class="links hauptlink[^"]*">\s*<a[^>]*title="([^"]+)"[^>]*href="([^"]*verein\/(\d+))"/i);
+    if (!clubM) continue;
+    const club    = decodeEntities(clubM[1]);
+    const clubId  = clubM[3];
+
+    // Logo du club
+    const logoM = row.match(/<img[^>]+src="(https:\/\/tmssl[^"]+wappen[^"]+)"/i);
+
+    // Dates (cellules centrées avec date DD/MM/YYYY + lien source forum)
+    const dates = [...row.matchAll(/<td class="zentriert">\s*<a[^>]*href="([^"]+)"[^>]*>\s*(\d{2}\/\d{2}\/\d{4})\s*<\/a>/gi)];
+    const sourceUrl  = dates[0]?.[1] ?? null;
+    const sourceDate = dates[0]?.[2] ?? null;
+    const lastReply  = dates[1]?.[2] ?? dates[0]?.[2] ?? null;
+
+    // Probabilité estimée (cellule "rechts hauptlink") — texte avant la bulle
+    const probM = row.match(/<td class="rechts hauptlink">\s*([^<&]*?)\s*(?:&nbsp;|<)/i);
+    let probability: string | null = probM ? decodeEntities(probM[1]) : null;
+    if (!probability || probability === "-") probability = null;
+
+    const key = `${clubId}|${sourceUrl ?? ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    rumors.push({
+      club,
+      club_id:     clubId,
+      club_logo:   logoM ? logoM[1] : null,
+      source_date: sourceDate,
+      last_reply:  lastReply,
+      source_url:  sourceUrl,
+      probability,
+    });
+    if (rumors.length >= 25) break;
+  }
+  return rumors;
+};
+
 // ── Handler ───────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
@@ -194,7 +254,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
-    const { action, query, club, transfermarkt_url } = await req.json();
+    const { action, query, club, transfermarkt_url, transfermarkt_id } = await req.json();
 
     if (action === "searchAndGet") {
       if (!query?.trim()) return Response.json({ ok: false, error: "query requis" });
@@ -211,6 +271,24 @@ Deno.serve(async (req) => {
       const html   = await fetchHtml(transfermarkt_url);
       const player = parseProfile(html, transfermarkt_url);
       return Response.json({ ok: true, player });
+    }
+
+    if (action === "getRumors") {
+      // ID TM fourni directement, sinon on le retrouve via une recherche par nom.
+      let id: string | null = transfermarkt_id ? String(transfermarkt_id) : null;
+      if (!id) {
+        if (!query?.trim()) return Response.json({ ok: false, error: "transfermarkt_id ou query requis" });
+        const hit = await searchPlayer(query.trim(), club);
+        const idM = hit?.url.match(/\/spieler\/(\d+)/);
+        id = idM ? idM[1] : null;
+      }
+      if (!id) return Response.json({ ok: false, error: "Joueur introuvable sur Transfermarkt." });
+
+      // Slug générique : Transfermarkt route par l'ID numérique, le slug est ignoré.
+      const url    = `${TM_BASE}/x/geruechte/spieler/${id}`;
+      const html   = await fetchHtml(url);
+      const rumors = parseRumors(html);
+      return Response.json({ ok: true, total: rumors.length, rumors, transfermarkt_id: id, source_url: url });
     }
 
     return Response.json({ ok: false, error: `Action inconnue: ${action}` });

@@ -245,6 +245,14 @@
       "type": "number",
       "description": "xG par 90 minutes (saison)"
     },
+    "xg_hors_penalty": {
+      "type": "number",
+      "description": "xG hors penaltys – npxG (saison)"
+    },
+    "xgot": {
+      "type": "number",
+      "description": "xG cadré – xG on target (saison)"
+    },
     "tirs": {
       "type": "number",
       "description": "Tirs tent\u00e9s (saison)"
@@ -273,6 +281,10 @@
       "type": "number",
       "description": "% passes r\u00e9ussies (saison)"
     },
+    "passes_longues": {
+      "type": "number",
+      "description": "Passes longues r\u00e9ussies (saison)"
+    },
     "passes_longues_pct": {
       "type": "number",
       "description": "% passes longues r\u00e9ussies (saison)"
@@ -293,9 +305,25 @@
       "type": "number",
       "description": "% dribbles r\u00e9ussis (saison)"
     },
+    "duels_gagnes": {
+      "type": "number",
+      "description": "Duels gagn\u00e9s (saison)"
+    },
     "duels_gagnes_pct": {
       "type": "number",
       "description": "% duels gagn\u00e9s (saison)"
+    },
+    "actions_defensives": {
+      "type": "number",
+      "description": "Actions d\u00e9fensives (saison)"
+    },
+    "dribbles_subis": {
+      "type": "number",
+      "description": "Dribbles subis \u2013 dribbled past (saison)"
+    },
+    "touches_surface_adverse": {
+      "type": "number",
+      "description": "Touches dans la surface adverse (saison)"
     },
     "duels_aeriens_pct": {
       "type": "number",

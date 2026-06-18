@@ -10,13 +10,18 @@ import { t } from "../../i18n/translations";
 // Les libellés sont traduits via session.fotmob.l.<clé>.
 const GROUPS = [
   { key: "gSynth", items: ["matchs_joues", "titularisations", "minutes_jouees", "note_moyenne"] },
-  { key: "gOff",   items: ["buts", "passes_decisives", "xg", "xa", "tirs", "tirs_cadres", "grandes_chances", "grandes_chances_manquees", "penaltys_marques"] },
-  { key: "gPass",  items: ["passes_cles", "passes_reussies", "centres", "dribbles_reussis", "touches_balle", "pertes_balle"] },
-  { key: "gDef",   items: ["tacles", "interceptions", "recuperations", "degagements"] },
+  { key: "gOff",   items: ["buts", "xg", "xg_hors_penalty", "xgot", "passes_decisives", "xa", "tirs", "tirs_cadres", "tirs_cadres_pct", "grandes_chances", "grandes_chances_manquees", "penaltys_marques"] },
+  { key: "gPass",  items: ["passes_cles", "passes_reussies", "passes_reussies_pct", "passes_longues", "passes_longues_pct", "centres", "centres_reussis_pct"] },
+  { key: "gPoss",  items: ["touches_balle", "touches_surface_adverse", "duels_gagnes", "duels_gagnes_pct", "dribbles_reussis", "dribbles_pct", "pertes_balle"] },
+  { key: "gDef",   items: ["actions_defensives", "tacles", "interceptions", "recuperations", "degagements", "dribbles_subis"] },
   { key: "gDisc",  items: ["cartons_jaunes", "cartons_rouges", "fautes_commises", "fautes_subies", "hors_jeu"] },
   { key: "gGk",    items: ["arrets", "buts_encaisses", "clean_sheets"] },
 ];
-const SUFFIX = { minutes_jouees: "'" };
+const SUFFIX = {
+  minutes_jouees: "'",
+  tirs_cadres_pct: "%", passes_reussies_pct: "%", passes_longues_pct: "%",
+  centres_reussis_pct: "%", duels_gagnes_pct: "%", dribbles_pct: "%",
+};
 
 // Champs réellement écrits dans l'entité Player lors de l'application.
 const APPLY_FIELDS = GROUPS.flatMap(g => g.items);
