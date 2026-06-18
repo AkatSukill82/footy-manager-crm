@@ -184,6 +184,15 @@ export default function PlayerFotmobStats({ player, onApply }) {
               </div>
             ))}
 
+            {/* Note : certains joueurs (petits championnats) n'ont pas de stats
+                détaillées publiées par FotMob → seul le résumé est dispo. */}
+            {!(stats.xg != null || stats.touches_balle != null || stats.actions_defensives != null || stats.passes_reussies_pct != null) && (
+              <div className="flex items-start gap-2 text-[11px] text-slate-400 bg-slate-50 rounded-lg p-2 border border-slate-100">
+                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-slate-300" />
+                <span>{t(lang, "session.fotmob.summaryOnly")}</span>
+              </div>
+            )}
+
             {onApply && (
               <div className="flex items-center justify-between gap-2 pt-1">
                 <span className="text-[11px] text-slate-400">{t(lang, "session.fotmob.applyHint")}</span>
