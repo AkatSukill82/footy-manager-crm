@@ -297,8 +297,11 @@ const LID_MAP: Record<string, string> = {
   expected_goals_against_while_on_pitch: "xg_concede_terrain",
   // Gardien
   saves:                       "arrets",
+  save_percentage:             "arrets_pct",
   goals_conceded:              "buts_encaisses",
   clean_sheet:                 "clean_sheets",
+  clean_sheet_team_title:      "clean_sheets",
+  keeper_high_claim:           "sorties_reussies",
   // Discipline
   yellow_cards:                "cartons_jaunes",
   red_cards:                   "cartons_rouges",

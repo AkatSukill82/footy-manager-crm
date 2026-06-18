@@ -16,12 +16,12 @@ const GROUPS = [
   { key: "gPoss",  items: ["duels_gagnes", "duels_gagnes_pct", "touches_balle", "touches_surface_adverse", "pertes_balle", "fautes_subies"] },
   { key: "gDef",   items: ["actions_defensives", "interceptions", "tacles", "recuperations", "dribbles_subis", "degagements", "buts_encaisses_terrain", "xg_concede_terrain"] },
   { key: "gDisc",  items: ["cartons_jaunes", "cartons_rouges"] },
-  { key: "gGk",    items: ["arrets", "buts_encaisses", "clean_sheets"] },
+  { key: "gGk",    items: ["arrets", "arrets_pct", "buts_encaisses", "clean_sheets", "sorties_reussies"] },
 ];
 const SUFFIX = {
   minutes_jouees: "'",
   tirs_cadres_pct: "%", passes_reussies_pct: "%", passes_longues_pct: "%",
-  centres_reussis_pct: "%", duels_gagnes_pct: "%", dribbles_pct: "%",
+  centres_reussis_pct: "%", duels_gagnes_pct: "%", dribbles_pct: "%", arrets_pct: "%",
 };
 
 // Champs réellement écrits dans l'entité Player lors de l'application.
@@ -111,7 +111,12 @@ export default function PlayerFotmobStats({ player, onApply }) {
   };
 
   const fmUrl = `https://www.google.com/search?q=${encodeURIComponent(`Fotmob ${player.nom_complet || player.nom}`)}`;
-  const hasGroup = (g) => g.items.some((k) => stats?.[k] != null && stats[k] !== "");
+  // Le groupe Gardien ne s'affiche que pour les vrais gardiens (présence d'arrêts),
+  // sinon clean_sheet_team_title (stat d'équipe) le ferait apparaître pour tous.
+  const hasGroup = (g) =>
+    g.key === "gGk"
+      ? stats?.arrets != null
+      : g.items.some((k) => stats?.[k] != null && stats[k] !== "");
 
   return (
     <Card>
