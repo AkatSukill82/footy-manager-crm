@@ -11,7 +11,7 @@ import {
 } from "recharts";
 import { useLanguage } from "../../lib/LanguageContext";
 import { t } from "../../i18n/translations";
-import { buildPerformanceRadar } from "../../lib/playerStats";
+import { buildPerformanceRadar, COMPARE_GROUPS, compareValue, formatStat } from "../../lib/playerStats";
 
 const COLORS = ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"];
 
@@ -21,6 +21,7 @@ export default function PlayerComparison({ currentPlayer, allPlayers }) {
   const [filterMode, setFilterMode] = useState("poste");
   const [loadingAI, setLoadingAI] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [per90On, setPer90On] = useState(true);
 
   const candidates = allPlayers.filter(p => {
     if (p.id === currentPlayer.id) return false;
@@ -47,11 +48,21 @@ export default function PlayerComparison({ currentPlayer, allPlayers }) {
     const playersList = allComparePlayers.map(p =>
       `${p.nom} (${p.poste}, ${p.age} ans, ${p.club_actuel || "?"}, ${p.valeur_marchande || "?"}M€)`
     ).join(" | ");
+    // Stats détaillées (FotMob/SofaScore/BeSoccer) pour une analyse chiffrée précise.
+    const statsBlock = detailGroups.map(g =>
+      `${g.key} :\n` + g.rows.map(r =>
+        `  - ${r.stat.label} : ` + allComparePlayers.map((p, i) => `${p.nom}=${formatStat(r.vals[i], r.stat)}`).join(", ")
+      ).join("\n")
+    ).join("\n");
     const res = await base44.integrations.Core.InvokeLLM({
       prompt: `Analyse comparative football de ces joueurs : ${playersList}.
-      Pour chaque joueur, donne une analyse concise de ses points forts, points faibles, et son profil par rapport aux autres.
-      Puis donne une conclusion sur qui offre le meilleur rapport qualité/prix et quel profil est le plus adapté pour un recruteur.
-      Réponds en français, de façon structurée et professionnelle.`,
+
+Statistiques détaillées de la saison (${per90On ? "valeurs ramenées à 90 minutes pour les stats de volume" : "totaux"}) :
+${statsBlock || "(stats non renseignées)"}
+
+Appuie-toi EN PRIORITÉ sur ces chiffres. Pour chaque joueur : points forts/faibles chiffrés, profil de jeu, et comparaison directe sur les axes clés de son poste.
+Termine par une recommandation de recruteur : meilleur rapport qualité/prix et profil le plus adapté selon les données.
+Réponds en français, structuré et professionnel.`,
       add_context_from_internet: true,
     });
     setAiAnalysis(res);
@@ -62,6 +73,25 @@ export default function PlayerComparison({ currentPlayer, allPlayers }) {
     ? buildPerformanceRadar(allComparePlayers, allPlayers, currentPlayer.poste)
     : { data: [], mode: "relatif" };
   const radarData = perfRadar.data;
+
+  // Tableau comparatif détaillé : on ne garde que les stats renseignées,
+  // et on repère la meilleure valeur de chaque ligne (min si "invert").
+  const detailGroups = allComparePlayers.length >= 2
+    ? COMPARE_GROUPS.map(g => {
+        const rows = g.stats.map(stat => {
+          const vals = allComparePlayers.map(p => compareValue(p, stat, per90On));
+          if (!vals.some(v => v != null)) return null;
+          let bestIdx = -1, bestVal = null;
+          vals.forEach((v, i) => {
+            if (v == null) return;
+            if (bestVal == null || (stat.invert ? v < bestVal : v > bestVal)) { bestVal = v; bestIdx = i; }
+          });
+          const nonNull = vals.filter(v => v != null).length;
+          return { stat, vals, bestIdx: nonNull >= 2 ? bestIdx : -1 };
+        }).filter(Boolean);
+        return rows.length ? { key: g.key, rows } : null;
+      }).filter(Boolean)
+    : [];
 
   const filters = [
     { value: "poste", labelKey: "comparison.filterPosition" },
@@ -239,6 +269,62 @@ export default function PlayerComparison({ currentPlayer, allPlayers }) {
                 </div>
               )}
             </div>
+
+            {detailGroups.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                  <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Comparaison détaillée</h4>
+                  <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
+                    <button
+                      onClick={() => setPer90On(false)}
+                      className={`text-[11px] px-2.5 py-1 rounded-md font-medium transition-colors ${!per90On ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}
+                    >Totaux</button>
+                    <button
+                      onClick={() => setPer90On(true)}
+                      className={`text-[11px] px-2.5 py-1 rounded-md font-medium transition-colors ${per90On ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}
+                    >Par 90 min</button>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto rounded-xl border border-slate-100">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        <th className="text-left px-4 py-2 text-xs text-slate-500 font-medium">Statistique</th>
+                        {allComparePlayers.map((p, i) => (
+                          <th key={p.id} className="text-center px-3 py-2 text-xs font-medium" style={{ color: COLORS[i] }}>{p.nom}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detailGroups.map(g => (
+                        <React.Fragment key={g.key}>
+                          <tr className="bg-slate-50/60">
+                            <td colSpan={allComparePlayers.length + 1} className="px-4 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">{g.key}</td>
+                          </tr>
+                          {g.rows.map(({ stat, vals, bestIdx }) => (
+                            <tr key={stat.key} className="border-t border-slate-50 hover:bg-slate-50/50">
+                              <td className="px-4 py-2 text-slate-500 text-xs">{stat.label}</td>
+                              {vals.map((v, i) => (
+                                <td
+                                  key={i}
+                                  className={`px-3 py-2 text-center text-xs ${i === bestIdx ? "font-bold text-green-700 bg-green-50" : "text-slate-800"}`}
+                                >
+                                  {formatStat(v, stat)}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </React.Fragment>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Valeur surlignée = meilleure du comparatif. {per90On ? "Stats de volume ramenées à 90 min (si ≥ 90 min jouées)." : "Totaux saison."}
+                </p>
+              </div>
+            )}
 
             <div className="border-t border-slate-100 pt-4">
               <Button
