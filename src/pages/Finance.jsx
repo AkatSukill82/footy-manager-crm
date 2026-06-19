@@ -243,7 +243,8 @@ export default function FinancePage() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ["commissions"] });
 
   const createMut = useMutation({
-    mutationFn: (data) => base44.entities.Commission.create(data),
+    // organization_id requis par la RLS de création (non auto-injecté par Base44).
+    mutationFn: (data) => base44.entities.Commission.create({ ...data, organization_id: user?.organization_id ?? null }),
     onSuccess: () => { invalidate(); setShowForm(false); setEditing(null); },
   });
   const updateMut = useMutation({

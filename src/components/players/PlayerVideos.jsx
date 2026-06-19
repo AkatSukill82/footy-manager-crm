@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Video, Plus, Play, Trash2, ExternalLink, Loader2, Film } from "lucide-react";
+import { Video, Plus, Play, Trash2, ExternalLink, Loader2, Film, AlertCircle } from "lucide-react";
+import { useCurrentUser } from "../../lib/useCurrentUser";
 
 const TYPES = [
   { v: "highlights",    label: "Highlights" },
@@ -78,7 +79,9 @@ function VideoCard({ v, onDelete }) {
 
 export default function PlayerVideos({ player }) {
   const qc = useQueryClient();
+  const currentUser = useCurrentUser();
   const [showForm, setShowForm] = useState(false);
+  const [error, setError] = useState(null);
   const [f, setF] = useState({ titre: "", url: "", type: "highlights", date_video: "" });
 
   const { data: videos = [], isLoading } = useQuery({
@@ -90,6 +93,7 @@ export default function PlayerVideos({ player }) {
   const createMut = useMutation({
     mutationFn: (data) => base44.entities.PlayerVideo.create(data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["player-videos", player.id] }); setShowForm(false); setF({ titre: "", url: "", type: "highlights", date_video: "" }); },
+    onError: (err) => setError(err?.message || "Impossible d'ajouter la vidéo."),
   });
   const deleteMut = useMutation({
     mutationFn: (id) => base44.entities.PlayerVideo.delete(id),
@@ -99,7 +103,9 @@ export default function PlayerVideos({ player }) {
   const set = (k) => (e) => setF(s => ({ ...s, [k]: e?.target ? e.target.value : e }));
   const submit = () => {
     if (!f.url.trim()) return;
-    const clean = { player_id: player.id, ...f };
+    setError(null);
+    // organization_id requis par la RLS de création (non auto-injecté par Base44).
+    const clean = { player_id: player.id, organization_id: currentUser?.organization_id ?? null, ...f };
     Object.keys(clean).forEach(k => { if (clean[k] === "") clean[k] = null; });
     createMut.mutate(clean);
   };
@@ -109,7 +115,7 @@ export default function PlayerVideos({ player }) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm flex items-center gap-2"><Video className="w-4 h-4 text-red-500" /> Vidéos</CardTitle>
-          <Button size="sm" variant="outline" onClick={() => setShowForm(true)} className="h-7 text-xs gap-1">
+          <Button size="sm" variant="outline" onClick={() => { setError(null); setShowForm(true); }} className="h-7 text-xs gap-1">
             <Plus className="w-3.5 h-3.5" /> Ajouter
           </Button>
         </div>
@@ -133,6 +139,11 @@ export default function PlayerVideos({ player }) {
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Ajouter une vidéo</DialogTitle></DialogHeader>
           <div className="space-y-3 py-2">
+            {error && (
+              <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-xs">
+                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /><span>{error}</span>
+              </div>
+            )}
             <div><Label className="text-xs">Lien vidéo *</Label><Input value={f.url} onChange={set("url")} placeholder="https://youtube.com/watch?v=…" /></div>
             <div><Label className="text-xs">Titre</Label><Input value={f.titre} onChange={set("titre")} placeholder="Ex: Highlights saison 2025" /></div>
             <div className="grid grid-cols-2 gap-3">

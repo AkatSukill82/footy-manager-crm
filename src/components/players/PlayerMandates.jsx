@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileSignature, FolderOpen, Plus, Loader2, Pencil, Trash2, ExternalLink, Upload, CheckCircle2 } from "lucide-react";
 import { useLanguage } from "../../lib/LanguageContext";
 import { t } from "../../i18n/translations";
+import { useCurrentUser } from "../../lib/useCurrentUser";
 
 // ── Référentiels (codes ; libellés traduits via session.mandates.*) ───────────
 
@@ -197,6 +198,7 @@ function DocumentForm({ open, onClose, onSave, initial, saving }) {
 export default function PlayerMandates({ player }) {
   const { lang } = useLanguage();
   const qc = useQueryClient();
+  const currentUser = useCurrentUser();
   const playerId = player?.id;
   const [showMandate, setShowMandate] = useState(false);
   const [showDoc, setShowDoc] = useState(false);
@@ -216,7 +218,8 @@ export default function PlayerMandates({ player }) {
 
   const invalidate = (key) => qc.invalidateQueries({ queryKey: [key, "player", playerId] });
   // Lie automatiquement le mandat / document au joueur courant.
-  const withPlayer = (d) => ({ ...d, player_id: playerId, player_nom: player?.nom || d.player_nom || null });
+  // organization_id requis par la RLS de création (non auto-injecté par Base44).
+  const withPlayer = (d) => ({ ...d, player_id: playerId, player_nom: player?.nom || d.player_nom || null, organization_id: currentUser?.organization_id ?? null });
 
   const mMut = {
     create: useMutation({ mutationFn: (d) => base44.entities.Mandate.create(withPlayer(d)), onSuccess: () => { invalidate("mandates"); setShowMandate(false); setEditMandate(null); } }),
