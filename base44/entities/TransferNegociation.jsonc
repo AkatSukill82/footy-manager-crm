@@ -84,8 +84,7 @@
   ],
   "rls": {
     "create": {
-      "created_by_id": "{{user.id}}",
-      "organization_id": "{{user.data.organization_id}}"
+      "created_by_id": "{{user.id}}"
     },
     "read": {
       "$or": [

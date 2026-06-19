@@ -110,6 +110,7 @@ export default function PlayerVideos({ player }) {
   const deleteMut = useMutation({
     mutationFn: (id) => base44.entities.PlayerVideo.delete(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["player-videos", player.id] }),
+    onError: (err) => setError(err?.message || "Suppression impossible."),
   });
 
   const set = (k) => (e) => setF(s => ({ ...s, [k]: e?.target ? e.target.value : e }));
@@ -133,6 +134,13 @@ export default function PlayerVideos({ player }) {
         </div>
       </CardHeader>
       <CardContent>
+        {error && !showForm && (
+          <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-xs mb-3">
+            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+            <span className="flex-1">{error}</span>
+            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">✕</button>
+          </div>
+        )}
         {isLoading ? (
           <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 text-red-400 animate-spin" /></div>
         ) : videos.length === 0 ? (

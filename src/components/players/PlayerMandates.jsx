@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileSignature, FolderOpen, Plus, Loader2, Pencil, Trash2, ExternalLink, Upload, CheckCircle2 } from "lucide-react";
+import { FileSignature, FolderOpen, Plus, Loader2, Pencil, Trash2, ExternalLink, Upload, CheckCircle2, AlertCircle } from "lucide-react";
 import { useLanguage } from "../../lib/LanguageContext";
 import { t } from "../../i18n/translations";
 import { useCurrentUser } from "../../lib/useCurrentUser";
@@ -204,6 +204,8 @@ export default function PlayerMandates({ player }) {
   const [showDoc, setShowDoc] = useState(false);
   const [editMandate, setEditMandate] = useState(null);
   const [editDoc, setEditDoc] = useState(null);
+  const [error, setError] = useState(null);
+  const onErr = (e) => setError(e?.message || "Opération impossible.");
 
   const { data: mandates = [], isLoading: loadingM } = useQuery({
     queryKey: ["mandates", "player", playerId],
@@ -222,14 +224,14 @@ export default function PlayerMandates({ player }) {
   const withPlayer = (d) => ({ ...d, player_id: playerId, player_nom: player?.nom || d.player_nom || null, organization_id: currentUser?.organization_id ?? null });
 
   const mMut = {
-    create: useMutation({ mutationFn: (d) => base44.entities.Mandate.create(withPlayer(d)), onSuccess: () => { invalidate("mandates"); setShowMandate(false); setEditMandate(null); } }),
-    update: useMutation({ mutationFn: ({ id, data }) => base44.entities.Mandate.update(id, data), onSuccess: () => { invalidate("mandates"); setShowMandate(false); setEditMandate(null); } }),
-    del:    useMutation({ mutationFn: (id) => base44.entities.Mandate.delete(id), onSuccess: () => invalidate("mandates") }),
+    create: useMutation({ mutationFn: (d) => base44.entities.Mandate.create(withPlayer(d)), onSuccess: () => { invalidate("mandates"); setShowMandate(false); setEditMandate(null); }, onError: onErr }),
+    update: useMutation({ mutationFn: ({ id, data }) => base44.entities.Mandate.update(id, data), onSuccess: () => { invalidate("mandates"); setShowMandate(false); setEditMandate(null); }, onError: onErr }),
+    del:    useMutation({ mutationFn: (id) => base44.entities.Mandate.delete(id), onSuccess: () => invalidate("mandates"), onError: onErr }),
   };
   const dMut = {
-    create: useMutation({ mutationFn: (d) => base44.entities.Document.create(withPlayer(d)), onSuccess: () => { invalidate("documents"); setShowDoc(false); setEditDoc(null); } }),
-    update: useMutation({ mutationFn: ({ id, data }) => base44.entities.Document.update(id, data), onSuccess: () => { invalidate("documents"); setShowDoc(false); setEditDoc(null); } }),
-    del:    useMutation({ mutationFn: (id) => base44.entities.Document.delete(id), onSuccess: () => invalidate("documents") }),
+    create: useMutation({ mutationFn: (d) => base44.entities.Document.create(withPlayer(d)), onSuccess: () => { invalidate("documents"); setShowDoc(false); setEditDoc(null); }, onError: onErr }),
+    update: useMutation({ mutationFn: ({ id, data }) => base44.entities.Document.update(id, data), onSuccess: () => { invalidate("documents"); setShowDoc(false); setEditDoc(null); }, onError: onErr }),
+    del:    useMutation({ mutationFn: (id) => base44.entities.Document.delete(id), onSuccess: () => invalidate("documents"), onError: onErr }),
   };
   const savingM = mMut.create.isPending || mMut.update.isPending;
   const savingD = dMut.create.isPending || dMut.update.isPending;
@@ -242,6 +244,14 @@ export default function PlayerMandates({ player }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
+
+        {error && (
+          <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-xs">
+            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+            <span className="flex-1">{error}</span>
+            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">✕</button>
+          </div>
+        )}
 
         {/* ── Mandats ── */}
         <div>

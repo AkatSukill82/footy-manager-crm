@@ -33,6 +33,7 @@ export default function PlayersPage() {
   const currentUser = useCurrentUser();
   const userEmail = currentUser?.email;
   const [modalPlayer, setModalPlayer] = useState(null);
+  const [mutError, setMutError] = useState(null);
 
   const { data: players = [], isLoading } = useQuery({
     queryKey: ['players', currentUser?.id],
@@ -59,6 +60,7 @@ export default function PlayersPage() {
           .catch(() => {});
       }
     },
+    onError: (e) => setMutError(e?.message || "Erreur lors de l'ajout du joueur."),
   });
 
   const addToWatchListMutation = useMutation({
@@ -114,6 +116,13 @@ export default function PlayersPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
+
+        {mutError && (
+          <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-4">
+            <span className="flex-1">{mutError}</span>
+            <button onClick={() => setMutError(null)} className="text-red-400 hover:text-red-600">✕</button>
+          </div>
+        )}
 
         {/* Header */}
         <div className="flex justify-between items-center mb-4 md:mb-6 gap-3">

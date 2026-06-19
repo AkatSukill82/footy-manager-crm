@@ -225,6 +225,8 @@ export default function FinancePage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [filter, setFilter] = useState("tous");
+  const [mutError, setMutError] = useState(null);
+  const onErr = (e) => setMutError(e?.message || "Opération impossible.");
 
   const { data: user } = useQuery({
     queryKey: ["currentUser"], queryFn: () => base44.auth.me(), staleTime: Infinity,
@@ -246,14 +248,17 @@ export default function FinancePage() {
     // organization_id requis par la RLS de création (non auto-injecté par Base44).
     mutationFn: (data) => base44.entities.Commission.create({ ...data, organization_id: user?.organization_id ?? null }),
     onSuccess: () => { invalidate(); setShowForm(false); setEditing(null); },
+    onError: onErr,
   });
   const updateMut = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Commission.update(id, data),
     onSuccess: () => { invalidate(); setShowForm(false); setEditing(null); },
+    onError: onErr,
   });
   const deleteMut = useMutation({
     mutationFn: (id) => base44.entities.Commission.delete(id),
     onSuccess: invalidate,
+    onError: onErr,
   });
 
   const markPaid = (c) =>
@@ -308,6 +313,13 @@ export default function FinancePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-6">
       <div className="max-w-6xl mx-auto space-y-5">
+
+        {mutError && (
+          <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+            <span className="flex-1">{mutError}</span>
+            <button onClick={() => setMutError(null)} className="text-red-400 hover:text-red-600">✕</button>
+          </div>
+        )}
 
         {/* Header */}
         <div className="flex items-start justify-between gap-3 flex-wrap">
