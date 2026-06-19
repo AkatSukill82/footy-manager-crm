@@ -12,6 +12,8 @@ import PlayersByPosition from "../components/dashboard/PlayersByPosition";
 import PlayersByAge from "../components/dashboard/PlayersByAge";
 import TopPlayers from "../components/dashboard/TopPlayers";
 import EnhancedCharts from "../components/dashboard/EnhancedCharts";
+import DashboardTodayMatches from "../components/dashboard/DashboardTodayMatches";
+import DashboardScouting from "../components/dashboard/DashboardScouting";
 import {
   Users, Star, TrendingUp, AlertTriangle, Clock, ChevronRight,
   Calendar, ArrowRightLeft, Bell, BarChart3, ChevronDown, ChevronUp,
@@ -256,6 +258,12 @@ export default function Dashboard() {
             sub={`${transfers.length} transferts au total`}
             onClick={() => navigate(createPageUrl("TransferManagement"))}
           />
+        </div>
+
+        {/* ── MATCHS DU JOUR + JOUEURS À SUIVRE (recherche web) ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <DashboardTodayMatches players={players} />
+          <DashboardScouting players={players} />
         </div>
 
         {/* ── URGENT ── */}
