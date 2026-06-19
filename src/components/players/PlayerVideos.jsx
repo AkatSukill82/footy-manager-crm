@@ -32,18 +32,30 @@ function VideoCard({ v, onDelete }) {
   const [playing, setPlaying] = useState(false);
   const ytId = youtubeId(v.url);
   const thumb = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null;
+  // Embed robuste : domaine sans cookie, lecture in-app (playsinline) et origin
+  // explicite — limite les erreurs de contexte (iframe Base44 / WebView).
+  const origin = typeof window !== "undefined" ? `&origin=${encodeURIComponent(window.location.origin)}` : "";
+  const embedSrc = `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&playsinline=1&rel=0&modestbranding=1${origin}`;
 
   return (
     <div className="rounded-xl border border-slate-200 overflow-hidden bg-white group">
       <div className="relative aspect-video bg-slate-900">
         {playing && ytId ? (
-          <iframe
-            className="w-full h-full"
-            src={`https://www.youtube.com/embed/${ytId}?autoplay=1`}
-            title={v.titre || "vidéo"}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
+          <>
+            <iframe
+              className="w-full h-full"
+              src={embedSrc}
+              title={v.titre || "vidéo"}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+            />
+            {/* Échappatoire si la vidéo refuse l'intégration (erreur 150/153) */}
+            <a href={v.url} target="_blank" rel="noopener noreferrer"
+              className="absolute bottom-1 right-1 text-[10px] bg-black/60 text-white/90 px-1.5 py-0.5 rounded hover:bg-red-600">
+              YouTube ↗
+            </a>
+          </>
         ) : thumb ? (
           <button onClick={() => setPlaying(true)} className="w-full h-full relative">
             <img src={thumb} alt={v.titre} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
