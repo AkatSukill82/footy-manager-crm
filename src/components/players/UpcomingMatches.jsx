@@ -20,9 +20,11 @@ const MATCHES_SCHEMA = {
         properties: {
           date:        { type: "string", description: "Date du match au format YYYY-MM-DD" },
           heure:       { type: "string", description: "Heure locale HH:MM, vide si inconnue" },
-          competition: { type: "string", description: "Compétition (ex: Premier League, Ligue des Champions)" },
+          competition: { type: "string", description: "Compétition (ex: Premier League, Ligue des Champions, Éliminatoires CM)" },
+          equipe:      { type: "string", description: "L'équipe suivie qui joue : le club OU la sélection nationale" },
+          type:        { type: "string", description: "\"club\" ou \"selection\"" },
           adversaire:  { type: "string", description: "Nom de l'équipe adverse" },
-          domicile:    { type: "boolean", description: "true si le club joue à domicile" },
+          domicile:    { type: "boolean", description: "true si l'équipe suivie reçoit, false sinon" },
           lieu:        { type: "string", description: "Stade / ville, si connu" },
         },
         required: ["date", "adversaire"],
@@ -31,33 +33,43 @@ const MATCHES_SCHEMA = {
   },
 };
 
-// Recherche web (backend LLM) des prochains matchs du club.
-async function fetchUpcomingMatches(club, playerName) {
+// Recherche web (backend LLM) des prochains matchs du club + sélection nationale.
+async function fetchUpcomingMatches(club, playerName, nationality) {
   const today = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const natLine = nationality
+    ? `\n- la SÉLECTION NATIONALE de ${nationality}${playerName ? ` (équipe nationale de ${playerName})` : ""} : prochains matchs officiels ou amicaux programmés (type="selection", equipe = nom de la sélection)`
+    : "";
   const data = await base44.integrations.Core.InvokeLLM({
-    prompt: `Nous sommes le ${today}. Cherche sur le web le calendrier officiel à venir du club de football "${club}"${playerName ? ` (club actuel de ${playerName})` : ""}.
+    prompt: `Nous sommes le ${today}. Cherche sur le web les prochains matchs OFFICIELS programmés pour :
+- le CLUB "${club}"${playerName ? ` (club actuel de ${playerName})` : ""} : championnat, coupe, compétition européenne (type="club", equipe="${club}")${natLine}
 
-Retourne les 5 prochains matchs OFFICIELS programmés (championnat, coupe, compétition européenne, sélection), du plus proche au plus lointain. Pour chacun :
+Retourne au total jusqu'à 6 matchs à venir, du plus proche au plus lointain, en mélangeant club et sélection. Pour chacun :
 - "date" : date au format YYYY-MM-DD
 - "heure" : heure locale HH:MM (vide si pas encore annoncée)
 - "competition" : nom de la compétition
+- "equipe" : l'équipe suivie qui joue (le club ou la sélection)
+- "type" : "club" ou "selection"
 - "adversaire" : équipe adverse
-- "domicile" : true si "${club}" reçoit, false sinon
+- "domicile" : true si l'équipe suivie reçoit, false sinon
 - "lieu" : stade ou ville si connu
 
 RÈGLE ABSOLUE : ne retourne que des matchs réellement programmés et datés dans le futur. Si tu n'es pas certain du calendrier, retourne une liste vide plutôt que d'inventer.`,
     add_context_from_internet: true,
     response_json_schema: MATCHES_SCHEMA,
   });
-  const list = (data?.matches || []).filter((m) => m.date && new Date(m.date) >= new Date(new Date().toDateString()));
-  return list.slice(0, 5);
+  const list = (data?.matches || [])
+    .filter((m) => m.date && new Date(m.date) >= new Date(new Date().toDateString()))
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+  return list.slice(0, 6);
 }
 
 function MatchRow({ match, club }) {
   const { lang } = useLanguage();
   const [state, setState] = useState("idle"); // idle | adding | added | error
-  const home = match.domicile ? club : match.adversaire;
-  const away = match.domicile ? match.adversaire : club;
+  const isNational = match.type === "selection";
+  const equipe = match.equipe || club;
+  const home = match.domicile ? equipe : match.adversaire;
+  const away = match.domicile ? match.adversaire : equipe;
   const matchDate = new Date(`${match.date}T${match.heure && /^\d{1,2}:\d{2}$/.test(match.heure) ? match.heure : "20:00"}:00`);
   const isToday    = format(matchDate, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
   const isTomorrow = format(matchDate, "yyyy-MM-dd") === format(new Date(Date.now() + 86400000), "yyyy-MM-dd");
@@ -86,9 +98,10 @@ function MatchRow({ match, club }) {
   };
 
   return (
-    <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100 hover:border-green-200 transition-colors">
+    <div className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${isNational ? "bg-indigo-50/40 border-indigo-100 hover:border-indigo-200" : "bg-slate-50 border-slate-100 hover:border-green-200"}`}>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          {isNational && <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-100 rounded-full px-1.5 py-0.5">🌍 {t(lang, "session.upcoming.national")}</span>}
           <span className="font-medium text-slate-900">{home}</span>
           <span className="text-slate-400 text-xs">vs</span>
           <span className="font-medium text-slate-900">{away}</span>
@@ -127,11 +140,11 @@ function MatchRow({ match, club }) {
   );
 }
 
-export default function UpcomingMatches({ playerClub, playerName }) {
+export default function UpcomingMatches({ playerClub, playerName, playerNationality }) {
   const { lang } = useLanguage();
   const { data: matches = [], isLoading, isError, refetch, isFetching } = useQuery({
-    queryKey: ["upcomingMatches", playerClub],
-    queryFn: () => fetchUpcomingMatches(playerClub, playerName),
+    queryKey: ["upcomingMatches", playerClub, playerNationality || ""],
+    queryFn: () => fetchUpcomingMatches(playerClub, playerName, playerNationality),
     enabled: !!playerClub,
     staleTime: 1000 * 60 * 60 * 6,  // 6h : le calendrier bouge peu
     gcTime: 1000 * 60 * 60 * 24,
