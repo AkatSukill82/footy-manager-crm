@@ -24,7 +24,7 @@ export default function PlayerForm({ player, onSubmit, onCancel }) {
     salaire: "", salaire_semaine: "", agent: "", agence: "", agent_email: "", agent_telephone: "",
     email: "", telephone: "", whatsapp: "", instagram: "", twitter: "", linkedin: "",
     adresse: "", ville_residence: "", pays_residence: "",
-    numero_maillot: "", transfermarkt_id: "", sofascore_id: "",
+    numero_maillot: "", transfermarkt_id: "", sofascore_id: "", fotmob_id: "", besoccer_id: "",
     ...player
   });
   const [showStats, setShowStats] = useState(false);
@@ -251,6 +251,12 @@ export default function PlayerForm({ player, onSubmit, onCancel }) {
                 </F>
                 <F id="sofascore_id" label={t(lang,'playerForm.sofaId')}>
                   <Input id="sofascore_id" value={formData.sofascore_id || ""} onChange={set("sofascore_id")} placeholder={t(lang,'playerForm.sofaIdPlh')} />
+                </F>
+                <F id="fotmob_id" label="ID FotMob">
+                  <Input id="fotmob_id" value={formData.fotmob_id || ""} onChange={set("fotmob_id")} placeholder="Ex: 1050859 (URL FotMob du joueur)" />
+                </F>
+                <F id="besoccer_id" label="ID BeSoccer">
+                  <Input id="besoccer_id" value={formData.besoccer_id || ""} onChange={set("besoccer_id")} placeholder="ID BeSoccer (optionnel)" />
                 </F>
               </div>
             )}
