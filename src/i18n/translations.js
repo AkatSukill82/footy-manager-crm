@@ -27,7 +27,7 @@ export const translations = {
       sync: { updating: "Mise à jour des stats…", updated: "{count} stat(s) mise(s) à jour" },
     },
     login: {
-      brand: "Football Data Manager", tagline: "Le CRM des agents de football",
+      brand: "Global Sports Agency", tagline: "Le CRM des agents de football",
       welcome: "Bienvenue", subtitle: "Connectez-vous pour accéder à votre espace.",
       cta: "Se connecter", connecting: "Connexion…", secured: "Authentification sécurisée",
       email: "E-mail", password: "Mot de passe", emailPh: "vous@exemple.com", passwordPh: "Votre mot de passe",
@@ -980,7 +980,7 @@ export const translations = {
       sync: { updating: "Actualizando estadísticas…", updated: "{count} estadística(s) actualizada(s)" },
     },
     login: {
-      brand: "Football Data Manager", tagline: "El CRM de los agentes de fútbol",
+      brand: "Global Sports Agency", tagline: "El CRM de los agentes de fútbol",
       welcome: "Bienvenido", subtitle: "Inicia sesión para acceder a tu espacio.",
       cta: "Iniciar sesión", connecting: "Conectando…", secured: "Autenticación segura",
       email: "Correo", password: "Contraseña", emailPh: "tu@ejemplo.com", passwordPh: "Tu contraseña",
@@ -1925,7 +1925,7 @@ export const translations = {
       sync: { updating: "Updating stats…", updated: "{count} stat(s) updated" },
     },
     login: {
-      brand: "Football Data Manager", tagline: "The CRM for football agents",
+      brand: "Global Sports Agency", tagline: "The CRM for football agents",
       welcome: "Welcome", subtitle: "Sign in to access your workspace.",
       cta: "Sign in", connecting: "Signing in…", secured: "Secure authentication",
       email: "Email", password: "Password", emailPh: "you@example.com", passwordPh: "Your password",

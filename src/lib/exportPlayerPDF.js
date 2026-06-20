@@ -250,7 +250,7 @@ export function exportPlayerPDF(player, playerNote) {
   ${noteSection}
   ${statsSection}
 
-  <div class="footer">Rapport généré automatiquement — Football Data Manager</div>
+  <div class="footer">Rapport généré automatiquement — Global Sports Agency</div>
 
   <script>
     window.onload = function() {
