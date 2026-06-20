@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
+import { BRAND_NAME } from "../lib/brand";
 import { Loader2, ArrowRight, ShieldCheck, Users, Sparkles, Smartphone, Mail, Lock, AlertCircle, CheckCircle2 } from "lucide-react";
 
 /**
@@ -55,12 +56,12 @@ export default function Login() {
         <div className="relative z-10 flex flex-col justify-between p-14 w-full">
           <div className="flex items-center gap-2.5">
             <img src="/brand/logo.png" alt="Global Sports Agency" className="w-10 h-10 rounded-xl object-contain bg-white/95 p-0.5" />
-            <span className="text-white font-semibold tracking-tight">{t(lang, "login.brand")}</span>
+            <span className="text-white font-semibold tracking-tight">{BRAND_NAME}</span>
           </div>
 
           <div>
             <h1 className="text-white text-4xl font-bold leading-tight tracking-tight">
-              {t(lang, "login.brand")}
+              {BRAND_NAME}
             </h1>
             <p className="text-slate-400 text-lg mt-3">{t(lang, "login.tagline")}</p>
             <div className="w-16 h-1 bg-green-500 rounded-full mt-6 mb-8" />
@@ -76,7 +77,7 @@ export default function Login() {
             </div>
           </div>
 
-          <p className="text-slate-600 text-xs">© {new Date().getFullYear()} {t(lang, "login.brand")}</p>
+          <p className="text-slate-600 text-xs">© {new Date().getFullYear()} {BRAND_NAME}</p>
         </div>
       </div>
 
@@ -101,7 +102,7 @@ export default function Login() {
             {/* logo mobile (panneau gauche masqué) */}
             <div className="lg:hidden flex items-center gap-2.5 mb-10">
               <img src="/brand/logo.png" alt="Global Sports Agency" className="w-10 h-10 rounded-xl object-contain" />
-              <span className="text-slate-900 font-semibold">{t(lang, "login.brand")}</span>
+              <span className="text-slate-900 font-semibold">{BRAND_NAME}</span>
             </div>
 
             <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{t(lang, "login.welcome")}</h2>

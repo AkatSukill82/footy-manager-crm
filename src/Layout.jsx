@@ -10,6 +10,7 @@ import {
 import { base44 } from "@/api/base44Client";
 import { Toaster } from "@/components/ui/sonner";
 import { useLanguage } from "./lib/LanguageContext";
+import { BRAND_NAME, BRAND_SHORT } from "./lib/brand";
 import { t } from "./i18n/translations";
 import { useQuery } from "@tanstack/react-query";
 import GlobalSearch from "./components/ui/GlobalSearch";
@@ -119,10 +120,10 @@ export default function Layout({ children, currentPageName }) {
         {/* Logo */}
         <div className="p-5 border-b border-slate-100 flex-shrink-0">
           <Link to={createPageUrl("Dashboard")} className="flex items-center gap-3">
-            <img src="/brand/logo.png" alt="Global Sports Agency" className="w-10 h-10 rounded-xl object-contain flex-shrink-0" />
+            <img src="/brand/logo.png" alt={BRAND_SHORT} className="w-10 h-10 rounded-xl object-contain flex-shrink-0" />
             <div>
-              <div className="font-bold text-sm tracking-tight text-slate-900 leading-tight">Global Sports Agency</div>
-              <div className="text-xs text-slate-400">Partnerships</div>
+              <div className="font-bold text-lg tracking-tight text-slate-900 leading-none">{BRAND_SHORT}</div>
+              <div className="text-xs text-slate-400 leading-tight mt-0.5">{BRAND_NAME}</div>
             </div>
           </Link>
         </div>
@@ -263,8 +264,8 @@ export default function Layout({ children, currentPageName }) {
           <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <img src="/brand/logo.png" alt="Global Sports Agency" className="w-8 h-8 rounded-lg object-contain" />
-                <span className="font-bold text-slate-900">Global Sports Agency</span>
+                <img src="/brand/logo.png" alt={BRAND_SHORT} className="w-8 h-8 rounded-lg object-contain" />
+                <span className="font-bold text-slate-900">{BRAND_SHORT}</span>
               </div>
               <button onClick={() => setDrawerOpen(false)} className="text-slate-400 p-1">
                 <X className="w-5 h-5" />

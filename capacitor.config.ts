@@ -13,7 +13,7 @@ const SERVER_URL = process.env.CAP_SERVER_URL || 'https://REMPLACER-PAR-VOTRE-AP
 
 const config: CapacitorConfig = {
   appId: 'com.fdm.footymanager',
-  appName: 'Global Sports Agency',
+  appName: 'Football Data Management',
   webDir: 'dist',
   server: {
     url: SERVER_URL,
