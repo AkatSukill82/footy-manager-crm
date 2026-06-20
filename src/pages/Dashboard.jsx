@@ -13,6 +13,7 @@ import TopPlayers from "../components/dashboard/TopPlayers";
 import EnhancedCharts from "../components/dashboard/EnhancedCharts";
 import DashboardTodayMatches from "../components/dashboard/DashboardTodayMatches";
 import DashboardScouting from "../components/dashboard/DashboardScouting";
+import DashboardAgenda from "../components/dashboard/DashboardAgenda";
 import {
   Users, TrendingUp, AlertTriangle, Clock, ChevronRight,
   Calendar, ArrowRightLeft, Bell, BarChart3, ChevronDown, ChevronUp,
@@ -65,12 +66,14 @@ function SectionHeader({ icon: Icon, title, count, cta, onCta }) {
 }
 
 // ── Widgets personnalisables (ordre par défaut + libellés) ────────────────────
-const DEFAULT_ORDER = ["stats", "today_matches", "scouting", "focus", "urgent", "contracts", "reminders", "negotiations", "recent", "analytics"];
+const DEFAULT_ORDER = ["stats", "today_matches", "agenda", "scouting", "focus", "urgent", "contracts", "reminders", "negotiations", "recent", "analytics"];
 const WIDGET_LABEL = {
-  stats: "Indicateurs", today_matches: "Matchs du jour", scouting: "Joueurs à suivre",
+  stats: "Indicateurs", today_matches: "Matchs du jour", agenda: "Agenda", scouting: "Joueurs à suivre",
   focus: "Focus du jour", urgent: "Points urgents", contracts: "Contrats à surveiller",
   reminders: "Rappels", negotiations: "Négociations", recent: "Joueurs récents", analytics: "Statistiques",
 };
+// Widgets affichés en pleine largeur (sur toutes les colonnes de la grille).
+const WIDE = new Set(["stats", "analytics"]);
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -351,7 +354,8 @@ export default function Dashboard() {
   );
 
   const NODES = {
-    stats: statsNode, today_matches: <DashboardTodayMatches players={players} />, scouting: <DashboardScouting players={players} />,
+    stats: statsNode, today_matches: <DashboardTodayMatches players={players} />, agenda: <DashboardAgenda />,
+    scouting: <DashboardScouting players={players} />,
     focus: focusNode, urgent: urgentNode, contracts: contractsNode, reminders: remindersNode,
     negotiations: negotiationsNode, recent: recentNode, analytics: analyticsNode,
   };
@@ -411,8 +415,18 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Widgets dans l'ordre choisi */}
-        {visible.map(k => NODES[k] ? <React.Fragment key={k}>{NODES[k]}</React.Fragment> : null)}
+        {/* Widgets dans l'ordre choisi, en grille multi-colonnes */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
+          {visible.map(k => {
+            const node = NODES[k];
+            if (!node) return null;
+            return (
+              <div key={k} className={WIDE.has(k) ? "md:col-span-2 xl:col-span-3" : ""}>
+                {node}
+              </div>
+            );
+          })}
+        </div>
 
       </div>
     </div>

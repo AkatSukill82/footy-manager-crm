@@ -178,6 +178,21 @@ const GoogleCalendarService = {
     return data.items || [];
   },
 
+  // Événements d'une journée précise (dateISO = "YYYY-MM-DD").
+  async getEventsForDay(dateISO, calendarId = 'primary') {
+    const start = new Date(`${dateISO}T00:00:00`);
+    const end = new Date(`${dateISO}T23:59:59`);
+    const params = new URLSearchParams({
+      orderBy: 'startTime',
+      singleEvents: 'true',
+      timeMin: start.toISOString(),
+      timeMax: end.toISOString(),
+      maxResults: '50',
+    });
+    const data = await this._fetch(`/calendars/${encodeURIComponent(calendarId)}/events?${params}`);
+    return data.items || [];
+  },
+
   async getPastEvents(calendarId = 'primary', maxResults = 10) {
     const now = new Date().toISOString();
     const params = new URLSearchParams({
