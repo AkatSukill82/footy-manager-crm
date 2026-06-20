@@ -4,11 +4,12 @@ import { QueryClientProvider, useQueryClient } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { LanguageProvider } from '@/lib/LanguageContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import Login from '@/pages/Login';
 import { base44 } from '@/api/base44Client';
 
@@ -25,21 +26,19 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   : <>{children}</>;
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
   const queryClient = useQueryClient();
 
   // Dès que l'auth est confirmée, prefetch les données les plus utilisées
   useEffect(() => {
     if (isLoadingAuth || isLoadingPublicSettings || authError) return;
 
-    // currentUser en premier — on en a besoin pour les requêtes suivantes
     queryClient.fetchQuery({
       queryKey: ['currentUser'],
       queryFn: () => base44.auth.me(),
       staleTime: Infinity,
     }).then(user => {
       if (!user) return;
-      // Prefetch joueurs + watchlist dès l'auth — Dashboard et Players s'affichent instantanément
       if (user.id) {
         queryClient.prefetchQuery({
           queryKey: ['players', user.id],
@@ -68,7 +67,6 @@ const AuthenticatedApp = () => {
     });
   }, [isLoadingAuth, isLoadingPublicSettings, authError]);
 
-  // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
@@ -77,20 +75,8 @@ const AuthenticatedApp = () => {
     );
   }
 
-  // Handle authentication errors
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      // Page de connexion de marque ; le bouton lance l'auth Base44.
-      return <Login />;
-    }
-  }
-
-  // Pas d'erreur mais aucun utilisateur authentifié (ex. pas de token, token
-  // expiré, déconnexion) → afficher la page de connexion plutôt que l'app vide.
-  if (!isAuthenticated) {
-    return <Login />;
+  if (authError?.type === 'user_not_registered') {
+    return <UserNotRegisteredError />;
   }
 
   const pageSpinner = (
@@ -99,29 +85,34 @@ const AuthenticatedApp = () => {
     </div>
   );
 
-  // Render the main app
   return (
     <Suspense fallback={pageSpinner}>
       <Routes>
-        <Route path="/" element={
-          <LayoutWrapper currentPageName={mainPageKey}>
-            <MainPage />
-          </LayoutWrapper>
-        } />
-        {Object.entries(Pages).map(([path, Page]) => (
-          <Route
-            key={path}
-            path={`/${path}`}
-            element={
-              <LayoutWrapper currentPageName={path}>
-                <Page />
-              </LayoutWrapper>
-            }
-          />
-        ))}
-        <Route path="/ScoutingIA" element={<LayoutWrapper currentPageName="ScoutingIA"><ScoutingIA /></LayoutWrapper>} />
-        <Route path="/ImportExcel" element={<LayoutWrapper currentPageName="ImportExcel"><ImportExcel /></LayoutWrapper>} />
-        <Route path="/Organization" element={<LayoutWrapper currentPageName="Organization"><Organization /></LayoutWrapper>} />
+        {/* Public routes */}
+        <Route path="/login" element={<Login />} />
+
+        {/* Protected routes — unauthenticated users → /login */}
+        <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
+          <Route path="/" element={
+            <LayoutWrapper currentPageName={mainPageKey}>
+              <MainPage />
+            </LayoutWrapper>
+          } />
+          {Object.entries(Pages).map(([path, Page]) => (
+            <Route
+              key={path}
+              path={`/${path}`}
+              element={
+                <LayoutWrapper currentPageName={path}>
+                  <Page />
+                </LayoutWrapper>
+              }
+            />
+          ))}
+          <Route path="/ScoutingIA" element={<LayoutWrapper currentPageName="ScoutingIA"><ScoutingIA /></LayoutWrapper>} />
+          <Route path="/ImportExcel" element={<LayoutWrapper currentPageName="ImportExcel"><ImportExcel /></LayoutWrapper>} />
+          <Route path="/Organization" element={<LayoutWrapper currentPageName="Organization"><Organization /></LayoutWrapper>} />
+        </Route>
 
         <Route path="*" element={<PageNotFound />} />
       </Routes>
@@ -131,7 +122,6 @@ const AuthenticatedApp = () => {
 
 
 function App() {
-
   return (
     <LanguageProvider>
       <AuthProvider>
