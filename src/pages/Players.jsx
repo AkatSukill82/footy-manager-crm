@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "../lib/useCurrentUser";
 import { ensureClubForPlayer } from "../lib/ensureClub";
+import { cleanPlayerName } from "../lib/cleanName";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2, List, Search } from "lucide-react";
 import { useLanguage } from "../lib/LanguageContext";
@@ -48,7 +49,7 @@ export default function PlayersPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Player.create(data),
+    mutationFn: (data) => base44.entities.Player.create({ ...data, nom: cleanPlayerName(data.nom) }),
     onSuccess: (created, data) => {
       queryClient.invalidateQueries({ queryKey: ['players'] });
       setShowForm(false);

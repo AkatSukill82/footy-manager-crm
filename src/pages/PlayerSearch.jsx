@@ -14,6 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getCache, setCache, normalizeQuery } from "../lib/searchCache";
 import { playerExternalLinks } from "../lib/externalLinks";
 import { ensureClubForPlayer } from "../lib/ensureClub";
+import { cleanPlayerName } from "../lib/cleanName";
 
 const posteColors = {
   "Gardien":           "bg-yellow-100 text-yellow-800",
@@ -386,7 +387,7 @@ export default function PlayerSearchPage() {
     const s = result.stats_saison;
     try {
       const raw = {
-        nom:              result.nom || query,
+        nom:              cleanPlayerName(result.nom || query),
         age:              result.age,
         date_naissance:   result.date_naissance,
         lieu_naissance:   result.lieu_naissance,

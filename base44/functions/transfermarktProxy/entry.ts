@@ -117,8 +117,9 @@ const parseProfile = (html: string, url: string): Record<string, any> => {
     return m ? (m[1] ?? "").replace(/<[^>]+>/g, "").replace(/&[^;]+;/g, " ").trim() || null : null;
   };
 
-  // Nom
-  d.nom = grab(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  // Nom (le <h1> Transfermarkt préfixe le numéro de maillot : "#10 Enzo Millot")
+  d.nom = (grab(/<h1[^>]*>([\s\S]*?)<\/h1>/i) || "")
+    .replace(/^\s*(?:#|n[°ºo.]?\s*)?\d{1,3}\s+(?=\D)/i, "").trim() || null;
 
   // Valeur marchande : "€150.00m" ou "€500k"
   const mvM = html.match(/€\s*([\d,.]+)\s*([km]?)\b/i);

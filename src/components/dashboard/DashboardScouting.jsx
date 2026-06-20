@@ -6,6 +6,7 @@ import { createPageUrl } from "../../utils";
 import { Sparkles, Loader2, RefreshCw, UserPlus } from "lucide-react";
 import { useLanguage } from "../../lib/LanguageContext";
 import { t } from "../../i18n/translations";
+import { cleanPlayerName } from "../../lib/cleanName";
 
 const norm = (s) => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
 
@@ -67,7 +68,7 @@ function ScoutRow({ j, inCrm, lang }) {
     setAdding(true);
     try {
       const payload = {
-        nom: j.nom, poste: toEnumPoste(j.poste), age: j.age ?? null,
+        nom: cleanPlayerName(j.nom), poste: toEnumPoste(j.poste), age: j.age ?? null,
         nationalite: j.nationalite ?? null, club_actuel: j.club ?? null,
         valeur_marchande: j.valeur_marchande ?? null,
       };

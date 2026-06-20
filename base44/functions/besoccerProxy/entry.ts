@@ -210,8 +210,9 @@ const parseProfile = (html: string, url: string, id: string): Record<string, any
     return isNaN(n) ? null : n;
   };
 
-  // Nom (h1 = nom court)
-  d.nom = grab(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  // Nom (h1 = nom court ; retire un éventuel numéro de maillot en tête)
+  d.nom = (grab(/<h1[^>]*>([\s\S]*?)<\/h1>/i) || "")
+    .replace(/^\s*(?:#|n[°ºo.]?\s*)?\d{1,3}\s+(?=\D)/i, "").trim() || null;
 
   // Nom complet
   const fullM = html.match(/<p[^>]*>\s*([A-Z][a-záàâäéèêëíìîïóòôöúùûü''\- ]{8,60}?)\s*<\/p>/i) ||

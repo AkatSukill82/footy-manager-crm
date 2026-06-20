@@ -6,6 +6,7 @@ import { createPageUrl } from "../../utils";
 import { Users, Loader2, RefreshCw, User, CheckCircle2, UserPlus } from "lucide-react";
 import { useLanguage } from "../../lib/LanguageContext";
 import { t } from "../../i18n/translations";
+import { cleanPlayerName } from "../../lib/cleanName";
 
 const SQUAD_SCHEMA = {
   type: "object",
@@ -83,7 +84,7 @@ function SquadPlayer({ j, crmPlayer, club, lang }) {
     setAdding(true);
     try {
       const payload = {
-        nom: j.nom,
+        nom: cleanPlayerName(j.nom),
         poste: toEnumPoste(j.poste),
         age: j.age ?? null,
         nationalite: j.nationalite ?? null,
