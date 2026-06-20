@@ -13,8 +13,9 @@
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-const GOOGLE_API_KEY = Deno.env.get("GOOGLE_IMAGES_API_KEY") ?? "AIzaSyBVyh5HP74zd7-9X2rX7-EKJzrDbRMIjqg";
-const GOOGLE_CX      = Deno.env.get("GOOGLE_IMAGES_CX") ?? "b38b599e609294a66";
+// Secrets via variables d'environnement uniquement (jamais en dur).
+const GOOGLE_API_KEY = Deno.env.get("GOOGLE_IMAGES_API_KEY") ?? "";
+const GOOGLE_CX      = Deno.env.get("GOOGLE_IMAGES_CX") ?? "";
 
 Deno.serve(async (req) => {
   try {
