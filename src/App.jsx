@@ -25,7 +25,7 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   : <>{children}</>;
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
   const queryClient = useQueryClient();
 
   // Dès que l'auth est confirmée, prefetch les données les plus utilisées
@@ -85,6 +85,12 @@ const AuthenticatedApp = () => {
       // Page de connexion de marque ; le bouton lance l'auth Base44.
       return <Login onConnect={navigateToLogin} />;
     }
+  }
+
+  // Pas d'erreur mais aucun utilisateur authentifié (ex. pas de token, token
+  // expiré, déconnexion) → afficher la page de connexion plutôt que l'app vide.
+  if (!isAuthenticated) {
+    return <Login onConnect={navigateToLogin} />;
   }
 
   const pageSpinner = (
