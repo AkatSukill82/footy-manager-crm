@@ -83,14 +83,14 @@ const AuthenticatedApp = () => {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
       // Page de connexion de marque ; le bouton lance l'auth Base44.
-      return <Login onConnect={navigateToLogin} />;
+      return <Login />;
     }
   }
 
   // Pas d'erreur mais aucun utilisateur authentifié (ex. pas de token, token
   // expiré, déconnexion) → afficher la page de connexion plutôt que l'app vide.
   if (!isAuthenticated) {
-    return <Login onConnect={navigateToLogin} />;
+    return <Login />;
   }
 
   const pageSpinner = (

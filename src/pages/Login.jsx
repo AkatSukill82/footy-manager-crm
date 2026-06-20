@@ -1,19 +1,42 @@
 import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
-import { Loader2, ArrowRight, ShieldCheck, Users, Sparkles, Smartphone } from "lucide-react";
+import { Loader2, ArrowRight, ShieldCheck, Users, Sparkles, Smartphone, Mail, Lock, AlertCircle, CheckCircle2 } from "lucide-react";
 
 /**
- * Page de connexion de marque. L'authentification (mot de passe) est gérée par
- * Base44 : le bouton déclenche onConnect() → redirection vers l'auth Base44.
+ * Page de connexion de marque avec formulaire e-mail / mot de passe natif
+ * (base44.auth.loginViaEmailPassword) — aucune redirection vers le login Base44.
+ * Le token est persisté par le SDK ; on recharge pour entrer dans l'app.
  */
-export default function Login({ onConnect }) {
+export default function Login() {
   const { lang, setLang } = useLanguage();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [notice, setNotice] = useState(null);
 
-  const connect = () => {
-    setLoading(true);
-    try { onConnect?.(); } catch { setLoading(false); }
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!email.trim() || !password) return;
+    setLoading(true); setError(null); setNotice(null);
+    try {
+      const res = await base44.auth.loginViaEmailPassword(email.trim(), password);
+      if (res?.access_token) base44.setToken?.(res.access_token);
+      // Token persisté en localStorage par le SDK → on recharge, app authentifiée.
+      window.location.reload();
+    } catch {
+      setError(t(lang, "login.error"));
+      setLoading(false);
+    }
+  };
+
+  const forgot = async () => {
+    if (!email.trim()) { setError(t(lang, "login.forgotErr")); return; }
+    setError(null);
+    try { await base44.auth.resetPasswordRequest?.(email.trim()); } catch { /* on n'expose pas l'existence du compte */ }
+    setNotice(t(lang, "login.forgotSent"));
   };
 
   const features = [
@@ -88,17 +111,50 @@ export default function Login({ onConnect }) {
             <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{t(lang, "login.welcome")}</h2>
             <p className="text-slate-500 mt-2 text-[15px]">{t(lang, "login.subtitle")}</p>
 
-            <button
-              onClick={connect}
-              disabled={loading}
-              className="mt-8 w-full h-12 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-70 text-white font-semibold flex items-center justify-center gap-2 transition-colors group"
-            >
-              {loading ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> {t(lang, "login.connecting")}</>
-              ) : (
-                <>{t(lang, "login.cta")} <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" /></>
+            <form onSubmit={submit} className="mt-8 space-y-3.5">
+              {error && (
+                <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-xs">
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /><span>{error}</span>
+                </div>
               )}
-            </button>
+              {notice && (
+                <div className="flex items-start gap-2 bg-green-50 border border-green-200 text-green-700 rounded-lg px-3 py-2 text-xs">
+                  <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /><span>{notice}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="text-xs font-medium text-slate-600">{t(lang, "login.email")}</label>
+                <div className="relative mt-1">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                    placeholder={t(lang, "login.emailPh")}
+                    className="w-full h-11 pl-9 pr-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400" />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-slate-600">{t(lang, "login.password")}</label>
+                  <button type="button" onClick={forgot} className="text-[11px] text-slate-400 hover:text-slate-700">{t(lang, "login.forgot")}</button>
+                </div>
+                <div className="relative mt-1">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)}
+                    placeholder={t(lang, "login.passwordPh")}
+                    className="w-full h-11 pl-9 pr-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400" />
+                </div>
+              </div>
+
+              <button type="submit" disabled={loading || !email.trim() || !password}
+                className="w-full h-12 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-semibold flex items-center justify-center gap-2 transition-colors group">
+                {loading ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> {t(lang, "login.connecting")}</>
+                ) : (
+                  <>{t(lang, "login.cta")} <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" /></>
+                )}
+              </button>
+            </form>
 
             <div className="mt-6 flex items-center justify-center gap-1.5 text-slate-400">
               <ShieldCheck className="w-3.5 h-3.5" />
