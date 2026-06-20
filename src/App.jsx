@@ -9,6 +9,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { LanguageProvider } from '@/lib/LanguageContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import Login from '@/pages/Login';
 import { base44 } from '@/api/base44Client';
 
 const ScoutingIA   = lazy(() => import('./pages/ScoutingIA'));
@@ -81,9 +82,8 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
-      navigateToLogin();
-      return null;
+      // Page de connexion de marque ; le bouton lance l'auth Base44.
+      return <Login onConnect={navigateToLogin} />;
     }
   }
 
