@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState, useEffect, useRef } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
@@ -15,7 +16,7 @@ import DashboardScouting from "../components/dashboard/DashboardScouting";
 import {
   Users, TrendingUp, AlertTriangle, Clock, ChevronRight,
   Calendar, ArrowRightLeft, Bell, BarChart3, ChevronDown, ChevronUp,
-  SlidersHorizontal, Eye, EyeOff, ArrowUp, ArrowDown, RotateCcw, Check,
+  SlidersHorizontal, Eye, EyeOff, RotateCcw, Check, GripVertical,
 } from "lucide-react";
 
 function daysUntil(dateStr) {
@@ -108,34 +109,61 @@ export default function Dashboard() {
     enabled: !!userEmail,
   });
 
-  // ── Préférences de mise en page (par utilisateur, persistées en localStorage) ──
+  // ── Préférences de disposition (cross-appareil via Base44 + cache localStorage) ──
+  const qc = useQueryClient();
   const prefsKey = user?.id ? `fdm_dash_${user.id}` : null;
+  const normalize = (raw) => ({
+    order: [...(raw.order || []).filter(k => DEFAULT_ORDER.includes(k)), ...DEFAULT_ORDER.filter(k => !(raw.order || []).includes(k))],
+    hidden: raw.hidden || {},
+  });
+
+  const { data: prefRecords = [] } = useQuery({
+    queryKey: ['dashboardPref', userEmail],
+    queryFn: () => base44.entities.DashboardPref.filter({ created_by: userEmail }),
+    enabled: !!userEmail,
+  });
+  const prefRecord = prefRecords[0] || null;
+
   const [prefs, setPrefs] = useState({ order: DEFAULT_ORDER, hidden: {} });
+  const dirty = useRef(false);
+  const appliedServer = useRef(false);
+
+  // Seed immédiat depuis le cache localStorage (évite le clignotement au chargement).
   useEffect(() => {
-    if (!prefsKey) return;
-    try {
-      const raw = JSON.parse(localStorage.getItem(prefsKey));
-      if (raw?.order) {
-        // Fusion tolérante : conserve l'ordre choisi, ajoute les nouveaux widgets, retire les inconnus.
-        const order = [...raw.order.filter(k => DEFAULT_ORDER.includes(k)), ...DEFAULT_ORDER.filter(k => !raw.order.includes(k))];
-        setPrefs({ order, hidden: raw.hidden || {} });
-      }
-    } catch { /* défaut */ }
+    if (!prefsKey || dirty.current) return;
+    try { const raw = JSON.parse(localStorage.getItem(prefsKey)); if (raw?.order) setPrefs(normalize(raw)); } catch { /* défaut */ }
   }, [prefsKey]);
 
+  // Applique la disposition serveur (cross-appareil) une fois chargée.
+  useEffect(() => {
+    if (appliedServer.current || dirty.current) return;
+    if (prefRecord?.layout) {
+      try { setPrefs(normalize(JSON.parse(prefRecord.layout))); appliedServer.current = true; } catch { /* ignore */ }
+    }
+  }, [prefRecord]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const saveMut = useMutation({
+    mutationFn: (next) => prefRecord?.id
+      ? base44.entities.DashboardPref.update(prefRecord.id, { layout: JSON.stringify(next) })
+      : base44.entities.DashboardPref.create({ layout: JSON.stringify(next) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['dashboardPref', userEmail] }),
+  });
+
   const persist = (next) => {
+    dirty.current = true;
     setPrefs(next);
     if (prefsKey) { try { localStorage.setItem(prefsKey, JSON.stringify(next)); } catch { /* quota */ } }
+    saveMut.mutate(next);
   };
   const toggleHidden = (k) => persist({ ...prefs, hidden: { ...prefs.hidden, [k]: !prefs.hidden[k] } });
-  const move = (k, dir) => {
+  const resetPrefs = () => persist({ order: DEFAULT_ORDER, hidden: {} });
+  const onDragEnd = (result) => {
+    if (!result.destination) return;
     const order = [...prefs.order];
-    const i = order.indexOf(k), j = i + dir;
-    if (j < 0 || j >= order.length) return;
-    [order[i], order[j]] = [order[j], order[i]];
+    const [moved] = order.splice(result.source.index, 1);
+    order.splice(result.destination.index, 0, moved);
     persist({ ...prefs, order });
   };
-  const resetPrefs = () => persist({ order: DEFAULT_ORDER, hidden: {} });
 
   // ── Computed data ────────────────────────────────────────────────────────────
 
@@ -353,22 +381,33 @@ export default function Dashboard() {
               <p className="font-semibold text-slate-800 text-sm">Personnaliser le tableau de bord</p>
               <button onClick={resetPrefs} className="text-xs text-slate-400 hover:text-slate-700 flex items-center gap-1"><RotateCcw className="w-3.5 h-3.5" /> Réinitialiser</button>
             </div>
-            <p className="text-xs text-slate-400 mb-3">Affichez/masquez et réordonnez vos blocs. Vos préférences sont mémorisées sur cet appareil.</p>
-            <div className="space-y-1.5">
-              {prefs.order.map((k, idx) => {
-                const off = !!prefs.hidden[k];
-                return (
-                  <div key={k} className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${off ? "border-slate-100 bg-slate-50/50 opacity-60" : "border-slate-200 bg-white"}`}>
-                    <button onClick={() => toggleHidden(k)} title={off ? "Afficher" : "Masquer"} className="text-slate-400 hover:text-slate-700">
-                      {off ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                    <span className="flex-1 text-sm text-slate-700">{WIDGET_LABEL[k] || k}</span>
-                    <button onClick={() => move(k, -1)} disabled={idx === 0} className="text-slate-400 hover:text-slate-700 disabled:opacity-30"><ArrowUp className="w-4 h-4" /></button>
-                    <button onClick={() => move(k, 1)} disabled={idx === prefs.order.length - 1} className="text-slate-400 hover:text-slate-700 disabled:opacity-30"><ArrowDown className="w-4 h-4" /></button>
+            <p className="text-xs text-slate-400 mb-3">Glissez pour réordonner, cliquez sur l'œil pour masquer/afficher. Vos préférences sont synchronisées sur tous vos appareils.</p>
+            <DragDropContext onDragEnd={onDragEnd}>
+              <Droppable droppableId="dash-widgets">
+                {(prov) => (
+                  <div ref={prov.innerRef} {...prov.droppableProps} className="space-y-1.5">
+                    {prefs.order.map((k, idx) => {
+                      const off = !!prefs.hidden[k];
+                      return (
+                        <Draggable key={k} draggableId={k} index={idx}>
+                          {(p, snap) => (
+                            <div ref={p.innerRef} {...p.draggableProps}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${off ? "border-slate-100 bg-slate-50/50 opacity-60" : "border-slate-200 bg-white"} ${snap.isDragging ? "shadow-md ring-1 ring-slate-200" : ""}`}>
+                              <span {...p.dragHandleProps} className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing"><GripVertical className="w-4 h-4" /></span>
+                              <button onClick={() => toggleHidden(k)} title={off ? "Afficher" : "Masquer"} className="text-slate-400 hover:text-slate-700">
+                                {off ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
+                              <span className="flex-1 text-sm text-slate-700">{WIDGET_LABEL[k] || k}</span>
+                            </div>
+                          )}
+                        </Draggable>
+                      );
+                    })}
+                    {prov.placeholder}
                   </div>
-                );
-              })}
-            </div>
+                )}
+              </Droppable>
+            </DragDropContext>
           </div>
         )}
 
