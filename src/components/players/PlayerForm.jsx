@@ -42,6 +42,7 @@ export default function PlayerForm({ player, onSubmit, onCancel }) {
     nom: "", age: "", date_naissance: "", lieu_naissance: "", poste: "", poste_secondaire: "",
     nationalite: "", nationalite_secondaire: "", club_actuel: "", valeur_marchande: "",
     pied_fort: "", taille: "", poids: "", contrat_fin: "", photo_url: "",
+    en_pret: false, club_proprietaire: "", pret_fin: "",
     salaire: "", salaire_semaine: "", agent: "", agence: "", agent_email: "", agent_telephone: "",
     email: "", telephone: "", whatsapp: "", instagram: "", twitter: "", linkedin: "",
     adresse: "", ville_residence: "", pays_residence: "",
@@ -184,6 +185,24 @@ export default function PlayerForm({ player, onSubmit, onCancel }) {
               <F id="agent_telephone" label={t(lang,'playerForm.agentPhone')}>
                 <Input id="agent_telephone" value={formData.agent_telephone || ""} onChange={set("agent_telephone")} placeholder={t(lang,'playerForm.agentPhonePlh')} />
               </F>
+            </div>
+
+            {/* Prêt */}
+            <div className="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-100">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-700 cursor-pointer">
+                <input type="checkbox" checked={!!formData.en_pret} onChange={(e) => setFormData({ ...formData, en_pret: e.target.checked })} className="w-4 h-4 rounded border-slate-300" />
+                {t(lang,'playerForm.onLoan')}
+              </label>
+              {formData.en_pret && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                  <F id="club_proprietaire" label={t(lang,'playerForm.ownerClub')}>
+                    <Input id="club_proprietaire" value={formData.club_proprietaire || ""} onChange={set("club_proprietaire")} placeholder={t(lang,'playerForm.ownerClubPlh')} />
+                  </F>
+                  <F id="pret_fin" label={t(lang,'playerForm.loanEnd')}>
+                    <Input id="pret_fin" type="date" value={formData.pret_fin || ""} onChange={set("pret_fin")} />
+                  </F>
+                </div>
+              )}
             </div>
           </section>
 

@@ -6,7 +6,7 @@ import { useCurrentUser } from "../lib/useCurrentUser";
 import { ensureClubForPlayer } from "../lib/ensureClub";
 import { cleanPlayerName } from "../lib/cleanName";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, List, Search } from "lucide-react";
+import { Plus, Loader2, List, Search, Repeat, CalendarDays } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { useLanguage } from "../lib/LanguageContext";
@@ -21,19 +21,40 @@ import PlayerSearchPage from "./PlayerSearch";
 // Vue tableau par statut (catégorie agent). Sans statut → Prospect.
 const BOARD_ORDER = ["Prospect", "Client", "Mandaté", "En observation"];
 
-function BoardCard({ player, statut, onOpen, onMove }) {
+function BoardCard({ player, statut, onOpen, onMove, lang }) {
+  const yr = (d) => (d ? String(d).slice(0, 4) : null);
   return (
     <div className="bg-white border border-slate-200 rounded-lg p-2.5 shadow-sm hover:shadow-md transition-shadow">
       <button onClick={onOpen} className="w-full flex items-center gap-2 text-left mb-2">
         <PlayerAvatar src={player.photo_url} name={player.nom} type="player" club={player.club_actuel}
           entityId={player.id} entityType="Player" className="w-9 h-9 flex-shrink-0" textClassName="text-[10px]" />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-slate-900 truncate">{player.nom}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-semibold text-slate-900 truncate">{player.nom}</p>
+            {player.age != null && <span className="text-[10px] font-medium text-slate-400 flex-shrink-0">{player.age} {t(lang, "players.yearsShort")}</span>}
+          </div>
           <p className="text-[11px] text-slate-400 truncate">
             {player.club_actuel || "—"}{player.valeur_marchande ? ` · ${player.valeur_marchande} M€` : ""}
           </p>
         </div>
       </button>
+
+      {/* Contrat + prêt */}
+      {(player.contrat_fin || player.en_pret) && (
+        <div className="flex flex-wrap items-center gap-1.5 mb-2">
+          {player.contrat_fin && (
+            <span className="inline-flex items-center gap-1 text-[10px] text-slate-500 bg-slate-100 rounded px-1.5 py-0.5">
+              <CalendarDays className="w-3 h-3" /> {t(lang, "players.contractShort")} {yr(player.contrat_fin)}
+            </span>
+          )}
+          {player.en_pret && (
+            <span className="inline-flex items-center gap-1 text-[10px] text-amber-700 bg-amber-100 rounded px-1.5 py-0.5" title={player.club_proprietaire ? `${t(lang, "players.loanFrom")} ${player.club_proprietaire}` : ""}>
+              <Repeat className="w-3 h-3" /> {t(lang, "players.loan")}{player.club_proprietaire ? ` · ${player.club_proprietaire}` : ""}
+            </span>
+          )}
+        </div>
+      )}
+
       <select
         value={statut}
         onChange={(e) => onMove(player, e.target.value)}
@@ -284,6 +305,7 @@ export default function PlayersPage() {
                             key={player.id}
                             player={player}
                             statut={key}
+                            lang={lang}
                             onOpen={() => navigate(createPageUrl("PlayerDetail") + "?id=" + player.id)}
                             onMove={(p, s) => setStatusMutation.mutate({ player: p, statut: s })}
                           />

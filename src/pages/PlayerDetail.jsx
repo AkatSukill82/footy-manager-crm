@@ -145,7 +145,9 @@ export default function PlayerDetailPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['player', playerId] });
-      queryClient.invalidateQueries({ queryKey: ['players', currentUser?.id] });
+      // Préfixe large (comme la suppression) → la liste/tableau se rafraîchit
+      // toujours, quelle que soit la clé exacte. Sinon l'édition n'apparaissait pas.
+      queryClient.invalidateQueries({ queryKey: ['players'] });
       queryClient.invalidateQueries({ queryKey: ['activityLogs', 'Player', playerId] });
       setIsEditing(false);
     },

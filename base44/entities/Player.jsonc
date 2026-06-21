@@ -133,6 +133,19 @@
       "format": "date",
       "description": "Date de fin de contrat"
     },
+    "en_pret": {
+      "type": "boolean",
+      "description": "Le joueur est actuellement en prêt"
+    },
+    "club_proprietaire": {
+      "type": "string",
+      "description": "Club propriétaire (qui détient le joueur et l'a prêté)"
+    },
+    "pret_fin": {
+      "type": "string",
+      "format": "date",
+      "description": "Date de fin du prêt"
+    },
     "photo_url": {
       "type": "string",
       "description": "URL de la photo du joueur"
