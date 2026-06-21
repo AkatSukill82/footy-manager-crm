@@ -55,6 +55,27 @@ Deno.serve(async (req) => {
 
     const { action, nom, code } = await req.json();
 
+    // ── Liste des membres du groupe (visible par TOUS les membres) ────────────
+    // User.list() est réservé aux admins → on passe par le rôle service pour
+    // que chaque membre puisse voir qui est dans le groupe et qui est le chef.
+    if (action === "getMembers") {
+      if (!user.organization_id) return Response.json({ ok: true, members: [], org: null });
+      const org = (await svc.entities.Organization.filter({ id: user.organization_id }))[0] || null;
+      const users = await svc.entities.User.filter({ organization_id: user.organization_id });
+      const members = (users || []).map((u: any) => ({
+        id: u.id,
+        full_name: u.full_name || null,
+        email: u.email || null,
+        role_metier: u.role_metier || null,
+        isChef: !!org && org.created_by_id === u.id,
+      }));
+      return Response.json({
+        ok: true,
+        members,
+        org: org ? { id: org.id, nom: org.nom, created_by_id: org.created_by_id, invite_code: org.invite_code, invite_code_expires: org.invite_code_expires } : null,
+      });
+    }
+
     // ── Créer un groupe ──────────────────────────────────────────────────────
     if (action === "createGroup") {
       // Seul un CEO peut créer un groupe.
@@ -93,16 +114,17 @@ Deno.serve(async (req) => {
       if (!org.invite_code_expires || new Date(org.invite_code_expires).getTime() < Date.now()) {
         return Response.json({ ok: false, error: "Ce code a expiré. Demandez-en un nouveau au chef du groupe." });
       }
+      // On NE marque PAS les données du membre : elles restent privées.
+      // Rejoindre = juste rattacher l'utilisateur au groupe → la RLS lui donne
+      // accès en lecture/écriture aux données partagées par le CEO (chef).
       await base44.auth.updateMe({ organization_id: org.id });
-      const stamped = await stampUserData(svc, user.id, org.id);
-      return Response.json({ ok: true, group: { id: org.id, nom: org.nom }, stamped });
+      return Response.json({ ok: true, group: { id: org.id, nom: org.nom } });
     }
 
     // ── Quitter le groupe ────────────────────────────────────────────────────
     if (action === "leaveGroup") {
       if (!user.organization_id) return Response.json({ ok: false, error: "Vous n'êtes dans aucun groupe." });
-      // Les données du membre redeviennent privées.
-      await stampUserData(svc, user.id, null);
+      // Le membre n'avait pas de données partagées → on détache juste l'utilisateur.
       await base44.auth.updateMe({ organization_id: null });
       return Response.json({ ok: true });
     }

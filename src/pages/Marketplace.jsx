@@ -202,7 +202,7 @@ export default function MarketplacePage() {
   const { data: user } = useQuery({ queryKey: ["currentUser"], queryFn: () => base44.auth.me(), staleTime: Infinity });
   const { data: players = [] } = useQuery({
     queryKey: ["players", user?.id],
-    queryFn: () => base44.entities.Player.filter({ created_by_id: user.id }, "-created_date"),
+    queryFn: () => base44.entities.Player.filter({}, "-created_date"),
     enabled: !!user?.id, staleTime: Infinity,
   });
   const { data: opps = [], isLoading } = useQuery({

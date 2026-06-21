@@ -113,7 +113,7 @@ export default function PlayerDetailPage() {
   // Réutilise le cache de la page Players — pas de requête réseau si déjà chargé
   const { data: allPlayers = [] } = useQuery({
     queryKey: ['players', currentUser?.id],
-    queryFn: () => base44.entities.Player.filter({ created_by_id: currentUser.id }, '-created_date'),
+    queryFn: () => base44.entities.Player.filter({}, '-created_date'),
     enabled: !!currentUser?.id,
     staleTime: Infinity
   });

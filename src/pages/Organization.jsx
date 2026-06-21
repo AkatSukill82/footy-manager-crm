@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { base44, invokeFn } from "@/api/base44Client";
+import { invokeFn } from "@/api/base44Client";
 import { useCurrentUser } from "../lib/useCurrentUser";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,25 +31,21 @@ export default function OrganizationPage() {
   const [inviteSent, setInviteSent] = useState(false);
   const [inviting, setInviting] = useState(false);
 
-  const { data: org } = useQuery({
-    queryKey: ["myGroup", orgId],
-    queryFn: async () => (await base44.entities.Organization.filter({ id: orgId }))[0] || null,
+  // Groupe + membres via la fonction serveur (rôle service) : visible par TOUS
+  // les membres, pas seulement les admins (User.list est réservé aux admins).
+  const { data: groupData } = useQuery({
+    queryKey: ["groupData", orgId],
+    queryFn: () => invokeFn("groupManager", { action: "getMembers" }),
     enabled: !!orgId,
   });
-
-  const { data: allUsers = [] } = useQuery({
-    queryKey: ["allUsers"],
-    queryFn: () => base44.entities.User.list(),
-    enabled: !!orgId,
-  });
-  const members = orgId ? allUsers.filter((u) => u.organization_id === orgId) : [];
+  const org = groupData?.org || null;
+  const members = groupData?.members || [];
   const isChef = org && currentUser && org.created_by_id === currentUser.id;
   const isCEO = currentUser?.role_metier === "CEO";
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["currentUser"] });
-    qc.invalidateQueries({ queryKey: ["myGroup"] });
-    qc.invalidateQueries({ queryKey: ["allUsers"] });
+    qc.invalidateQueries({ queryKey: ["groupData"] });
     qc.invalidateQueries({ queryKey: ["players"] });
     qc.invalidateQueries({ queryKey: ["clubs"] });
   };
@@ -159,7 +155,7 @@ export default function OrganizationPage() {
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">{t(lang, "session.group.members")} ({members.length})</p>
                 <div className="space-y-1.5">
                   {members.map((m) => {
-                    const chef = org.created_by_id === m.id;
+                    const chef = m.isChef;
                     const me = m.id === currentUser?.id;
                     return (
                       <div key={m.id} className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-100">

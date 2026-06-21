@@ -36,7 +36,7 @@ export default function AgentNetworkPage() {
 
   const { data: players = [] } = useQuery({
     queryKey: ['players', user?.id],
-    queryFn: () => base44.entities.Player.filter({ created_by_id: user.id }),
+    queryFn: () => base44.entities.Player.filter({}),
     enabled: !!user?.id,
   });
 

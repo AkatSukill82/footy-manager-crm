@@ -238,7 +238,7 @@ export default function FinancePage() {
   });
   const { data: players = [] } = useQuery({
     queryKey: ["players", user?.id],
-    queryFn: () => base44.entities.Player.filter({ created_by_id: user.id }, "-created_date"),
+    queryFn: () => base44.entities.Player.filter({}, "-created_date"),
     enabled: !!user?.id, staleTime: Infinity,
   });
 
