@@ -23,13 +23,13 @@
     "statut": {
       "type": "string",
       "enum": [
-        "En observation",
-        "À contacter",
-        "Négociation",
-        "Abandonné"
+        "Client",
+        "Prospect",
+        "Mandaté",
+        "En observation"
       ],
-      "default": "En observation",
-      "description": "Statut du suivi"
+      "default": "Prospect",
+      "description": "Statut du suivi (catégorie agent)"
     }
   },
   "required": [

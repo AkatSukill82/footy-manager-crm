@@ -7,15 +7,46 @@ import { ensureClubForPlayer } from "../lib/ensureClub";
 import { cleanPlayerName } from "../lib/cleanName";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2, List, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "../utils";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
 import PlayerCard from "../components/players/PlayerCard";
+import PlayerAvatar from "../components/ui/PlayerAvatar";
 import AdvancedFilters from "../components/players/AdvancedFilters";
 import PlayerForm from "../components/players/PlayerForm";
-import PlayerStatusModal from "../components/players/PlayerStatusModal";
+import PlayerStatusModal, { STATUTS, statutConfig } from "../components/players/PlayerStatusModal";
 import PlayerSearchPage from "./PlayerSearch";
 
+// Vue tableau par statut (catégorie agent). Sans statut → Prospect.
+const BOARD_ORDER = ["Prospect", "Client", "Mandaté", "En observation"];
+
+function BoardCard({ player, statut, onOpen, onMove }) {
+  return (
+    <div className="bg-white border border-slate-200 rounded-lg p-2.5 shadow-sm hover:shadow-md transition-shadow">
+      <button onClick={onOpen} className="w-full flex items-center gap-2 text-left mb-2">
+        <PlayerAvatar src={player.photo_url} name={player.nom} type="player" club={player.club_actuel}
+          entityId={player.id} entityType="Player" className="w-9 h-9 flex-shrink-0" textClassName="text-[10px]" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-slate-900 truncate">{player.nom}</p>
+          <p className="text-[11px] text-slate-400 truncate">
+            {player.club_actuel || "—"}{player.valeur_marchande ? ` · ${player.valeur_marchande} M€` : ""}
+          </p>
+        </div>
+      </button>
+      <select
+        value={statut}
+        onChange={(e) => onMove(player, e.target.value)}
+        className="w-full text-[11px] h-7 rounded-md border border-slate-200 bg-slate-50 px-1.5 text-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-300"
+      >
+        {STATUTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+      </select>
+    </div>
+  );
+}
+
 export default function PlayersPage() {
+  const navigate = useNavigate();
   const { lang } = useLanguage();
   const [activeTab, setActiveTab] = useState("liste");
   const [showForm, setShowForm] = useState(false);
@@ -76,6 +107,17 @@ export default function PlayersPage() {
   });
 
   const watchListMap = Object.fromEntries(watchList.map(w => [w.player_id, w]));
+
+  // Déplacer un joueur dans une autre colonne = upsert de son statut watchlist.
+  const setStatusMutation = useMutation({
+    mutationFn: async ({ player, statut }) => {
+      const existing = watchListMap[player.id];
+      if (existing) return base44.entities.WatchList.update(existing.id, { statut });
+      return base44.entities.WatchList.create(withOrg({ player_id: player.id, statut, priorite: "Moyenne" }));
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['watchList'] }),
+    onError: (err) => setMutError(err?.message || "Impossible de changer le statut."),
+  });
 
   const filteredPlayers = players.filter(player => {
     const matchesSearch = !filters.search ||
@@ -224,16 +266,35 @@ export default function PlayersPage() {
                 <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
               </div>
             ) : (
-              <div className="bg-white border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-50 shadow-sm">
-                {sortedPlayers.map((player) => (
-                  <PlayerCard
-                    key={player.id}
-                    player={player}
-                    inWatchList={!!watchListMap[player.id]}
-                    watchlistItem={watchListMap[player.id]}
-                    onAddToWatchlist={watchListMap[player.id] ? undefined : (p) => setModalPlayer(p)}
-                  />
-                ))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-start">
+                {BOARD_ORDER.map((key) => {
+                  const cfg = statutConfig(key);
+                  const colPlayers = sortedPlayers.filter(
+                    (p) => (watchListMap[p.id]?.statut || "Prospect") === key
+                  );
+                  return (
+                    <div key={key} className="bg-slate-50 rounded-xl border border-slate-200 flex flex-col">
+                      <div className={`flex items-center justify-between px-3 py-2 rounded-t-xl border-b text-xs font-semibold ${cfg.badge}`}>
+                        <span>{cfg.label}</span>
+                        <span className="font-bold">{colPlayers.length}</span>
+                      </div>
+                      <div className="p-2 space-y-2 min-h-[120px] max-h-[72vh] overflow-y-auto">
+                        {colPlayers.map((player) => (
+                          <BoardCard
+                            key={player.id}
+                            player={player}
+                            statut={key}
+                            onOpen={() => navigate(createPageUrl("PlayerDetail") + "?id=" + player.id)}
+                            onMove={(p, s) => setStatusMutation.mutate({ player: p, statut: s })}
+                          />
+                        ))}
+                        {colPlayers.length === 0 && (
+                          <p className="text-[11px] text-slate-300 text-center py-6">—</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
