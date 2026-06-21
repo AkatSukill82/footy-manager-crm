@@ -35,19 +35,20 @@ export default function OrganizationPage() {
   const [sharing, setSharing] = useState(false);
 
   // Le groupe lui-même : requête DIRECTE (la RLS autorise un membre à lire son
-  // propre groupe). Source robuste, indépendante de la fonction serveur.
-  const { data: org = null } = useQuery({
+  // propre groupe) + repli via la fonction serveur (rôle service).
+  const { data: directOrg = null, isLoading: orgLoading } = useQuery({
     queryKey: ["myGroup", orgId],
     queryFn: async () => (await base44.entities.Organization.filter({ id: orgId }))[0] || null,
     enabled: !!orgId,
   });
   // La LISTE des membres via la fonction serveur (rôle service) : visible par
-  // tous (User.list est admin-only). Best-effort — n'empêche pas l'affichage.
+  // tous (User.list est admin-only). Renvoie aussi org (repli).
   const { data: groupData } = useQuery({
     queryKey: ["groupData", orgId],
     queryFn: () => invokeFn("groupManager", { action: "getMembers" }),
     enabled: !!orgId,
   });
+  const org = directOrg || groupData?.org || null;
   const isChef = org && currentUser && org.created_by_id === currentUser.id;
   const isCEO = currentUser?.role_metier === "CEO";
   // Repli : si la fonction serveur n'a pas (encore) renvoyé la liste, on affiche
@@ -131,9 +132,14 @@ export default function OrganizationPage() {
           </div>
         )}
 
-        {/* ── Pas encore dans un groupe ── */}
+        {/* Chargement du groupe en cours */}
+        {orgLoading && !org && (
+          <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-slate-300" /></div>
+        )}
+
+        {/* ── Pas de groupe chargé → écran rejoindre/créer (jamais de blanc) ── */}
         {/* CEO : Créer + Rejoindre. Non-CEO : uniquement la case code. */}
-        {!orgId && (
+        {!org && !orgLoading && (
           <div className={isCEO ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "max-w-md mx-auto"}>
             {/* Créer un groupe : CEO uniquement */}
             {isCEO && (
@@ -161,7 +167,7 @@ export default function OrganizationPage() {
         )}
 
         {/* ── Dans un groupe ── */}
-        {orgId && org && (
+        {org && (
           <>
             <Card>
               <CardHeader className="pb-2">
