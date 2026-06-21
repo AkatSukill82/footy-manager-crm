@@ -66,6 +66,7 @@ RÈGLE ABSOLUE : ne retourne que des matchs réellement programmés et datés da
 function MatchRow({ match, club }) {
   const { lang } = useLanguage();
   const [state, setState] = useState("idle"); // idle | adding | added | error
+  const [errMsg, setErrMsg] = useState(null);
   const isNational = match.type === "selection";
   const equipe = match.equipe || club;
   const home = match.domicile ? equipe : match.adversaire;
@@ -91,9 +92,13 @@ function MatchRow({ match, club }) {
         colorId: "10",
       }, calId);
       setState("added");
-    } catch {
+    } catch (err) {
+      // Surface la vraie cause (souvent : domaine non autorisé pour l'OAuth Google,
+      // popup bloquée, ou API Google Calendar non activée).
+      console.error("[agenda] échec ajout au calendrier:", err);
+      setErrMsg(err?.message || err?.error || "Connexion à Google Agenda impossible.");
       setState("error");
-      setTimeout(() => setState("idle"), 3000);
+      setTimeout(() => { setState("idle"); setErrMsg(null); }, 6000);
     }
   };
 
@@ -123,19 +128,24 @@ function MatchRow({ match, club }) {
         </div>
       </div>
 
-      <Button
-        size="sm"
-        variant={state === "added" ? "outline" : "ghost"}
-        className={`flex-shrink-0 h-8 text-xs ${state === "added" ? "text-green-700 border-green-200" : "text-green-600 hover:text-green-700 hover:bg-green-50"}`}
-        onClick={addToAgenda}
-        disabled={state === "adding" || state === "added"}
-        title={t(lang, "session.upcoming.addTooltip")}
-      >
-        {state === "adding" ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          : state === "added" ? <><Check className="w-3.5 h-3.5 mr-1" /> {t(lang, "session.upcoming.added")}</>
-          : state === "error" ? t(lang, "session.upcoming.retry")
-          : <><CalendarPlus className="w-3.5 h-3.5 mr-1" /> {t(lang, "session.upcoming.agenda")}</>}
-      </Button>
+      <div className="flex flex-col items-end flex-shrink-0">
+        <Button
+          size="sm"
+          variant={state === "added" ? "outline" : "ghost"}
+          className={`h-8 text-xs ${state === "added" ? "text-green-700 border-green-200" : "text-green-600 hover:text-green-700 hover:bg-green-50"}`}
+          onClick={addToAgenda}
+          disabled={state === "adding" || state === "added"}
+          title={errMsg || t(lang, "session.upcoming.addTooltip")}
+        >
+          {state === "adding" ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            : state === "added" ? <><Check className="w-3.5 h-3.5 mr-1" /> {t(lang, "session.upcoming.added")}</>
+            : state === "error" ? t(lang, "session.upcoming.retry")
+            : <><CalendarPlus className="w-3.5 h-3.5 mr-1" /> {t(lang, "session.upcoming.agenda")}</>}
+        </Button>
+        {state === "error" && errMsg && (
+          <span className="text-[10px] text-red-500 mt-1 max-w-[160px] text-right leading-tight">{errMsg}</span>
+        )}
+      </div>
     </div>
   );
 }
