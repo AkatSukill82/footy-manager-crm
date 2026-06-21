@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { withOrg } from "../lib/org";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -91,14 +92,14 @@ export default function TransferManagementPage() {
   const finalizeTransferMutation = useMutation({
     mutationFn: async (negociation) => {
       const player = players.find(p => p.id === negociation.player_id);
-      await base44.entities.Transfer.create({
+      await base44.entities.Transfer.create(withOrg({
         player_id: negociation.player_id,
         date_transfert: new Date().toISOString().split('T')[0],
         club_depart: negociation.club_vendeur || player?.club_actuel,
         club_arrivee: negociation.club_acheteur,
         montant: negociation.montant_propose,
         type_transfert: "Transfert définitif"
-      });
+      }));
       await base44.entities.TransferNegociation.update(negociation.id, { statut: "transfert_finalise" });
       if (player) {
         await base44.entities.Player.update(player.id, { club_actuel: negociation.club_acheteur });

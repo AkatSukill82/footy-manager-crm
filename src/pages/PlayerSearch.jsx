@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { withOrg } from "../lib/org";
 import { base44, invokeFn } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -457,7 +458,7 @@ export default function PlayerSearchPage() {
         clean_sheets:     s?.clean_sheets,
       };
       const clean = Object.fromEntries(Object.entries(raw).filter(([, v]) => v != null && v !== ""));
-      const created = await base44.entities.Player.create(clean);
+      const created = await base44.entities.Player.create(withOrg(clean));
       queryClient.invalidateQueries({ queryKey: ["players"] });
       setSaved(true);
 

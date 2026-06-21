@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { withOrg } from "../lib/org";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Input } from "@/components/ui/input";
@@ -267,7 +268,7 @@ export default function ClubContactsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.ClubContact.create(data),
+    mutationFn: (data) => base44.entities.ClubContact.create(withOrg(data)),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["club-contacts"] }),
     onError: (err) => setMutationError(err.message || "Erreur lors de la création"),
   });

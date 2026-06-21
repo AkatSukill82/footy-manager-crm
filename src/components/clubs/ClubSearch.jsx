@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { withOrg } from "../../lib/org";
 import { base44, invokeFn } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -184,7 +185,7 @@ Champs attendus :
           categorie:         result.categorie,
         }).filter(([, v]) => v != null && v !== "")
       );
-      await base44.entities.Club.create(clubData);
+      await base44.entities.Club.create(withOrg(clubData));
       queryClient.invalidateQueries({ queryKey: ['clubs'] });
       setSaved(true);
     } catch (err) {

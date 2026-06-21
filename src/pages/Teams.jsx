@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { withOrg } from "../lib/org";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "../lib/useCurrentUser";
@@ -31,7 +32,7 @@ export default function TeamsPage() {
   });
 
   const createTeamMutation = useMutation({
-    mutationFn: (data) => base44.entities.Team.create(data),
+    mutationFn: (data) => base44.entities.Team.create(withOrg(data)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teams'] });
       setShowForm(false);

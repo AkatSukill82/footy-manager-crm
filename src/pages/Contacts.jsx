@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { withOrg } from "../lib/org";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -52,7 +53,7 @@ export default function ContactsPage() {
   });
 
   const createContactMutation = useMutation({
-    mutationFn: (data) => base44.entities.Contact.create(data),
+    mutationFn: (data) => base44.entities.Contact.create(withOrg(data)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
     },
@@ -60,7 +61,7 @@ export default function ContactsPage() {
   });
 
   const createReminderMutation = useMutation({
-    mutationFn: (data) => base44.entities.Reminder.create(data),
+    mutationFn: (data) => base44.entities.Reminder.create(withOrg(data)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reminders'] });
       queryClient.invalidateQueries({ queryKey: ['all-reminders'] });

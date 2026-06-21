@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { withOrg } from "../lib/org";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "../lib/useCurrentUser";
@@ -49,7 +50,7 @@ export default function PlayersPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Player.create({ ...data, nom: cleanPlayerName(data.nom) }),
+    mutationFn: (data) => base44.entities.Player.create(withOrg({ ...data, nom: cleanPlayerName(data.nom) })),
     onSuccess: (created, data) => {
       queryClient.invalidateQueries({ queryKey: ['players'] });
       setShowForm(false);
@@ -66,7 +67,7 @@ export default function PlayersPage() {
 
   const addToWatchListMutation = useMutation({
     mutationFn: ({ playerId, statut }) =>
-      base44.entities.WatchList.create({ player_id: playerId, statut, priorite: "Moyenne" }),
+      base44.entities.WatchList.create(withOrg({ player_id: playerId, statut, priorite: "Moyenne" })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchList'] });
       queryClient.invalidateQueries({ queryKey: ['watchListItem'] });

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { withOrg } from "../../lib/org";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
@@ -73,7 +74,7 @@ function ScoutRow({ j, inCrm, lang }) {
         valeur_marchande: j.valeur_marchande ?? null,
       };
       Object.keys(payload).forEach((k) => { if (payload[k] == null) delete payload[k]; });
-      const created = await base44.entities.Player.create(payload);
+      const created = await base44.entities.Player.create(withOrg(payload));
       qc.invalidateQueries({ queryKey: ["players"] });
       navigate(createPageUrl("PlayerDetail") + `?id=${created.id}`);
     } catch {

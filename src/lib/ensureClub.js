@@ -1,4 +1,5 @@
 import { base44, invokeFn } from "@/api/base44Client";
+import { withOrg } from "./org";
 
 const norm = (s) => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
 
@@ -91,7 +92,7 @@ Sources fiables : Transfermarkt, site officiel, Wikipédia. Ne retourne que ce q
   );
 
   try {
-    return await base44.entities.Club.create(payload);
+    return await base44.entities.Club.create(withOrg(payload));
   } catch {
     return null;
   }

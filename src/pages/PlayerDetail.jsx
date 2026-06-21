@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { withOrg } from "../lib/org";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -172,11 +173,11 @@ export default function PlayerDetailPage() {
   });
 
   const addToWatchListMutation = useMutation({
-    mutationFn: (statut) => base44.entities.WatchList.create({
+    mutationFn: (statut) => base44.entities.WatchList.create(withOrg({
       player_id: playerId,
       priorite: "Moyenne",
       statut: statut || "Prospect"
-    }),
+    })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchListItem', playerId] });
       queryClient.invalidateQueries({ queryKey: ['watchList', userEmail] });
@@ -203,7 +204,7 @@ export default function PlayerDetailPage() {
   });
 
   const createNoteMutation = useMutation({
-    mutationFn: (data) => base44.entities.PlayerNote.create({ ...data, player_id: playerId }),
+    mutationFn: (data) => base44.entities.PlayerNote.create(withOrg({ ...data, player_id: playerId })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['playerNotes', playerId] }),
     onError: (err) => setMutationError(err.message || "Erreur lors de la création de la note")
   });
