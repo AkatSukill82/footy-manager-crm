@@ -14,7 +14,6 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import Login from '@/pages/Login';
 import { base44 } from '@/api/base44Client';
 
-const ScoutingIA   = lazy(() => import('./pages/ScoutingIA'));
 const ImportExcel  = lazy(() => import('./pages/ImportExcel'));
 const Organization = lazy(() => import('./pages/Organization'));
 
@@ -110,7 +109,6 @@ const AuthenticatedApp = () => {
               }
             />
           ))}
-          <Route path="/ScoutingIA" element={<LayoutWrapper currentPageName="ScoutingIA"><ScoutingIA /></LayoutWrapper>} />
           <Route path="/ImportExcel" element={<LayoutWrapper currentPageName="ImportExcel"><ImportExcel /></LayoutWrapper>} />
           <Route path="/Organization" element={<LayoutWrapper currentPageName="Organization"><Organization /></LayoutWrapper>} />
         </Route>

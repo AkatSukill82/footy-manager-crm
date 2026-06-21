@@ -20,7 +20,7 @@ import GlobalSearch from "./components/ui/GlobalSearch";
 // Pages principales — toujours visibles
 const CORE_PAGES = ["Dashboard", "Players", "Clubs", "MyWatchList", "ClubContacts"];
 // Outils — groupe repliable
-const TOOLS_PAGES = ["Comparator", "TransferManagement", "Teams", "News", "ScoutingIA", "Calendar"];
+const TOOLS_PAGES = ["Comparator", "TransferManagement", "Teams", "News", "Calendar"];
 // Avancé — groupe repliable
 const ADVANCED_PAGES = ["Pipeline", "Finance", "Marketplace", "ScoutingReports", "Alerts", "Reports", "PredictiveDashboard", "AgentNetwork", "ImportExcel", "Organization"];
 
@@ -39,7 +39,6 @@ const ALL_ITEMS = (lang) => [
   { name: "TransferManagement",  key: "transfers",        icon: ArrowRightLeft },
   { name: "Teams",               key: "teams",            icon: Shield },
   { name: "News",                key: "news",             icon: Newspaper },
-  { name: "ScoutingIA",          key: "scouting",         icon: Sparkles },
   { name: "Calendar",            key: "calendar",         icon: CalendarDays },
   { name: "Reports",             key: "reports",          icon: FileText },
   { name: "PredictiveDashboard", key: "predictive",       icon: Sparkles },
