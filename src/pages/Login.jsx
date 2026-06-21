@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
@@ -157,6 +158,13 @@ export default function Login() {
               <ShieldCheck className="w-3.5 h-3.5" />
               <span className="text-xs">{t(lang, "login.secured")}</span>
             </div>
+
+            <p className="mt-4 text-center text-sm text-slate-400">
+              Pas encore de compte ?{" "}
+              <Link to="/register" className="text-slate-700 font-semibold hover:underline">
+                Créer un compte
+              </Link>
+            </p>
           </div>
         </div>
       </div>
