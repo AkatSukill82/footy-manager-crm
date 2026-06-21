@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { invokeFn } from "@/api/base44Client";
+import { base44, invokeFn } from "@/api/base44Client";
 import { useCurrentUser } from "../lib/useCurrentUser";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,17 +34,27 @@ export default function OrganizationPage() {
   const [shareAsk, setShareAsk] = useState(false);   // popup post-inscription
   const [sharing, setSharing] = useState(false);
 
-  // Groupe + membres via la fonction serveur (rôle service) : visible par TOUS
-  // les membres, pas seulement les admins (User.list est réservé aux admins).
+  // Le groupe lui-même : requête DIRECTE (la RLS autorise un membre à lire son
+  // propre groupe). Source robuste, indépendante de la fonction serveur.
+  const { data: org = null } = useQuery({
+    queryKey: ["myGroup", orgId],
+    queryFn: async () => (await base44.entities.Organization.filter({ id: orgId }))[0] || null,
+    enabled: !!orgId,
+  });
+  // La LISTE des membres via la fonction serveur (rôle service) : visible par
+  // tous (User.list est admin-only). Best-effort — n'empêche pas l'affichage.
   const { data: groupData } = useQuery({
     queryKey: ["groupData", orgId],
     queryFn: () => invokeFn("groupManager", { action: "getMembers" }),
     enabled: !!orgId,
   });
-  const org = groupData?.org || null;
-  const members = groupData?.members || [];
   const isChef = org && currentUser && org.created_by_id === currentUser.id;
   const isCEO = currentUser?.role_metier === "CEO";
+  // Repli : si la fonction serveur n'a pas (encore) renvoyé la liste, on affiche
+  // au moins l'utilisateur courant pour ne jamais montrer une liste vide.
+  const members = (groupData?.members && groupData.members.length)
+    ? groupData.members
+    : (currentUser ? [{ id: currentUser.id, full_name: currentUser.full_name, email: currentUser.email, isChef: !!isChef }] : []);
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["currentUser"] });
