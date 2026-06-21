@@ -18,11 +18,11 @@ import { useQuery } from "@tanstack/react-query";
 import GlobalSearch from "./components/ui/GlobalSearch";
 
 // Pages principales — toujours visibles
-const CORE_PAGES = ["Dashboard", "Players", "Clubs", "MyWatchList", "ClubContacts"];
+const CORE_PAGES = ["Dashboard", "Players", "Clubs", "MyWatchList", "ClubContacts", "Organization"];
 // Outils — groupe repliable
 const TOOLS_PAGES = ["Comparator", "TransferManagement", "Teams", "News", "Calendar"];
 // Avancé — groupe repliable
-const ADVANCED_PAGES = ["Pipeline", "Finance", "Marketplace", "ScoutingReports", "Alerts", "Reports", "PredictiveDashboard", "AgentNetwork", "ImportExcel", "Organization"];
+const ADVANCED_PAGES = ["Pipeline", "Finance", "Marketplace", "ScoutingReports", "Alerts", "Reports", "PredictiveDashboard", "AgentNetwork", "ImportExcel"];
 
 const ALL_ITEMS = (lang) => [
   { name: "Dashboard",           key: "dashboard",        icon: BarChart3 },
@@ -44,7 +44,7 @@ const ALL_ITEMS = (lang) => [
   { name: "PredictiveDashboard", key: "predictive",       icon: Sparkles },
   { name: "AgentNetwork",        key: "network",          icon: Network },
   { name: "ImportExcel",         key: "import",           icon: FileSpreadsheet },
-  { name: "Organization",        key: "organization",     icon: Building2 },
+  { name: "Organization",        key: "organization",     icon: Users },
 ].map(item => ({ ...item, label: item.label || t(lang, `nav.${item.key}`) }));
 
 const navItems = (lang) => ALL_ITEMS(lang);
