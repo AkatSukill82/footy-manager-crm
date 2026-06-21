@@ -125,7 +125,8 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Organisation & Poste */}
+        {/* Organisation & Poste — réservé au CEO */}
+        {user?.role_metier === "CEO" && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
@@ -164,6 +165,7 @@ export default function ProfilePage() {
             </div>
           </CardContent>
         </Card>
+        )}
 
         {/* Mon rôle (modifiable une seule fois) */}
         <Card>
