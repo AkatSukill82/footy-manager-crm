@@ -6,7 +6,9 @@ import {
   FileText, Network, ArrowRightLeft, Menu, X, Building2,
   Sparkles, Newspaper, FileSpreadsheet, CalendarDays, UserCircle,
   ClipboardList, Columns, ChevronDown, Search, GitCompare, Wallet, Store,
+  Sun, Moon,
 } from "lucide-react";
+import { useTheme } from "./lib/ThemeContext";
 import { base44 } from "@/api/base44Client";
 import { Toaster } from "@/components/ui/sonner";
 import { useLanguage } from "./lib/LanguageContext";
@@ -89,6 +91,7 @@ export default function Layout({ children, currentPageName }) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const { lang } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
   const items = navItems(lang);
 
   // Cmd+K / Ctrl+K global shortcut
@@ -200,6 +203,14 @@ export default function Layout({ children, currentPageName }) {
           </Link>
 
           <button
+            onClick={toggleTheme}
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-slate-500 hover:bg-slate-50 hover:text-slate-800 rounded-xl transition-all"
+          >
+            {theme === "dark" ? <Sun className="w-4 h-4 flex-shrink-0" /> : <Moon className="w-4 h-4 flex-shrink-0" />}
+            <span className="font-medium text-sm">{t(lang, theme === "dark" ? "nav.lightMode" : "nav.darkMode")}</span>
+          </button>
+
+          <button
             onClick={() => base44.auth.logout("/login")}
             className="w-full flex items-center gap-3 px-3 py-2.5 text-slate-500 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
           >
@@ -308,7 +319,14 @@ export default function Layout({ children, currentPageName }) {
               </Link>
             </div>
 
-            <div className="px-4 pb-6">
+            <div className="px-4 pb-6 space-y-2">
+              <button
+                onClick={toggleTheme}
+                className="w-full flex items-center justify-center gap-2 py-3 text-slate-600 bg-slate-100 rounded-xl font-medium"
+              >
+                {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                {t(lang, theme === "dark" ? "nav.lightMode" : "nav.darkMode")}
+              </button>
               <button
                 onClick={() => { base44.auth.logout("/login"); setDrawerOpen(false); }}
                 className="w-full flex items-center justify-center gap-2 py-3 text-red-500 bg-red-50 rounded-xl font-medium"

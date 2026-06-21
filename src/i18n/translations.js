@@ -40,7 +40,7 @@ export const translations = {
       teams: "Équipes", transfers: "Transferts", reports: "Rapports",
       network: "Réseau Agents", calendar: "Calendrier", predictive: "Prédictif IA",
       news: "Journal du jour", scouting: "Scouting IA", import: "Import Excel",
-      profile: "Mon profil", logout: "Déconnexion", more: "Plus",
+      profile: "Mon profil", logout: "Déconnexion", more: "Plus", darkMode: "Mode sombre", lightMode: "Mode clair",
     },
     profile: {
       title: "Mon profil", subtitle: "Paramètres de votre compte",
@@ -993,7 +993,7 @@ export const translations = {
       teams: "Equipos", transfers: "Transferencias", reports: "Informes",
       network: "Red de Agentes", calendar: "Calendario", predictive: "IA Predictiva",
       news: "Noticias del día", scouting: "Scouting IA", import: "Importar Excel",
-      profile: "Mi perfil", logout: "Cerrar sesión", more: "Más",
+      profile: "Mi perfil", logout: "Cerrar sesión", more: "Más", darkMode: "Modo oscuro", lightMode: "Modo claro",
     },
     profile: {
       title: "Mi perfil", subtitle: "Configuración de tu cuenta",
@@ -1938,7 +1938,7 @@ export const translations = {
       teams: "Teams", transfers: "Transfers", reports: "Reports",
       network: "Agent Network", calendar: "Calendar", predictive: "AI Predictive",
       news: "Daily News", scouting: "AI Scouting", import: "Import Excel",
-      profile: "My profile", logout: "Logout", more: "More",
+      profile: "My profile", logout: "Logout", more: "More", darkMode: "Dark mode", lightMode: "Light mode",
     },
     profile: {
       title: "My profile", subtitle: "Account settings",

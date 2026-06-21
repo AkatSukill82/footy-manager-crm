@@ -7,6 +7,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="manifest" href="/manifest.json" />
     <title>Football Data Management</title>
+    <script>
+      // Applique le thème avant le rendu (évite le flash clair au chargement).
+      (function () {
+        try {
+          var s = localStorage.getItem("fdm_theme");
+          var dark = s === "dark" || (!s && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (dark) document.documentElement.classList.add("dark");
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
