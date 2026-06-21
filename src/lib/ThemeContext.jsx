@@ -13,8 +13,7 @@ const initial = () => {
     const saved = localStorage.getItem("fdm_theme");
     if (saved === "dark" || saved === "light") return saved;
   } catch { /* ignore */ }
-  // Par défaut : suit la préférence système.
-  if (typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: dark)").matches) return "dark";
+  // Par défaut : mode CLAIR (on n'hérite pas de la préférence système).
   return "light";
 };
 
