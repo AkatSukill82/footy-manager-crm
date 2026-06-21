@@ -49,7 +49,7 @@ const AuthenticatedApp = () => {
       if (user.email) {
         queryClient.prefetchQuery({
           queryKey: ['watchList', user.email],
-          queryFn: () => base44.entities.WatchList.filter({ created_by: user.email }),
+          queryFn: () => base44.entities.WatchList.filter({}),
           staleTime: Infinity,
         });
       }

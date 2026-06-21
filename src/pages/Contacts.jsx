@@ -31,8 +31,7 @@ export default function ContactsPage() {
   const { data: contacts = [] } = useQuery({
     queryKey: ['contacts', selectedPlayerId, userEmail],
     queryFn: () => base44.entities.Contact.filter({
-      player_id: selectedPlayerId,
-      created_by: userEmail
+      player_id: selectedPlayerId
     }),
     enabled: !!selectedPlayerId && !!userEmail,
   });
@@ -40,15 +39,14 @@ export default function ContactsPage() {
   const { data: reminders = [] } = useQuery({
     queryKey: ['reminders', selectedPlayerId, userEmail],
     queryFn: () => base44.entities.Reminder.filter({
-      player_id: selectedPlayerId,
-      created_by: userEmail
+      player_id: selectedPlayerId
     }),
     enabled: !!selectedPlayerId && !!userEmail,
   });
 
   const { data: allReminders = [] } = useQuery({
     queryKey: ['all-reminders', userEmail],
-    queryFn: () => base44.entities.Reminder.filter({ created_by: userEmail }),
+    queryFn: () => base44.entities.Reminder.filter({}),
     enabled: !!userEmail,
   });
 

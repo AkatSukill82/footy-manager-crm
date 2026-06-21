@@ -121,10 +121,9 @@ export default function PlayerDetailPage() {
   const { data: reminders = [] } = useQuery({
     queryKey: ['reminders', playerId, userEmail],
     queryFn: () => base44.entities.Reminder.filter({
-      player_id: playerId,
-      created_by: userEmail
+      player_id: playerId
     }),
-    enabled: !!playerId && !!userEmail
+    enabled: !!playerId
   });
 
   const updatePlayerMutation = useMutation({

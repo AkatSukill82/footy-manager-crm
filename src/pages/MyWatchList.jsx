@@ -152,7 +152,7 @@ export default function MyWatchListPage() {
 
   const { data: watchList = [], isLoading } = useQuery({
     queryKey: ['watchList', userEmail],
-    queryFn: () => base44.entities.WatchList.filter({ created_by: userEmail }),
+    queryFn: () => base44.entities.WatchList.filter({}),
     enabled: !!userEmail,
   });
 
@@ -164,7 +164,7 @@ export default function MyWatchListPage() {
 
   const { data: notes = [] } = useQuery({
     queryKey: ['myNotes', userEmail],
-    queryFn: () => base44.entities.PlayerNote.filter({ created_by: userEmail }),
+    queryFn: () => base44.entities.PlayerNote.filter({}),
     enabled: !!userEmail,
   });
 

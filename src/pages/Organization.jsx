@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Users, Crown, Copy, Check, LogOut, Plus, KeyRound, RefreshCw, Loader2, AlertCircle, UserPlus, Lock, Mail, Send } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Users, Crown, Copy, Check, LogOut, Plus, KeyRound, RefreshCw, Loader2, AlertCircle, UserPlus, Lock, Mail, Send, Share2 } from "lucide-react";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
 import { sendEmail } from "../lib/sendEmail";
@@ -30,6 +31,8 @@ export default function OrganizationPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteSent, setInviteSent] = useState(false);
   const [inviting, setInviting] = useState(false);
+  const [shareAsk, setShareAsk] = useState(false);   // popup post-inscription
+  const [sharing, setSharing] = useState(false);
 
   // Groupe + membres via la fonction serveur (rôle service) : visible par TOUS
   // les membres, pas seulement les admins (User.list est réservé aux admins).
@@ -63,6 +66,20 @@ export default function OrganizationPage() {
     } finally {
       setBusy(null);
     }
+  };
+
+  // Rejoindre : si ça réussit, on propose (popup) de partager ses données.
+  const handleJoin = async () => {
+    const res = await run("joinGroup", { code }, "join");
+    if (res?.ok) setShareAsk(true);
+  };
+
+  // L'utilisateur ACCEPTE de partager ses données existantes avec le groupe.
+  const acceptShare = async () => {
+    setSharing(true);
+    await invokeFn("groupManager", { action: "shareMyData" });
+    setSharing(false); setShareAsk(false);
+    refresh();
   };
 
   const copyCode = () => {
@@ -131,7 +148,7 @@ export default function OrganizationPage() {
               <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><KeyRound className="w-4 h-4 text-indigo-600" /> {t(lang, "session.group.joinTitle")}</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder={t(lang, "session.group.joinPh")} maxLength={6} className="tracking-[0.3em] font-mono text-center uppercase" />
-                <Button onClick={() => run("joinGroup", { code }, "join")} disabled={code.trim().length < 4 || busy} className="w-full bg-indigo-600 hover:bg-indigo-700">
+                <Button onClick={handleJoin} disabled={code.trim().length < 4 || busy} className="w-full bg-indigo-600 hover:bg-indigo-700">
                   {busy === "join" ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}{t(lang, "session.group.join")}
                 </Button>
               </CardContent>
@@ -221,6 +238,23 @@ export default function OrganizationPage() {
           </>
         )}
       </div>
+
+      {/* Popup post-inscription : partager ses données existantes ? */}
+      <Dialog open={shareAsk} onOpenChange={(o) => { if (!o && !sharing) setShareAsk(false); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Share2 className="w-5 h-5 text-indigo-600" /> {t(lang, "session.group.shareTitle")}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-slate-600">{t(lang, "session.group.shareDesc")}</p>
+          <p className="text-xs text-slate-400 mt-1">{t(lang, "session.group.shareNote")}</p>
+          <div className="flex items-center justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setShareAsk(false)} disabled={sharing}>{t(lang, "session.group.shareNo")}</Button>
+            <Button onClick={acceptShare} disabled={sharing} className="bg-indigo-600 hover:bg-indigo-700">
+              {sharing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Share2 className="w-4 h-4 mr-2" />}{t(lang, "session.group.shareYes")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

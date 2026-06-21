@@ -43,7 +43,7 @@ export default function TransferManagementPage() {
 
   const { data: negociations = [] } = useQuery({
     queryKey: ['negociations', userEmail],
-    queryFn: () => base44.entities.TransferNegociation.filter({ created_by: userEmail }),
+    queryFn: () => base44.entities.TransferNegociation.filter({}),
     enabled: !!userEmail,
   });
 
@@ -55,19 +55,19 @@ export default function TransferManagementPage() {
 
   const { data: transfers = [] } = useQuery({
     queryKey: ['transfers', user?.id],
-    queryFn: () => base44.entities.Transfer.filter({ created_by_id: user.id }),
+    queryFn: () => base44.entities.Transfer.filter({}),
     enabled: !!user?.id,
   });
 
   const { data: teams = [] } = useQuery({
     queryKey: ['teams', userEmail],
-    queryFn: () => base44.entities.Team.filter({ created_by: userEmail }),
+    queryFn: () => base44.entities.Team.filter({}),
     enabled: !!userEmail,
   });
 
   const { data: teamPlayers = [] } = useQuery({
     queryKey: ['team-players', userEmail],
-    queryFn: () => base44.entities.TeamPlayer.filter({ created_by: userEmail }),
+    queryFn: () => base44.entities.TeamPlayer.filter({}),
     enabled: !!userEmail,
   });
 

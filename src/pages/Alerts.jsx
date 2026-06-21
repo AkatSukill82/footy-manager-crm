@@ -33,25 +33,25 @@ export default function AlertsPage() {
 
   const { data: watchList = [] } = useQuery({
     queryKey: ['watchList', userEmail],
-    queryFn: () => base44.entities.WatchList.filter({ created_by: userEmail }),
+    queryFn: () => base44.entities.WatchList.filter({}),
     enabled: !!userEmail,
   });
 
   const { data: transfers = [] } = useQuery({
     queryKey: ['transfers', user?.id],
-    queryFn: () => base44.entities.Transfer.filter({ created_by_id: user.id }),
+    queryFn: () => base44.entities.Transfer.filter({}),
     enabled: !!user?.id,
   });
 
   const { data: negociations = [] } = useQuery({
     queryKey: ['negociations', userEmail],
-    queryFn: () => base44.entities.TransferNegociation.filter({ created_by: userEmail }),
+    queryFn: () => base44.entities.TransferNegociation.filter({}),
     enabled: !!userEmail,
   });
 
   const { data: reminders = [] } = useQuery({
     queryKey: ['reminders-alerts', userEmail],
-    queryFn: () => base44.entities.Reminder.filter({ created_by: userEmail }),
+    queryFn: () => base44.entities.Reminder.filter({}),
     enabled: !!userEmail,
   });
 
@@ -68,7 +68,7 @@ export default function AlertsPage() {
 
   const { data: teams = [] } = useQuery({
     queryKey: ['my-teams', userEmail],
-    queryFn: () => base44.entities.Team.filter({ created_by: userEmail }),
+    queryFn: () => base44.entities.Team.filter({}),
     enabled: !!userEmail,
   });
 

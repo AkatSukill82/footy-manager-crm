@@ -43,7 +43,7 @@ export default function AgentNetworkPage() {
   const userEmail = user?.email;
   const { data: teams = [] } = useQuery({
     queryKey: ['teams', userEmail],
-    queryFn: () => base44.entities.Team.filter({ created_by: userEmail }),
+    queryFn: () => base44.entities.Team.filter({}),
     enabled: !!userEmail,
   });
 

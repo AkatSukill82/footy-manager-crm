@@ -35,19 +35,19 @@ export default function ReportsPage() {
 
   const { data: teams = [], isLoading: loadingTeams } = useQuery({
     queryKey: ['teams', userEmail],
-    queryFn: () => base44.entities.Team.filter({ created_by: userEmail }),
+    queryFn: () => base44.entities.Team.filter({}),
     enabled: !!userEmail,
   });
 
   const { data: teamPlayers = [] } = useQuery({
     queryKey: ['team-players', userEmail],
-    queryFn: () => base44.entities.TeamPlayer.filter({ created_by: userEmail }),
+    queryFn: () => base44.entities.TeamPlayer.filter({}),
     enabled: !!userEmail,
   });
 
   const { data: matches = [] } = useQuery({
     queryKey: ['matches', userEmail],
-    queryFn: () => base44.entities.Match.filter({ created_by: userEmail }),
+    queryFn: () => base44.entities.Match.filter({}),
     enabled: !!userEmail,
   });
 

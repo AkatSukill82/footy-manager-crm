@@ -90,25 +90,25 @@ export default function Dashboard() {
 
   const { data: watchList = [] } = useQuery({
     queryKey: ['watchList', userEmail],
-    queryFn: () => base44.entities.WatchList.filter({ created_by: userEmail }),
+    queryFn: () => base44.entities.WatchList.filter({}),
     enabled: !!userEmail,
   });
 
   const { data: reminders = [] } = useQuery({
     queryKey: ['dashboard-reminders', userEmail],
-    queryFn: () => base44.entities.Reminder.filter({ created_by: userEmail }),
+    queryFn: () => base44.entities.Reminder.filter({}),
     enabled: !!userEmail,
   });
 
   const { data: negociations = [] } = useQuery({
     queryKey: ['dashboard-negociations', userEmail],
-    queryFn: () => base44.entities.TransferNegociation.filter({ created_by: userEmail }),
+    queryFn: () => base44.entities.TransferNegociation.filter({}),
     enabled: !!userEmail,
   });
 
   const { data: transfers = [] } = useQuery({
     queryKey: ['dashboard-transfers', userEmail],
-    queryFn: () => base44.entities.Transfer.filter({ created_by: userEmail }),
+    queryFn: () => base44.entities.Transfer.filter({}),
     enabled: !!userEmail,
   });
 

@@ -124,9 +124,19 @@ Deno.serve(async (req) => {
     // ── Quitter le groupe ────────────────────────────────────────────────────
     if (action === "leaveGroup") {
       if (!user.organization_id) return Response.json({ ok: false, error: "Vous n'êtes dans aucun groupe." });
-      // Le membre n'avait pas de données partagées → on détache juste l'utilisateur.
+      // Les données que le membre avait choisi de partager redeviennent privées.
+      await stampUserData(svc, user.id, null);
       await base44.auth.updateMe({ organization_id: null });
       return Response.json({ ok: true });
+    }
+
+    // ── Partager MES données existantes avec le groupe (opt-in à l'inscription) ─
+    // Le membre accepte de partager ce qu'il avait → on marque ses données avec
+    // l'organization_id du groupe. Choix volontaire (popup côté front).
+    if (action === "shareMyData") {
+      if (!user.organization_id) return Response.json({ ok: false, error: "Vous n'êtes dans aucun groupe." });
+      const stamped = await stampUserData(svc, user.id, user.organization_id);
+      return Response.json({ ok: true, stamped });
     }
 
     return Response.json({ ok: false, error: `Action inconnue: ${action}` });

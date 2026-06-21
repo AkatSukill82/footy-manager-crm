@@ -45,7 +45,7 @@ export default function PlayersPage() {
 
   const { data: watchList = [] } = useQuery({
     queryKey: ['watchList', userEmail],
-    queryFn: () => base44.entities.WatchList.filter({ created_by: userEmail }),
+    queryFn: () => base44.entities.WatchList.filter({}),
     enabled: !!userEmail,
   });
 

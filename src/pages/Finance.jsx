@@ -233,7 +233,7 @@ export default function FinancePage() {
   });
   const { data: commissions = [], isLoading } = useQuery({
     queryKey: ["commissions", user?.id],
-    queryFn: () => base44.entities.Commission.filter({ created_by_id: user.id }, "-date_echeance"),
+    queryFn: () => base44.entities.Commission.filter({}, "-date_echeance"),
     enabled: !!user?.id,
   });
   const { data: players = [] } = useQuery({

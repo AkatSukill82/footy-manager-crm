@@ -22,7 +22,7 @@ export default function TeamsPage() {
 
   const { data: teams = [], isLoading } = useQuery({
     queryKey: ['teams', userEmail],
-    queryFn: () => base44.entities.Team.filter({ created_by: userEmail }),
+    queryFn: () => base44.entities.Team.filter({}),
     enabled: !!userEmail,
   });
 
