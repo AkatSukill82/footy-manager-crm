@@ -27,9 +27,16 @@ export default function Login() {
     setLoading(true); setError(null); setNotice(null);
     try {
       const res = await base44.auth.loginViaEmailPassword(email.trim(), password);
+      console.log("[login] réponse:", res);  // diagnostic F12
       // Le token peut être au premier niveau ou imbriqué selon le transport.
       const token = res?.access_token || res?.data?.access_token || res?.token;
-      if (!token) { setError(t(lang, "login.error")); setLoading(false); return; }
+      if (!token) {
+        // Diagnostic : on montre ce que le serveur a réellement renvoyé.
+        const keys = res && typeof res === "object" ? Object.keys(res).join(", ") : String(res);
+        setError(`${t(lang, "login.error")} (réponse sans token — reçu : ${keys || "vide"})`);
+        setLoading(false);
+        return;
+      }
 
       // Persistance + propagation du token PARTOUT où l'app le lit :
       // - localStorage (clés lues par app-params au prochain chargement)
@@ -51,8 +58,10 @@ export default function Login() {
       // l'app affiche le dashboard, sans rechargement ni boucle vers le login.
       await checkAppState();
     } catch (err) {
+      console.error("[login] erreur:", err, err?.response);  // diagnostic F12
       // Affiche le vrai message serveur quand il existe (e-mail non vérifié, etc.).
-      setError(err?.response?.data?.message || err?.response?.data?.detail || err?.message || t(lang, "login.error"));
+      const status = err?.response?.status ? `[${err.response.status}] ` : "";
+      setError(status + (err?.response?.data?.message || err?.response?.data?.detail || err?.message || t(lang, "login.error")));
       setLoading(false);
     }
   };
