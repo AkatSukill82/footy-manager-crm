@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Check, Globe, Briefcase, Building2 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { User, Check, Globe, Briefcase, Building2, Lock, ShieldCheck } from "lucide-react";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
 import { extraTranslations } from "../i18n/extra";
@@ -15,6 +14,8 @@ const LANGUAGES = [
   { code: "es", label: "Español",  flag: "🇪🇸", native: "Español" },
   { code: "en", label: "English",  flag: "🇬🇧", native: "English" },
 ];
+
+const ROLE_OPTIONS = ["CEO", "Directeur sportif", "Scout", "Agent", "Analyste", "Recruteur", "Autre"];
 
 function te(lang, key) {
   const keys = key.split(".");
@@ -28,9 +29,11 @@ export default function ProfilePage() {
   const queryClient = useQueryClient();
   const [saved, setSaved] = useState(false);
   const [orgSaved, setOrgSaved] = useState(false);
-  const [roleSaved, setRoleSaved] = useState(false);
   const [orgForm, setOrgForm] = useState({ organisation: "", poste: "" });
   const [orgFormLoaded, setOrgFormLoaded] = useState(false);
+  const [roleChoice, setRoleChoice] = useState("");
+  const [roleSaved, setRoleSaved] = useState(false);
+  const [roleSaving, setRoleSaving] = useState(false);
 
   const { data: user } = useQuery({
     queryKey: ["currentUser"],
@@ -76,11 +79,19 @@ export default function ProfilePage() {
     setTimeout(() => setOrgSaved(false), 2000);
   };
 
-  const handleSaveRole = async (value) => {
-    await base44.auth.updateMe({ role_metier: value });
-    queryClient.invalidateQueries({ queryKey: ["currentUser"] });
-    setRoleSaved(true);
-    setTimeout(() => setRoleSaved(false), 2000);
+  // Le rôle ne peut être défini qu'une seule fois : verrouillé dès qu'il existe.
+  const roleLocked = !!user?.role_metier;
+  const handleSaveRole = async () => {
+    if (roleLocked || !roleChoice) return;
+    setRoleSaving(true);
+    try {
+      await base44.auth.updateMe({ role_metier: roleChoice });
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+      setRoleSaved(true);
+      setTimeout(() => setRoleSaved(false), 2500);
+    } finally {
+      setRoleSaving(false);
+    }
   };
 
   return (
@@ -110,28 +121,6 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between py-3 border-b border-slate-100">
               <span className="text-sm text-slate-500">{t(lang, "profile.email")}</span>
               <span className="text-sm font-medium text-slate-900">{user?.email || "—"}</span>
-            </div>
-            <div className="flex items-center justify-between py-3">
-              <span className="text-sm text-slate-500">Rôle métier</span>
-              <div className="flex items-center gap-2">
-                <Select value={user?.role_metier || ""} onValueChange={handleSaveRole}>
-                  <SelectTrigger className="w-44 h-8 text-sm">
-                    <SelectValue placeholder="Choisir un rôle" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="CEO">CEO</SelectItem>
-                    <SelectItem value="Agent">Agent</SelectItem>
-                    <SelectItem value="Scout">Scout</SelectItem>
-                    <SelectItem value="Directeur Sportif">Directeur Sportif</SelectItem>
-                    <SelectItem value="Responsable Marketing">Responsable Marketing</SelectItem>
-                    <SelectItem value="Analyste">Analyste</SelectItem>
-                    <SelectItem value="Autre">Autre</SelectItem>
-                  </SelectContent>
-                </Select>
-                <span className={`flex items-center gap-1 text-xs text-green-600 transition-all duration-300 ${roleSaved ? "opacity-100" : "opacity-0"}`}>
-                  <Check className="w-3.5 h-3.5" /> Enregistré
-                </span>
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -173,6 +162,47 @@ export default function ProfilePage() {
                 {te(lang, "profile.orgSaved")}
               </span>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Mon rôle (modifiable une seule fois) */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-indigo-500" />
+              {te(lang, "profile.roleSection")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {roleLocked ? (
+              <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <div className="flex items-center gap-2">
+                  {user.role_metier === "CEO" && <span className="text-[11px] font-bold bg-amber-100 text-amber-700 rounded-full px-2 py-0.5">CEO</span>}
+                  <span className="text-sm font-semibold text-slate-900">{user.role_metier}</span>
+                </div>
+                <span className="flex items-center gap-1.5 text-xs text-slate-400"><Lock className="w-3.5 h-3.5" /> {te(lang, "profile.roleLocked")}</span>
+              </div>
+            ) : (
+              <>
+                <select
+                  value={roleChoice}
+                  onChange={(e) => setRoleChoice(e.target.value)}
+                  className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+                >
+                  <option value="">{te(lang, "profile.rolePick")}</option>
+                  {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+                <p className="text-xs text-amber-600">{te(lang, "profile.roleHint")}</p>
+                <div className="flex items-center gap-3">
+                  <Button onClick={handleSaveRole} disabled={!roleChoice || roleSaving} className="bg-indigo-600 hover:bg-indigo-700">
+                    {te(lang, "profile.roleSave")}
+                  </Button>
+                  <span className={`flex items-center gap-1.5 text-sm text-green-600 transition-all duration-300 ${roleSaved ? "opacity-100" : "opacity-0"}`}>
+                    <Check className="w-4 h-4" /> {te(lang, "profile.orgSaved")}
+                  </span>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 

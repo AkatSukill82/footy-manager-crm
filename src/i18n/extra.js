@@ -1,7 +1,7 @@
 // Extra translations that extend the main translations file
 export const extraTranslations = {
   fr: {
-    nav: { organization: "Organisation" },
+    nav: { organization: "Groupe" },
     profile: {
       organisation: "Organisation / Agence",
       organisationPlh: "ex: Elite Scout Agency",
@@ -9,10 +9,15 @@ export const extraTranslations = {
       postePlh: "ex: Scout, Directeur sportif…",
       orgSection: "Mon organisation",
       orgSaved: "Profil mis à jour !",
+      roleSection: "Mon rôle",
+      rolePick: "Choisir votre rôle…",
+      roleHint: "⚠️ Le rôle ne peut être défini qu'une seule fois. Seul un CEO peut créer un groupe.",
+      roleLocked: "Rôle défini — non modifiable.",
+      roleSave: "Définir mon rôle",
     },
   },
   es: {
-    nav: { organization: "Organización" },
+    nav: { organization: "Grupo" },
     profile: {
       organisation: "Organización / Agencia",
       organisationPlh: "ej: Elite Scout Agency",
@@ -20,10 +25,15 @@ export const extraTranslations = {
       postePlh: "ej: Ojeador, Director deportivo…",
       orgSection: "Mi organización",
       orgSaved: "¡Perfil actualizado!",
+      roleSection: "Mi rol",
+      rolePick: "Elige tu rol…",
+      roleHint: "⚠️ El rol solo se puede definir una vez. Solo un CEO puede crear un grupo.",
+      roleLocked: "Rol definido — no modificable.",
+      roleSave: "Definir mi rol",
     },
   },
   en: {
-    nav: { organization: "Organisation" },
+    nav: { organization: "Group" },
     profile: {
       organisation: "Organisation / Agency",
       organisationPlh: "e.g. Elite Scout Agency",
@@ -31,6 +41,11 @@ export const extraTranslations = {
       postePlh: "e.g. Scout, Sporting Director…",
       orgSection: "My organisation",
       orgSaved: "Profile updated!",
+      roleSection: "My role",
+      rolePick: "Choose your role…",
+      roleHint: "⚠️ The role can only be set once. Only a CEO can create a group.",
+      roleLocked: "Role set — not editable.",
+      roleSave: "Set my role",
     },
   },
 };

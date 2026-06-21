@@ -18,6 +18,11 @@
       "type": "string",
       "description": "Poste / titre de l'utilisateur (ex: Scout, Directeur sportif...)"
     },
+    "role_metier": {
+      "type": "string",
+      "enum": ["CEO", "Directeur sportif", "Scout", "Agent", "Analyste", "Recruteur", "Autre"],
+      "description": "Rôle métier (modifiable une seule fois). Seul le CEO peut créer un groupe."
+    },
     "organization_id": {
       "type": "string",
       "description": "ID de l'organisation li\u00e9e"

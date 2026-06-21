@@ -57,6 +57,10 @@ Deno.serve(async (req) => {
 
     // ── Créer un groupe ──────────────────────────────────────────────────────
     if (action === "createGroup") {
+      // Seul un CEO peut créer un groupe.
+      if (user.role_metier !== "CEO") {
+        return Response.json({ ok: false, error: "Seul un CEO peut créer un groupe." });
+      }
       if (!nom?.trim()) return Response.json({ ok: false, error: "Nom du groupe requis." });
       const invite = genCode();
       const expires = new Date(Date.now() + CODE_TTL_MS).toISOString();
