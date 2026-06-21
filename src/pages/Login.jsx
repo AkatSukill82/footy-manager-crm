@@ -1,7 +1,5 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { appParams } from "@/lib/app-params";
-import { useAuth } from "../lib/AuthContext";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
 import { BRAND_NAME } from "../lib/brand";
@@ -14,7 +12,6 @@ import { Loader2, ArrowRight, ShieldCheck, Users, Sparkles, Smartphone, Mail, Lo
  */
 export default function Login() {
   const { lang, setLang } = useLanguage();
-  const { checkAppState } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,40 +23,10 @@ export default function Login() {
     if (!email.trim() || !password) return;
     setLoading(true); setError(null); setNotice(null);
     try {
-      const res = await base44.auth.loginViaEmailPassword(email.trim(), password);
-      console.log("[login] réponse:", res);  // diagnostic F12
-      // Le token peut être au premier niveau ou imbriqué selon le transport.
-      const token = res?.access_token || res?.data?.access_token || res?.token;
-      if (!token) {
-        // Diagnostic : on montre ce que le serveur a réellement renvoyé.
-        const keys = res && typeof res === "object" ? Object.keys(res).join(", ") : String(res);
-        setError(`${t(lang, "login.error")} (réponse sans token — reçu : ${keys || "vide"})`);
-        setLoading(false);
-        return;
-      }
-
-      // Persistance + propagation du token PARTOUT où l'app le lit :
-      // - localStorage (clés lues par app-params au prochain chargement)
-      // - appParams.token (objet mis en cache au démarrage → sinon non rafraîchi)
-      // - client SDK
-      try {
-        localStorage.setItem("base44_access_token", token);
-        localStorage.setItem("token", token);
-      } catch { /* quota */ }
-      appParams.token = token;
-      base44.setToken?.(token);
-
-      // Vérifie que la session est réellement valide.
-      let ok = false;
-      try { ok = !!(await base44.auth.me()); } catch { ok = false; }
-      if (!ok) { setError(t(lang, "login.sessionError")); setLoading(false); return; }
-
-      // Relance le flux d'auth en mémoire → isAuthenticated devient vrai →
-      // l'app affiche le dashboard, sans rechargement ni boucle vers le login.
-      await checkAppState();
+      await base44.auth.loginViaEmailPassword(email.trim(), password);
+      // Hard redirect : recharge l'app avec le token persisté par le SDK → dashboard
+      window.location.href = '/';
     } catch (err) {
-      console.error("[login] erreur:", err, err?.response);  // diagnostic F12
-      // Affiche le vrai message serveur quand il existe (e-mail non vérifié, etc.).
       const status = err?.response?.status ? `[${err.response.status}] ` : "";
       setError(status + (err?.response?.data?.message || err?.response?.data?.detail || err?.message || t(lang, "login.error")));
       setLoading(false);
