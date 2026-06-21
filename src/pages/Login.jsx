@@ -24,11 +24,11 @@ export default function Login() {
     setLoading(true); setError(null); setNotice(null);
     try {
       await base44.auth.loginViaEmailPassword(email.trim(), password);
-      // Hard redirect : recharge l'app avec le token persisté par le SDK → dashboard
+      // Token persisté par le SDK → recharge l'app, authentifiée → dashboard.
       window.location.href = '/';
     } catch (err) {
-      const status = err?.response?.status ? `[${err.response.status}] ` : "";
-      setError(status + (err?.response?.data?.message || err?.response?.data?.detail || err?.message || t(lang, "login.error")));
+      // Message serveur lisible quand il existe (e-mail non vérifié, etc.).
+      setError(err?.response?.data?.message || err?.response?.data?.detail || t(lang, "login.error"));
       setLoading(false);
     }
   };
