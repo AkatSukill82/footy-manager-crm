@@ -93,7 +93,13 @@ export default function OrganizationPage() {
     setResharing(true); setReshareMsg(null);
     const res = await invokeFn("groupManager", { action: "shareMyData" });
     setResharing(false);
-    setReshareMsg(res?.ok ? t(lang, "session.group.reshareDone", { n: res.stamped ?? 0 }) : (res?.error || "Erreur"));
+    if (!res?.ok) { setReshareMsg(res?.error || "Erreur"); refresh(); return; }
+    const d = res.details || {};
+    const contacts = (d.Contact || 0) + (d.ClubContact || 0);
+    let msg = t(lang, "session.group.reshareDone", { n: res.stamped ?? 0 });
+    if (contacts) msg += ` · ${contacts} contact(s)`;
+    if (res.errors?.length) msg += ` ⚠️ ${res.errors.join("; ")}`;
+    setReshareMsg(msg);
     refresh();
   };
 

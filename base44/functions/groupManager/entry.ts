@@ -30,20 +30,28 @@ function genCode(): string {
 }
 
 // Marque (ou démarque, orgId=null) toutes les données de l'utilisateur.
+// Renvoie un détail par entité + les erreurs (diagnostic, ne les avale plus).
 async function stampUserData(svc: any, userId: string, orgId: string | null) {
   let updated = 0;
+  const perEntity: Record<string, number> = {};
+  const errors: string[] = [];
   for (const ent of SHARED) {
     try {
       const records = await svc.entities[ent].filter({ created_by_id: userId });
+      let n = 0;
       for (const r of records) {
         if ((r.organization_id ?? null) !== orgId) {
           await svc.entities[ent].update(r.id, { organization_id: orgId });
-          updated++;
+          n++;
         }
       }
-    } catch { /* entité absente / non filtrable → on ignore */ }
+      if (n > 0) perEntity[ent] = n;
+      updated += n;
+    } catch (e: any) {
+      errors.push(`${ent}: ${e?.message || "erreur"}`);
+    }
   }
-  return updated;
+  return { updated, perEntity, errors };
 }
 
 Deno.serve(async (req) => {
@@ -89,8 +97,8 @@ Deno.serve(async (req) => {
         nom: nom.trim(), invite_code: invite, invite_code_expires: expires,
       });
       await base44.auth.updateMe({ organization_id: org.id });
-      const stamped = await stampUserData(svc, user.id, org.id);
-      return Response.json({ ok: true, group: { id: org.id, nom: org.nom, invite_code: invite, invite_code_expires: expires }, stamped });
+      const res = await stampUserData(svc, user.id, org.id);
+      return Response.json({ ok: true, group: { id: org.id, nom: org.nom, invite_code: invite, invite_code_expires: expires }, stamped: res.updated, details: res.perEntity, errors: res.errors });
     }
 
     // ── (Chef) (re)générer un code d'invitation ──────────────────────────────
@@ -135,8 +143,8 @@ Deno.serve(async (req) => {
     // l'organization_id du groupe. Choix volontaire (popup côté front).
     if (action === "shareMyData") {
       if (!user.organization_id) return Response.json({ ok: false, error: "Vous n'êtes dans aucun groupe." });
-      const stamped = await stampUserData(svc, user.id, user.organization_id);
-      return Response.json({ ok: true, stamped });
+      const res = await stampUserData(svc, user.id, user.organization_id);
+      return Response.json({ ok: true, stamped: res.updated, details: res.perEntity, errors: res.errors });
     }
 
     return Response.json({ ok: false, error: `Action inconnue: ${action}` });
