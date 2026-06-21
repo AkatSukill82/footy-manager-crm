@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +7,7 @@ import { Image, Loader2, CheckCircle2, Search, Link2, AlertCircle } from "lucide
 import ImageSearchPicker from "../ui/ImageSearchPicker";
 
 export default function ImportTransfermarktPhoto({ player, onApply }) {
+  const queryClient = useQueryClient();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [manualUrl, setManualUrl] = useState("");
   const [manualMode, setManualMode] = useState(false);
@@ -20,6 +22,9 @@ export default function ImportTransfermarktPhoto({ player, onApply }) {
     try {
       await base44.entities.Player.update(player.id, { photo_url: url });
       onApply?.({ ...player, photo_url: url });
+      // Rafraîchit la fiche + la liste immédiatement (pas besoin de recréer).
+      queryClient.invalidateQueries({ queryKey: ['player', player.id] });
+      queryClient.invalidateQueries({ queryKey: ['players'] });
       setApplied(true);
       setTimeout(() => setApplied(false), 3000);
     } catch (e) {
