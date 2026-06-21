@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Video, Plus, Play, Trash2, ExternalLink, Loader2, Film, AlertCircle } from "lucide-react";
+import { Video, Plus, Play, Trash2, ExternalLink, Loader2, Film, AlertCircle, Upload, Check } from "lucide-react";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 
 const TYPES = [
@@ -26,6 +26,12 @@ function youtubeId(url) {
   if (!url) return null;
   const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
   return m ? m[1] : null;
+}
+
+// Détecte un fichier vidéo direct (ex: uploadé depuis le PC) lisible par <video>.
+function isVideoFile(url) {
+  if (!url) return false;
+  return /\.(mp4|webm|ogg|ogv|mov|m4v|m3u8)(\?|#|$)/i.test(url);
 }
 
 function VideoCard({ v, onDelete }) {
@@ -65,6 +71,9 @@ function VideoCard({ v, onDelete }) {
               </div>
             </div>
           </button>
+        ) : isVideoFile(v.url) ? (
+          // Fichier vidéo uploadé depuis le PC : lecteur natif.
+          <video src={v.url} controls playsInline preload="metadata" className="w-full h-full bg-black object-contain" />
         ) : (
           <a href={v.url} target="_blank" rel="noopener noreferrer" className="w-full h-full flex flex-col items-center justify-center text-slate-400 hover:text-white transition-colors">
             <Film className="w-8 h-8 mb-1" />
@@ -94,7 +103,27 @@ export default function PlayerVideos({ player }) {
   const currentUser = useCurrentUser();
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = React.useRef(null);
   const [f, setF] = useState({ titre: "", url: "", type: "highlights", date_video: "" });
+
+  // Upload d'un fichier vidéo depuis le PC → devient le lien de la vidéo.
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      if (!file_url) throw new Error("upload vide");
+      setF(s => ({ ...s, url: file_url, titre: s.titre?.trim() ? s.titre : file.name }));
+    } catch {
+      setError("Échec de l'envoi du fichier vidéo.");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
 
   const { data: videos = [], isLoading } = useQuery({
     queryKey: ["player-videos", player.id],
@@ -164,7 +193,18 @@ export default function PlayerVideos({ player }) {
                 <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /><span>{error}</span>
               </div>
             )}
-            <div><Label className="text-xs">Lien vidéo *</Label><Input value={f.url} onChange={set("url")} placeholder="https://youtube.com/watch?v=…" /></div>
+            <div>
+              <Label className="text-xs">Lien vidéo (YouTube…) ou fichier du PC *</Label>
+              <Input value={f.url} onChange={set("url")} placeholder="https://youtube.com/watch?v=… ou importez un fichier" />
+              <div className="flex items-center gap-2 mt-2">
+                <input ref={fileRef} type="file" accept="video/*" onChange={handleFile} className="hidden" />
+                <Button type="button" size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={uploading} className="h-8 text-xs gap-1.5">
+                  {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                  {uploading ? "Envoi…" : "Importer une vidéo du PC"}
+                </Button>
+                {isVideoFile(f.url) && !uploading && <span className="text-[11px] text-green-600 flex items-center gap-1"><Check className="w-3 h-3" /> fichier prêt</span>}
+              </div>
+            </div>
             <div><Label className="text-xs">Titre</Label><Input value={f.titre} onChange={set("titre")} placeholder="Ex: Highlights saison 2025" /></div>
             <div className="grid grid-cols-2 gap-3">
               <div>
