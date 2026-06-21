@@ -229,7 +229,7 @@ export default function PlayerSearchPage() {
       if (list.length) return { list, source: "BeSoccer" };
     } catch { /* on tente la source suivante */ }
 
-    // 3. Transfermarkt — dernier recours, ne renvoie qu'un profil → 1 candidat
+    // 3. Transfermarkt — ne renvoie qu'un profil → 1 candidat
     try {
       const body = await invokeFn("transfermarktProxy", { action: "searchAndGet", query: q });
       const p = body?.ok ? body.player : null;
@@ -245,6 +245,33 @@ export default function PlayerSearchPage() {
             transfermarkt_id: p.transfermarkt_id ?? null,
           }],
           source: "Transfermarkt",
+        };
+      }
+    } catch { /* on tente la source suivante */ }
+
+    // 4. Soccerdonna — football FÉMININ (les sources ci-dessus n'ont pas les joueuses)
+    try {
+      const body = await invokeFn("soccerdonnaProxy", { action: "searchAndGet", query: q });
+      const p = body?.ok ? body.player : null;
+      if (p?.nom) {
+        // Candidat riche : la fiche soccerdonna porte déjà toutes les infos perso.
+        return {
+          list: [{
+            nom:            p.nom,
+            poste:          p.poste ?? null,
+            nationalite:    p.nationalite ?? null,
+            club_actuel:    p.club_actuel ?? null,
+            photo_url:      p.photo_url ?? null,
+            date_naissance: p.date_naissance ?? null,
+            taille:         p.taille ?? null,
+            pied_fort:      p.pied_fort ?? null,
+            valeur_marchande: p.valeur_marchande ?? null,
+            contrat_fin:    p.contrat_fin ?? null,
+            soccerdonna_id: p.soccerdonna_id ?? null,
+            sexe:           "Féminin",
+            _soccerdonna:   true,
+          }],
+          source: "Soccerdonna",
         };
       }
     } catch { /* aucune source n'a abouti */ }
@@ -310,6 +337,14 @@ export default function PlayerSearchPage() {
   const fetchFullProfile = async (candidate) => {
     setLoadingFull(true);
     setCandidates(null);
+
+    // Joueuse trouvée sur Soccerdonna : la fiche porte déjà toutes les infos
+    // perso ; les sources masculines ne l'ont pas → on l'utilise directement.
+    if (candidate._soccerdonna) {
+      setResult({ ...candidate, stats_saison: null, sources_perso: ["Soccerdonna"] });
+      setLoadingFull(false);
+      return;
+    }
 
     const profileKey = `profile:${candidate.fotmob_id || normalizeQuery(candidate.nom)}`;
     const cachedProfile = getCache(profileKey);
@@ -404,6 +439,8 @@ export default function PlayerSearchPage() {
         valeur_marchande: result.valeur_marchande,
         numero_maillot:   result.numero_maillot,
         agent:            result.agent,
+        sexe:             result.sexe,
+        soccerdonna_id:   result.soccerdonna_id,
         transfermarkt_id: result.transfermarkt_id,
         sofascore_id:     s?.sofascore_id,
         fotmob_id:        s?.fotmob_id,

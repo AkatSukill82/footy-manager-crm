@@ -181,6 +181,15 @@
       "type": "string",
       "description": "ID BeSoccer"
     },
+    "soccerdonna_id": {
+      "type": "string",
+      "description": "ID Soccerdonna (football féminin)"
+    },
+    "sexe": {
+      "type": "string",
+      "enum": ["Masculin", "Féminin"],
+      "description": "Sexe du joueur (Féminin = source Soccerdonna)"
+    },
     "coach": {
       "type": "string",
       "description": "Entra\u00eeneur principal actuel"
