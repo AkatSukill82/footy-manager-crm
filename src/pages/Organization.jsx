@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Users, Crown, Copy, Check, LogOut, Plus, KeyRound, RefreshCw, Loader2, AlertCircle, UserPlus, Lock, Mail, Send, Share2 } from "lucide-react";
+import { Users, Crown, Copy, Check, LogOut, Plus, KeyRound, RefreshCw, Loader2, AlertCircle, UserPlus, Mail, Send, Share2 } from "lucide-react";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
 import { sendEmail } from "../lib/sendEmail";
@@ -132,27 +132,21 @@ export default function OrganizationPage() {
         )}
 
         {/* ── Pas encore dans un groupe ── */}
+        {/* CEO : Créer + Rejoindre. Non-CEO : uniquement la case code. */}
         {!orgId && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className={isCEO ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "max-w-md mx-auto"}>
             {/* Créer un groupe : CEO uniquement */}
-            <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><Plus className="w-4 h-4 text-indigo-600" /> {t(lang, "session.group.createTitle")}</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                {isCEO ? (
-                  <>
-                    <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t(lang, "session.group.createPh")} />
-                    <Button onClick={() => run("createGroup", { nom: name }, "create")} disabled={!name.trim() || busy} className="w-full bg-slate-900 hover:bg-slate-700">
-                      {busy === "create" ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}{t(lang, "session.group.create")}
-                    </Button>
-                  </>
-                ) : (
-                  <div className="flex items-start gap-2 text-xs text-slate-500 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2.5">
-                    <Lock className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                    <span>{t(lang, "session.group.ceoOnly")}</span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {isCEO && (
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><Plus className="w-4 h-4 text-indigo-600" /> {t(lang, "session.group.createTitle")}</CardTitle></CardHeader>
+                <CardContent className="space-y-3">
+                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t(lang, "session.group.createPh")} />
+                  <Button onClick={() => run("createGroup", { nom: name }, "create")} disabled={!name.trim() || busy} className="w-full bg-slate-900 hover:bg-slate-700">
+                    {busy === "create" ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}{t(lang, "session.group.create")}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><KeyRound className="w-4 h-4 text-indigo-600" /> {t(lang, "session.group.joinTitle")}</CardTitle></CardHeader>
