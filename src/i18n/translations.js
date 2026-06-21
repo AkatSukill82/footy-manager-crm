@@ -16,6 +16,7 @@ export const translations = {
   ═══════════════════════════════════════════════ */
   fr: {
     session: {
+      group: { title: "Groupe", subtitle: "Travaillez à plusieurs : partagez joueurs, clubs et contacts.", none: "Vous n'êtes dans aucun groupe.", createTitle: "Créer un groupe", createPh: "Nom du groupe", create: "Créer", joinTitle: "Rejoindre un groupe", joinPh: "Code à 6 caractères", join: "Rejoindre", or: "ou", members: "Membres", chef: "Chef", you: "vous", codeTitle: "Code d'invitation", codeDesc: "Partagez ce code (valable 30 min). Le membre le saisit pour rejoindre.", generate: "Générer un code", regenerate: "Nouveau code", copy: "Copier", copied: "Copié !", expiresIn: "Expire dans {m} min", expired: "Code expiré", noCode: "Aucun code actif.", leave: "Quitter le groupe", leaveConfirm: "Quitter ce groupe ? Vos données redeviendront privées.", working: "Traitement…", joinedOk: "Vous avez rejoint le groupe.", chefOnly: "Seul le chef peut générer un code." },
       upcoming: { title: "Prochains matchs", searching: "Recherche du calendrier…", error: "Recherche impossible pour le moment.", none: "Aucun match à venir trouvé.", today: "Aujourd'hui", tomorrow: "Demain", agenda: "Agenda", added: "Ajouté", retry: "Réessayer", refresh: "Actualiser", addTooltip: "Ajouter ce match à mon Google Agenda", national: "Sélection" },
       squad: { title: "Effectif", loading: "Récupération de l'effectif…", error: "Effectif introuvable pour le moment.", none: "Aucun effectif trouvé.", gk: "Gardiens", def: "Défenseurs", mid: "Milieux", att: "Attaquants", other: "Autres", yourPlayers: "Vos joueurs", years: "ans", inCrm: "Dans votre CRM", disclaimer: "Effectif récupéré via recherche web — à vérifier.", fallbackNote: "Effectif complet introuvable via le web — seuls vos joueurs suivis sont affichés.", refresh: "Actualiser l'effectif", totalValue: "Valeur de l'effectif", adding: "Ajout…", addTooltip: "Ajouter ce joueur au CRM", addConfirm: "Intégrer {nom} à votre CRM ?" },
       clubInfo: { standing: "Classement", form: "Forme (5 derniers)", lastResults: "Derniers résultats", nextMatch: "Prochain match", staff: "Staff", loading: "Chargement des infos du club…", error: "Infos club indisponibles.", none: "Aucune info trouvée.", refresh: "Actualiser", pts: "pts", win: "V", draw: "N", loss: "D" },
@@ -40,7 +41,7 @@ export const translations = {
       teams: "Équipes", transfers: "Transferts", reports: "Rapports",
       network: "Réseau Agents", calendar: "Calendrier", predictive: "Prédictif IA",
       news: "Journal du jour", scouting: "Scouting IA", import: "Import Excel",
-      profile: "Mon profil", logout: "Déconnexion", more: "Plus", darkMode: "Mode sombre", lightMode: "Mode clair",
+      profile: "Mon profil", logout: "Déconnexion", more: "Plus", organization: "Groupe", darkMode: "Mode sombre", lightMode: "Mode clair",
     },
     profile: {
       title: "Mon profil", subtitle: "Paramètres de votre compte",
@@ -969,6 +970,7 @@ export const translations = {
   ═══════════════════════════════════════════════ */
   es: {
     session: {
+      group: { title: "Grupo", subtitle: "Trabajad en equipo: compartid jugadores, clubes y contactos.", none: "No perteneces a ningún grupo.", createTitle: "Crear un grupo", createPh: "Nombre del grupo", create: "Crear", joinTitle: "Unirse a un grupo", joinPh: "Código de 6 caracteres", join: "Unirse", or: "o", members: "Miembros", chef: "Jefe", you: "tú", codeTitle: "Código de invitación", codeDesc: "Comparte este código (válido 30 min). El miembro lo introduce para unirse.", generate: "Generar un código", regenerate: "Nuevo código", copy: "Copiar", copied: "¡Copiado!", expiresIn: "Caduca en {m} min", expired: "Código caducado", noCode: "Ningún código activo.", leave: "Salir del grupo", leaveConfirm: "¿Salir de este grupo? Tus datos volverán a ser privados.", working: "Procesando…", joinedOk: "Te has unido al grupo.", chefOnly: "Solo el jefe puede generar un código." },
       upcoming: { title: "Próximos partidos", searching: "Buscando el calendario…", error: "Búsqueda no disponible por ahora.", none: "Ningún partido próximo encontrado.", today: "Hoy", tomorrow: "Mañana", agenda: "Agenda", added: "Añadido", retry: "Reintentar", refresh: "Actualizar", addTooltip: "Añadir este partido a mi Google Calendar", national: "Selección" },
       squad: { title: "Plantilla", loading: "Obteniendo la plantilla…", error: "Plantilla no encontrada por ahora.", none: "No se encontró plantilla.", gk: "Porteros", def: "Defensas", mid: "Centrocampistas", att: "Delanteros", other: "Otros", yourPlayers: "Tus jugadores", years: "años", inCrm: "En tu CRM", disclaimer: "Plantilla obtenida por búsqueda web — a verificar.", fallbackNote: "Plantilla completa no encontrada en la web — solo se muestran tus jugadores seguidos.", refresh: "Actualizar la plantilla", totalValue: "Valor de la plantilla", adding: "Añadiendo…", addTooltip: "Añadir este jugador al CRM", addConfirm: "¿Integrar a {nom} en tu CRM?" },
       clubInfo: { standing: "Clasificación", form: "Forma (últimos 5)", lastResults: "Últimos resultados", nextMatch: "Próximo partido", staff: "Cuerpo técnico", loading: "Cargando la información del club…", error: "Información del club no disponible.", none: "No se encontró información.", refresh: "Actualizar", pts: "pts", win: "V", draw: "E", loss: "D" },
@@ -993,7 +995,7 @@ export const translations = {
       teams: "Equipos", transfers: "Transferencias", reports: "Informes",
       network: "Red de Agentes", calendar: "Calendario", predictive: "IA Predictiva",
       news: "Noticias del día", scouting: "Scouting IA", import: "Importar Excel",
-      profile: "Mi perfil", logout: "Cerrar sesión", more: "Más", darkMode: "Modo oscuro", lightMode: "Modo claro",
+      profile: "Mi perfil", logout: "Cerrar sesión", more: "Más", organization: "Grupo", darkMode: "Modo oscuro", lightMode: "Modo claro",
     },
     profile: {
       title: "Mi perfil", subtitle: "Configuración de tu cuenta",
@@ -1914,6 +1916,7 @@ export const translations = {
   ═══════════════════════════════════════════════ */
   en: {
     session: {
+      group: { title: "Group", subtitle: "Work as a team: share players, clubs and contacts.", none: "You are not in any group.", createTitle: "Create a group", createPh: "Group name", create: "Create", joinTitle: "Join a group", joinPh: "6-character code", join: "Join", or: "or", members: "Members", chef: "Owner", you: "you", codeTitle: "Invite code", codeDesc: "Share this code (valid 30 min). The member enters it to join.", generate: "Generate a code", regenerate: "New code", copy: "Copy", copied: "Copied!", expiresIn: "Expires in {m} min", expired: "Code expired", noCode: "No active code.", leave: "Leave group", leaveConfirm: "Leave this group? Your data will become private again.", working: "Working…", joinedOk: "You joined the group.", chefOnly: "Only the owner can generate a code." },
       upcoming: { title: "Upcoming matches", searching: "Searching the schedule…", error: "Search unavailable right now.", none: "No upcoming match found.", today: "Today", tomorrow: "Tomorrow", agenda: "Calendar", added: "Added", retry: "Retry", refresh: "Refresh", addTooltip: "Add this match to my Google Calendar", national: "National team" },
       squad: { title: "Squad", loading: "Fetching the squad…", error: "Squad not found right now.", none: "No squad found.", gk: "Goalkeepers", def: "Defenders", mid: "Midfielders", att: "Forwards", other: "Others", yourPlayers: "Your players", years: "y/o", inCrm: "In your CRM", disclaimer: "Squad fetched via web search — to be verified.", fallbackNote: "Full squad not found on the web — only your tracked players are shown.", refresh: "Refresh squad", totalValue: "Squad value", adding: "Adding…", addTooltip: "Add this player to the CRM", addConfirm: "Add {nom} to your CRM?" },
       clubInfo: { standing: "Standing", form: "Form (last 5)", lastResults: "Recent results", nextMatch: "Next match", staff: "Staff", loading: "Loading club info…", error: "Club info unavailable.", none: "No info found.", refresh: "Refresh", pts: "pts", win: "W", draw: "D", loss: "L" },
@@ -1938,7 +1941,7 @@ export const translations = {
       teams: "Teams", transfers: "Transfers", reports: "Reports",
       network: "Agent Network", calendar: "Calendar", predictive: "AI Predictive",
       news: "Daily News", scouting: "AI Scouting", import: "Import Excel",
-      profile: "My profile", logout: "Logout", more: "More", darkMode: "Dark mode", lightMode: "Light mode",
+      profile: "My profile", logout: "Logout", more: "More", organization: "Group", darkMode: "Dark mode", lightMode: "Light mode",
     },
     profile: {
       title: "My profile", subtitle: "Account settings",

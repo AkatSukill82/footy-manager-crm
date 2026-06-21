@@ -1,292 +1,181 @@
 import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { base44, invokeFn } from "@/api/base44Client";
+import { useCurrentUser } from "../lib/useCurrentUser";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, UserPlus, Trash2, Crown, Check, Copy, AlertCircle, X } from "lucide-react";
+import { Users, Crown, Copy, Check, LogOut, Plus, KeyRound, RefreshCw, Loader2, AlertCircle, UserPlus } from "lucide-react";
 import { useLanguage } from "../lib/LanguageContext";
+import { t } from "../i18n/translations";
+
+const minutesLeft = (iso) => {
+  if (!iso) return null;
+  return Math.floor((new Date(iso).getTime() - Date.now()) / 60000);
+};
 
 export default function OrganizationPage() {
   const { lang } = useLanguage();
-  const queryClient = useQueryClient();
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [newOrgName, setNewOrgName] = useState("");
-  const [copied, setCopied] = useState(false);
-  const [mutationError, setMutationError] = useState(null);
+  const qc = useQueryClient();
+  const currentUser = useCurrentUser();
+  const orgId = currentUser?.organization_id || null;
 
-  const { data: currentUser } = useQuery({
-    queryKey: ["currentUser"],
-    queryFn: () => base44.auth.me(),
-    staleTime: 5 * 60 * 1000,
+  const [name, setName] = useState("");
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(null);   // create | join | generate | leave
+  const [error, setError] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  const { data: org } = useQuery({
+    queryKey: ["myGroup", orgId],
+    queryFn: async () => (await base44.entities.Organization.filter({ id: orgId }))[0] || null,
+    enabled: !!orgId,
   });
 
   const { data: allUsers = [] } = useQuery({
     queryKey: ["allUsers"],
     queryFn: () => base44.entities.User.list(),
+    enabled: !!orgId,
   });
+  const members = orgId ? allUsers.filter((u) => u.organization_id === orgId) : [];
+  const isChef = org && currentUser && org.created_by_id === currentUser.id;
 
-  // Find current user's org
-  const myUserRecord = allUsers.find(u => u.email === currentUser?.email);
-  const myOrgId = myUserRecord?.organization_id;
-
-  const { data: organizations = [] } = useQuery({
-    queryKey: ["organizations"],
-    queryFn: () => base44.entities.Organization.list(),
-  });
-
-  const myOrg = organizations.find(o => o.id === myOrgId);
-
-  // Members = users with same org_id
-  const members = myOrgId
-    ? allUsers.filter(u => u.organization_id === myOrgId)
-    : [];
-
-  const isAdmin = currentUser?.role === "admin";
-
-  // Create org mutation
-  const createOrgMutation = useMutation({
-    mutationFn: async (nom) => {
-      const org = await base44.entities.Organization.create({ nom });
-      await base44.auth.updateMe({ organization_id: org.id });
-      return org;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["organizations"] });
-      queryClient.invalidateQueries({ queryKey: ["allUsers"] });
-      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
-      setNewOrgName("");
-    },
-    onError: (err) => setMutationError(err.message || "Erreur lors de la création de l'organisation"),
-  });
-
-  const inviteMutation = useMutation({
-    mutationFn: async (email) => {
-      const target = allUsers.find(u => u.email === email);
-      if (!target) throw new Error("Utilisateur introuvable. Il doit d'abord avoir un compte.");
-      await base44.entities.User.update(target.id, { organization_id: myOrgId });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["allUsers"] });
-      setInviteEmail("");
-    },
-    onError: (err) => setMutationError(err.message || "Erreur lors de l'invitation"),
-  });
-
-  const removeMemberMutation = useMutation({
-    mutationFn: async (userId) => {
-      await base44.entities.User.update(userId, { organization_id: null });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["allUsers"] });
-    },
-    onError: (err) => setMutationError(err.message || "Erreur lors du retrait du membre"),
-  });
-
-  const leaveOrgMutation = useMutation({
-    mutationFn: async () => {
-      await base44.auth.updateMe({ organization_id: null });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["allUsers"] });
-      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
-    },
-    onError: (err) => setMutationError(err.message || "Erreur lors du départ de l'organisation"),
-  });
-
-  const handleInvite = () => {
-    if (!inviteEmail.trim()) return;
-    inviteMutation.mutate(inviteEmail.trim());
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["currentUser"] });
+    qc.invalidateQueries({ queryKey: ["myGroup"] });
+    qc.invalidateQueries({ queryKey: ["allUsers"] });
+    qc.invalidateQueries({ queryKey: ["players"] });
+    qc.invalidateQueries({ queryKey: ["clubs"] });
   };
 
-  const handleCreate = () => {
-    if (!newOrgName.trim()) return;
-    createOrgMutation.mutate(newOrgName.trim());
+  const run = async (action, payload, key) => {
+    setBusy(key); setError(null);
+    try {
+      const res = await invokeFn("groupManager", { action, ...payload });
+      if (!res?.ok) throw new Error(res?.error || "Erreur");
+      refresh();
+      setName(""); setCode("");
+      return res;
+    } catch (err) {
+      setError(err?.message || "Erreur");
+    } finally {
+      setBusy(null);
+    }
   };
+
+  const copyCode = () => {
+    if (!org?.invite_code) return;
+    try { navigator.clipboard.writeText(org.invite_code); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* ignore */ }
+  };
+
+  const mins = minutesLeft(org?.invite_code_expires);
+  const codeActive = org?.invite_code && mins != null && mins > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-8">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-6">
+      <div className="max-w-3xl mx-auto space-y-5">
 
-        {mutationError && (
-          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span className="flex-1">{mutationError}</span>
-            <button onClick={() => setMutationError(null)} className="hover:text-red-900"><X className="w-3.5 h-3.5" /></button>
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-2">
+            <Users className="w-7 h-7 text-indigo-600" /> {t(lang, "session.group.title")}
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">{t(lang, "session.group.subtitle")}</p>
+        </div>
+
+        {error && (
+          <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" /><span className="flex-1">{error}</span>
+            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">✕</button>
           </div>
         )}
 
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
-            <Building2 className="w-7 h-7 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Organisation</h1>
-            <p className="text-slate-500 text-sm">Gérez votre groupe et partagez vos données</p>
-          </div>
-        </div>
-
-        {!myOrg ? (
-          /* No org yet */
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Créer une organisation</CardTitle>
-              <p className="text-xs text-slate-400 mt-1">
-                Créez un groupe pour partager votre base de données avec vos collègues.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Input
-                placeholder="Nom de l'organisation (ex: Elite Scout Agency)"
-                value={newOrgName}
-                onChange={e => setNewOrgName(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleCreate()}
-              />
-              <Button
-                className="w-full bg-blue-600 hover:bg-blue-700"
-                onClick={handleCreate}
-                disabled={!newOrgName.trim() || createOrgMutation.isPending}
-              >
-                <Building2 className="w-4 h-4 mr-2" />
-                {createOrgMutation.isPending ? "Création..." : "Créer l'organisation"}
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            {/* Org info */}
+        {/* ── Pas encore dans un groupe ── */}
+        {!orgId && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-blue-500" />
-                    {myOrg.nom}
-                  </CardTitle>
-                  <Badge className="bg-blue-100 text-blue-700">
-                    {members.length} membre{members.length > 1 ? "s" : ""}
-                  </Badge>
-                </div>
-                {myOrg.description && (
-                  <p className="text-xs text-slate-400 mt-1">{myOrg.description}</p>
-                )}
-              </CardHeader>
-            </Card>
-
-            {/* Members list */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Users className="w-4 h-4 text-slate-400" />
-                  Membres
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {members.map(member => (
-                  <div key={member.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center flex-shrink-0">
-                        <span className="text-slate-700 text-xs font-bold">
-                          {member.email?.slice(0, 2).toUpperCase()}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">{member.full_name || member.email}</p>
-                        <p className="text-xs text-slate-400">{member.email}</p>
-                        {member.poste && (
-                          <p className="text-xs text-blue-500">{member.poste}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {member.email === currentUser?.email && (
-                        <Badge variant="outline" className="text-xs flex items-center gap-1">
-                          <Crown className="w-3 h-3" /> Vous
-                        </Badge>
-                      )}
-                      {isAdmin && member.email !== currentUser?.email && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title="Retirer le membre"
-                          className="h-7 w-7 text-red-400 hover:text-red-600"
-                          onClick={() => removeMemberMutation.mutate(member.id)}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+              <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><Plus className="w-4 h-4 text-indigo-600" /> {t(lang, "session.group.createTitle")}</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t(lang, "session.group.createPh")} />
+                <Button onClick={() => run("createGroup", { nom: name }, "create")} disabled={!name.trim() || busy} className="w-full bg-slate-900 hover:bg-slate-700">
+                  {busy === "create" ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}{t(lang, "session.group.create")}
+                </Button>
               </CardContent>
             </Card>
 
-            {/* Invite member (admin only) */}
-            {isAdmin && (
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><KeyRound className="w-4 h-4 text-indigo-600" /> {t(lang, "session.group.joinTitle")}</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder={t(lang, "session.group.joinPh")} maxLength={6} className="tracking-[0.3em] font-mono text-center uppercase" />
+                <Button onClick={() => run("joinGroup", { code }, "join")} disabled={code.trim().length < 4 || busy} className="w-full bg-indigo-600 hover:bg-indigo-700">
+                  {busy === "join" ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}{t(lang, "session.group.join")}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* ── Dans un groupe ── */}
+        {orgId && org && (
+          <>
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle className="text-lg">{org.nom}</CardTitle>
+                  <Button onClick={() => { if (confirm(t(lang, "session.group.leaveConfirm"))) run("leaveGroup", {}, "leave"); }} disabled={busy} variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
+                    {busy === "leave" ? <Loader2 className="w-4 h-4 animate-spin" /> : <><LogOut className="w-4 h-4 mr-1.5" /> {t(lang, "session.group.leave")}</>}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">{t(lang, "session.group.members")} ({members.length})</p>
+                <div className="space-y-1.5">
+                  {members.map((m) => {
+                    const chef = org.created_by_id === m.id;
+                    const me = m.id === currentUser?.id;
+                    return (
+                      <div key={m.id} className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-100">
+                        <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0 text-xs font-bold text-slate-600">
+                          {(m.full_name || m.email || "?").slice(0, 1).toUpperCase()}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-slate-800 truncate">{m.full_name || m.email}{me && <span className="text-slate-400 font-normal"> ({t(lang, "session.group.you")})</span>}</p>
+                          <p className="text-[11px] text-slate-400 truncate">{m.email}</p>
+                        </div>
+                        {chef && <Badge className="bg-amber-100 text-amber-700 border-0 text-[11px] gap-1"><Crown className="w-3 h-3" /> {t(lang, "session.group.chef")}</Badge>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* ── Code d'invitation (chef uniquement) ── */}
+            {isChef && (
               <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <UserPlus className="w-4 h-4 text-green-500" />
-                    Inviter un membre
-                  </CardTitle>
-                  <p className="text-xs text-slate-400 mt-1">
-                    L'utilisateur doit déjà avoir un compte sur FDM.
-                  </p>
-                </CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><KeyRound className="w-4 h-4 text-indigo-600" /> {t(lang, "session.group.codeTitle")}</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
-                  {inviteMutation.isError && (
-                    <p className="text-sm text-red-500">{inviteMutation.error?.message}</p>
+                  <p className="text-xs text-slate-500">{t(lang, "session.group.codeDesc")}</p>
+                  {codeActive ? (
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="text-2xl font-mono font-bold tracking-[0.3em] text-slate-900 bg-slate-100 rounded-xl px-4 py-2">{org.invite_code}</div>
+                      <Button onClick={copyCode} variant="outline" size="sm">{copied ? <><Check className="w-4 h-4 mr-1.5 text-green-600" /> {t(lang, "session.group.copied")}</> : <><Copy className="w-4 h-4 mr-1.5" /> {t(lang, "session.group.copy")}</>}</Button>
+                      <span className="text-xs text-slate-400">{t(lang, "session.group.expiresIn", { m: mins })}</span>
+                      <Button onClick={() => run("generateCode", {}, "generate")} disabled={busy} variant="ghost" size="sm" className="text-indigo-600">
+                        {busy === "generate" ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RefreshCw className="w-4 h-4 mr-1.5" /> {t(lang, "session.group.regenerate")}</>}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span className="text-xs text-slate-400">{org.invite_code ? t(lang, "session.group.expired") : t(lang, "session.group.noCode")}</span>
+                      <Button onClick={() => run("generateCode", {}, "generate")} disabled={busy} className="bg-indigo-600 hover:bg-indigo-700" size="sm">
+                        {busy === "generate" ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <KeyRound className="w-4 h-4 mr-2" />}{t(lang, "session.group.generate")}
+                      </Button>
+                    </div>
                   )}
-                  {inviteMutation.isSuccess && (
-                    <p className="text-sm text-green-600 flex items-center gap-1">
-                      <Check className="w-4 h-4" /> Membre ajouté avec succès !
-                    </p>
-                  )}
-                  <div className="flex gap-2">
-                    <Input
-                      type="email"
-                      placeholder="email@exemple.com"
-                      value={inviteEmail}
-                      onChange={e => setInviteEmail(e.target.value)}
-                      onKeyDown={e => e.key === "Enter" && handleInvite()}
-                    />
-                    <Button
-                      onClick={handleInvite}
-                      disabled={!inviteEmail.trim() || inviteMutation.isPending}
-                      className="bg-green-600 hover:bg-green-700 shrink-0"
-                    >
-                      <UserPlus className="w-4 h-4" />
-                    </Button>
-                  </div>
                 </CardContent>
               </Card>
             )}
-
-            {/* Data sharing info */}
-            <Card className="border-blue-200 bg-blue-50">
-              <CardContent className="pt-4">
-                <p className="text-sm text-blue-700 flex items-start gap-2">
-                  <Users className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  Les membres de <strong>{myOrg.nom}</strong> partagent leur base de données (joueurs, clubs, transferts) en lecture et écriture.
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Leave org */}
-            <div className="text-right">
-              <Button
-                variant="ghost"
-                className="text-red-500 hover:text-red-700 hover:bg-red-50 text-sm"
-                onClick={() => {
-                  if (confirm("Quitter l'organisation ? Vous n'aurez plus accès aux données partagées.")) {
-                    leaveOrgMutation.mutate();
-                  }
-                }}
-              >
-                Quitter l'organisation
-              </Button>
-            </div>
           </>
         )}
       </div>
