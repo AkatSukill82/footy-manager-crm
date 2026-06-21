@@ -137,6 +137,32 @@ export default function SyncPlayerButton({ player, onApply }) {
           if (v != null && v !== "" && String(v) !== String(player[k] ?? "")) toApply[k] = v;
         });
 
+        // ── Détection auto du PRÊT via l'historique Transfermarkt ──────────────
+        // Si le transfert le plus récent est un "Prêt" (sans "Fin de prêt" après),
+        // le joueur est actuellement en prêt → club propriétaire = club de départ.
+        if (tm) {
+          try {
+            const trRes = await invokeFn("transfermarktProxy",
+              player.transfermarkt_id
+                ? { action: "getTransfers", transfermarkt_id: player.transfermarkt_id }
+                : { action: "getTransfers", query: player.nom });
+            const transfers = trRes?.ok ? (trRes.transfers || []) : [];
+            if (!cancelled && transfers.length) {
+              const latest = [...transfers].sort(
+                (a, b) => String(b.date_transfert).localeCompare(String(a.date_transfert))
+              )[0];
+              const onLoan = latest?.type_transfert === "Prêt";
+              if (onLoan) {
+                if (!player.en_pret) toApply.en_pret = true;
+                if (latest.club_depart && latest.club_depart !== player.club_proprietaire)
+                  toApply.club_proprietaire = latest.club_depart;
+              } else if (player.en_pret) {
+                toApply.en_pret = false; // prêt terminé d'après Transfermarkt
+              }
+            }
+          } catch { /* non bloquant */ }
+        }
+
         markSynced(player.id);
 
         if (Object.keys(toApply).length > 0) {

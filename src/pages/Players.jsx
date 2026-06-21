@@ -6,7 +6,7 @@ import { useCurrentUser } from "../lib/useCurrentUser";
 import { ensureClubForPlayer } from "../lib/ensureClub";
 import { cleanPlayerName } from "../lib/cleanName";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, List, Search, Repeat, CalendarDays } from "lucide-react";
+import { Plus, Loader2, List, Search, Repeat, CalendarDays, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { useLanguage } from "../lib/LanguageContext";
@@ -30,6 +30,16 @@ function ageOf(player) {
   return Math.floor((Date.now() - d.getTime()) / (365.25 * 24 * 3600 * 1000));
 }
 
+// Couleur du badge contrat selon l'urgence (rouge <6 mois, ambre <12 mois).
+function contractColor(dateStr) {
+  if (!dateStr) return "text-slate-600 bg-slate-100";
+  const m = (new Date(dateStr).getTime() - Date.now()) / (30.44 * 864e5);
+  if (isNaN(m)) return "text-slate-600 bg-slate-100";
+  if (m < 6) return "text-red-700 bg-red-100";
+  if (m < 12) return "text-amber-700 bg-amber-100";
+  return "text-slate-600 bg-slate-100";
+}
+
 function BoardCard({ player, statut, onOpen, onMove, lang }) {
   const yr = (d) => (d ? String(d).slice(0, 4) : null);
   const age = ageOf(player);
@@ -49,17 +59,22 @@ function BoardCard({ player, statut, onOpen, onMove, lang }) {
         </div>
       </button>
 
-      {/* Contrat + prêt */}
-      {(player.contrat_fin || player.en_pret) && (
+      {/* Contrat + prêt + salaire */}
+      {(player.contrat_fin || player.en_pret || player.salaire != null) && (
         <div className="flex flex-wrap items-center gap-1.5 mb-2">
           {player.contrat_fin && (
-            <span className="inline-flex items-center gap-1 text-[10px] text-slate-500 bg-slate-100 rounded px-1.5 py-0.5">
+            <span className={`inline-flex items-center gap-1 text-[10px] rounded px-1.5 py-0.5 ${contractColor(player.contrat_fin)}`}>
               <CalendarDays className="w-3 h-3" /> {t(lang, "players.contractShort")} {yr(player.contrat_fin)}
+            </span>
+          )}
+          {player.salaire != null && player.salaire !== "" && (
+            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-100 rounded px-1.5 py-0.5">
+              <Wallet className="w-3 h-3" /> {player.salaire} M€{t(lang, "players.perYear")}
             </span>
           )}
           {player.en_pret && (
             <span className="inline-flex items-center gap-1 text-[10px] text-amber-700 bg-amber-100 rounded px-1.5 py-0.5" title={player.club_proprietaire ? `${t(lang, "players.loanFrom")} ${player.club_proprietaire}` : ""}>
-              <Repeat className="w-3 h-3" /> {t(lang, "players.loan")}{player.club_proprietaire ? ` · ${player.club_proprietaire}` : ""}
+              <Repeat className="w-3 h-3" /> {t(lang, "players.loan")}{player.club_proprietaire ? ` · ${player.club_proprietaire}` : ""}{player.pret_fin ? ` → ${yr(player.pret_fin)}` : ""}
             </span>
           )}
         </div>
