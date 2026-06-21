@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { appParams } from "@/lib/app-params";
+import { useAuth } from "../lib/AuthContext";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
 import { BRAND_NAME } from "../lib/brand";
@@ -12,6 +14,7 @@ import { Loader2, ArrowRight, ShieldCheck, Users, Sparkles, Smartphone, Mail, Lo
  */
 export default function Login() {
   const { lang, setLang } = useLanguage();
+  const { checkAppState } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,19 +31,25 @@ export default function Login() {
       const token = res?.access_token || res?.data?.access_token || res?.token;
       if (!token) { setError(t(lang, "login.error")); setLoading(false); return; }
 
-      // Persistance explicite sur les clés lues par l'app (évite la boucle login).
+      // Persistance + propagation du token PARTOUT où l'app le lit :
+      // - localStorage (clés lues par app-params au prochain chargement)
+      // - appParams.token (objet mis en cache au démarrage → sinon non rafraîchi)
+      // - client SDK
       try {
         localStorage.setItem("base44_access_token", token);
         localStorage.setItem("token", token);
       } catch { /* quota */ }
+      appParams.token = token;
       base44.setToken?.(token);
 
-      // Vérifie que la session est réellement valide AVANT de recharger.
+      // Vérifie que la session est réellement valide.
       let ok = false;
       try { ok = !!(await base44.auth.me()); } catch { ok = false; }
       if (!ok) { setError(t(lang, "login.sessionError")); setLoading(false); return; }
 
-      window.location.reload();
+      // Relance le flux d'auth en mémoire → isAuthenticated devient vrai →
+      // l'app affiche le dashboard, sans rechargement ni boucle vers le login.
+      await checkAppState();
     } catch (err) {
       // Affiche le vrai message serveur quand il existe (e-mail non vérifié, etc.).
       setError(err?.response?.data?.message || err?.response?.data?.detail || err?.message || t(lang, "login.error"));
