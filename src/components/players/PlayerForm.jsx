@@ -15,6 +15,27 @@ const POSTES = [
   "Ailier droit", "Ailier gauche", "Attaquant"
 ];
 
+// ⚠️ Définis AU NIVEAU MODULE (pas dans le composant) : sinon ils sont recréés
+// à chaque rendu → React remonte les champs → perte de focus quand on tape.
+const F = ({ id, label, children }) => (
+  <div>
+    <Label htmlFor={id} className="text-xs font-medium text-slate-600 mb-1 block">{label}</Label>
+    {children}
+  </div>
+);
+
+const SectionHeader = ({ icon: Icon, label, expanded, onToggle }) => (
+  <button
+    type="button"
+    onClick={onToggle}
+    className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3 hover:text-slate-600 transition-colors w-full text-left"
+  >
+    <Icon className="w-3.5 h-3.5" />
+    {label}
+    {expanded ? <ChevronUp className="w-3.5 h-3.5 ml-auto" /> : <ChevronDown className="w-3.5 h-3.5 ml-auto" />}
+  </button>
+);
+
 export default function PlayerForm({ player, onSubmit, onCancel }) {
   const { lang } = useLanguage();
   const [formData, setFormData] = useState({
@@ -38,25 +59,6 @@ export default function PlayerForm({ player, onSubmit, onCancel }) {
     e.preventDefault();
     onSubmit(formData);
   };
-
-  const F = ({ id, label, children }) => (
-    <div>
-      <Label htmlFor={id} className="text-xs font-medium text-slate-600 mb-1 block">{label}</Label>
-      {children}
-    </div>
-  );
-
-  const SectionHeader = ({ icon: Icon, label, expanded, onToggle }) => (
-    <button
-      type="button"
-      onClick={onToggle}
-      className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3 hover:text-slate-600 transition-colors w-full text-left"
-    >
-      <Icon className="w-3.5 h-3.5" />
-      {label}
-      {expanded ? <ChevronUp className="w-3.5 h-3.5 ml-auto" /> : <ChevronDown className="w-3.5 h-3.5 ml-auto" />}
-    </button>
-  );
 
   return (
     <Card className="border-0 shadow-none">

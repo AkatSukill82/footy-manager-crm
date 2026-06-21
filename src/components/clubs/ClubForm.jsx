@@ -10,6 +10,24 @@ import { useLanguage } from "../../lib/LanguageContext";
 import { t } from "../../i18n/translations";
 import ImageSearchPicker from "../ui/ImageSearchPicker";
 
+// Définis AU NIVEAU MODULE (pas dans le composant) : sinon recréés à chaque
+// rendu → les champs sont remontés → perte de focus quand on tape.
+const F = ({ label, children }) => (
+  <div>
+    <Label className="text-xs font-medium text-slate-500 mb-1 block">{label}</Label>
+    {children}
+  </div>
+);
+
+const Section = ({ title, icon: Icon, children }) => (
+  <div className="space-y-3">
+    <h3 className="text-sm font-semibold text-slate-500 uppercase flex items-center gap-2 border-b pb-2">
+      <Icon className="w-4 h-4" />{title}
+    </h3>
+    {children}
+  </div>
+);
+
 export default function ClubForm({ club, onSubmit, onCancel }) {
   const { lang } = useLanguage();
   const [formData, setFormData] = useState(club || {
@@ -40,22 +58,6 @@ export default function ClubForm({ club, onSubmit, onCancel }) {
     };
     onSubmit(data);
   };
-
-  const F = ({ label, children }) => (
-    <div>
-      <Label className="text-xs font-medium text-slate-500 mb-1 block">{label}</Label>
-      {children}
-    </div>
-  );
-
-  const Section = ({ title, icon: Icon, children }) => (
-    <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-slate-500 uppercase flex items-center gap-2 border-b pb-2">
-        <Icon className="w-4 h-4" />{title}
-      </h3>
-      {children}
-    </div>
-  );
 
   return (
     <Card>
