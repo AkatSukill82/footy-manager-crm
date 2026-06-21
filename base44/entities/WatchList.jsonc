@@ -2,6 +2,10 @@
   "name": "WatchList",
   "type": "object",
   "properties": {
+    "organization_id": {
+      "type": "string",
+      "description": "ID du groupe (partage entre membres)"
+    },
     "player_id": {
       "type": "string",
       "description": "ID du joueur suivi"
@@ -14,15 +18,15 @@
         "Basse"
       ],
       "default": "Moyenne",
-      "description": "Niveau de priorit\u00e9"
+      "description": "Niveau de priorité"
     },
     "statut": {
       "type": "string",
       "enum": [
         "En observation",
-        "\u00c0 contacter",
-        "N\u00e9gociation",
-        "Abandonn\u00e9"
+        "À contacter",
+        "Négociation",
+        "Abandonné"
       ],
       "default": "En observation",
       "description": "Statut du suivi"
@@ -44,6 +48,18 @@
           "user_condition": {
             "role": "admin"
           }
+        },
+        {
+          "$and": [
+            {
+              "data.organization_id": "{{user.data.organization_id}}"
+            },
+            {
+              "data.organization_id": {
+                "$ne": null
+              }
+            }
+          ]
         }
       ]
     },
@@ -56,6 +72,18 @@
           "user_condition": {
             "role": "admin"
           }
+        },
+        {
+          "$and": [
+            {
+              "data.organization_id": "{{user.data.organization_id}}"
+            },
+            {
+              "data.organization_id": {
+                "$ne": null
+              }
+            }
+          ]
         }
       ]
     },
@@ -68,6 +96,18 @@
           "user_condition": {
             "role": "admin"
           }
+        },
+        {
+          "$and": [
+            {
+              "data.organization_id": "{{user.data.organization_id}}"
+            },
+            {
+              "data.organization_id": {
+                "$ne": null
+              }
+            }
+          ]
         }
       ]
     }

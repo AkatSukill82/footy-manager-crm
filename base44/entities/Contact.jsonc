@@ -2,6 +2,10 @@
   "name": "Contact",
   "type": "object",
   "properties": {
+    "organization_id": {
+      "type": "string",
+      "description": "ID du groupe (partage entre membres)"
+    },
     "player_id": {
       "type": "string",
       "description": "ID du joueur concern\u00e9"

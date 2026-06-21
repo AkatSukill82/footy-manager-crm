@@ -2,9 +2,13 @@
   "name": "Reminder",
   "type": "object",
   "properties": {
+    "organization_id": {
+      "type": "string",
+      "description": "ID du groupe (partage entre membres)"
+    },
     "player_id": {
       "type": "string",
-      "description": "ID du joueur concern\u00e9"
+      "description": "ID du joueur concerné"
     },
     "titre": {
       "type": "string",
@@ -12,7 +16,7 @@
     },
     "description": {
       "type": "string",
-      "description": "Description d\u00e9taill\u00e9e"
+      "description": "Description détaillée"
     },
     "date_rappel": {
       "type": "string",
@@ -27,16 +31,16 @@
         "Basse"
       ],
       "default": "Moyenne",
-      "description": "Niveau de priorit\u00e9"
+      "description": "Niveau de priorité"
     },
     "statut": {
       "type": "string",
       "enum": [
-        "\u00c0 faire",
+        "À faire",
         "En cours",
-        "Termin\u00e9"
+        "Terminé"
       ],
-      "default": "\u00c0 faire",
+      "default": "À faire",
       "description": "Statut du rappel"
     },
     "type": {
@@ -48,7 +52,7 @@
         "Suivre dossier",
         "Autre"
       ],
-      "description": "Type d'action \u00e0 faire"
+      "description": "Type d'action à faire"
     }
   },
   "required": [
@@ -69,6 +73,18 @@
           "user_condition": {
             "role": "admin"
           }
+        },
+        {
+          "$and": [
+            {
+              "data.organization_id": "{{user.data.organization_id}}"
+            },
+            {
+              "data.organization_id": {
+                "$ne": null
+              }
+            }
+          ]
         }
       ]
     },
@@ -81,6 +97,18 @@
           "user_condition": {
             "role": "admin"
           }
+        },
+        {
+          "$and": [
+            {
+              "data.organization_id": "{{user.data.organization_id}}"
+            },
+            {
+              "data.organization_id": {
+                "$ne": null
+              }
+            }
+          ]
         }
       ]
     },
@@ -93,6 +121,18 @@
           "user_condition": {
             "role": "admin"
           }
+        },
+        {
+          "$and": [
+            {
+              "data.organization_id": "{{user.data.organization_id}}"
+            },
+            {
+              "data.organization_id": {
+                "$ne": null
+              }
+            }
+          ]
         }
       ]
     }

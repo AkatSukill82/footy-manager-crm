@@ -2,6 +2,10 @@
   "name": "ClubContact",
   "type": "object",
   "properties": {
+    "organization_id": {
+      "type": "string",
+      "description": "ID du groupe (partage entre membres)"
+    },
     "nom": {
       "type": "string",
       "description": "Nom complet de la personne"

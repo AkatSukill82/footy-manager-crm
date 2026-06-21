@@ -2,6 +2,10 @@
   "name": "AgentInsight",
   "type": "object",
   "properties": {
+    "organization_id": {
+      "type": "string",
+      "description": "ID du groupe (partage entre membres)"
+    },
     "categorie": {
       "type": "string",
       "enum": [
@@ -11,7 +15,7 @@
         "analyse_equipe",
         "prevision"
       ],
-      "description": "Cat\u00e9gorie d'insight"
+      "description": "Catégorie d'insight"
     },
     "titre": {
       "type": "string",
@@ -19,11 +23,11 @@
     },
     "contenu": {
       "type": "string",
-      "description": "Contenu d\u00e9taill\u00e9 de l'insight"
+      "description": "Contenu détaillé de l'insight"
     },
     "donnees_source": {
       "type": "string",
-      "description": "Donn\u00e9es sources utilis\u00e9es"
+      "description": "Données sources utilisées"
     },
     "confiance": {
       "type": "number",
@@ -31,7 +35,7 @@
     },
     "player_ids": {
       "type": "string",
-      "description": "IDs des joueurs concern\u00e9s (s\u00e9par\u00e9s par virgules)"
+      "description": "IDs des joueurs concernés (séparés par virgules)"
     },
     "priority": {
       "type": "string",
@@ -41,7 +45,7 @@
         "basse"
       ],
       "default": "moyenne",
-      "description": "Niveau de priorit\u00e9"
+      "description": "Niveau de priorité"
     }
   },
   "required": [
@@ -62,6 +66,18 @@
           "user_condition": {
             "role": "admin"
           }
+        },
+        {
+          "$and": [
+            {
+              "data.organization_id": "{{user.data.organization_id}}"
+            },
+            {
+              "data.organization_id": {
+                "$ne": null
+              }
+            }
+          ]
         }
       ]
     },
@@ -74,6 +90,18 @@
           "user_condition": {
             "role": "admin"
           }
+        },
+        {
+          "$and": [
+            {
+              "data.organization_id": "{{user.data.organization_id}}"
+            },
+            {
+              "data.organization_id": {
+                "$ne": null
+              }
+            }
+          ]
         }
       ]
     },
@@ -86,6 +114,18 @@
           "user_condition": {
             "role": "admin"
           }
+        },
+        {
+          "$and": [
+            {
+              "data.organization_id": "{{user.data.organization_id}}"
+            },
+            {
+              "data.organization_id": {
+                "$ne": null
+              }
+            }
+          ]
         }
       ]
     }

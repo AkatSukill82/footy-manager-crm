@@ -2,6 +2,10 @@
   "name": "PlayerNote",
   "type": "object",
   "properties": {
+    "organization_id": {
+      "type": "string",
+      "description": "ID du groupe (partage entre membres)"
+    },
     "player_id": {
       "type": "string",
       "description": "ID du joueur"
@@ -12,19 +16,19 @@
     },
     "evaluation": {
       "type": "number",
-      "description": "Note d'\u00e9valuation sur 10",
+      "description": "Note d'évaluation sur 10",
       "minimum": 0,
       "maximum": 10
     },
     "interet": {
       "type": "string",
       "enum": [
-        "Tr\u00e8s \u00e9lev\u00e9",
-        "\u00c9lev\u00e9",
+        "Très élevé",
+        "Élevé",
         "Moyen",
         "Faible"
       ],
-      "description": "Niveau d'int\u00e9r\u00eat"
+      "description": "Niveau d'intérêt"
     },
     "date_observation": {
       "type": "string",
@@ -72,6 +76,18 @@
           "user_condition": {
             "role": "admin"
           }
+        },
+        {
+          "$and": [
+            {
+              "data.organization_id": "{{user.data.organization_id}}"
+            },
+            {
+              "data.organization_id": {
+                "$ne": null
+              }
+            }
+          ]
         }
       ]
     },
@@ -84,6 +100,18 @@
           "user_condition": {
             "role": "admin"
           }
+        },
+        {
+          "$and": [
+            {
+              "data.organization_id": "{{user.data.organization_id}}"
+            },
+            {
+              "data.organization_id": {
+                "$ne": null
+              }
+            }
+          ]
         }
       ]
     }

@@ -2,6 +2,10 @@
   "name": "PlayerCareerHistory",
   "type": "object",
   "properties": {
+    "organization_id": {
+      "type": "string",
+      "description": "ID du groupe (partage entre membres)"
+    },
     "player_id": {
       "type": "string",
       "description": "ID du joueur"

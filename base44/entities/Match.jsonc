@@ -2,6 +2,10 @@
   "name": "Match",
   "type": "object",
   "properties": {
+    "organization_id": {
+      "type": "string",
+      "description": "ID du groupe (partage entre membres)"
+    },
     "team1_id": {
       "type": "string",
       "description": "ID de l'\u00e9quipe 1"

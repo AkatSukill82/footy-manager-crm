@@ -13,6 +13,15 @@
     "membres": {
       "type": "string",
       "description": "Liste des emails des membres s\u00e9par\u00e9s par des virgules"
+    },
+    "invite_code": {
+      "type": "string",
+      "description": "Code d'invitation au groupe (g\u00e9n\u00e9r\u00e9 par le chef, valable 30 min)"
+    },
+    "invite_code_expires": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Date/heure d'expiration du code d'invitation"
     }
   },
   "required": [
