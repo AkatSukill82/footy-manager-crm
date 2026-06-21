@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Users, Crown, Copy, Check, LogOut, Plus, KeyRound, RefreshCw, Loader2, AlertCircle, UserPlus, Lock } from "lucide-react";
+import { Users, Crown, Copy, Check, LogOut, Plus, KeyRound, RefreshCw, Loader2, AlertCircle, UserPlus, Lock, Mail, Send } from "lucide-react";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
+import { sendEmail } from "../lib/sendEmail";
 
 const minutesLeft = (iso) => {
   if (!iso) return null;
@@ -26,6 +27,9 @@ export default function OrganizationPage() {
   const [busy, setBusy] = useState(null);   // create | join | generate | leave
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteSent, setInviteSent] = useState(false);
+  const [inviting, setInviting] = useState(false);
 
   const { data: org } = useQuery({
     queryKey: ["myGroup", orgId],
@@ -72,6 +76,19 @@ export default function OrganizationPage() {
 
   const mins = minutesLeft(org?.invite_code_expires);
   const codeActive = org?.invite_code && mins != null && mins > 0;
+
+  // Envoie un e-mail d'invitation custom (au nom de la marque) avec le code.
+  const inviteByEmail = async () => {
+    if (!inviteEmail.trim() || !org?.invite_code) return;
+    setInviting(true); setError(null); setInviteSent(false);
+    const inviter = currentUser?.full_name || currentUser?.email || "";
+    const subject = t(lang, "session.group.mailSubject", { group: org.nom });
+    const body = t(lang, "session.group.mailBody", { inviter, group: org.nom, code: org.invite_code, mins });
+    const res = await sendEmail({ to: inviteEmail.trim(), subject, body });
+    if (res.ok) { setInviteSent(true); setInviteEmail(""); setTimeout(() => setInviteSent(false), 3000); }
+    else setError(res.error);
+    setInviting(false);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-6">
@@ -176,7 +193,25 @@ export default function OrganizationPage() {
                         {busy === "generate" ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RefreshCw className="w-4 h-4 mr-1.5" /> {t(lang, "session.group.regenerate")}</>}
                       </Button>
                     </div>
-                  ) : (
+                  ) : null}
+
+                  {/* Inviter par e-mail (envoie le code par mail au nom de la marque) */}
+                  {codeActive && (
+                    <div className="pt-3 mt-1 border-t border-slate-100">
+                      <p className="text-xs text-slate-500 mb-2">{t(lang, "session.group.inviteByEmail")}</p>
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                          <Input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder={t(lang, "session.group.inviteEmailPh")} className="pl-9" />
+                        </div>
+                        <Button onClick={inviteByEmail} disabled={inviting || !inviteEmail.trim()} className="bg-indigo-600 hover:bg-indigo-700 flex-shrink-0">
+                          {inviting ? <Loader2 className="w-4 h-4 animate-spin" /> : inviteSent ? <Check className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+                        </Button>
+                      </div>
+                      {inviteSent && <p className="text-xs text-green-600 mt-1.5">{t(lang, "session.group.inviteSent")}</p>}
+                    </div>
+                  )}
+                  {!codeActive && (
                     <div className="flex items-center gap-3 flex-wrap">
                       <span className="text-xs text-slate-400">{org.invite_code ? t(lang, "session.group.expired") : t(lang, "session.group.noCode")}</span>
                       <Button onClick={() => run("generateCode", {}, "generate")} disabled={busy} className="bg-indigo-600 hover:bg-indigo-700" size="sm">
