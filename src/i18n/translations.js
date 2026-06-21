@@ -693,7 +693,7 @@ export const translations = {
     },
     import: {
       title: "Import Excel / CSV", subtitle: "Importez vos joueurs et clubs depuis un fichier",
-      stepFile: "Fichier", stepPreview: "Aperçu", stepImport: "Import", stepResults: "Résultats",
+      stepFile: "Fichier", stepPreview: "Aperçu", stepImport: "Import", stepResults: "Résultats", mapTitle: "Vérifiez les colonnes", mapDesc: "On a deviné le champ de chaque colonne. Corrigez si besoin, puis confirmez.", mapRecognized: "reconnues", mapNeedName: "Aucune colonne n'est mappée sur « nom » — l'import a besoin d'un nom.", mapExample: "ex", mapIgnore: "Ignorer", mapBack: "Changer de fichier", mapConfirm: "Confirmer et continuer",
       infoTitle: "Colonnes reconnues automatiquement :", infoPlayers: "Joueurs :", infoClubs: "Clubs :",
       infoAI: "L'IA détecte automatiquement les colonnes même si les noms sont différents.",
       processingTitle: "Import en cours...", processingDesc: "Vérification, création et mise à jour des données",
@@ -1642,7 +1642,7 @@ export const translations = {
     },
     import: {
       title: "Importar Excel / CSV", subtitle: "Importa tus jugadores y clubes desde un archivo",
-      stepFile: "Archivo", stepPreview: "Vista previa", stepImport: "Importar", stepResults: "Resultados",
+      stepFile: "Archivo", stepPreview: "Vista previa", stepImport: "Importar", stepResults: "Resultados", mapTitle: "Verifica las columnas", mapDesc: "Hemos deducido el campo de cada columna. Corrige si es necesario y confirma.", mapRecognized: "reconocidas", mapNeedName: "Ninguna columna está asignada a «nombre» — la importación necesita un nombre.", mapExample: "ej", mapIgnore: "Ignorar", mapBack: "Cambiar de archivo", mapConfirm: "Confirmar y continuar",
       infoTitle: "Columnas reconocidas automáticamente:", infoPlayers: "Jugadores:", infoClubs: "Clubes:",
       infoAI: "La IA detecta automáticamente las columnas aunque los nombres sean diferentes.",
       processingTitle: "Importación en curso...", processingDesc: "Verificación, creación y actualización de datos",
@@ -2588,7 +2588,7 @@ export const translations = {
     },
     import: {
       title: "Import Excel / CSV", subtitle: "Import your players and clubs from a file",
-      stepFile: "File", stepPreview: "Preview", stepImport: "Import", stepResults: "Results",
+      stepFile: "File", stepPreview: "Preview", stepImport: "Import", stepResults: "Results", mapTitle: "Check the columns", mapDesc: "We guessed each column's field. Fix any if needed, then confirm.", mapRecognized: "recognized", mapNeedName: "No column is mapped to \"name\" — the import needs a name.", mapExample: "e.g.", mapIgnore: "Ignore", mapBack: "Change file", mapConfirm: "Confirm and continue",
       infoTitle: "Automatically recognised columns:", infoPlayers: "Players:", infoClubs: "Clubs:",
       infoAI: "The AI automatically detects columns even if the names differ.",
       processingTitle: "Importing...", processingDesc: "Verifying, creating and updating data",

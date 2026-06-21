@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Upload, FileSpreadsheet, Loader2, Building2, Users } from "lucide-react";
+import { Upload, FileSpreadsheet, Loader2, Building2, Users, CheckCircle2, AlertTriangle, ArrowRight, ArrowLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs";
@@ -74,6 +74,51 @@ const FIELD_MAP = {
   profile: "lien", profil: "lien", profile_url: "lien",
 };
 
+// Champs cibles proposés dans le menu de correction, par type.
+const CANONICAL = {
+  clubs: [
+    "nom", "pays", "ville", "stade", "ligue", "capacite_stade", "budget_transfert",
+    "president", "president_email", "president_telephone",
+    "entraineur", "entraineur_email", "directeur_sportif", "directeur_sportif_email",
+    "email_general", "telephone_general", "site_web", "instagram", "twitter",
+  ],
+  contacts: [
+    "nom", "prenom", "club", "poste", "nationalite",
+    "email", "telephone", "whatsapp", "instagram", "twitter", "linkedin",
+    "date_naissance", "lieu_naissance", "agent", "agence",
+    "valeur_marchande", "salaire", "contrat_fin", "photo_url", "lien",
+  ],
+};
+const CANONICAL_SET = new Set([...CANONICAL.clubs, ...CANONICAL.contacts]);
+
+const PHONE_WORDS   = new Set(["tel","telephone","phone","mobile","portable","gsm","cell","cellular"]);
+const WA_WORDS      = new Set(["whatsapp","wapp","whats"]);
+const EMAIL_WORDS   = new Set(["email","mail","courriel"]);
+const INSTA_WORDS   = new Set(["instagram","insta"]);
+const TWITTER_WORDS = new Set(["twitter","x"]);
+const LI_WORDS      = new Set(["linkedin"]);
+const LIEN_WORDS    = new Set(["lien","liens","link","links","profil","profile","url"]);
+
+const guessCanonical = (key) => {
+  const parts = key.split("_");
+  if (parts.some(p => WA_WORDS.has(p)))      return "whatsapp";
+  if (parts.some(p => PHONE_WORDS.has(p)))   return "telephone";
+  if (parts.some(p => EMAIL_WORDS.has(p)))   return "email";
+  if (parts.some(p => INSTA_WORDS.has(p)))   return "instagram";
+  if (parts.some(p => TWITTER_WORDS.has(p))) return "twitter";
+  if (parts.some(p => LI_WORDS.has(p)))      return "linkedin";
+  if (parts.some(p => LIEN_WORDS.has(p)))    return "lien";
+  return null;
+};
+
+// Détecte le champ canonique d'un en-tête de colonne (ou null si non reconnu).
+const detectField = (header) => {
+  const k = normalizeKey(header);
+  if (CANONICAL_SET.has(k)) return k;
+  if (FIELD_MAP[k]) return FIELD_MAP[k];
+  return guessCanonical(k);
+};
+
 // ── Parsing XLSX ──────────────────────────────────────────────────────────────
 const parseExcelFile = (file) =>
   new Promise((resolve, reject) => {
@@ -107,59 +152,56 @@ const parseExcelFile = (file) =>
     reader.readAsArrayBuffer(file);
   });
 
-// Détecte un champ canonique en découpant la clé par "_" et en testant chaque mot
-// Ex: "telephone_club" → ["telephone","club"] → "telephone"
-// Ex: "email_club"     → ["email","club"]     → "email"
-const PHONE_WORDS   = new Set(["tel","telephone","phone","mobile","portable","gsm","cell","cellular"]);
-const WA_WORDS      = new Set(["whatsapp","wapp","whats"]);
-const EMAIL_WORDS   = new Set(["email","mail","courriel"]);
-const INSTA_WORDS   = new Set(["instagram","insta"]);
-const TWITTER_WORDS = new Set(["twitter","x"]);
-const LI_WORDS      = new Set(["linkedin"]);
-const LIEN_WORDS    = new Set(["lien","liens","link","links","profil","profile","url"]);
-
-const guessCanonical = (key) => {
-  const parts = key.split("_");
-  if (parts.some(p => WA_WORDS.has(p)))      return "whatsapp";
-  if (parts.some(p => PHONE_WORDS.has(p)))   return "telephone";
-  if (parts.some(p => EMAIL_WORDS.has(p)))   return "email";
-  if (parts.some(p => INSTA_WORDS.has(p)))   return "instagram";
-  if (parts.some(p => TWITTER_WORDS.has(p))) return "twitter";
-  if (parts.some(p => LI_WORDS.has(p)))      return "linkedin";
-  if (parts.some(p => LIEN_WORDS.has(p)))    return "lien";
-  return null;
+// En-têtes (colonnes) présents dans toutes les feuilles + 1er exemple de valeur.
+const collectColumns = (sheets) => {
+  const cols = new Map(); // header original → exemple de valeur
+  for (const rows of Object.values(sheets)) {
+    for (const row of rows) {
+      for (const [h, v] of Object.entries(row)) {
+        if (!cols.has(h)) cols.set(h, "");
+        if (!cols.get(h) && v != null && String(v).trim() !== "") cols.set(h, String(v).trim());
+      }
+    }
+  }
+  return [...cols.entries()].map(([header, sample]) => ({ header, sample }));
 };
 
-const normalizeRow = (rawRow, type = "contacts") => {
-  const lowered = {};
-  for (const [k, v] of Object.entries(rawRow)) {
-    lowered[normalizeKey(k)] = normalizeValue(v);
+// Normalise une ligne en appliquant le mapping CHOISI (header original → champ).
+const applyMapping = (rawRow, mapping) => {
+  const out = {};
+  for (const [h, v] of Object.entries(rawRow)) {
+    const field = mapping[h];
+    if (field && field !== "__ignore__" && out[field] === undefined) out[field] = normalizeValue(v);
   }
-  const normalized = { ...lowered };
+  return out;
+};
 
-  // Passe 1 : mapping exact via FIELD_MAP
-  for (const [alias, canonical] of Object.entries(FIELD_MAP)) {
-    if (lowered[alias] !== undefined && normalized[canonical] === undefined) {
-      normalized[canonical] = lowered[alias];
+const buildExtracted = (sheets, mapping, type) => {
+  const clubs = [];
+  const contacts = [];
+  for (const rows of Object.values(sheets)) {
+    const normRows = rows.map((r) => applyMapping(r, mapping));
+    if (type === "clubs") {
+      let lastPays = "";
+      for (const row of normRows) {
+        if (!row.nom || !String(row.nom).trim()) continue;
+        if (row.pays && String(row.pays).trim()) lastPays = String(row.pays).trim();
+        else if (lastPays) row.pays = lastPays;
+        clubs.push({ ...row, nom: String(row.nom).trim() });
+      }
+    } else {
+      let lastClub = "";
+      for (const row of normRows) {
+        if (!row.nom && !row.prenom) continue;
+        if (row.club && String(row.club).trim()) lastClub = String(row.club).trim();
+        else if (lastClub) row.club = lastClub;
+        const nomComplet = [row.prenom, row.nom].filter(Boolean).map((s) => String(s).trim()).join(" ").trim();
+        if (!nomComplet) continue;
+        contacts.push({ ...row, nom: nomComplet });
+      }
     }
   }
-
-  // Passe 2 : détection par mots-clés pour les colonnes non encore mappées
-  for (const [key, val] of Object.entries(lowered)) {
-    if (val == null || String(val).trim() === "") continue;
-    const canonical = guessCanonical(key);
-    if (canonical && normalized[canonical] === undefined) {
-      normalized[canonical] = val;
-    }
-  }
-
-  // Passe 3 : pour les contacts, les champs "général" du club sont les champs perso
-  if (type === "contacts") {
-    if (!normalized.telephone && normalized.telephone_general) normalized.telephone = normalized.telephone_general;
-    if (!normalized.email     && normalized.email_general)     normalized.email     = normalized.email_general;
-  }
-
-  return normalized;
+  return { clubs, contacts };
 };
 
 // ── Composant ─────────────────────────────────────────────────────────────────
@@ -169,103 +211,120 @@ export default function ImportDropzone({ onExtracted }) {
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [sheets, setSheets] = useState(null);    // données parsées
+  const [columns, setColumns] = useState([]);    // [{header, sample}]
+  const [mapping, setMapping] = useState({});    // header → champ choisi
+  const [fileName, setFileName] = useState("");
   const inputRef = useRef();
 
   const processFile = async (file) => {
     setError(null);
     setLoading(true);
-
     try {
-      const sheets = await parseExcelFile(file);
-      const sheetNames = Object.keys(sheets);
-
-      if (sheetNames.length === 0 || sheetNames.every((n) => sheets[n].length === 0)) {
+      const parsed = await parseExcelFile(file);
+      const names = Object.keys(parsed);
+      if (names.length === 0 || names.every((n) => parsed[n].length === 0)) {
         throw new Error("Le fichier est vide ou ne contient pas de données.");
       }
-
-      const clubs = [];
-      const contacts = [];
-
-      for (const sheetName of sheetNames) {
-        const rawRows = sheets[sheetName];
-        if (rawRows.length === 0) continue;
-
-        const rows = rawRows.map(r => normalizeRow(r, dataType));
-
-        if (dataType === "clubs") {
-          const validRows = rows.filter((r) => {
-            const n = r.nom || r.club || r.equipe;
-            return n && String(n).trim().length > 0;
-          });
-          let lastPays = "";
-          for (const row of validRows) {
-            if (row.pays && String(row.pays).trim()) lastPays = String(row.pays).trim();
-            else if (lastPays && !row.pays) row.pays = lastPays;
-            clubs.push({ ...row, nom: String(row.nom || row.club || row.equipe || "").trim() });
-          }
-        } else {
-          const validRows = rows.filter((r) => {
-            const n = r.nom || r.prenom;
-            return n && String(n).trim().length > 0;
-          });
-          let lastClub = "";
-          for (const row of validRows) {
-            if (row.club && String(row.club).trim()) lastClub = String(row.club).trim();
-            else if (lastClub && !row.club) row.club = lastClub;
-            const nomComplet = [row.prenom, row.nom]
-              .filter(Boolean)
-              .map((s) => String(s).trim())
-              .join(" ")
-              .trim();
-            contacts.push({ ...row, nom: nomComplet });
-          }
-        }
-      }
-
-      const total = clubs.length + contacts.length;
-      if (total === 0) {
-        const sample = Object.values(sheets).flat()[0] || {};
-        const cols = Object.keys(sample).join(", ");
-        throw new Error(`Aucune ligne valide trouvée.\n\nColonnes détectées : ${cols}`);
-      }
-
-      onExtracted({ clubs, contacts, nom_fichier: file.name });
+      const cols = collectColumns(parsed);
+      // Mapping initial auto-détecté
+      const initial = {};
+      for (const { header } of cols) initial[header] = detectField(header) || "__ignore__";
+      setSheets(parsed);
+      setColumns(cols);
+      setMapping(initial);
+      setFileName(file.name);
     } catch (err) {
-      setError(err.message || "Une erreur est survenue lors de l'analyse du fichier.");
+      setError(err.message || "Erreur lors de l'analyse du fichier.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) processFile(file);
+  const confirmMapping = () => {
+    const { clubs, contacts } = buildExtracted(sheets, mapping, dataType);
+    const total = clubs.length + contacts.length;
+    if (total === 0) {
+      setError("Aucune ligne valide. Vérifiez qu'une colonne est bien mappée sur « nom ».");
+      return;
+    }
+    onExtracted({ clubs, contacts, nom_fichier: fileName });
   };
 
-  const handleChange = (e) => {
-    const file = e.target.files[0];
-    if (file) processFile(file);
-  };
+  const resetFile = () => { setSheets(null); setColumns([]); setMapping({}); setError(null); };
 
+  const handleDrop = (e) => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) processFile(f); };
+  const handleChange = (e) => { const f = e.target.files[0]; if (f) processFile(f); };
+
+  // ── Écran de vérification du mapping ──────────────────────────────────────
+  if (sheets) {
+    const fields = CANONICAL[dataType] || [];
+    const recognized = columns.filter((c) => mapping[c.header] && mapping[c.header] !== "__ignore__").length;
+    const hasName = Object.values(mapping).includes("nom");
+    return (
+      <Card>
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-base font-bold text-slate-900">{t(lang, "import.mapTitle")}</h3>
+              <p className="text-xs text-slate-500 mt-0.5">{t(lang, "import.mapDesc")}</p>
+            </div>
+            <span className="text-xs font-medium text-slate-500">{recognized}/{columns.length} {t(lang, "import.mapRecognized")}</span>
+          </div>
+
+          {!hasName && (
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-3 py-2 text-xs mb-3">
+              <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" /> {t(lang, "import.mapNeedName")}
+            </div>
+          )}
+
+          <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 max-h-[55vh] overflow-y-auto">
+            {columns.map(({ header, sample }) => {
+              const val = mapping[header];
+              const ok = val && val !== "__ignore__";
+              return (
+                <div key={header} className="flex items-center gap-3 px-3 py-2.5">
+                  <div className="flex-shrink-0">
+                    {ok
+                      ? <CheckCircle2 className="w-4 h-4 text-green-600" />
+                      : <AlertTriangle className="w-4 h-4 text-amber-500" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-slate-800 truncate">{header}</p>
+                    {sample && <p className="text-[11px] text-slate-400 truncate">{t(lang, "import.mapExample")}: {sample}</p>}
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />
+                  <select
+                    value={val}
+                    onChange={(e) => setMapping((m) => ({ ...m, [header]: e.target.value }))}
+                    className={`h-8 rounded-lg border px-2 text-xs flex-shrink-0 w-44 focus:outline-none ${ok ? "border-green-200 bg-green-50 text-green-800" : "border-amber-200 bg-amber-50 text-amber-700"}`}
+                  >
+                    <option value="__ignore__">— {t(lang, "import.mapIgnore")} —</option>
+                    {fields.map((f) => <option key={f} value={f}>{f}</option>)}
+                  </select>
+                </div>
+              );
+            })}
+          </div>
+
+          {error && <p className="text-xs text-red-600 mt-3">{error}</p>}
+
+          <div className="flex items-center justify-between gap-3 mt-4">
+            <Button variant="outline" onClick={resetFile} className="gap-1.5"><ArrowLeft className="w-4 h-4" /> {t(lang, "import.mapBack")}</Button>
+            <Button onClick={confirmMapping} className="bg-green-600 hover:bg-green-700 gap-1.5">{t(lang, "import.mapConfirm")} <ArrowRight className="w-4 h-4" /></Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // ── Écran de dépôt ────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-4">
-
-      {/* Type selector */}
       <div className="grid grid-cols-2 gap-3">
-        <button
-          type="button"
-          onClick={() => setDataType("clubs")}
-          className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${
-            dataType === "clubs"
-              ? "border-blue-500 bg-blue-50 shadow-sm"
-              : "border-slate-200 hover:border-blue-300 hover:bg-blue-50/40"
-          }`}
-        >
-          <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-            dataType === "clubs" ? "bg-blue-500" : "bg-slate-100"
-          }`}>
+        <button type="button" onClick={() => setDataType("clubs")}
+          className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${dataType === "clubs" ? "border-blue-500 bg-blue-50 shadow-sm" : "border-slate-200 hover:border-blue-300 hover:bg-blue-50/40"}`}>
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${dataType === "clubs" ? "bg-blue-500" : "bg-slate-100"}`}>
             <Building2 className={`w-5 h-5 ${dataType === "clubs" ? "text-white" : "text-slate-500"}`} />
           </div>
           <div>
@@ -274,18 +333,9 @@ export default function ImportDropzone({ onExtracted }) {
           </div>
         </button>
 
-        <button
-          type="button"
-          onClick={() => setDataType("contacts")}
-          className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${
-            dataType === "contacts"
-              ? "border-orange-500 bg-orange-50 shadow-sm"
-              : "border-slate-200 hover:border-orange-300 hover:bg-orange-50/40"
-          }`}
-        >
-          <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-            dataType === "contacts" ? "bg-orange-500" : "bg-slate-100"
-          }`}>
+        <button type="button" onClick={() => setDataType("contacts")}
+          className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${dataType === "contacts" ? "border-orange-500 bg-orange-50 shadow-sm" : "border-slate-200 hover:border-orange-300 hover:bg-orange-50/40"}`}>
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${dataType === "contacts" ? "bg-orange-500" : "bg-slate-100"}`}>
             <Users className={`w-5 h-5 ${dataType === "contacts" ? "text-white" : "text-slate-500"}`} />
           </div>
           <div>
@@ -295,29 +345,15 @@ export default function ImportDropzone({ onExtracted }) {
         </button>
       </div>
 
-      {/* Drop zone — visible seulement après sélection du type */}
       <Card
-        className={`border-2 border-dashed transition-all ${
-          !dataType
-            ? "opacity-40 pointer-events-none border-slate-200"
-            : dragging
-            ? "border-green-400 bg-green-50 cursor-pointer"
-            : "border-slate-300 hover:border-green-400 hover:bg-green-50/30 cursor-pointer"
-        }`}
+        className={`border-2 border-dashed transition-all ${!dataType ? "opacity-40 pointer-events-none border-slate-200" : dragging ? "border-green-400 bg-green-50 cursor-pointer" : "border-slate-300 hover:border-green-400 hover:bg-green-50/30 cursor-pointer"}`}
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
         onClick={() => dataType && !loading && inputRef.current?.click()}
       >
         <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            className="hidden"
-            onChange={handleChange}
-          />
-
+          <input ref={inputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleChange} />
           {loading ? (
             <>
               <Loader2 className="w-12 h-12 text-green-500 animate-spin mb-3" />
@@ -329,25 +365,13 @@ export default function ImportDropzone({ onExtracted }) {
                 <FileSpreadsheet className="w-7 h-7 text-green-600" />
               </div>
               <h3 className="text-base font-semibold text-slate-700">
-                {dataType
-                  ? `Déposez votre fichier ${dataType === "clubs" ? "Clubs" : "Contacts"} ici`
-                  : "Choisissez un type ci-dessus"}
+                {dataType ? `Déposez votre fichier ${dataType === "clubs" ? "Clubs" : "Contacts"} ici` : "Choisissez un type ci-dessus"}
               </h3>
               <p className="text-slate-400 text-sm mt-1 mb-4">.xlsx · .xls · .csv</p>
-              {dataType && (
-                <Button variant="outline" className="gap-2">
-                  <Upload className="w-4 h-4" />
-                  Choisir un fichier
-                </Button>
-              )}
+              {dataType && <Button variant="outline" className="gap-2"><Upload className="w-4 h-4" /> Choisir un fichier</Button>}
             </>
           )}
-
-          {error && (
-            <div className="mt-4 text-red-600 bg-red-50 px-4 py-2 rounded-lg text-sm whitespace-pre-line text-left max-w-md">
-              {error}
-            </div>
-          )}
+          {error && <div className="mt-4 text-red-600 bg-red-50 px-4 py-2 rounded-lg text-sm whitespace-pre-line text-left max-w-md">{error}</div>}
         </CardContent>
       </Card>
     </div>
