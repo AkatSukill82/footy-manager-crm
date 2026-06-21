@@ -33,6 +33,8 @@ export default function OrganizationPage() {
   const [inviting, setInviting] = useState(false);
   const [shareAsk, setShareAsk] = useState(false);   // popup post-inscription
   const [sharing, setSharing] = useState(false);
+  const [resharing, setResharing] = useState(false);
+  const [reshareMsg, setReshareMsg] = useState(null);
 
   // Le groupe lui-même : requête DIRECTE (la RLS autorise un membre à lire son
   // propre groupe) + repli via la fonction serveur (rôle service).
@@ -83,6 +85,16 @@ export default function OrganizationPage() {
   const handleJoin = async () => {
     const res = await run("joinGroup", { code }, "join");
     if (res?.ok) setShareAsk(true);
+  };
+
+  // Le chef (CEO) re-marque TOUTES ses données comme partagées (rattrape les
+  // anciennes données créées avant le partage, ex. contacts non liés).
+  const reshareMyData = async () => {
+    setResharing(true); setReshareMsg(null);
+    const res = await invokeFn("groupManager", { action: "shareMyData" });
+    setResharing(false);
+    setReshareMsg(res?.ok ? t(lang, "session.group.reshareDone", { n: res.stamped ?? 0 }) : (res?.error || "Erreur"));
+    refresh();
   };
 
   // L'utilisateur ACCEPTE de partager ses données existantes avec le groupe.
@@ -242,6 +254,20 @@ export default function OrganizationPage() {
                       </Button>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* ── Re-synchroniser mes données (chef) ── */}
+            {isChef && (
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><RefreshCw className="w-4 h-4 text-indigo-600" /> {t(lang, "session.group.reshareTitle")}</CardTitle></CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-xs text-slate-500">{t(lang, "session.group.reshareDesc")}</p>
+                  <Button onClick={reshareMyData} disabled={resharing} variant="outline" size="sm">
+                    {resharing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}{t(lang, "session.group.reshareBtn")}
+                  </Button>
+                  {reshareMsg && <p className="text-xs text-green-600">{reshareMsg}</p>}
                 </CardContent>
               </Card>
             )}
