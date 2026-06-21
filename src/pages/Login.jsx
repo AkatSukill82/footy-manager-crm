@@ -5,6 +5,9 @@ import { t } from "../i18n/translations";
 import { BRAND_NAME } from "../lib/brand";
 import { Loader2, ArrowRight, ShieldCheck, Users, Sparkles, Smartphone, Mail, Lock, AlertCircle, CheckCircle2 } from "lucide-react";
 
+const INPUT = "w-full h-11 pl-9 pr-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400";
+const BTN = "w-full h-12 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-semibold flex items-center justify-center gap-2 transition-colors group";
+
 /**
  * Page de connexion de marque avec formulaire e-mail / mot de passe natif
  * (base44.auth.loginViaEmailPassword) — aucune redirection vers le login Base44.
@@ -12,11 +15,21 @@ import { Loader2, ArrowRight, ShieldCheck, Users, Sparkles, Smartphone, Mail, Lo
  */
 export default function Login() {
   const { lang, setLang } = useLanguage();
+  const [mode, setMode] = useState("login"); // login | signup | otp
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
+
+  const srvMsg = (err, fallbackKey) =>
+    err?.response?.data?.message || err?.response?.data?.detail || t(lang, fallbackKey);
+
+  const switchMode = (m) => { setMode(m); setError(null); };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -27,10 +40,52 @@ export default function Login() {
       // Token persisté par le SDK → recharge l'app, authentifiée → dashboard.
       window.location.href = '/';
     } catch (err) {
-      // Message serveur lisible quand il existe (e-mail non vérifié, etc.).
-      setError(err?.response?.data?.message || err?.response?.data?.detail || t(lang, "login.error"));
+      setError(srvMsg(err, "login.error"));
       setLoading(false);
     }
+  };
+
+  // Inscription : crée le compte puis passe à l'étape de vérification par code.
+  const signup = async (e) => {
+    e.preventDefault();
+    if (password !== confirm) { setError(t(lang, "login.pwMismatch")); return; }
+    if (password.length < 6) { setError(t(lang, "login.pwTooShort")); return; }
+    setLoading(true); setError(null); setNotice(null);
+    try {
+      await base44.auth.register({
+        email: email.trim(),
+        password,
+        full_name: `${firstName.trim()} ${lastName.trim()}`.trim(),
+      });
+      switchMode("otp");
+    } catch (err) {
+      setError(srvMsg(err, "login.signupError"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Vérifie le code reçu par e-mail puis renvoie vers la connexion.
+  const verify = async (e) => {
+    e.preventDefault();
+    if (!otp.trim()) return;
+    setLoading(true); setError(null);
+    try {
+      await base44.auth.verifyOtp({ email: email.trim(), otpCode: otp.trim() });
+      setOtp(""); setPassword(""); setConfirm("");
+      setMode("login"); setError(null);
+      setNotice(t(lang, "login.verifiedNotice"));
+    } catch (err) {
+      setError(srvMsg(err, "login.otpError"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resend = async () => {
+    setError(null);
+    try { await base44.auth.resendOtp?.(email.trim()); setNotice(t(lang, "login.resent")); }
+    catch (err) { setError(srvMsg(err, "login.otpError")); }
   };
 
   const forgot = async () => {
@@ -105,10 +160,17 @@ export default function Login() {
               <span className="text-slate-900 font-semibold">{BRAND_NAME}</span>
             </div>
 
-            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{t(lang, "login.welcome")}</h2>
-            <p className="text-slate-500 mt-2 text-[15px]">{t(lang, "login.subtitle")}</p>
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+              {mode === "signup" ? t(lang, "login.signupTitle") : mode === "otp" ? t(lang, "login.otpTitle") : t(lang, "login.welcome")}
+            </h2>
+            <p className="text-slate-500 mt-2 text-[15px]">
+              {mode === "signup" ? t(lang, "login.signupSubtitle")
+                : mode === "otp" ? t(lang, "login.otpSubtitle", { email })
+                : t(lang, "login.subtitle")}
+            </p>
 
-            <form onSubmit={submit} className="mt-8 space-y-3.5">
+            {/* Bannières partagées */}
+            <div className="mt-6 space-y-2">
               {error && (
                 <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-xs">
                   <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /><span>{error}</span>
@@ -119,39 +181,94 @@ export default function Login() {
                   <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /><span>{notice}</span>
                 </div>
               )}
+            </div>
 
-              <div>
-                <label className="text-xs font-medium text-slate-600">{t(lang, "login.email")}</label>
-                <div className="relative mt-1">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                    placeholder={t(lang, "login.emailPh")}
-                    className="w-full h-11 pl-9 pr-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400" />
+            {/* ── CONNEXION ── */}
+            {mode === "login" && (
+              <form onSubmit={submit} className="mt-2 space-y-3.5">
+                <div>
+                  <label className="text-xs font-medium text-slate-600">{t(lang, "login.email")}</label>
+                  <div className="relative mt-1">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t(lang, "login.emailPh")} className={INPUT} />
+                  </div>
                 </div>
-              </div>
+                <div>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium text-slate-600">{t(lang, "login.password")}</label>
+                    <button type="button" onClick={forgot} className="text-[11px] text-slate-400 hover:text-slate-700">{t(lang, "login.forgot")}</button>
+                  </div>
+                  <div className="relative mt-1">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t(lang, "login.passwordPh")} className={INPUT} />
+                  </div>
+                </div>
+                <button type="submit" disabled={loading || !email.trim() || !password} className={BTN}>
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> {t(lang, "login.connecting")}</> : <>{t(lang, "login.cta")} <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" /></>}
+                </button>
+                <p className="text-center text-xs text-slate-400 pt-1">
+                  {t(lang, "login.noAccount")} <button type="button" onClick={() => switchMode("signup")} className="text-slate-900 font-semibold hover:underline">{t(lang, "login.signupLink")}</button>
+                </p>
+              </form>
+            )}
 
-              <div>
-                <div className="flex items-center justify-between">
+            {/* ── INSCRIPTION ── */}
+            {mode === "signup" && (
+              <form onSubmit={signup} className="mt-2 space-y-3.5">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">{t(lang, "login.firstName")}</label>
+                    <input required value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder={t(lang, "login.firstNamePh")} className={`${INPUT} pl-3 mt-1`} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">{t(lang, "login.lastName")}</label>
+                    <input required value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder={t(lang, "login.lastNamePh")} className={`${INPUT} pl-3 mt-1`} />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600">{t(lang, "login.email")}</label>
+                  <div className="relative mt-1">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t(lang, "login.emailPh")} className={INPUT} />
+                  </div>
+                </div>
+                <div>
                   <label className="text-xs font-medium text-slate-600">{t(lang, "login.password")}</label>
-                  <button type="button" onClick={forgot} className="text-[11px] text-slate-400 hover:text-slate-700">{t(lang, "login.forgot")}</button>
+                  <div className="relative mt-1">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input type="password" autoComplete="new-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t(lang, "login.passwordPh")} className={INPUT} />
+                  </div>
                 </div>
-                <div className="relative mt-1">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)}
-                    placeholder={t(lang, "login.passwordPh")}
-                    className="w-full h-11 pl-9 pr-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400" />
+                <div>
+                  <label className="text-xs font-medium text-slate-600">{t(lang, "login.confirm")}</label>
+                  <div className="relative mt-1">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input type="password" autoComplete="new-password" required value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder={t(lang, "login.confirmPh")} className={INPUT} />
+                  </div>
                 </div>
-              </div>
+                <button type="submit" disabled={loading || !email.trim() || !password || !confirm || !firstName.trim() || !lastName.trim()} className={BTN}>
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> {t(lang, "login.connecting")}</> : <>{t(lang, "login.createAccount")} <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" /></>}
+                </button>
+                <p className="text-center text-xs text-slate-400 pt-1">
+                  {t(lang, "login.haveAccount")} <button type="button" onClick={() => switchMode("login")} className="text-slate-900 font-semibold hover:underline">{t(lang, "login.loginLink")}</button>
+                </p>
+              </form>
+            )}
 
-              <button type="submit" disabled={loading || !email.trim() || !password}
-                className="w-full h-12 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-semibold flex items-center justify-center gap-2 transition-colors group">
-                {loading ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> {t(lang, "login.connecting")}</>
-                ) : (
-                  <>{t(lang, "login.cta")} <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" /></>
-                )}
-              </button>
-            </form>
+            {/* ── VÉRIFICATION (code e-mail) ── */}
+            {mode === "otp" && (
+              <form onSubmit={verify} className="mt-2 space-y-3.5">
+                <input inputMode="numeric" required value={otp} onChange={(e) => setOtp(e.target.value)} placeholder={t(lang, "login.otpPh")} maxLength={6}
+                  className="w-full h-12 rounded-xl border border-slate-200 bg-white text-center tracking-[0.4em] font-mono text-lg text-slate-900 placeholder:tracking-normal placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400" />
+                <button type="submit" disabled={loading || otp.trim().length < 4} className={BTN}>
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> {t(lang, "login.connecting")}</> : <>{t(lang, "login.verify")} <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" /></>}
+                </button>
+                <div className="flex items-center justify-between text-xs">
+                  <button type="button" onClick={() => switchMode("login")} className="text-slate-400 hover:text-slate-700">{t(lang, "login.loginLink")}</button>
+                  <button type="button" onClick={resend} className="text-slate-900 font-semibold hover:underline">{t(lang, "login.resend")}</button>
+                </div>
+              </form>
+            )}
 
             <div className="mt-6 flex items-center justify-center gap-1.5 text-slate-400">
               <ShieldCheck className="w-3.5 h-3.5" />
