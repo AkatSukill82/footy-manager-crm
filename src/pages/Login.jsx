@@ -24,11 +24,26 @@ export default function Login() {
     setLoading(true); setError(null); setNotice(null);
     try {
       const res = await base44.auth.loginViaEmailPassword(email.trim(), password);
-      if (res?.access_token) base44.setToken?.(res.access_token);
-      // Token persisté en localStorage par le SDK → on recharge, app authentifiée.
+      // Le token peut être au premier niveau ou imbriqué selon le transport.
+      const token = res?.access_token || res?.data?.access_token || res?.token;
+      if (!token) { setError(t(lang, "login.error")); setLoading(false); return; }
+
+      // Persistance explicite sur les clés lues par l'app (évite la boucle login).
+      try {
+        localStorage.setItem("base44_access_token", token);
+        localStorage.setItem("token", token);
+      } catch { /* quota */ }
+      base44.setToken?.(token);
+
+      // Vérifie que la session est réellement valide AVANT de recharger.
+      let ok = false;
+      try { ok = !!(await base44.auth.me()); } catch { ok = false; }
+      if (!ok) { setError(t(lang, "login.sessionError")); setLoading(false); return; }
+
       window.location.reload();
-    } catch {
-      setError(t(lang, "login.error"));
+    } catch (err) {
+      // Affiche le vrai message serveur quand il existe (e-mail non vérifié, etc.).
+      setError(err?.response?.data?.message || err?.response?.data?.detail || err?.message || t(lang, "login.error"));
       setLoading(false);
     }
   };

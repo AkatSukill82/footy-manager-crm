@@ -31,7 +31,7 @@ export const translations = {
       welcome: "Bienvenue", subtitle: "Connectez-vous pour accéder à votre espace.",
       cta: "Se connecter", connecting: "Connexion…", secured: "Authentification sécurisée",
       email: "E-mail", password: "Mot de passe", emailPh: "vous@exemple.com", passwordPh: "Votre mot de passe",
-      error: "E-mail ou mot de passe incorrect.", forgot: "Mot de passe oublié ?", forgotSent: "Si un compte existe, un e-mail de réinitialisation a été envoyé.", forgotErr: "Saisissez d'abord votre e-mail.",
+      error: "E-mail ou mot de passe incorrect.", sessionError: "Connexion impossible : session non validée. Réessayez.", forgot: "Mot de passe oublié ?", forgotSent: "Si un compte existe, un e-mail de réinitialisation a été envoyé.", forgotErr: "Saisissez d'abord votre e-mail.",
       f1: "Données joueurs & clubs centralisées", f2: "Enrichissement automatique des profils", f3: "Web, iOS & Android",
     },
     nav: {
@@ -984,7 +984,7 @@ export const translations = {
       welcome: "Bienvenido", subtitle: "Inicia sesión para acceder a tu espacio.",
       cta: "Iniciar sesión", connecting: "Conectando…", secured: "Autenticación segura",
       email: "Correo", password: "Contraseña", emailPh: "tu@ejemplo.com", passwordPh: "Tu contraseña",
-      error: "Correo o contraseña incorrectos.", forgot: "¿Olvidaste tu contraseña?", forgotSent: "Si existe una cuenta, se envió un correo de restablecimiento.", forgotErr: "Introduce primero tu correo.",
+      error: "Correo o contraseña incorrectos.", sessionError: "No se pudo iniciar sesión: sesión no validada. Inténtalo de nuevo.", forgot: "¿Olvidaste tu contraseña?", forgotSent: "Si existe una cuenta, se envió un correo de restablecimiento.", forgotErr: "Introduce primero tu correo.",
       f1: "Datos de jugadores y clubes centralizados", f2: "Enriquecimiento automático de perfiles", f3: "Web, iOS y Android",
     },
     nav: {
@@ -1929,7 +1929,7 @@ export const translations = {
       welcome: "Welcome", subtitle: "Sign in to access your workspace.",
       cta: "Sign in", connecting: "Signing in…", secured: "Secure authentication",
       email: "Email", password: "Password", emailPh: "you@example.com", passwordPh: "Your password",
-      error: "Incorrect email or password.", forgot: "Forgot password?", forgotSent: "If an account exists, a reset email was sent.", forgotErr: "Enter your email first.",
+      error: "Incorrect email or password.", sessionError: "Sign-in failed: session not validated. Please try again.", forgot: "Forgot password?", forgotSent: "If an account exists, a reset email was sent.", forgotErr: "Enter your email first.",
       f1: "Centralized player & club data", f2: "Automatic profile enrichment", f3: "Web, iOS & Android",
     },
     nav: {
