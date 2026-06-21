@@ -19,6 +19,7 @@ export default function PlayersPage() {
   const { lang } = useLanguage();
   const [activeTab, setActiveTab] = useState("liste");
   const [showForm, setShowForm] = useState(false);
+  const [sortBy, setSortBy] = useState("recent");
   const [filters, setFilters] = useState({
     search: "",
     poste: "all",
@@ -115,6 +116,19 @@ export default function PlayersPage() {
            matchesBudget && matchesBudgetLegacy && matchesContrat && matchesNationalite && matchesPied;
   });
 
+  // Tri des joueurs (âge, club, contrat, valeur marchande, poste, nom).
+  const sortedPlayers = [...filteredPlayers].sort((a, b) => {
+    switch (sortBy) {
+      case "nom":     return (a.nom || "").localeCompare(b.nom || "");
+      case "age":     return (a.age ?? 999) - (b.age ?? 999);
+      case "club":    return (a.club_actuel || "").localeCompare(b.club_actuel || "");
+      case "contrat": return (a.contrat_fin || "9999-12-31").localeCompare(b.contrat_fin || "9999-12-31");
+      case "valeur":  return (b.valeur_marchande ?? -1) - (a.valeur_marchande ?? -1);
+      case "poste":   return (a.poste || "").localeCompare(b.poste || "");
+      default:        return 0; // "recent" : déjà trié par -created_date
+    }
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
@@ -183,8 +197,26 @@ export default function PlayersPage() {
               </div>
             )}
 
-            <div className="mb-6">
+            <div className="mb-4">
               <AdvancedFilters onFiltersChange={setFilters} players={players} />
+            </div>
+
+            {/* Tri */}
+            <div className="flex items-center justify-end gap-2 mb-3">
+              <span className="text-xs text-slate-400">{t(lang, 'players.sortBy')}</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+              >
+                <option value="recent">{t(lang, 'players.sortRecent')}</option>
+                <option value="nom">{t(lang, 'players.sortName')}</option>
+                <option value="age">{t(lang, 'players.sortAge')}</option>
+                <option value="club">{t(lang, 'players.sortClub')}</option>
+                <option value="contrat">{t(lang, 'players.sortContract')}</option>
+                <option value="valeur">{t(lang, 'players.sortValue')}</option>
+                <option value="poste">{t(lang, 'players.sortPosition')}</option>
+              </select>
             </div>
 
             {isLoading ? (
@@ -193,7 +225,7 @@ export default function PlayersPage() {
               </div>
             ) : (
               <div className="bg-white border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-50 shadow-sm">
-                {filteredPlayers.map((player) => (
+                {sortedPlayers.map((player) => (
                   <PlayerCard
                     key={player.id}
                     player={player}
