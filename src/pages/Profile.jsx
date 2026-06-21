@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { User, Check, Globe, Briefcase, Building2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
 import { extraTranslations } from "../i18n/extra";
@@ -27,6 +28,7 @@ export default function ProfilePage() {
   const queryClient = useQueryClient();
   const [saved, setSaved] = useState(false);
   const [orgSaved, setOrgSaved] = useState(false);
+  const [roleSaved, setRoleSaved] = useState(false);
   const [orgForm, setOrgForm] = useState({ organisation: "", poste: "" });
   const [orgFormLoaded, setOrgFormLoaded] = useState(false);
 
@@ -74,6 +76,13 @@ export default function ProfilePage() {
     setTimeout(() => setOrgSaved(false), 2000);
   };
 
+  const handleSaveRole = async (value) => {
+    await base44.auth.updateMe({ role_metier: value });
+    queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+    setRoleSaved(true);
+    setTimeout(() => setRoleSaved(false), 2000);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-8">
       <div className="max-w-2xl mx-auto space-y-6">
@@ -103,8 +112,26 @@ export default function ProfilePage() {
               <span className="text-sm font-medium text-slate-900">{user?.email || "—"}</span>
             </div>
             <div className="flex items-center justify-between py-3">
-              <span className="text-sm text-slate-500">{t(lang, "profile.role")}</span>
-              <span className="text-sm font-medium text-slate-900">{t(lang, "profile.roleValue")}</span>
+              <span className="text-sm text-slate-500">Rôle métier</span>
+              <div className="flex items-center gap-2">
+                <Select value={user?.role_metier || ""} onValueChange={handleSaveRole}>
+                  <SelectTrigger className="w-44 h-8 text-sm">
+                    <SelectValue placeholder="Choisir un rôle" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CEO">CEO</SelectItem>
+                    <SelectItem value="Agent">Agent</SelectItem>
+                    <SelectItem value="Scout">Scout</SelectItem>
+                    <SelectItem value="Directeur Sportif">Directeur Sportif</SelectItem>
+                    <SelectItem value="Responsable Marketing">Responsable Marketing</SelectItem>
+                    <SelectItem value="Analyste">Analyste</SelectItem>
+                    <SelectItem value="Autre">Autre</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className={`flex items-center gap-1 text-xs text-green-600 transition-all duration-300 ${roleSaved ? "opacity-100" : "opacity-0"}`}>
+                  <Check className="w-3.5 h-3.5" /> Enregistré
+                </span>
+              </div>
             </div>
           </CardContent>
         </Card>
