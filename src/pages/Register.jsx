@@ -192,7 +192,7 @@ export default function Register() {
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="role">Rôle</Label>
+          <Label htmlFor="role"></Label>
           <div className="relative">
             <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <select id="role" value={role} onChange={(e) => setRole(e.target.value)} required
