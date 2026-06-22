@@ -12,6 +12,7 @@ import { ThemeProvider } from '@/lib/ThemeContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Login from '@/pages/Login';
+import Register from '@/pages/Register';
 import { base44 } from '@/api/base44Client';
 
 const ImportExcel  = lazy(() => import('./pages/ImportExcel'));
@@ -90,6 +91,8 @@ const AuthenticatedApp = () => {
       <Routes>
         {/* Public routes */}
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/Register" element={<Register />} />
 
         {/* Protected routes — unauthenticated users → /login */}
         <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>

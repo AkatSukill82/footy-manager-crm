@@ -30,7 +30,7 @@ export const translations = {
     login: {
       brand: "Global Sports Agency", tagline: "Le CRM des agents de football",
       welcome: "Bienvenue", subtitle: "Connectez-vous pour accéder à votre espace.",
-      cta: "Se connecter", connecting: "Connexion…", secured: "Authentification sécurisée",
+      cta: "Se connecter", connecting: "Connexion…", secured: "Authentification sécurisée", regTitle: "Créer un compte", regSubtitle: "Renseignez vos informations pour commencer.", firstName: "Prénom", firstNamePh: "Jean", lastName: "Nom", lastNamePh: "Dupont", confirm: "Confirmer le mot de passe", confirmPh: "Retapez le mot de passe", regCta: "Créer le compte", haveAccount: "Déjà un compte ?", loginLink: "Se connecter", pwMismatch: "Les mots de passe ne correspondent pas.", pwTooShort: "Le mot de passe doit faire au moins 6 caractères.", regError: "Création du compte impossible.", otpTitle: "Confirmez votre e-mail", otpSubtitle: "Un code a été envoyé à {email}. Saisissez-le ci-dessous.", otpPh: "Code à 6 chiffres", verify: "Vérifier", otpError: "Code incorrect ou expiré.", resend: "Renvoyer le code", resent: "Code renvoyé.", verifiedNotice: "E-mail confirmé ! Connectez-vous avec votre compte.",
       email: "E-mail", password: "Mot de passe", emailPh: "vous@exemple.com", passwordPh: "Votre mot de passe",
       error: "E-mail ou mot de passe incorrect.", sessionError: "Connexion impossible : session non validée. Réessayez.", forgot: "Mot de passe oublié ?", forgotSent: "Si un compte existe, un e-mail de réinitialisation a été envoyé.", forgotErr: "Saisissez d'abord votre e-mail.",
       f1: "Données joueurs & clubs centralisées", f2: "Enrichissement automatique des profils", f3: "Web, iOS & Android",
@@ -984,7 +984,7 @@ export const translations = {
     login: {
       brand: "Global Sports Agency", tagline: "El CRM de los agentes de fútbol",
       welcome: "Bienvenido", subtitle: "Inicia sesión para acceder a tu espacio.",
-      cta: "Iniciar sesión", connecting: "Conectando…", secured: "Autenticación segura",
+      cta: "Iniciar sesión", connecting: "Conectando…", secured: "Autenticación segura", regTitle: "Crear una cuenta", regSubtitle: "Introduce tus datos para empezar.", firstName: "Nombre", firstNamePh: "Juan", lastName: "Apellido", lastNamePh: "Pérez", confirm: "Confirmar la contraseña", confirmPh: "Repite la contraseña", regCta: "Crear la cuenta", haveAccount: "¿Ya tienes cuenta?", loginLink: "Iniciar sesión", pwMismatch: "Las contraseñas no coinciden.", pwTooShort: "La contraseña debe tener al menos 6 caracteres.", regError: "No se pudo crear la cuenta.", otpTitle: "Confirma tu correo", otpSubtitle: "Se envió un código a {email}. Introdúcelo abajo.", otpPh: "Código de 6 dígitos", verify: "Verificar", otpError: "Código incorrecto o caducado.", resend: "Reenviar el código", resent: "Código reenviado.", verifiedNotice: "¡Correo confirmado! Inicia sesión con tu cuenta.",
       email: "Correo", password: "Contraseña", emailPh: "tu@ejemplo.com", passwordPh: "Tu contraseña",
       error: "Correo o contraseña incorrectos.", sessionError: "No se pudo iniciar sesión: sesión no validada. Inténtalo de nuevo.", forgot: "¿Olvidaste tu contraseña?", forgotSent: "Si existe una cuenta, se envió un correo de restablecimiento.", forgotErr: "Introduce primero tu correo.",
       f1: "Datos de jugadores y clubes centralizados", f2: "Enriquecimiento automático de perfiles", f3: "Web, iOS y Android",
@@ -1930,7 +1930,7 @@ export const translations = {
     login: {
       brand: "Global Sports Agency", tagline: "The CRM for football agents",
       welcome: "Welcome", subtitle: "Sign in to access your workspace.",
-      cta: "Sign in", connecting: "Signing in…", secured: "Secure authentication",
+      cta: "Sign in", connecting: "Signing in…", secured: "Secure authentication", regTitle: "Create an account", regSubtitle: "Enter your details to get started.", firstName: "First name", firstNamePh: "John", lastName: "Last name", lastNamePh: "Doe", confirm: "Confirm password", confirmPh: "Re-enter password", regCta: "Create account", haveAccount: "Already have an account?", loginLink: "Sign in", pwMismatch: "Passwords do not match.", pwTooShort: "Password must be at least 6 characters.", regError: "Could not create the account.", otpTitle: "Confirm your email", otpSubtitle: "A code was sent to {email}. Enter it below.", otpPh: "6-digit code", verify: "Verify", otpError: "Incorrect or expired code.", resend: "Resend code", resent: "Code resent.", verifiedNotice: "Email confirmed! Sign in with your account.",
       email: "Email", password: "Password", emailPh: "you@example.com", passwordPh: "Your password",
       error: "Incorrect email or password.", sessionError: "Sign-in failed: session not validated. Please try again.", forgot: "Forgot password?", forgotSent: "If an account exists, a reset email was sent.", forgotErr: "Enter your email first.",
       f1: "Centralized player & club data", f2: "Automatic profile enrichment", f3: "Web, iOS & Android",
