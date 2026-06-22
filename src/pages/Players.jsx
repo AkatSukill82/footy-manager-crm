@@ -172,8 +172,11 @@ export default function PlayersPage() {
 
     const matchesPoste = filters.poste === "all" || player.poste === filters.poste;
 
-    const matchesAge = (!filters.ageMin || player.age >= parseInt(filters.ageMin)) &&
-                       (!filters.ageMax || player.age <= parseInt(filters.ageMax));
+    // Âge calculé (champ age sinon depuis la date de naissance) pour ne pas
+    // exclure à tort les joueurs qui n'ont que leur date de naissance.
+    const pAge = ageOf(player);
+    const matchesAge = (!filters.ageMin || (pAge != null && pAge >= parseInt(filters.ageMin))) &&
+                       (!filters.ageMax || (pAge != null && pAge <= parseInt(filters.ageMax)));
 
     const matchesClub = !filters.club ||
       player.club_actuel?.toLowerCase().includes(filters.club.toLowerCase());
