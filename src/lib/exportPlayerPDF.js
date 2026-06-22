@@ -71,7 +71,7 @@ export function exportPlayerPDF(player, notes) {
   const noteList = Array.isArray(notes) ? notes.filter((n) => n?.note) : (notes?.note ? [notes] : []);
 
   const photoSection = player.photo_url
-    ? `<img class="player-photo" src="${player.photo_url}" alt="${player.nom}" crossorigin="anonymous" />`
+    ? `<img class="player-photo" src="${player.photo_url}" alt="${player.nom}" referrerpolicy="no-referrer" />`
     : `<div class="player-photo-placeholder">👤</div>`;
 
   const noteSection = noteList.length
@@ -333,8 +333,17 @@ export function exportPlayerPDF(player, notes) {
 
   <script>
     window.onload = function() {
-      // Delay slightly so image can load before print dialog
-      setTimeout(function() { window.print(); }, 600);
+      // Attend que la photo soit chargée avant d'imprimer (sinon elle manque).
+      var img = document.querySelector('.player-photo');
+      var done = false;
+      function go() { if (done) return; done = true; setTimeout(function() { window.print(); }, 300); }
+      if (img && !img.complete) {
+        img.addEventListener('load', go);
+        img.addEventListener('error', go);
+        setTimeout(go, 3000); // sécurité si l'image ne répond pas
+      } else {
+        go();
+      }
     };
   </script>
 </body>
