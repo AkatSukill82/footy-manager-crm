@@ -211,7 +211,7 @@ export default function PlayersPage() {
   const sortedPlayers = [...filteredPlayers].sort((a, b) => {
     switch (sortBy) {
       case "nom":     return (a.nom || "").localeCompare(b.nom || "");
-      case "age":     return (a.age ?? 999) - (b.age ?? 999);
+      case "age":     return (ageOf(a) ?? 999) - (ageOf(b) ?? 999);
       case "club":    return (a.club_actuel || "").localeCompare(b.club_actuel || "");
       case "contrat": return (a.contrat_fin || "9999-12-31").localeCompare(b.contrat_fin || "9999-12-31");
       case "valeur":  return (b.valeur_marchande ?? -1) - (a.valeur_marchande ?? -1);
