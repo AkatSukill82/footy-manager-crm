@@ -6,7 +6,7 @@ import { useCurrentUser } from "../lib/useCurrentUser";
 import { ensureClubForPlayer } from "../lib/ensureClub";
 import { cleanPlayerName } from "../lib/cleanName";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, List, Search, Repeat, CalendarDays, Wallet, FileText } from "lucide-react";
+import { Plus, Loader2, List, Search, Repeat, CalendarDays, Wallet, FileText, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { useLanguage } from "../lib/LanguageContext";
@@ -17,6 +17,10 @@ import AdvancedFilters from "../components/players/AdvancedFilters";
 import PlayerForm from "../components/players/PlayerForm";
 import PlayerStatusModal, { STATUTS, statutConfig } from "../components/players/PlayerStatusModal";
 import PlayerSearchPage from "./PlayerSearch";
+
+// Nom normalisé pour détecter les doublons (minuscules, sans accents).
+const normName = (s) =>
+  (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
 
 // Vue tableau par statut (catégorie agent). Sans statut → Prospect.
 const BOARD_ORDER = ["Prospect", "Client", "Mandaté", "En observation"];
@@ -102,6 +106,7 @@ export default function PlayersPage() {
   const [activeTab, setActiveTab] = useState("liste");
   const [showForm, setShowForm] = useState(false);
   const [sortBy, setSortBy] = useState("recent");
+  const [cleaning, setCleaning] = useState(false);
   const [filters, setFilters] = useState({
     search: "",
     poste: "all",
@@ -133,7 +138,13 @@ export default function PlayersPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Player.create(withOrg({ ...data, nom: cleanPlayerName(data.nom) })),
+    mutationFn: (data) => {
+      // Anti-doublon : refuse si un joueur du même nom existe déjà.
+      const clean = cleanPlayerName(data.nom);
+      const existing = players.find((p) => normName(p.nom) === normName(clean));
+      if (existing) throw new Error(`« ${clean} » est déjà dans ta liste.`);
+      return base44.entities.Player.create(withOrg({ ...data, nom: clean }));
+    },
     onSuccess: (created, data) => {
       queryClient.invalidateQueries({ queryKey: ['players'] });
       setShowForm(false);
@@ -169,6 +180,37 @@ export default function PlayersPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['watchList'] }),
     onError: (err) => setMutError(err?.message || "Impossible de changer le statut."),
   });
+
+  // ── Doublons (même nom normalisé) ──────────────────────────────────────────
+  const dupGroups = (() => {
+    const map = {};
+    for (const p of players) {
+      const k = normName(p.nom);
+      if (!k) continue;
+      (map[k] = map[k] || []).push(p);
+    }
+    return Object.values(map).filter((g) => g.length > 1);
+  })();
+  const dupExtras = dupGroups.reduce((n, g) => n + g.length - 1, 0);
+
+  const cleanDuplicates = async () => {
+    if (!window.confirm(`Supprimer ${dupExtras} doublon(s) ? Pour chaque joueur, on garde la fiche la plus complète.`)) return;
+    setCleaning(true);
+    const score = (p) => Object.values(p).filter((v) => v != null && v !== "").length;
+    const toDelete = [];
+    for (const g of dupGroups) {
+      const sorted = [...g].sort((a, b) => score(b) - score(a));
+      for (const p of sorted.slice(1)) {
+        // ne supprime que mes propres fiches (pas les données partagées du groupe)
+        if (!currentUser || p.created_by_id === currentUser.id) toDelete.push(p);
+      }
+    }
+    for (const p of toDelete) {
+      try { await base44.entities.Player.delete(p.id); } catch { /* ignore */ }
+    }
+    queryClient.invalidateQueries({ queryKey: ['players'] });
+    setCleaning(false);
+  };
 
   const filteredPlayers = players.filter(player => {
     const matchesSearch = !filters.search ||
@@ -296,6 +338,16 @@ export default function PlayersPage() {
             <div className="mb-4">
               <AdvancedFilters onFiltersChange={setFilters} players={players} />
             </div>
+
+            {/* Doublons détectés */}
+            {dupExtras > 0 && (
+              <div className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-2.5 mb-3 text-sm">
+                <span>{t(lang, 'players.dupFound', { n: dupExtras })}</span>
+                <Button onClick={cleanDuplicates} disabled={cleaning} size="sm" variant="outline" className="border-amber-300 text-amber-800 hover:bg-amber-100 flex-shrink-0">
+                  {cleaning ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Trash2 className="w-4 h-4 mr-1.5" />}{t(lang, 'players.dupClean')}
+                </Button>
+              </div>
+            )}
 
             {/* Tri */}
             <div className="flex items-center justify-end gap-2 mb-3">

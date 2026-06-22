@@ -497,6 +497,14 @@ export default function PlayerSearchPage() {
         clean_sheets:     s?.clean_sheets,
       };
       const clean = Object.fromEntries(Object.entries(raw).filter(([, v]) => v != null && v !== ""));
+      // Anti-doublon : ne pas recréer un joueur du même nom déjà présent.
+      const norm = (x) => (x || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+      const existingPlayers = await base44.entities.Player.filter({});
+      if ((existingPlayers || []).some((p) => norm(p.nom) === norm(clean.nom))) {
+        setError(`« ${clean.nom} » est déjà dans ta liste — pas de doublon créé.`);
+        setSaving(false);
+        return;
+      }
       const created = await base44.entities.Player.create(withOrg(clean));
       queryClient.invalidateQueries({ queryKey: ["players"] });
       setSaved(true);
