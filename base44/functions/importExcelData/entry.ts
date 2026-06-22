@@ -60,11 +60,19 @@ Deno.serve(async (req) => {
   };
 
   // ── Chargement des données existantes ────────────────────────────────────────
+  // Isolation : on ne dédoublonne QUE sur les données de l'utilisateur (et de son
+  // groupe), jamais sur celles des autres organisations → un import ne peut pas
+  // toucher / lire les clubs ou contacts d'une autre org.
+  const orgId = user.organization_id || null;
+  const mine = (e: any) =>
+    e.created_by_id === user.id || (orgId && e.organization_id === orgId);
 
-  const [existingClubs, existingContacts] = await Promise.all([
+  const [allClubs, allContacts] = await Promise.all([
     base44.asServiceRole.entities.Club.list(),
     base44.asServiceRole.entities.ClubContact.list(),
   ]);
+  const existingClubs = allClubs.filter(mine);
+  const existingContacts = allContacts.filter(mine);
 
   const clubMap: Record<string, any> = {};
   existingClubs.forEach((c: any) => {
