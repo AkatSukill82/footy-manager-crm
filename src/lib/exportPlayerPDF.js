@@ -34,35 +34,45 @@ function infoRow(label, value) {
 
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("fr-FR") : null);
 
-// Statistiques de performance (n'affiche que celles renseignées).
-const STAT_FIELDS = [
-  { key: "matchs_joues",        label: "Matchs" },
-  { key: "titularisations",     label: "Titularisations" },
-  { key: "minutes_jouees",      label: "Minutes", suffix: "'" },
-  { key: "buts",                label: "Buts" },
-  { key: "passes_decisives",    label: "Passes déc." },
-  { key: "note_moyenne",        label: "Note moy." },
-  { key: "xg",                  label: "xG" },
-  { key: "xa",                  label: "xA" },
-  { key: "tirs",                label: "Tirs" },
-  { key: "tirs_cadres",         label: "Tirs cadrés" },
-  { key: "passes_cles",         label: "Passes clés" },
-  { key: "dribbles_reussis",    label: "Dribbles réussis" },
-  { key: "duels_gagnes_pct",    label: "Duels gagnés", suffix: "%" },
-  { key: "passes_reussies_pct", label: "Passes réussies", suffix: "%" },
-  { key: "arrets",              label: "Arrêts" },
-  { key: "clean_sheets",        label: "Clean sheets" },
-  { key: "buts_encaisses",      label: "Buts encaissés" },
-  { key: "cartons_jaunes",      label: "Cartons jaunes" },
-  { key: "cartons_rouges",      label: "Cartons rouges" },
+// Statistiques de performance (FotMob), groupées comme le panneau de la fiche.
+// [clé, libellé, suffixe?]. N'affiche que les valeurs renseignées.
+const STAT_GROUPS = [
+  { title: "Synthèse", items: [
+    ["matchs_joues", "Matchs"], ["titularisations", "Titularisations"], ["minutes_jouees", "Minutes", "'"], ["note_moyenne", "Note moy."],
+  ]},
+  { title: "Tirs & Buts", items: [
+    ["buts", "Buts"], ["xg", "xG"], ["xgot", "xGOT"], ["xg_hors_penalty", "xG hors péno"], ["tirs", "Tirs"], ["tirs_cadres", "Tirs cadrés"], ["penaltys_marques", "Pénaltys"],
+  ]},
+  { title: "Passes", items: [
+    ["passes_decisives", "Passes déc."], ["xa", "xA"], ["passes_reussies", "Passes réussies"], ["passes_reussies_pct", "% passes", "%"],
+    ["passes_longues", "Passes longues"], ["passes_longues_pct", "% longues", "%"], ["passes_cles", "Passes clés"],
+    ["grandes_chances", "Grandes occasions"], ["centres", "Centres"], ["centres_reussis_pct", "% centres", "%"],
+  ]},
+  { title: "Possession & Duels", items: [
+    ["duels_gagnes", "Duels gagnés"], ["duels_gagnes_pct", "% duels", "%"], ["duels_aeriens_pct", "% aériens", "%"], ["dribbles_reussis", "Dribbles réussis"],
+    ["touches_balle", "Touches"], ["touches_surface_adverse", "Touches surf. adv."], ["pertes_balle", "Pertes"], ["fautes_subies", "Fautes subies"],
+  ]},
+  { title: "Défense", items: [
+    ["actions_defensives", "Actions déf."], ["interceptions", "Interceptions"], ["tacles", "Tacles"], ["recuperations", "Récupérations"],
+    ["dribbles_subis", "Dribbles subis"], ["degagements", "Dégagements"], ["buts_encaisses_terrain", "Buts enc. (terrain)"], ["xg_concede_terrain", "xG concédé"],
+  ]},
+  { title: "Discipline", items: [
+    ["cartons_jaunes", "Cartons jaunes"], ["cartons_rouges", "Cartons rouges"], ["fautes_commises", "Fautes commises"], ["hors_jeu", "Hors-jeu"],
+  ]},
+  { title: "Gardien", items: [
+    ["arrets", "Arrêts"], ["arrets_pct", "% arrêts", "%"], ["buts_encaisses", "Buts encaissés"], ["clean_sheets", "Clean sheets"], ["sorties_reussies", "Sorties réussies"],
+  ]},
 ];
 
-function statsGrid(player) {
-  const cells = STAT_FIELDS
-    .filter((f) => player[f.key] != null && player[f.key] !== "")
-    .map((f) => `<div class="stat-card"><div class="stat-num">${player[f.key]}${f.suffix || ""}</div><div class="stat-lbl">${f.label}</div></div>`)
-    .join("");
-  return cells;
+function statsGroupsHtml(player) {
+  return STAT_GROUPS.map((g) => {
+    const cells = g.items
+      .filter(([k]) => player[k] != null && player[k] !== "")
+      .map(([k, label, suffix]) => `<div class="stat-card"><div class="stat-num">${player[k]}${suffix || ""}</div><div class="stat-lbl">${label}</div></div>`)
+      .join("");
+    if (!cells) return "";
+    return `<div class="stat-group"><div class="stat-group-title">${g.title}</div><div class="stats-grid">${cells}</div></div>`;
+  }).join("");
 }
 
 export function exportPlayerPDF(player, notes) {
@@ -87,11 +97,11 @@ export function exportPlayerPDF(player, notes) {
       </div>`
     : "";
 
-  const statsCells = statsGrid(player);
-  const statsPerf = statsCells
+  const statsHtml = statsGroupsHtml(player);
+  const statsPerf = statsHtml
     ? `<div class="section">
-        <h3 class="section-title">Statistiques${player.ligue ? ` <span class="avg-badge">${player.ligue}</span>` : ""}</h3>
-        <div class="stats-grid">${statsCells}</div>
+        <h3 class="section-title">Statistiques (FotMob)${player.ligue ? ` <span class="avg-badge">${player.ligue}</span>` : ""}</h3>
+        ${statsHtml}
       </div>`
     : "";
 
@@ -242,6 +252,9 @@ export function exportPlayerPDF(player, notes) {
   .info-label { color: #64748b; min-width: 110px; flex-shrink: 0; }
   .info-value { font-weight: 600; }
   /* Stats grid */
+  .stat-group { margin-bottom: 12px; }
+  .stat-group:last-child { margin-bottom: 0; }
+  .stat-group-title { font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 6px; }
   .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
   .stat-card {
     background: #f8fafc;
