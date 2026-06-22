@@ -40,7 +40,7 @@ export default function PlayerForm({ player, onSubmit, onCancel }) {
   const { lang } = useLanguage();
   const [formData, setFormData] = useState({
     nom: "", age: "", date_naissance: "", lieu_naissance: "", poste: "", poste_secondaire: "",
-    nationalite: "", nationalite_secondaire: "", club_actuel: "", valeur_marchande: "",
+    nationalite: "", nationalite_secondaire: "", sexe: "", club_actuel: "", valeur_marchande: "",
     pied_fort: "", taille: "", poids: "", contrat_fin: "", photo_url: "",
     en_pret: false, club_proprietaire: "", pret_fin: "",
     date_arrivee_club: "", option_contrat: "",
@@ -109,6 +109,15 @@ export default function PlayerForm({ player, onSubmit, onCancel }) {
               </F>
               <F id="nationalite_secondaire" label={t(lang,'playerForm.nationality2')}>
                 <Input id="nationalite_secondaire" value={formData.nationalite_secondaire || ""} onChange={set("nationalite_secondaire")} placeholder={t(lang,'playerForm.nationality2Plh')} />
+              </F>
+              <F id="sexe" label={t(lang,'playerForm.sex')}>
+                <Select value={formData.sexe || ""} onValueChange={setSelect("sexe")}>
+                  <SelectTrigger><SelectValue placeholder={t(lang,'playerForm.sexSelect')} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Masculin">{t(lang,'playerForm.male')}</SelectItem>
+                    <SelectItem value="Féminin">{t(lang,'playerForm.female')}</SelectItem>
+                  </SelectContent>
+                </Select>
               </F>
               <F id="date_naissance" label={t(lang,'playerForm.dob')}>
                 <Input id="date_naissance" type="date" value={formData.date_naissance} onChange={set("date_naissance")} />
