@@ -28,27 +28,70 @@ function ratingBars(player) {
 }
 
 function infoRow(label, value) {
-  if (!value) return "";
+  if (value == null || value === "") return "";
   return `<div class="info-row"><span class="info-label">${label}</span><span class="info-value">${value}</span></div>`;
 }
 
-export function exportPlayerPDF(player, playerNote) {
+const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("fr-FR") : null);
+
+// Statistiques de performance (n'affiche que celles renseignées).
+const STAT_FIELDS = [
+  { key: "matchs_joues",        label: "Matchs" },
+  { key: "titularisations",     label: "Titularisations" },
+  { key: "minutes_jouees",      label: "Minutes", suffix: "'" },
+  { key: "buts",                label: "Buts" },
+  { key: "passes_decisives",    label: "Passes déc." },
+  { key: "note_moyenne",        label: "Note moy." },
+  { key: "xg",                  label: "xG" },
+  { key: "xa",                  label: "xA" },
+  { key: "tirs",                label: "Tirs" },
+  { key: "tirs_cadres",         label: "Tirs cadrés" },
+  { key: "passes_cles",         label: "Passes clés" },
+  { key: "dribbles_reussis",    label: "Dribbles réussis" },
+  { key: "duels_gagnes_pct",    label: "Duels gagnés", suffix: "%" },
+  { key: "passes_reussies_pct", label: "Passes réussies", suffix: "%" },
+  { key: "arrets",              label: "Arrêts" },
+  { key: "clean_sheets",        label: "Clean sheets" },
+  { key: "buts_encaisses",      label: "Buts encaissés" },
+  { key: "cartons_jaunes",      label: "Cartons jaunes" },
+  { key: "cartons_rouges",      label: "Cartons rouges" },
+];
+
+function statsGrid(player) {
+  const cells = STAT_FIELDS
+    .filter((f) => player[f.key] != null && player[f.key] !== "")
+    .map((f) => `<div class="stat-card"><div class="stat-num">${player[f.key]}${f.suffix || ""}</div><div class="stat-lbl">${f.label}</div></div>`)
+    .join("");
+  return cells;
+}
+
+export function exportPlayerPDF(player, notes) {
   const avg = ratingAvg(player);
   const today = new Date().toLocaleDateString("fr-FR");
+  const noteList = Array.isArray(notes) ? notes.filter((n) => n?.note) : (notes?.note ? [notes] : []);
 
   const photoSection = player.photo_url
     ? `<img class="player-photo" src="${player.photo_url}" alt="${player.nom}" crossorigin="anonymous" />`
     : `<div class="player-photo-placeholder">👤</div>`;
 
-  const noteSection = playerNote?.note
+  const noteSection = noteList.length
     ? `<div class="section">
         <h3 class="section-title">Notes & Observations</h3>
-        <div class="note-box">${playerNote.note.replace(/\n/g, "<br>")}</div>
-        <div class="note-meta">
-          ${playerNote.evaluation ? `<span class="note-badge">Évaluation : <strong>${playerNote.evaluation}/10</strong></span>` : ""}
-          ${playerNote.interet ? `<span class="note-badge">Intérêt : <strong>${playerNote.interet}</strong></span>` : ""}
-          ${playerNote.date_observation ? `<span class="note-badge">Observé le ${new Date(playerNote.date_observation).toLocaleDateString("fr-FR")}</span>` : ""}
-        </div>
+        ${noteList.map((n) => `
+          <div class="note-box">${n.note.replace(/\n/g, "<br>")}</div>
+          <div class="note-meta">
+            ${n.evaluation ? `<span class="note-badge">Évaluation : <strong>${n.evaluation}/10</strong></span>` : ""}
+            ${n.interet ? `<span class="note-badge">Intérêt : <strong>${n.interet}</strong></span>` : ""}
+            ${n.date_observation ? `<span class="note-badge">Observé le ${fmtDate(n.date_observation)}</span>` : ""}
+          </div>`).join("")}
+      </div>`
+    : "";
+
+  const statsCells = statsGrid(player);
+  const statsPerf = statsCells
+    ? `<div class="section">
+        <h3 class="section-title">Statistiques${player.ligue ? ` <span class="avg-badge">${player.ligue}</span>` : ""}</h3>
+        <div class="stats-grid">${statsCells}</div>
       </div>`
     : "";
 
@@ -70,19 +113,43 @@ export function exportPlayerPDF(player, playerNote) {
       </div>`
     : "";
 
+  const ageVal = player.age ?? (player.date_naissance
+    ? Math.floor((Date.now() - new Date(player.date_naissance).getTime()) / 31557600000)
+    : null);
+
   const infoSection = `
     <div class="section">
       <h3 class="section-title">Informations</h3>
       <div class="info-grid">
         ${infoRow("Poste", player.poste)}
-        ${infoRow("Âge", player.age ? `${player.age} ans` : null)}
+        ${infoRow("Poste secondaire", player.poste_secondaire)}
+        ${infoRow("Âge", ageVal != null ? `${ageVal} ans` : null)}
+        ${infoRow("Date de naissance", fmtDate(player.date_naissance))}
+        ${infoRow("Lieu de naissance", player.lieu_naissance)}
         ${infoRow("Nationalité", player.nationalite)}
+        ${infoRow("2e nationalité", player.nationalite_secondaire)}
         ${infoRow("Club", player.club_actuel)}
+        ${infoRow("Ligue", player.ligue)}
+        ${infoRow("N° maillot", player.numero_maillot)}
         ${infoRow("Pied fort", player.pied_fort)}
         ${infoRow("Taille", player.taille ? `${player.taille} cm` : null)}
+        ${infoRow("Poids", player.poids ? `${player.poids} kg` : null)}
+        ${infoRow("Sexe", player.sexe)}
+      </div>
+    </div>
+    <div class="section">
+      <h3 class="section-title">Contrat</h3>
+      <div class="info-grid">
         ${infoRow("Valeur marchande", player.valeur_marchande ? `${player.valeur_marchande} M€` : null)}
-        ${infoRow("Fin de contrat", player.contrat_fin ? new Date(player.contrat_fin).toLocaleDateString("fr-FR") : null)}
-        ${infoRow("Agent", player.agent_nom)}
+        ${infoRow("Salaire annuel", player.salaire ? `${player.salaire} M€` : null)}
+        ${infoRow("Arrivée au club", fmtDate(player.date_arrivee_club))}
+        ${infoRow("Fin de contrat", fmtDate(player.contrat_fin))}
+        ${infoRow("Option de contrat", player.option_contrat)}
+        ${infoRow("En prêt", player.en_pret ? (player.club_proprietaire ? `Oui — propriété de ${player.club_proprietaire}` : "Oui") : null)}
+        ${infoRow("Fin du prêt", fmtDate(player.pret_fin))}
+        ${infoRow("Agent", player.agent)}
+        ${infoRow("Agence", player.agence)}
+        ${infoRow("Contact agent", player.agent_email || player.agent_telephone)}
       </div>
     </div>`;
 
@@ -174,6 +241,17 @@ export function exportPlayerPDF(player, playerNote) {
   .info-row { display: flex; gap: 8px; font-size: 12px; }
   .info-label { color: #64748b; min-width: 110px; flex-shrink: 0; }
   .info-value { font-weight: 600; }
+  /* Stats grid */
+  .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .stat-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 6px;
+    text-align: center;
+  }
+  .stat-num { font-size: 17px; font-weight: 800; color: #2563eb; line-height: 1.1; }
+  .stat-lbl { font-size: 9px; color: #64748b; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.02em; }
   /* Ratings */
   .ratings { display: flex; flex-direction: column; gap: 10px; }
   .rating-row { display: flex; align-items: center; gap: 10px; }
@@ -246,6 +324,7 @@ export function exportPlayerPDF(player, playerNote) {
   </div>
 
   ${infoSection}
+  ${statsPerf}
   ${ratingsSection}
   ${noteSection}
   ${statsSection}
