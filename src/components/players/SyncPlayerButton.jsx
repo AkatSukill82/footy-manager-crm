@@ -59,12 +59,12 @@ export default function SyncPlayerButton({ player, onApply }) {
 
   useEffect(() => {
     if (!player?.id || !player?.nom) return;
-    if (ranFor.current === player.id) return;     // déjà lancé pour ce joueur ce montage
-    ranFor.current = player.id;
-    if (syncedRecently(player.id)) return;          // synchro récente → on ne refait pas
 
     let cancelled = false;
-    (async () => {
+
+    const runSync = async (force) => {
+      // Ouverture : respecte l'anti-spam (6h). Tick auto (5 min) : force = true.
+      if (!force && syncedRecently(player.id)) return;
       setState("loading");
       try {
         // Indices d'identité passés à chaque source pour fiabiliser le matching.
@@ -204,9 +204,12 @@ export default function SyncPlayerButton({ player, onApply }) {
       } catch {
         if (!cancelled) setState("done"); // échec silencieux
       }
-    })();
+    };
 
-    return () => { cancelled = true; };
+    runSync(false);                                                       // à l'ouverture
+    const intervalId = setInterval(() => runSync(true), 5 * 60 * 1000);   // toutes les 5 min
+
+    return () => { cancelled = true; clearInterval(intervalId); };
   }, [player?.id, player?.nom]);
 
   // Discret : un indicateur transitoire pendant/juste après la synchro, puis rien.

@@ -85,7 +85,11 @@ export default function PlayerDetailPage() {
       const players = await base44.entities.Player.filter({ id: playerId });
       return players[0];
     },
-    enabled: !!playerId
+    enabled: !!playerId,
+    // Rafraîchit la fiche depuis la base toutes les 5 min (sans clic), et
+    // récupère les màj faites par le Sync ou par un membre du groupe.
+    refetchInterval: 5 * 60 * 1000,
+    refetchIntervalInBackground: false,
   });
 
   // Réutilise le cache global — zéro requête réseau supplémentaire
