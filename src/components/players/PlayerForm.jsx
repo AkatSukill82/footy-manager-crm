@@ -43,6 +43,7 @@ export default function PlayerForm({ player, onSubmit, onCancel }) {
     nationalite: "", nationalite_secondaire: "", club_actuel: "", valeur_marchande: "",
     pied_fort: "", taille: "", poids: "", contrat_fin: "", photo_url: "",
     en_pret: false, club_proprietaire: "", pret_fin: "",
+    date_arrivee_club: "", option_contrat: "",
     salaire: "", salaire_semaine: "", agent: "", agence: "", agent_email: "", agent_telephone: "",
     email: "", telephone: "", whatsapp: "", instagram: "", twitter: "", linkedin: "",
     adresse: "", ville_residence: "", pays_residence: "",
@@ -158,6 +159,12 @@ export default function PlayerForm({ player, onSubmit, onCancel }) {
               </F>
               <F id="contrat_fin" label={t(lang,'playerForm.contractEnd')}>
                 <Input id="contrat_fin" type="date" value={formData.contrat_fin} onChange={set("contrat_fin")} />
+              </F>
+              <F id="date_arrivee_club" label={t(lang,'playerForm.joined')}>
+                <Input id="date_arrivee_club" type="date" value={formData.date_arrivee_club || ""} onChange={set("date_arrivee_club")} />
+              </F>
+              <F id="option_contrat" label={t(lang,'playerForm.contractOption')}>
+                <Input id="option_contrat" value={formData.option_contrat || ""} onChange={set("option_contrat")} placeholder={t(lang,'playerForm.contractOptionPlh')} />
               </F>
               <F id="valeur_marchande" label={t(lang,'playerForm.marketValue')}>
                 <Input id="valeur_marchande" type="number" step="0.5" min="0" value={formData.valeur_marchande} onChange={setNum("valeur_marchande")} placeholder={t(lang,'playerForm.marketValuePlh')} />

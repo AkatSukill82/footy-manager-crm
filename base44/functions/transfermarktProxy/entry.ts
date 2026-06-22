@@ -171,6 +171,28 @@ const parseProfile = (html: string, url: string): Record<string, any> => {
     d.contrat_fin = `${contM[3]}-${contM[2].padStart(2, "0")}-${contM[1].padStart(2, "0")}`;
   }
 
+  // ── Infos contrat supplémentaires (best-effort, libellés de l'entête TM) ──
+  // Valeur texte après un libellé "Label:".
+  const tmField = (label: string): string | null => {
+    const re = new RegExp(label + ":?\\s*<\\/[^>]+>\\s*(?:<[^>]+>\\s*)*([^<]{1,60})", "i");
+    const m = html.match(re);
+    return m ? (m[1] || "").replace(/&[^;]+;/g, " ").replace(/\s+/g, " ").trim() || null : null;
+  };
+  const toIso = (raw: string | null): string | null => {
+    if (!raw) return null;
+    const a = raw.match(/(\w{3})\s+(\d{1,2}),?\s+(\d{4})/);
+    if (a && MONTHS_DE[a[1].toLowerCase()]) return `${a[3]}-${MONTHS_DE[a[1].toLowerCase()]}-${a[2].padStart(2, "0")}`;
+    const b = raw.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+    if (b) return `${b[3]}-${b[2].padStart(2, "0")}-${b[1].padStart(2, "0")}`;
+    return null;
+  };
+  // Date d'arrivée au club ("Joined")
+  const joined = toIso(tmField("Joined") || tmField("Contract there since"));
+  if (joined) d.date_arrivee_club = joined;
+  // Option de contrat (ex: "Option for a further year")
+  const opt = tmField("Contract option");
+  if (opt && opt.length > 1) d.option_contrat = opt;
+
   // Club actuel (lien /verein/ ou /club/)
   const clubM = html.match(/href="\/[^"]+\/(?:verein|club)\/\d+"[^>]*>\s*(?:<[^>]+>)*\s*([A-Z][^<\n]{2,40}?)\s*(?:<|$)/im);
   if (clubM) d.club_actuel = clubM[1].replace(/<[^>]+>/g, "").trim();

@@ -146,6 +146,15 @@
       "format": "date",
       "description": "Date de fin du prêt"
     },
+    "date_arrivee_club": {
+      "type": "string",
+      "format": "date",
+      "description": "Date d'arrivée au club actuel (Transfermarkt « Joined »)"
+    },
+    "option_contrat": {
+      "type": "string",
+      "description": "Option de contrat (ex: option +1 an) — Transfermarkt"
+    },
     "photo_url": {
       "type": "string",
       "description": "URL de la photo du joueur"

@@ -6,7 +6,7 @@ import { useCurrentUser } from "../lib/useCurrentUser";
 import { ensureClubForPlayer } from "../lib/ensureClub";
 import { cleanPlayerName } from "../lib/cleanName";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, List, Search, Repeat, CalendarDays, Wallet } from "lucide-react";
+import { Plus, Loader2, List, Search, Repeat, CalendarDays, Wallet, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { useLanguage } from "../lib/LanguageContext";
@@ -60,7 +60,7 @@ function BoardCard({ player, statut, onOpen, onMove, lang }) {
       </button>
 
       {/* Contrat + prêt + salaire */}
-      {(player.contrat_fin || player.en_pret || player.salaire != null) && (
+      {(player.contrat_fin || player.en_pret || player.salaire != null || player.option_contrat) && (
         <div className="flex flex-wrap items-center gap-1.5 mb-2">
           {player.contrat_fin && (
             <span className={`inline-flex items-center gap-1 text-[10px] rounded px-1.5 py-0.5 ${contractColor(player.contrat_fin)}`}>
@@ -75,6 +75,11 @@ function BoardCard({ player, statut, onOpen, onMove, lang }) {
           {player.en_pret && (
             <span className="inline-flex items-center gap-1 text-[10px] text-amber-700 bg-amber-100 rounded px-1.5 py-0.5" title={player.club_proprietaire ? `${t(lang, "players.loanFrom")} ${player.club_proprietaire}` : ""}>
               <Repeat className="w-3 h-3" /> {t(lang, "players.loan")}{player.club_proprietaire ? ` · ${player.club_proprietaire}` : ""}{player.pret_fin ? ` → ${yr(player.pret_fin)}` : ""}
+            </span>
+          )}
+          {player.option_contrat && (
+            <span className="inline-flex items-center gap-1 text-[10px] text-indigo-700 bg-indigo-100 rounded px-1.5 py-0.5" title={player.option_contrat}>
+              <FileText className="w-3 h-3" /> {player.option_contrat}
             </span>
           )}
         </div>

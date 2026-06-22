@@ -18,6 +18,7 @@ const STATS_FIELDS = new Set([
   "cartons_jaunes", "cartons_rouges", "fautes_commises", "fautes_subies", "hors_jeu",
   "arrets", "buts_encaisses", "clean_sheets",
   "club_actuel", "ligue",
+  "contrat_fin", "date_arrivee_club", "option_contrat",
   "sofascore_id", "fotmob_id", "besoccer_id", "transfermarkt_id",
 ]);
 
@@ -118,6 +119,10 @@ export default function SyncPlayerButton({ player, onApply }) {
           // Identité : Transfermarkt prioritaire, BeSoccer en complément.
           club_actuel: tm?.club_actuel || bs?.club_actuel,
           ligue:       bs?.ligue || tm?.ligue,
+          // Contrat (Transfermarkt) : fin de contrat, arrivée au club, option.
+          contrat_fin:       tm?.contrat_fin,
+          date_arrivee_club: tm?.date_arrivee_club,
+          option_contrat:    tm?.option_contrat,
           // IDs résolus → réutilisés à la prochaine synchro (plus de recherche par nom).
           sofascore_id: ss?.sofascore_id,
           fotmob_id:    fm?.fotmob_id,
