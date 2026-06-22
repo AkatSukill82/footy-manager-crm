@@ -86,9 +86,9 @@ export default function PlayerDetailPage() {
       return players[0];
     },
     enabled: !!playerId,
-    // Rafraîchit la fiche depuis la base toutes les 5 min (sans clic), et
+    // Rafraîchit la fiche depuis la base toutes les 15 min (sans clic), et
     // récupère les màj faites par le Sync ou par un membre du groupe.
-    refetchInterval: 5 * 60 * 1000,
+    refetchInterval: 15 * 60 * 1000,
     refetchIntervalInBackground: false,
   });
 

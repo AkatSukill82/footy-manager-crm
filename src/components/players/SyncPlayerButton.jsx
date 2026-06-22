@@ -207,7 +207,7 @@ export default function SyncPlayerButton({ player, onApply }) {
     };
 
     runSync(false);                                                       // à l'ouverture
-    const intervalId = setInterval(() => runSync(true), 5 * 60 * 1000);   // toutes les 5 min
+    const intervalId = setInterval(() => runSync(true), 15 * 60 * 1000);  // toutes les 15 min
 
     return () => { cancelled = true; clearInterval(intervalId); };
   }, [player?.id, player?.nom]);
