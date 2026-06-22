@@ -18,8 +18,6 @@ const isSdUrl = (u: string): boolean => {
   catch { return false; }
 };
 
-const PROFILE_RE = /https?:\/\/www\.soccerdonna\.de\/[a-z]{2}\/[^"'\s]*?\/profil\/spieler_(\d+)\.html/i;
-
 const BROWSER_HEADERS: HeadersInit = {
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
   "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -49,53 +47,57 @@ const overlap = (a: string, b: string): number => {
   return n / Math.min(A.size, B.size);
 };
 
-// ── Recherche du profil via moteur (DuckDuckGo HTML, fallback Bing) ────────────
+// ── Recherche du profil via le formulaire de recherche soccerdonna ────────────
+// Le formulaire POST /en/suche/detailsuchespieler/suche.html (champ "name") fait
+// un substring sur UN mot → on cherche par nom de famille, puis prénom, et on
+// score les résultats par correspondance de nom (titre du lien).
 
-const extractSdUrls = (html: string): string[] => {
-  const out = new Set<string>();
-  // Liens directs
+const postSearch = async (q: string): Promise<string> => {
+  const res = await fetch(`${SD_BASE}/en/suche/detailsuchespieler/suche.html`, {
+    method: "POST",
+    headers: { ...BROWSER_HEADERS, "Content-Type": "application/x-www-form-urlencoded" },
+    body: `name=${encodeURIComponent(q)}`,
+    signal: AbortSignal.timeout(15000),
+    redirect: "follow",
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.text();
+};
+
+// Extrait les résultats : <a href="/en/slug/profil/spieler_ID.html" ... title="Nom">
+const parseResults = (html: string): { url: string; title: string }[] => {
+  const re = /<a href="(\/en\/[a-z0-9-]+\/profil\/spieler_\d+\.html)"[^>]*title="([^"]+)"/gi;
+  const out: { url: string; title: string }[] = [];
+  const seen = new Set<string>();
   let m: RegExpExecArray | null;
-  const reDirect = new RegExp(PROFILE_RE.source, "gi");
-  while ((m = reDirect.exec(html)) !== null) out.add(m[0].split("?")[0]);
-  // Liens encodés (DuckDuckGo : ...uddg=<urlencodé>...)
-  const reEnc = /uddg=([^"&]+)/gi;
-  while ((m = reEnc.exec(html)) !== null) {
-    try { const u = decodeURIComponent(m[1]); const mm = u.match(PROFILE_RE); if (mm) out.add(mm[0].split("?")[0]); } catch { /* ignore */ }
+  while ((m = re.exec(html)) !== null) {
+    if (seen.has(m[1])) continue;
+    seen.add(m[1]);
+    out.push({ url: `${SD_BASE}${m[1]}`, title: m[2] });
+    if (out.length >= 40) break;
   }
-  return [...out];
+  return out;
 };
 
 const findProfileUrl = async (name: string): Promise<{ url: string; confidence: number } | null> => {
-  const query = `${name} site:soccerdonna.de profil`;
-  let urls: string[] = [];
-
-  // 1) DuckDuckGo HTML
-  try {
-    const html = await fetchHtml(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`);
-    urls = extractSdUrls(html);
-  } catch { /* fallback Bing */ }
-
-  // 2) Bing (fallback)
-  if (urls.length === 0) {
-    try {
-      const html = await fetchHtml(`https://www.bing.com/search?q=${encodeURIComponent(query)}&setlang=en`);
-      urls = extractSdUrls(html);
-    } catch { /* rien trouvé */ }
+  const tokens = norm(name).split(" ").filter((t) => t.length > 1);
+  if (!tokens.length) return null;
+  // Nom de famille (dernier mot) en priorité, puis prénom.
+  const queries = [...new Set([tokens[tokens.length - 1], tokens[0]])];
+  for (const q of queries) {
+    let cands: { url: string; title: string }[] = [];
+    try { cands = parseResults(await postSearch(q)); } catch { continue; }
+    let best: { url: string; title: string } | null = null, bestSim = 0;
+    for (const c of cands) {
+      const sim = overlap(c.title, name);
+      if (sim > bestSim) { bestSim = sim; best = c; }
+    }
+    // Exige une vraie correspondance pour ne pas prendre un homonyme.
+    if (best && bestSim >= 0.6) {
+      return { url: best.url, confidence: Math.round(Math.min(1, 0.5 + bestSim * 0.5) * 100) / 100 };
+    }
   }
-
-  if (urls.length === 0) return null;
-
-  // Scoring par le slug de l'URL (contient le nom du joueur)
-  let best: string | null = null, bestSim = -1;
-  for (const u of urls) {
-    const slugM = u.match(/soccerdonna\.de\/[a-z]{2}\/([^/]+)\/profil/i);
-    const slug = slugM ? slugM[1].replace(/-/g, " ") : "";
-    const sim = overlap(slug, name);
-    if (sim > bestSim) { bestSim = sim; best = u; }
-  }
-  if (!best) best = urls[0];
-  const confidence = bestSim >= 0.5 ? Math.min(1, 0.55 + bestSim * 0.4) : 0.3;
-  return { url: best, confidence: Math.round(confidence * 100) / 100 };
+  return null;
 };
 
 // ── Parse du profil ───────────────────────────────────────────────────────────
@@ -158,14 +160,14 @@ const parseProfile = (html: string, url: string): Record<string, any> => {
   else if (footRaw.includes("left") || footRaw.includes("links")) d.pied_fort = "Gauche";
   else if (footRaw.includes("both") || footRaw.includes("beide")) d.pied_fort = "Les deux";
 
-  // Club actuel : libellé ou lien /verein_<id>.html
-  let club = fieldVal("Current club") || fieldVal("Last club") || fieldVal("Aktueller Verein");
+  // Club actuel : 1er lien /startseite/verein_<id>.html (title = nom du club).
+  let club = fieldVal("Current club") || fieldVal("Last club");
   if (!club) {
-    const cM = html.match(/\/verein_\d+\.html"[^>]*>\s*(?:<[^>]+>\s*)*([^<]{2,40})/i) ||
-               html.match(/title="([^"]{2,40})"[^>]*>\s*<img[^>]+wappen/i);
+    const cM = html.match(/\/(?:startseite\/)?verein_\d+\.html"\s+title="([^"]{2,40})"/i) ||
+               html.match(/\/verein_\d+\.html"[^>]*>\s*(?:<[^>]+>\s*)*([^<]{2,40})/i);
     if (cM) club = clean(cM[1]);
   }
-  if (club && !/^current|^last|^aktuel/i.test(club)) d.club_actuel = club;
+  if (club && !/^current|^last/i.test(club)) d.club_actuel = club;
 
   // Valeur marchande : "€100k" / "€1.20m" (valeurs féminines souvent en k)
   const mvM = html.match(/€\s*([\d.,]+)\s*(k|m|th\.?|mio)?/i);
