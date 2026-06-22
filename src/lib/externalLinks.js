@@ -20,7 +20,22 @@ export function playerExternalLinks(player = {}) {
   const name = (player.nom_complet || player.nom || "").trim();
   const q = enc(name);
 
-  return [
+  // Joueuse (football féminin) : Soccerdonna est l'équivalent de Transfermarkt.
+  const isFemale = player.sexe === "Féminin" || !!player.soccerdonna_id || !!player.soccerdonna_url;
+  const links = [];
+
+  if (isFemale) {
+    links.push({
+      label: "Soccerdonna",
+      color: "text-pink-700 border-pink-200 hover:bg-pink-50",
+      url: player.soccerdonna_url || (player.soccerdonna_id
+        ? `https://www.soccerdonna.de/en/x/profil/spieler_${player.soccerdonna_id}.html`
+        : googleByName("Soccerdonna", name)),
+      direct: !!(player.soccerdonna_url || player.soccerdonna_id),
+    });
+  }
+
+  links.push(
     {
       label: "Transfermarkt",
       color: "text-blue-700 border-blue-200 hover:bg-blue-50",
@@ -49,5 +64,7 @@ export function playerExternalLinks(player = {}) {
       url: googleByName("Fotmob", name),
       direct: false,
     },
-  ];
+  );
+
+  return links;
 }

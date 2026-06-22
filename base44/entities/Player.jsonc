@@ -207,6 +207,10 @@
       "type": "string",
       "description": "ID Soccerdonna (football féminin)"
     },
+    "soccerdonna_url": {
+      "type": "string",
+      "description": "URL du profil Soccerdonna"
+    },
     "sexe": {
       "type": "string",
       "enum": ["Masculin", "Féminin"],

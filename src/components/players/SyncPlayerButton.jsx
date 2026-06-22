@@ -168,6 +168,30 @@ export default function SyncPlayerButton({ player, onApply }) {
           } catch { /* non bloquant */ }
         }
 
+        // ── Football FÉMININ : (re)synchronise depuis Soccerdonna ─────────────
+        // Les sources ci-dessus n'ont pas les joueuses → on lit leur fiche
+        // Soccerdonna (par URL connue, sinon recherche par nom).
+        if (player.sexe === "Féminin" || player.soccerdonna_id || player.soccerdonna_url) {
+          try {
+            const sdRes = player.soccerdonna_url
+              ? await invokeFn("soccerdonnaProxy", { action: "getPlayer", soccerdonna_url: player.soccerdonna_url })
+              : await invokeFn("soccerdonnaProxy", { action: "searchAndGet", query: player.nom });
+            const sd = sdRes?.ok ? sdRes.player : null;
+            if (sd && !cancelled) {
+              const sdFields = {
+                club_actuel: sd.club_actuel, valeur_marchande: sd.valeur_marchande,
+                contrat_fin: sd.contrat_fin, taille: sd.taille, pied_fort: sd.pied_fort,
+                nationalite: sd.nationalite, date_naissance: sd.date_naissance,
+                soccerdonna_id: sd.soccerdonna_id, soccerdonna_url: sd.soccerdonna_url,
+                sexe: "Féminin",
+              };
+              Object.entries(sdFields).forEach(([k, v]) => {
+                if (v != null && v !== "" && String(v) !== String(player[k] ?? "")) toApply[k] = v;
+              });
+            }
+          } catch { /* non bloquant */ }
+        }
+
         markSynced(player.id);
 
         if (Object.keys(toApply).length > 0) {
