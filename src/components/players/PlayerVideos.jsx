@@ -113,12 +113,15 @@ export default function PlayerVideos({ player }) {
     if (!file) return;
     setError(null);
     setUploading(true);
+    const mb = Math.round(file.size / (1024 * 1024));
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      if (!file_url) throw new Error("upload vide");
+      if (!file_url) throw new Error("réponse vide du serveur");
       setF(s => ({ ...s, url: file_url, titre: s.titre?.trim() ? s.titre : file.name }));
-    } catch {
-      setError("Échec de l'envoi du fichier vidéo.");
+    } catch (err) {
+      // On affiche la vraie raison (souvent : fichier trop lourd).
+      const msg = err?.response?.data?.message || err?.response?.data?.detail || err?.message || "erreur inconnue";
+      setError(`Échec de l'envoi de la vidéo (${mb} Mo) : ${msg}. Les vidéos lourdes passent mal — réduis la taille/durée, ou colle un lien YouTube/Veo.`);
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
