@@ -4,13 +4,18 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserPlus, Mail, Lock, Loader2 } from "lucide-react";
+import { UserPlus, Mail, Lock, Loader2, User, Briefcase } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "@/components/ui/use-toast";
 
+const ROLE_OPTIONS = ["CEO", "Directeur sportif", "Scout", "Agent", "Analyste", "Recruteur", "Autre"];
+
 export default function Register() {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [role, setRole] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -28,7 +33,7 @@ export default function Register() {
     }
     setLoading(true);
     try {
-      await base44.auth.register({ email, password });
+      await base44.auth.register({ email, password, full_name: `${firstName.trim()} ${lastName.trim()}`.trim() });
       setShowOtp(true);
     } catch (err) {
       setError(err.message || "Registration failed");
@@ -45,6 +50,13 @@ export default function Register() {
       if (result?.access_token) {
         base44.auth.setToken(result.access_token);
       }
+      // Compte vérifié + connecté → on applique le rôle et le nom au profil.
+      try {
+        await base44.auth.updateMe({
+          full_name: `${firstName.trim()} ${lastName.trim()}`.trim() || undefined,
+          role_metier: role || undefined,
+        });
+      } catch { /* non bloquant */ }
       window.location.href = "/";
     } catch (err) {
       setError(err.message || "Invalid verification code");
@@ -163,6 +175,33 @@ export default function Register() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label htmlFor="firstName">Prénom</Label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+              <Input id="firstName" autoComplete="given-name" placeholder="Jean" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="pl-10 h-12" required />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="lastName">Nom</Label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+              <Input id="lastName" autoComplete="family-name" placeholder="Dupont" value={lastName} onChange={(e) => setLastName(e.target.value)} className="pl-10 h-12" required />
+            </div>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="role">Rôle</Label>
+          <div className="relative">
+            <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <select id="role" value={role} onChange={(e) => setRole(e.target.value)} required
+              className="w-full h-12 pl-10 pr-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+              <option value="" disabled>Choisir votre rôle…</option>
+              {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+        </div>
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <div className="relative">
