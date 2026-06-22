@@ -198,6 +198,7 @@ function mergePersonal(tm, tdb, bs, candidate) {
 
 export default function PlayerSearchPage() {
   const [query, setQuery]             = useState("");
+  const [gender, setGender]           = useState("H");   // H = Transfermarkt, F = Soccerdonna
   const [loading, setLoading]         = useState(false);
   const [loadingFull, setLoadingFull] = useState(false);
   const [candidates, setCandidates]   = useState(null);
@@ -214,7 +215,30 @@ export default function PlayerSearchPage() {
   // (jeunes, divisions inférieures, orthographe différente), on enchaîne
   // automatiquement sur BeSoccer (large index) puis Transfermarkt.
   // Chaque source est défensive : un échec réseau renvoie [] sans casser la chaîne.
-  const searchCandidates = async (q) => {
+  const searchCandidates = async (q, gender) => {
+    // ── FEMME → base de données féminine Soccerdonna (identité du joueur) ──
+    if (gender === "F") {
+      try {
+        const body = await invokeFn("soccerdonnaProxy", { action: "searchAndGet", query: q });
+        const p = body?.ok ? body.player : null;
+        if (p?.nom) {
+          return {
+            list: [{
+              nom: p.nom, poste: p.poste ?? null, nationalite: p.nationalite ?? null,
+              club_actuel: p.club_actuel ?? null, photo_url: p.photo_url ?? null,
+              date_naissance: p.date_naissance ?? null, taille: p.taille ?? null,
+              pied_fort: p.pied_fort ?? null, valeur_marchande: p.valeur_marchande ?? null,
+              contrat_fin: p.contrat_fin ?? null, soccerdonna_id: p.soccerdonna_id ?? null,
+              soccerdonna_url: p.soccerdonna_url ?? null, sexe: "Féminin", _soccerdonna: true,
+            }],
+            source: "Soccerdonna",
+          };
+        }
+      } catch { /* rien trouvé */ }
+      return { list: [], source: null };
+    }
+
+    // ── HOMME → FotMob → BeSoccer → Transfermarkt ──
     // 1. FotMob
     try {
       const body = await invokeFn("fotmobProxy", { action: "searchPlayer", query: q });
@@ -247,34 +271,6 @@ export default function PlayerSearchPage() {
           source: "Transfermarkt",
         };
       }
-    } catch { /* on tente la source suivante */ }
-
-    // 4. Soccerdonna — football FÉMININ (les sources ci-dessus n'ont pas les joueuses)
-    try {
-      const body = await invokeFn("soccerdonnaProxy", { action: "searchAndGet", query: q });
-      const p = body?.ok ? body.player : null;
-      if (p?.nom) {
-        // Candidat riche : la fiche soccerdonna porte déjà toutes les infos perso.
-        return {
-          list: [{
-            nom:            p.nom,
-            poste:          p.poste ?? null,
-            nationalite:    p.nationalite ?? null,
-            club_actuel:    p.club_actuel ?? null,
-            photo_url:      p.photo_url ?? null,
-            date_naissance: p.date_naissance ?? null,
-            taille:         p.taille ?? null,
-            pied_fort:      p.pied_fort ?? null,
-            valeur_marchande: p.valeur_marchande ?? null,
-            contrat_fin:    p.contrat_fin ?? null,
-            soccerdonna_id: p.soccerdonna_id ?? null,
-            soccerdonna_url: p.soccerdonna_url ?? null,
-            sexe:           "Féminin",
-            _soccerdonna:   true,
-          }],
-          source: "Soccerdonna",
-        };
-      }
     } catch { /* aucune source n'a abouti */ }
 
     return { list: [], source: null };
@@ -291,7 +287,7 @@ export default function PlayerSearchPage() {
     setSaved(false);
     setError(null);
 
-    const cacheKey = `search:${normalizeQuery(query)}`;
+    const cacheKey = `search:${gender}:${normalizeQuery(query)}`;
     const cached   = getCache(cacheKey);
 
     // Cache frais → résultat instantané, pas d'appel réseau
@@ -304,7 +300,7 @@ export default function PlayerSearchPage() {
     }
 
     try {
-      const { list, source } = await searchCandidates(query.trim());
+      const { list, source } = await searchCandidates(query.trim(), gender);
 
       if (list.length === 0) {
         // Toutes les sources vides → on ressert le cache périmé s'il existe
@@ -313,7 +309,9 @@ export default function PlayerSearchPage() {
           cached.data.length === 1 ? fetchFullProfile(cached.data[0]) : setCandidates(cached.data);
           return;
         }
-        setError(`Aucun joueur trouvé pour "${query}" sur FotMob, BeSoccer ni Transfermarkt. Essayez le nom complet sans accents, ou un seul nom de famille.`);
+        setError(gender === "F"
+          ? `Aucune joueuse trouvée pour "${query}" sur Soccerdonna. Essayez un seul nom (de famille), sans accents.`
+          : `Aucun joueur trouvé pour "${query}" sur FotMob, BeSoccer ni Transfermarkt. Essayez le nom complet sans accents, ou un seul nom de famille.`);
         setLoading(false);
         return;
       }
@@ -339,10 +337,20 @@ export default function PlayerSearchPage() {
     setLoadingFull(true);
     setCandidates(null);
 
-    // Joueuse trouvée sur Soccerdonna : la fiche porte déjà toutes les infos
-    // perso ; les sources masculines ne l'ont pas → on l'utilise directement.
+    // Joueuse : identité = Soccerdonna (déjà dans le candidat) ; on tente quand
+    // même FotMob/SofaScore pour les STATS de saison (best effort).
     if (candidate._soccerdonna) {
-      setResult({ ...candidate, stats_saison: null, sources_perso: ["Soccerdonna"] });
+      let stats = null;
+      try {
+        const [fmS, ssS] = await Promise.allSettled([
+          invokeFn("fotmobProxy", { action: "searchAndGetStats", query: candidate.nom, club: candidate.club_actuel }),
+          invokeFn("sofascoreProxy", { action: "searchAndGetStats", query: candidate.nom, club: candidate.club_actuel }),
+        ]);
+        const fm = fmS.status === "fulfilled" && fmS.value?.ok ? fmS.value.stats : null;
+        const ss = ssS.status === "fulfilled" && ssS.value?.ok ? ssS.value.stats : null;
+        stats = mergeStats(ss, fm, null);
+      } catch { /* pas de stats */ }
+      setResult({ ...candidate, stats_saison: stats, sources_perso: ["Soccerdonna"] });
       setLoadingFull(false);
       return;
     }
@@ -567,10 +575,33 @@ export default function PlayerSearchPage() {
           </div>
         </div>
 
+        {/* Sélecteur Homme / Femme (source d'identité : Transfermarkt / Soccerdonna) */}
+        <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl w-fit mb-2">
+          {[
+            { v: "H", label: "Homme", src: "Transfermarkt" },
+            { v: "F", label: "Femme", src: "Soccerdonna" },
+          ].map((g) => (
+            <button
+              key={g.v}
+              type="button"
+              onClick={() => { setGender(g.v); setCandidates(null); setResult(null); }}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                gender === g.v ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              }`}
+              title={`Profil via ${g.src}`}
+            >
+              {g.label}
+            </button>
+          ))}
+          <span className="text-[11px] text-slate-400 px-2 hidden sm:inline">
+            {gender === "F" ? "Profil via Soccerdonna" : "Profil via Transfermarkt"}
+          </span>
+        </div>
+
         {/* Barre de recherche */}
         <form onSubmit={handleSearch} className="flex gap-2">
           <Input value={query} onChange={e => setQuery(e.target.value)}
-            placeholder="Ex: Cristiano Ronaldo, Kylian Mbappé, Noah Makanza…"
+            placeholder={gender === "F" ? "Ex: Sam Kerr, Lindsey Morgan…" : "Ex: Cristiano Ronaldo, Kylian Mbappé…"}
             className="flex-1 h-12 text-base shadow-sm" />
           <Button type="submit" disabled={loading} className="h-12 px-6 bg-green-600 hover:bg-green-700">
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
