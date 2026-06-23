@@ -118,15 +118,25 @@ Deno.serve(async (req) => {
     return created;
   };
 
-  // ── Traitement des clubs ──────────────────────────────────────────────────────
+  // Exécute `worker` sur les items avec au plus `size` tâches simultanées.
+  // Sans cela, un gros fichier traité ligne par ligne (await séquentiels) dépasse
+  // le délai de la fonction → erreur 504 (Gateway Timeout).
+  const runPool = async <T>(items: T[], size: number, worker: (item: T) => Promise<void>) => {
+    let i = 0;
+    const run = async () => { while (i < items.length) { const idx = i++; await worker(items[idx]); } };
+    await Promise.all(Array.from({ length: Math.min(size, items.length) }, run));
+  };
+  const CONCURRENCY = 8;
 
+  // ── Traitement des clubs ──────────────────────────────────────────────────────
+  // Dédoublonnage des lignes par nom (fusion des champs) AVANT traitement parallèle,
+  // pour qu'aucune création concurrente ne porte sur le même club (sinon doublons).
+  const clubInputs = new Map<string, { nom: string; pays: string; payload: Record<string, unknown> }>();
   for (const raw of clubs) {
     const nom = String(raw.nom || '').trim();
     if (!nom) continue;
 
-    const key = normalizeForCompare(nom);
-    const payload: Record<string,unknown> = {};
-
+    const payload: Record<string, unknown> = {};
     const strFields = [
       'pays', 'ville', 'stade', 'ligue',
       'president', 'president_email', 'president_telephone',
@@ -135,10 +145,7 @@ Deno.serve(async (req) => {
       'email', 'telephone', 'site_web',
       'instagram', 'twitter',
     ];
-    strFields.forEach(f => {
-      const v = normalizeStr(raw[f]);
-      if (v) payload[f] = v;
-    });
+    strFields.forEach(f => { const v = normalizeStr(raw[f]); if (v) payload[f] = v; });
 
     // logo_url dans le front peut être stocké comme photo_url dans l'extraction
     const logoVal = normalizeStr(raw.logo_url || raw.photo_url);
@@ -149,23 +156,23 @@ Deno.serve(async (req) => {
     if (!payload.telephone && normalizeStr(raw.telephone_general)) payload.telephone = normalizeStr(raw.telephone_general);
 
     const numFields = ['budget_transfert','budget_annuel','capacite_stade','dette','valeur_effectif'];
-    numFields.forEach(f => {
-      const v = normalizeNum(raw[f]);
-      if (v != null) payload[f] = v;
-    });
+    numFields.forEach(f => { const v = normalizeNum(raw[f]); if (v != null) payload[f] = v; });
 
+    const key = normalizeForCompare(nom);
+    const existing = clubInputs.get(key);
+    if (existing) Object.assign(existing.payload, payload);
+    else clubInputs.set(key, { nom, pays: normalizeStr(raw.pays) || 'Inconnu', payload });
+  }
+
+  await runPool([...clubInputs.values()], CONCURRENCY, async ({ nom, pays, payload }) => {
+    const key = normalizeForCompare(nom);
     try {
       if (clubMap[key]) {
         await base44.asServiceRole.entities.Club.update(clubMap[key].id, payload);
         results.clubs_mis_a_jour++;
         results.details.push({ type: 'Club', nom, action: 'mis à jour' });
       } else {
-        const created = await base44.entities.Club.create({
-          nom,
-          pays: normalizeStr(raw.pays) || 'Inconnu',
-          ...payload,
-          ...ownerStamp,
-        });
+        const created = await base44.entities.Club.create({ nom, pays, ...payload, ...ownerStamp });
         clubMap[key] = created;
         results.clubs_crees++;
         results.details.push({ type: 'Club', nom, action: 'créé' });
@@ -173,57 +180,68 @@ Deno.serve(async (req) => {
     } catch (err: any) {
       results.erreurs.push(`Club "${nom}": ${err.message}`);
     }
-  }
+  });
 
   // ── Traitement des contacts ───────────────────────────────────────────────────
+  // 1) Pré-résoudre (créer si besoin) tous les clubs référencés, dédoublonnés, AVANT
+  //    le pool de contacts → évite des créations de club concurrentes (doublons).
+  const neededClubs = new Map<string, string>(); // key normalisée → nom d'origine
+  const clubPays = new Map<string, string>();     // key normalisée → pays éventuel
+  for (const raw of contacts) {
+    const clubNom = String(raw.club || raw.club_actuel || raw.equipe || '').trim();
+    if (!clubNom) continue;
+    const key = normalizeForCompare(clubNom);
+    if (!neededClubs.has(key)) {
+      neededClubs.set(key, clubNom);
+      const p = normalizeStr(raw.pays);
+      if (p) clubPays.set(key, p);
+    }
+  }
+  await runPool([...neededClubs.keys()], CONCURRENCY, async (key) => {
+    if (clubMap[key]) return;
+    await upsertClub(neededClubs.get(key)!, clubPays.get(key)).catch((err: any) => {
+      results.erreurs.push(`Club "${neededClubs.get(key)}": ${err.message}`);
+    });
+  });
 
+  // 2) Dédoublonnage des contacts par (nom|club), puis création / mise à jour en parallèle.
+  const contactInputs = new Map<string, { nom: string; clubNom: string; payload: Record<string, unknown> }>();
   for (const raw of contacts) {
     const nom = combineName(raw) || String(raw.nom || '').trim();
     if (!nom) continue;
-
     const clubNom = String(raw.club || raw.club_actuel || raw.equipe || '').trim();
 
+    const payload: Record<string, unknown> = {};
+    // Champs texte — correspondent aux champs du schéma ClubContact
+    const strFields = [
+      'poste', 'pays', 'nationalite',
+      'email', 'telephone', 'whatsapp',
+      'instagram', 'twitter', 'linkedin', 'lien',
+      'photo_url', 'agent', 'agence', 'lieu_naissance',
+    ];
+    strFields.forEach(f => { const v = normalizeStr(raw[f]); if (v) payload[f] = v; });
+    // Champs numériques
+    ([['valeur_marchande', raw.valeur_marchande], ['salaire', raw.salaire]] as [string, unknown][])
+      .forEach(([f, v]) => { const n = normalizeNum(v); if (n != null) payload[f] = n; });
+    // Champs date
+    ['date_naissance', 'contrat_fin'].forEach(f => { const d = normalizeDate(raw[f]); if (d) payload[f] = d; });
+
+    const key = `${normalizeForCompare(nom)}|${normalizeForCompare(clubNom)}`;
+    const existing = contactInputs.get(key);
+    if (existing) Object.assign(existing.payload, payload);
+    else contactInputs.set(key, { nom, clubNom, payload });
+  }
+
+  await runPool([...contactInputs.values()], CONCURRENCY, async ({ nom, clubNom, payload }) => {
+    // Le club a déjà été résolu plus haut → simple lecture du cache, aucune création ici.
+    if (clubNom) {
+      const linkedClub = clubMap[normalizeForCompare(clubNom)];
+      if (linkedClub) payload.club_id = linkedClub.id;
+      payload.club = clubNom;
+    }
+    const key = `${normalizeForCompare(nom)}|${normalizeForCompare(clubNom)}`;
+    const label = clubNom ? `${nom} (${clubNom})` : nom;
     try {
-      const payload: Record<string,unknown> = {};
-
-      // Champs texte — correspondent aux champs du schéma ClubContact
-      const strFields = [
-        'poste', 'pays', 'nationalite',
-        'email', 'telephone', 'whatsapp',
-        'instagram', 'twitter', 'linkedin', 'lien',
-        'photo_url', 'agent', 'agence', 'lieu_naissance',
-      ];
-      strFields.forEach(f => {
-        const v = normalizeStr(raw[f]);
-        if (v) payload[f] = v;
-      });
-
-      // Champs numériques
-      const numFields: [string, unknown][] = [
-        ['valeur_marchande', raw.valeur_marchande],
-        ['salaire', raw.salaire],
-      ];
-      numFields.forEach(([f, v]) => {
-        const n = normalizeNum(v);
-        if (n != null) payload[f] = n;
-      });
-
-      // Champs date
-      ['date_naissance', 'contrat_fin'].forEach(f => {
-        const d = normalizeDate(raw[f]);
-        if (d) payload[f] = d;
-      });
-
-      // Lien avec le club
-      if (clubNom) {
-        const linkedClub = await upsertClub(clubNom, raw.pays ? String(raw.pays) : undefined);
-        payload.club_id = linkedClub.id;
-        payload.club    = clubNom;
-      }
-
-      const key = `${normalizeForCompare(nom)}|${normalizeForCompare(clubNom)}`;
-      const label = clubNom ? `${nom} (${clubNom})` : nom;
-
       if (contactMap[key]) {
         await base44.asServiceRole.entities.ClubContact.update(contactMap[key].id, payload);
         results.contacts_mis_a_jour++;
@@ -236,7 +254,7 @@ Deno.serve(async (req) => {
     } catch (err: any) {
       results.erreurs.push(`Contact "${nom}": ${err.message}`);
     }
-  }
+  });
 
   // ── Log d'import ─────────────────────────────────────────────────────────────
 
