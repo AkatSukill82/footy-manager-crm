@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,7 +23,7 @@ const Stat = ({ label, value, color = "text-slate-900", sub }) => (
   </div>
 );
 
-export default function AgentCommissionSimulator() {
+export default function AgentCommissionSimulator({ player }) {
   // Le client de l'agent détermine la BASE de calcul (piège fréquent à éviter)
   const [client, setClient] = useState("joueur"); // joueur | club_acheteur | club_vendeur
   const [base, setBase] = useState("");
@@ -33,6 +33,17 @@ export default function AgentCommissionSimulator() {
   // Split éventuel avec un second agent (apporteur, co-mandat…)
   const [splitActif, setSplitActif] = useState("non");
   const [partAgent, setPartAgent] = useState("70");
+
+  // Préremplissage selon le client : joueur → salaire annuel (M€→€) ; club → valeur de transfert (M€→€)
+  useEffect(() => {
+    if (!player) return;
+    if (client === "joueur") {
+      if (player.salaire) setBase(String(Math.round(player.salaire * 1_000_000)));
+      if (player.age != null) setAnnees("1");
+    } else if (player.valeur_marchande) {
+      setBase(String(Math.round(player.valeur_marchande * 1_000_000)));
+    }
+  }, [player?.id, client]);
 
   const baseLabel = client === "joueur"
     ? "Rémunération brute du joueur (salaire × durée + signing)"

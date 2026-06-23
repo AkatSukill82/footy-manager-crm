@@ -34,8 +34,20 @@ export const TAX_PROFILES = {
 
 export const PAYS_CODES = Object.keys(PROFILS_2026);
 
+// Abattement fiscal pour les jeunes joueurs (< 23 ans) : réduction RELATIVE du taux
+// effectif salarié. Estimation paramétrable — plusieurs pays appliquent des régimes
+// jeunes/impatriés plus favorables aux joueurs en début de carrière.
+export const AGE_SEUIL_JEUNE = 23;
+export const ABATTEMENT_MOINS_23 = 0.10; // -10 % sur le taux effectif
+
 /** Retourne le profil fiscal d'un pays pour une année (fallback année par défaut). */
 export function getTaxProfile(code, year = TAX_YEAR_DEFAULT) {
   const table = TAX_PROFILES[year] || TAX_PROFILES[TAX_YEAR_DEFAULT];
   return table[code] || null;
+}
+
+/** Applique l'abattement « moins de 23 ans » au taux effectif salarié. */
+export function tauxSalarieAjuste(tauxBase, age) {
+  if (age != null && age < AGE_SEUIL_JEUNE) return tauxBase * (1 - ABATTEMENT_MOINS_23);
+  return tauxBase;
 }

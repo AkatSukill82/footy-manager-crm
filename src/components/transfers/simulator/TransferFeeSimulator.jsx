@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowRightLeft, Info } from "lucide-react";
@@ -23,12 +23,17 @@ const Stat = ({ label, value, color = "text-slate-900", sub }) => (
   </div>
 );
 
-export default function TransferFeeSimulator() {
+export default function TransferFeeSimulator({ player }) {
   const [indemnite, setIndemnite] = useState("");
   const [bonus, setBonus] = useState("");
   const [tauxSolidarite, setTauxSolidarite] = useState("5");
   const [commissionVendeurPct, setCommissionVendeurPct] = useState("");
   const [autresDeductions, setAutresDeductions] = useState("");
+
+  // Préremplissage : indemnité = valeur marchande du joueur (déjà en M€)
+  useEffect(() => {
+    if (player?.valeur_marchande) setIndemnite(String(player.valeur_marchande));
+  }, [player?.id]);
 
   const res = useMemo(() => {
     const fixe = toNum(indemnite);

@@ -20,6 +20,18 @@ export const toNum = (v) => {
   return isNaN(n) ? 0 : n;
 };
 
+// Âge (années révolues) à partir d'une date de naissance ISO (YYYY-MM-DD).
+export function ageFromDob(dob) {
+  if (!dob) return null;
+  const b = new Date(dob);
+  if (isNaN(b.getTime())) return null;
+  const t = new Date();
+  let a = t.getFullYear() - b.getFullYear();
+  const m = t.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && t.getDate() < b.getDate())) a--;
+  return a >= 0 && a < 120 ? a : null;
+}
+
 // ── Salaire joueur (module Salaire) ──────────────────────────────────────────
 // Rémunération brute garantie d'un contrat.
 export function packageBrut({ salaireAnnuel, anneesContrat = 1, signingFee = 0, primesGaranties = 0 }) {

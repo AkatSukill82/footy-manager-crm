@@ -1,11 +1,10 @@
-import React, { useState, useMemo } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Wallet, Info } from "lucide-react";
-import { PAYS_CODES, ANNEES_FISCALES, TAX_YEAR_DEFAULT, getTaxProfile } from "../../../lib/taxProfiles";
-import { packageBrut, netFromBrut, coutEmployeur, fmtEUR, fmtPct, toNum } from "../../../lib/transferCalc";
+import { PAYS_CODES, ANNEES_FISCALES, TAX_YEAR_DEFAULT, getTaxProfile, tauxSalarieAjuste, AGE_SEUIL_JEUNE, ABATTEMENT_MOINS_23 } from "../../../lib/taxProfiles";
+import { packageBrut, netFromBrut, coutEmployeur, fmtEUR, fmtPct, toNum, ageFromDob } from "../../../lib/transferCalc";
 
 // Champ numérique avec label + suffixe d'unité
 const NumField = ({ label, value, onChange, placeholder, suffix = "€" }) => (
@@ -26,20 +25,34 @@ const Stat = ({ label, value, color = "text-slate-900", sub }) => (
   </div>
 );
 
-export default function SalarySimulator() {
+export default function SalarySimulator({ player }) {
   const [pays, setPays] = useState("FR");
   const [annee, setAnnee] = useState(String(TAX_YEAR_DEFAULT));
   const [salaireAnnuel, setSalaireAnnuel] = useState("");
   const [annees, setAnnees] = useState("3");
+  const [age, setAge] = useState("");
   const [signingFee, setSigningFee] = useState("");
   const [primes, setPrimes] = useState("");
   const [avantages, setAvantages] = useState("");
   // Taux effectif éditable, pré-rempli depuis le profil pays/année
   const [tauxOverride, setTauxOverride] = useState("");
 
+  // Préremplissage depuis la fiche joueur (salaire en M€ → €, âge)
+  useEffect(() => {
+    if (!player) return;
+    if (player.salaire) setSalaireAnnuel(String(Math.round(player.salaire * 1_000_000)));
+    const a = player.age ?? ageFromDob(player.date_naissance);
+    if (a != null) setAge(String(a));
+  }, [player?.id]);
+
   const profil = getTaxProfile(pays, Number(annee));
-  const tauxSalarie = tauxOverride !== "" ? toNum(tauxOverride) / 100 : (profil?.tauxSalarie ?? 0);
   const tauxPatronal = profil?.tauxPatronal ?? 0;
+  const ageNum = age !== "" ? toNum(age) : null;
+  const jeune = ageNum != null && ageNum < AGE_SEUIL_JEUNE;
+  // Override = taux exact saisi ; sinon taux du profil ajusté de l'abattement < 23 ans
+  const tauxSalarie = tauxOverride !== ""
+    ? toNum(tauxOverride) / 100
+    : tauxSalarieAjuste(profil?.tauxSalarie ?? 0, ageNum);
 
   const res = useMemo(() => {
     const brutAnnuel = toNum(salaireAnnuel);
@@ -93,6 +106,7 @@ export default function SalarySimulator() {
       <div className="grid grid-cols-2 gap-3">
         <NumField label="Salaire brut annuel" value={salaireAnnuel} onChange={setSalaireAnnuel} placeholder="300000" />
         <NumField label="Durée du contrat" value={annees} onChange={setAnnees} placeholder="3" suffix="ans" />
+        <NumField label="Âge du joueur" value={age} onChange={setAge} placeholder="25" suffix="ans" />
         <NumField label="Signing fee (prime signature)" value={signingFee} onChange={setSigningFee} placeholder="50000" />
         <NumField label="Primes garanties / an" value={primes} onChange={setPrimes} placeholder="0" />
         <NumField label="Avantages / an (voiture, logement…)" value={avantages} onChange={setAvantages} placeholder="0" />
@@ -107,8 +121,15 @@ export default function SalarySimulator() {
 
       {res && (
         <div className="space-y-4 pt-4 border-t border-slate-200">
+          {jeune && tauxOverride === "" && (
+            <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+              <Info className="w-3.5 h-3.5 flex-shrink-0" />
+              Joueur de moins de {AGE_SEUIL_JEUNE} ans : abattement de {(ABATTEMENT_MOINS_23 * 100).toFixed(0)}% appliqué sur le taux effectif.
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
-            <Stat label="Net annuel (joueur)" value={fmtEUR(res.netAnnuel)} color="text-green-600" sub={`taux ${fmtPct(tauxSalarie)}`} />
+            <Stat label="Net annuel (joueur)" value={fmtEUR(res.netAnnuel)} color="text-green-600" sub={`taux ${fmtPct(tauxSalarie)}${jeune && tauxOverride === "" ? " · jeune" : ""}`} />
             <Stat label="Net mensuel (joueur)" value={fmtEUR(res.netMensuel)} color="text-green-600" />
             <Stat label="Coût employeur / an (club)" value={fmtEUR(res.coutClubAnnuel)} color="text-orange-600" sub={`charges +${fmtPct(tauxPatronal)}`} />
             <Stat label="Package brut garanti (durée)" value={fmtEUR(res.packageGaranti)} color="text-slate-900" sub={`net estimé ${fmtEUR(res.netPackage)}`} />
