@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { TrendingUp, Plus, Calculator, History, AlertCircle, X } from "lucide-react";
 import NegociationCard from "../components/transfers/NegociationCard";
-import BudgetSimulator from "../components/transfers/BudgetSimulator";
+import TransferSimulator from "../components/transfers/simulator/TransferSimulator";
 import PlayerTransferHistory from "../components/transfers/PlayerTransferHistory";
 import { useCurrentUser } from "../lib/useCurrentUser";
 import { useLanguage } from "../lib/LanguageContext";
@@ -218,7 +218,7 @@ export default function TransferManagementPage() {
       )}
 
       {activeTab === "simulator" && (
-        <BudgetSimulator 
+        <TransferSimulator
           teams={teams}
           players={players}
           teamPlayers={teamPlayers}
