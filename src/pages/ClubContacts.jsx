@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Search, Mail, Building2, Trash2, ExternalLink,
-  Plus, Users, Globe, Phone, ChevronDown, X, Filter, AlertCircle
+  Plus, Users, Globe, Phone, ChevronDown, X, Filter, AlertCircle,
+  Sparkles, Loader2
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -66,10 +67,84 @@ const EMPTY = {
   agent: "", agence: "", date_naissance: "", contrat_fin: "",
 };
 
+// Champs que l'IA peut extraire d'un profil LinkedIn
+const LINKEDIN_SCHEMA = {
+  type: "object",
+  properties: {
+    nom: { type: "string" },
+    poste: { type: "string" },
+    club: { type: "string" },
+    pays: { type: "string" },
+    nationalite: { type: "string" },
+    linkedin: { type: "string" },
+    email: { type: "string" },
+    telephone: { type: "string" },
+    instagram: { type: "string" },
+    twitter: { type: "string" },
+  },
+};
+
 // ── ContactForm modal ─────────────────────────────────────────────────────────
 function ContactFormModal({ open, onClose, initial, onSave }) {
   const [form, setForm] = useState({ ...EMPTY, ...initial });
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  // Pré-remplissage IA depuis un profil LinkedIn (URL et/ou texte copié)
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiText, setAiText] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState(null);
+  const [aiDone, setAiDone] = useState(false);
+
+  const handlePrefill = async () => {
+    if (!aiText.trim()) return;
+    setAiLoading(true);
+    setAiError(null);
+    setAiDone(false);
+    try {
+      const data = await base44.integrations.Core.InvokeLLM({
+        prompt: `Tu reçois le profil LinkedIn d'une personne (une URL LinkedIn et/ou le texte du profil copié-collé). Extrais les informations de contact de façon structurée.
+
+RÈGLES :
+- "nom" : prénom + nom complet de la personne.
+- "poste" : intitulé du poste ACTUEL (ex: Directeur sportif, Head Coach, CEO, Agent, Scout...). Traduis en français si possible.
+- "club" : club / entreprise / organisation ACTUELLE de la personne.
+- "pays" : pays où la personne ou le club est basé.
+- "nationalite" : nationalité de la personne si déductible (sinon null).
+- "linkedin" : l'URL complète du profil LinkedIn si présente.
+- "email" / "telephone" : uniquement si explicitement présents dans le texte, sinon null.
+- "instagram" / "twitter" : uniquement si présents, sinon null.
+- Si une donnée est inconnue ou incertaine, mets null. N'invente jamais d'email ou de téléphone.
+
+PROFIL LINKEDIN :
+${aiText.trim()}`,
+        add_context_from_internet: true,
+        model: "gemini_3_1_pro",
+        response_json_schema: LINKEDIN_SCHEMA,
+      });
+
+      // Récupère l'URL LinkedIn directement depuis le texte collé si l'IA l'a manquée
+      const urlMatch = aiText.match(/https?:\/\/([a-z]{2,3}\.)?linkedin\.com\/[^\s"'<>]+/i);
+
+      setForm((f) => {
+        const next = { ...f };
+        const fill = (k, v) => {
+          // ne remplit que les champs encore vides → n'écrase pas la saisie manuelle
+          if (v != null && String(v).trim() && !String(next[k] || "").trim()) {
+            next[k] = String(v).trim();
+          }
+        };
+        if (data) Object.keys(LINKEDIN_SCHEMA.properties).forEach((k) => fill(k, data[k]));
+        if (urlMatch) fill("linkedin", urlMatch[0]);
+        return next;
+      });
+      setAiDone(true);
+    } catch (err) {
+      setAiError(err.message || "L'extraction a échoué. Réessayez ou remplissez manuellement.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const handleSave = () => {
     if (!form.nom.trim()) return;
@@ -82,6 +157,65 @@ function ContactFormModal({ open, onClose, initial, onSave }) {
         <DialogHeader>
           <DialogTitle>{initial?.id ? "Modifier le contact" : "Nouveau contact"}</DialogTitle>
         </DialogHeader>
+
+        {/* ── Pré-remplissage IA depuis LinkedIn ── */}
+        <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-3">
+          <button
+            type="button"
+            onClick={() => setAiOpen((v) => !v)}
+            className="flex items-center gap-2 w-full text-left text-sm font-medium text-blue-800"
+          >
+            <Sparkles className="w-4 h-4 text-blue-600" />
+            Préremplir depuis LinkedIn
+            <ChevronDown className={`w-4 h-4 ml-auto text-blue-500 transition-transform ${aiOpen ? "rotate-180" : ""}`} />
+          </button>
+
+          {aiOpen && (
+            <div className="mt-3 space-y-2">
+              <p className="text-xs text-blue-700/80 leading-relaxed">
+                Collez l'URL du profil LinkedIn <span className="font-medium">et/ou</span> le contenu du
+                profil copié-collé. L'IA remplit automatiquement nom, poste, club, pays… Ajoutez ensuite le
+                GSM et l'email à la main.
+              </p>
+              <textarea
+                value={aiText}
+                onChange={(e) => setAiText(e.target.value)}
+                rows={4}
+                placeholder={"https://linkedin.com/in/...\n\nMarco Rossi\nDirector of Football chez AC Milan\nMilan, Italie"}
+                className="w-full text-sm border border-blue-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300 resize-y"
+              />
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handlePrefill}
+                  disabled={aiLoading || !aiText.trim()}
+                  className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
+                >
+                  {aiLoading
+                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Extraction…</>
+                    : <><Sparkles className="w-3.5 h-3.5" /> Préremplir</>}
+                </Button>
+                {aiText && (
+                  <Button type="button" size="sm" variant="ghost" onClick={() => { setAiText(""); setAiDone(false); setAiError(null); }} className="text-slate-500">
+                    Effacer
+                  </Button>
+                )}
+                {aiDone && !aiError && (
+                  <span className="text-xs text-green-600 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" /> Champs préremplis — vérifiez puis complétez
+                  </span>
+                )}
+              </div>
+              {aiError && (
+                <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50 rounded-lg px-2.5 py-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>{aiError}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-3 py-2">
           <div className="col-span-2">
             <Label className="text-xs text-slate-500 mb-1 block">Nom complet *</Label>
