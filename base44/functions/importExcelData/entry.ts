@@ -3,6 +3,9 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
   const user = await base44.auth.me().catch(() => null);
+  if (!user) {
+    return Response.json({ error: "Authentification requise pour importer." }, { status: 401 });
+  }
 
   const { data } = await req.json();
   const clubs      = data?.clubs     || [];
@@ -67,6 +70,22 @@ Deno.serve(async (req) => {
   const mine = (e: any) =>
     e.created_by_id === user.id || (orgId && e.organization_id === orgId);
 
+  // L'utilisateur est-il le chef (CEO) de son groupe ? Seul le chef partage ses données.
+  let isChef = false;
+  if (orgId) {
+    const org = (await base44.asServiceRole.entities.Organization.filter({ id: orgId }))[0];
+    isChef = !!org && org.created_by_id === user.id;
+  }
+
+  // Les créations passent par le client UTILISATEUR (base44.entities.*, pas asServiceRole) :
+  // la règle RLS de création stampe alors created_by_id = l'utilisateur, ce qui rend les
+  // enregistrements visibles pour lui (RLS de lecture) et dédoublonnables au prochain import.
+  // Auparavant, la création via le rôle service laissait un propriétaire différent →
+  // import "réussi" mais clubs/contacts invisibles + doublons à chaque réimport.
+  // organization_id n'est posé que pour le chef, conformément au modèle de partage (lib/org.js).
+  const ownerStamp: Record<string, unknown> = {};
+  if (isChef && orgId) ownerStamp.organization_id = orgId;
+
   const [allClubs, allContacts] = await Promise.all([
     base44.asServiceRole.entities.Club.list(),
     base44.asServiceRole.entities.ClubContact.list(),
@@ -90,8 +109,8 @@ Deno.serve(async (req) => {
   const upsertClub = async (nom: string, pays?: string): Promise<any> => {
     const key = normalizeForCompare(nom);
     if (clubMap[key]) return clubMap[key];
-    const created = await base44.asServiceRole.entities.Club.create({
-      nom, pays: pays || 'Inconnu'
+    const created = await base44.entities.Club.create({
+      nom, pays: pays || 'Inconnu', ...ownerStamp
     });
     clubMap[key] = created;
     results.clubs_crees++;
@@ -141,10 +160,11 @@ Deno.serve(async (req) => {
         results.clubs_mis_a_jour++;
         results.details.push({ type: 'Club', nom, action: 'mis à jour' });
       } else {
-        const created = await base44.asServiceRole.entities.Club.create({
+        const created = await base44.entities.Club.create({
           nom,
           pays: normalizeStr(raw.pays) || 'Inconnu',
           ...payload,
+          ...ownerStamp,
         });
         clubMap[key] = created;
         results.clubs_crees++;
@@ -209,7 +229,7 @@ Deno.serve(async (req) => {
         results.contacts_mis_a_jour++;
         results.details.push({ type: 'Contact', nom: label, action: 'mis à jour' });
       } else {
-        await base44.asServiceRole.entities.ClubContact.create({ nom, club: clubNom, ...payload });
+        await base44.entities.ClubContact.create({ nom, club: clubNom, ...payload, ...ownerStamp });
         results.contacts_crees++;
         results.details.push({ type: 'Contact', nom: label, action: 'créé' });
       }
