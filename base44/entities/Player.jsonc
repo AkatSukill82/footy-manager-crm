@@ -591,8 +591,7 @@
     }
   },
   "required": [
-    "nom",
-    "poste"
+    "nom"
   ],
   "rls": {
     "create": {

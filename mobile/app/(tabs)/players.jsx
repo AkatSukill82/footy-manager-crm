@@ -91,8 +91,24 @@ function AddPlayerModal({ visible, onClose, onSubmit, loading }) {
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [searchError, setSearchError] = useState('');
-  const [form, setForm] = useState({ nom: '', prenom: '', poste: '', age: '', club_actuel: '', nationalite: '' });
+  const [form, setForm] = useState({ nom: '', prenom: '', date_naissance: '', lieu_naissance: '', poste: '', age: '', club_actuel: '', nationalite: '' });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  // Calcule l'âge (années révolues) depuis une date AAAA-MM-JJ
+  const calcAge = (dob) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec((dob || '').trim());
+    if (!m) return '';
+    const birth = new Date(`${dob}T00:00:00`);
+    if (isNaN(birth.getTime())) return '';
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const md = today.getMonth() - birth.getMonth();
+    if (md < 0 || (md === 0 && today.getDate() < birth.getDate())) age--;
+    return age >= 0 && age < 120 ? String(age) : '';
+  };
+
+  // Quand la date de naissance change, on recalcule automatiquement l'âge
+  const setDob = (v) => setForm(f => ({ ...f, date_naissance: v, age: calcAge(v) }));
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -117,28 +133,32 @@ function AddPlayerModal({ visible, onClose, onSubmit, loading }) {
   };
 
   const selectPlayer = (p) => {
+    const date_naissance = p.date_naissance || '';
     setForm({
-      nom:         p.nom_famille || p.nom || '',
-      prenom:      p.prenom || '',
-      poste:       p.poste || '',
-      age:         p.age ? String(p.age) : '',
-      club_actuel: p.club_actuel || '',
-      nationalite: p.nationalite || '',
+      nom:            p.nom_famille || p.nom || '',
+      prenom:         p.prenom || '',
+      date_naissance,
+      lieu_naissance: p.lieu_naissance || '',
+      poste:          p.poste || '',
+      age:            calcAge(date_naissance) || (p.age ? String(p.age) : ''),
+      club_actuel:    p.club_actuel || '',
+      nationalite:    p.nationalite || '',
     });
     setSearchResults([]);
     setSearchQuery('');
   };
 
   const handleSubmit = () => {
-    if (!form.nom || !form.poste) return;
-    onSubmit({ ...form, age: form.age ? parseInt(form.age) : undefined });
+    if (!form.nom || !form.prenom || !form.date_naissance) return;
+    const age = calcAge(form.date_naissance);
+    onSubmit({ ...form, age: age ? parseInt(age) : undefined });
   };
 
   const handleClose = () => {
     setSearchQuery('');
     setSearchResults([]);
     setSearchError('');
-    setForm({ nom: '', prenom: '', poste: '', age: '', club_actuel: '', nationalite: '' });
+    setForm({ nom: '', prenom: '', date_naissance: '', lieu_naissance: '', poste: '', age: '', club_actuel: '', nationalite: '' });
     onClose();
   };
 
@@ -223,19 +243,26 @@ function AddPlayerModal({ visible, onClose, onSubmit, loading }) {
         </Text>
 
         <View className="flex-row gap-3">
-          <Input label="Prénom" value={form.prenom} onChangeText={v => set('prenom', v)} className="flex-1" />
+          <Input label="Prénom *" value={form.prenom} onChangeText={v => set('prenom', v)} className="flex-1" />
           <Input label="Nom *" value={form.nom} onChangeText={v => set('nom', v)} className="flex-1" />
         </View>
-        <Select label="Poste *" value={form.poste} onChange={v => set('poste', v)}
-          options={POSTES.slice(1)} placeholder="Sélectionner un poste" />
         <View className="flex-row gap-3">
-          <Input label="Âge" value={form.age} onChangeText={v => set('age', v)} keyboardType="numeric" className="flex-1" />
-          <Input label="Nationalité" value={form.nationalite} onChangeText={v => set('nationalite', v)} className="flex-1" />
+          <Input label="Date de naissance *" value={form.date_naissance} onChangeText={setDob}
+            placeholder="AAAA-MM-JJ" keyboardType="numbers-and-punctuation" className="flex-1" />
+          <Input label="Âge" value={form.age ? `${form.age} ans` : ''} editable={false}
+            placeholder="auto" className="flex-1" />
         </View>
-        <Input label="Club actuel" value={form.club_actuel} onChangeText={v => set('club_actuel', v)} />
+        <Input label="Lieu de naissance" value={form.lieu_naissance} onChangeText={v => set('lieu_naissance', v)}
+          placeholder="Ville / pays (facultatif)" />
+        <Select label="Poste" value={form.poste} onChange={v => set('poste', v)}
+          options={POSTES.slice(1)} placeholder="Sélectionner un poste (facultatif)" />
+        <View className="flex-row gap-3">
+          <Input label="Nationalité" value={form.nationalite} onChangeText={v => set('nationalite', v)} className="flex-1" />
+          <Input label="Club actuel" value={form.club_actuel} onChangeText={v => set('club_actuel', v)} className="flex-1" />
+        </View>
         <View className="flex-row gap-3 pt-2">
           <Button variant="outline" onPress={handleClose} className="flex-1">Annuler</Button>
-          <Button onPress={handleSubmit} loading={loading} disabled={!form.nom || !form.poste} className="flex-1">Créer</Button>
+          <Button onPress={handleSubmit} loading={loading} disabled={!form.nom || !form.prenom || !form.date_naissance} className="flex-1">Créer</Button>
         </View>
       </View>
     </Modal>

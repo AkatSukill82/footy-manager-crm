@@ -57,9 +57,28 @@ export default function PlayerForm({ player, onSubmit, onCancel }) {
   const setNum = (field) => (e) => setFormData({ ...formData, [field]: e.target.value ? Number(e.target.value) : "" });
   const setSelect = (field) => (value) => setFormData({ ...formData, [field]: value });
 
+  // Calcule l'âge (années révolues) à partir d'une date de naissance ISO (YYYY-MM-DD)
+  const calcAge = (dob) => {
+    if (!dob) return "";
+    const birth = new Date(dob);
+    if (isNaN(birth.getTime())) return "";
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    return age >= 0 && age < 120 ? age : "";
+  };
+
+  // Quand la date de naissance change, on recalcule automatiquement l'âge
+  const setDob = (e) => {
+    const date_naissance = e.target.value;
+    setFormData({ ...formData, date_naissance, age: calcAge(date_naissance) });
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    // Sécurité : recalcule l'âge depuis la date de naissance avant l'enregistrement
+    onSubmit({ ...formData, age: calcAge(formData.date_naissance) || formData.age });
   };
 
   return (
@@ -119,11 +138,11 @@ export default function PlayerForm({ player, onSubmit, onCancel }) {
                   </SelectContent>
                 </Select>
               </F>
-              <F id="date_naissance" label={t(lang,'playerForm.dob')}>
-                <Input id="date_naissance" type="date" value={formData.date_naissance} onChange={set("date_naissance")} />
+              <F id="date_naissance" label={t(lang,'playerForm.dob') + " *"}>
+                <Input id="date_naissance" type="date" value={formData.date_naissance} onChange={setDob} required />
               </F>
               <F id="age" label={t(lang,'playerForm.age')}>
-                <Input id="age" type="number" min="14" max="50" value={formData.age} onChange={setNum("age")} placeholder={t(lang,'playerForm.agePlh')} />
+                <Input id="age" type="number" value={formData.age} readOnly tabIndex={-1} placeholder={t(lang,'playerForm.agePlh')} className="bg-slate-50 text-slate-500 cursor-not-allowed" title={t(lang,'playerForm.ageAuto')} />
               </F>
               <F id="lieu_naissance" label={t(lang,'playerForm.birthplace')}>
                 <Input id="lieu_naissance" value={formData.lieu_naissance || ""} onChange={set("lieu_naissance")} placeholder={t(lang,'playerForm.birthplacePlh')} />

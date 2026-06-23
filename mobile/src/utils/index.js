@@ -47,3 +47,21 @@ export const truncate = (str, len = 25) => {
   if (!str) return '';
   return str.length > len ? str.substring(0, len) + '…' : str;
 };
+
+// Prépare les données d'un joueur avant l'envoi à Base44 :
+// - fusionne prénom + nom dans le champ `nom` (l'entité Player n'a qu'un champ `nom`)
+// - retire les champs vides (chaînes vides, null, undefined) pour ne pas écraser des valeurs
+export const sanitizePlayerData = (data = {}) => {
+  const { prenom, nom, ...rest } = data;
+  const fullName = [prenom, nom]
+    .map((s) => (s || '').trim())
+    .filter(Boolean)
+    .join(' ');
+
+  const clean = { nom: fullName };
+  for (const [key, value] of Object.entries(rest)) {
+    if (value === '' || value === null || value === undefined) continue;
+    clean[key] = value;
+  }
+  return clean;
+};
