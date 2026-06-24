@@ -215,7 +215,7 @@ export default function MarketplacePage() {
 
   const inval = () => qc.invalidateQueries({ queryKey: ["opportunities"] });
   const onErr = (err) => setFormError(err?.message || "Échec de l'enregistrement de l'annonce. Réessayez.");
-  const createMut = useMutation({ mutationFn: (d) => base44.entities.Opportunity.create(d), onSuccess: () => { setFormError(null); inval(); setShowForm(false); setEditing(null); }, onError: onErr });
+  const createMut = useMutation({ mutationFn: (d) => base44.entities.Opportunity.create(withOrg(d)), onSuccess: () => { setFormError(null); inval(); setShowForm(false); setEditing(null); }, onError: onErr });
   const updateMut = useMutation({ mutationFn: ({ id, data }) => base44.entities.Opportunity.update(id, data), onSuccess: () => { setFormError(null); inval(); setShowForm(false); setEditing(null); }, onError: onErr });
   const deleteMut = useMutation({ mutationFn: (id) => base44.entities.Opportunity.delete(id), onSuccess: inval, onError: onErr });
 

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sparkles, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { withOrg } from "../../lib/org";
 import { useLanguage } from "../../lib/LanguageContext";
 import { t } from "../../i18n/translations";
 
@@ -40,14 +41,14 @@ export default function AgentInsightGenerator({ onInsightGenerated }) {
         add_context_from_internet: true
       });
 
-      await base44.entities.AgentInsight.create({
+      await base44.entities.AgentInsight.create(withOrg({
         categorie: "tendance_marche",
         titre: "Analyse des tendances du marché",
         contenu: marketInsight,
         donnees_source: `${context.total_players} joueurs, ${context.recent_transfers} transferts récents`,
         confiance: 85,
         priority: "haute"
-      });
+      }));
 
       const topPlayers = players
         .filter(pl => pl.valeur_marchande && pl.age < 28)
@@ -64,7 +65,7 @@ export default function AgentInsightGenerator({ onInsightGenerated }) {
           add_context_from_internet: true
         });
 
-        await base44.entities.AgentInsight.create({
+        await base44.entities.AgentInsight.create(withOrg({
           categorie: "opportunite_transfert",
           titre: "Opportunités de transfert identifiées",
           contenu: opportunityInsight,
@@ -72,7 +73,7 @@ export default function AgentInsightGenerator({ onInsightGenerated }) {
           player_ids: topPlayers.map(pl => pl.id).join(','),
           confiance: 78,
           priority: "moyenne"
-        });
+        }));
       }
 
       onInsightGenerated();

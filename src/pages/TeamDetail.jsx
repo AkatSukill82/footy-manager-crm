@@ -100,7 +100,7 @@ export default function TeamDetailPage() {
 
   const simulateMatchMutation = useMutation({
     mutationFn: async (matchData) => {
-      await base44.entities.Match.create(matchData);
+      await base44.entities.Match.create(withOrg(matchData));
       
       // Update team stats
       const team1Updates = {};

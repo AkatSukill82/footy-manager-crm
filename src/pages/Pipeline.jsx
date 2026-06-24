@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { withOrg } from "../lib/org";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -230,7 +231,7 @@ export default function PipelinePage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: data => base44.entities.Pipeline.create(data),
+    mutationFn: data => base44.entities.Pipeline.create(withOrg(data)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pipeline"] });
       setModalOpen(false);
