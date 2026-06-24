@@ -29,6 +29,8 @@ export default function TransferFeeSimulator({ player }) {
   const [bonus, setBonus] = useState("");
   const [tauxSolidarite, setTauxSolidarite] = useState("5");
   const [commissionVendeurPct, setCommissionVendeurPct] = useState("");
+  const [sellOnPct, setSellOnPct] = useState("");        // % dû à un ancien club (§7)
+  const [partJoueurPct, setPartJoueurPct] = useState(""); // part joueur / loyalty (§7)
   const [autresDeductions, setAutresDeductions] = useState("");
 
   // Préremplissage : indemnité = valeur marchande du joueur (déjà en M€)
@@ -43,22 +45,26 @@ export default function TransferFeeSimulator({ player }) {
     // Base solidarité = compensation de transfert (indemnité + bonus déclenchés)
     const solidariteVal = solidarite(coutAcheteur, toNum(tauxSolidarite) / 100);
     const commVendeur = coutAcheteur * (toNum(commissionVendeurPct) / 100);
+    const sellOnVal = coutAcheteur * (toNum(sellOnPct) / 100);     // dû à un ancien club
+    const partJoueurVal = coutAcheteur * (toNum(partJoueurPct) / 100); // part joueur / loyalty
     const net = netVendeur({
       transfertPercu: coutAcheteur,
       solidariteMontant: solidariteVal,
       commissionAgentVendeur: commVendeur,
-      autresDeductions: toNum(autresDeductions),
+      autresDeductions: sellOnVal + partJoueurVal + toNum(autresDeductions),
     });
-    return { coutAcheteur, solidariteVal, commVendeur, net };
-  }, [indemnite, bonus, tauxSolidarite, commissionVendeurPct, autresDeductions]);
+    return { coutAcheteur, solidariteVal, commVendeur, sellOnVal, partJoueurVal, net };
+  }, [indemnite, bonus, tauxSolidarite, commissionVendeurPct, sellOnPct, partJoueurPct, autresDeductions]);
 
-  const inputs = { indemnite, bonus, tauxSolidarite, commissionVendeurPct, autresDeductions };
+  const inputs = { indemnite, bonus, tauxSolidarite, commissionVendeurPct, sellOnPct, partJoueurPct, autresDeductions };
   const handleLoad = (o) => {
     if (!o || typeof o !== "object") return;
     setIndemnite(o.indemnite ?? "");
     setBonus(o.bonus ?? "");
     setTauxSolidarite(o.tauxSolidarite ?? "5");
     setCommissionVendeurPct(o.commissionVendeurPct ?? "");
+    setSellOnPct(o.sellOnPct ?? "");
+    setPartJoueurPct(o.partJoueurPct ?? "");
     setAutresDeductions(o.autresDeductions ?? "");
   };
   const resume = res ? `Coût ${fmtM(res.coutAcheteur)} · net vendeur ${fmtM(res.net)}` : "";
@@ -80,6 +86,8 @@ export default function TransferFeeSimulator({ player }) {
         <MField label="Bonus déclenchés" value={bonus} onChange={setBonus} placeholder="0" />
         <MField label="Taux de solidarité FIFA" value={tauxSolidarite} onChange={setTauxSolidarite} placeholder="5" suffix="%" />
         <MField label="Commission agent club vendeur" value={commissionVendeurPct} onChange={setCommissionVendeurPct} placeholder="0" suffix="%" />
+        <MField label="Sell-on dû (ancien club)" value={sellOnPct} onChange={setSellOnPct} placeholder="0" suffix="%" />
+        <MField label="Part joueur / loyalty" value={partJoueurPct} onChange={setPartJoueurPct} placeholder="0" suffix="%" />
         <MField label="Autres déductions" value={autresDeductions} onChange={setAutresDeductions} placeholder="0" />
       </div>
 
@@ -89,14 +97,16 @@ export default function TransferFeeSimulator({ player }) {
             <Stat label="Coût acheteur (volet transfert)" value={fmtM(res.coutAcheteur)} color="text-orange-600" sub="indemnité + bonus (hors salaire)" />
             <Stat label="Solidarité FIFA estimée" value={fmtM(res.solidariteVal)} color="text-slate-900" sub={`${toNum(tauxSolidarite)}% — Art. 21 / Annexe 5`} />
             <Stat label="Commission agent vendeur" value={fmtM(res.commVendeur)} color="text-slate-900" />
-            <Stat label="Net encaissé club vendeur" value={fmtM(res.net)} color="text-green-600" sub="après solidarité, agent, déductions" />
+            {res.sellOnVal > 0 && <Stat label="Sell-on dû (ancien club)" value={fmtM(res.sellOnVal)} color="text-slate-900" sub={`${toNum(sellOnPct)}% de l'indemnité`} />}
+            {res.partJoueurVal > 0 && <Stat label="Part joueur / loyalty" value={fmtM(res.partJoueurVal)} color="text-slate-900" />}
+            <Stat label="Net encaissé club vendeur" value={fmtM(res.net)} color="text-green-600" sub="après solidarité, agent, sell-on, part joueur" />
           </div>
 
           <div className="flex items-start gap-2 text-[11px] text-slate-400 bg-slate-50 rounded-lg px-3 py-2">
             <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
             <span>
               Solidarité estimée avant EPP (passeport électronique du joueur) ; le calcul final dépend des clubs formateurs (12-23 ans).
-              Le coût TOTAL acheteur ajoute le salaire + charges + agents (voir module Salaire). Sell-on à venir.
+              Le coût TOTAL acheteur ajoute le salaire + charges + agents (voir module Salaire). Sell-on/part joueur en % de l'indemnité.
             </span>
           </div>
         </div>

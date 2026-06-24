@@ -37,6 +37,9 @@ export default function AgentCommissionSimulator({ player }) {
   // Split éventuel avec un second agent (apporteur, co-mandat…)
   const [splitActif, setSplitActif] = useState("non");
   const [partAgent, setPartAgent] = useState("70");
+  // Frais généraux & taxes agence → profit NET réel (cahier §6.2)
+  const [fraisGeneraux, setFraisGeneraux] = useState("");
+  const [taxePct, setTaxePct] = useState("0");
 
   // Quand on ouvre une simulation enregistrée, on ne veut PAS que le
   // préremplissage joueur écrase les chiffres chargés.
@@ -71,16 +74,23 @@ export default function AgentCommissionSimulator({ player }) {
     const commGar = commissionAgent({ base: baseGar, taux: rate, forfait: ff });
     const commEsp = commissionAgent({ base: baseGar + bonusVal * probaR, taux: rate, forfait: ff });
     const commPot = commissionAgent({ base: baseGar + bonusVal, taux: rate, forfait: ff });
+    const partGar = splitAgent(commGar, pct);
+    const partEsp = splitAgent(commEsp, pct);
+    const partPot = splitAgent(commPot, pct);
+    // Profit net agence = part encaissée − frais généraux − taxes/TVA (cahier §6.2).
+    const frais = toNum(fraisGeneraux);
+    const taxeR = Math.max(0, toNum(taxePct) / 100);
+    const profitNetGar = partGar - frais - partGar * taxeR;
+    const profitNetEsp = partEsp - frais - partEsp * taxeR;
     return {
       baseGar, bonusVal, commGar, commEsp, commPot,
-      partGar: splitAgent(commGar, pct),
-      partEsp: splitAgent(commEsp, pct),
-      partPot: splitAgent(commPot, pct),
+      partGar, partEsp, partPot,
       partAutreGar: splitAgent(commGar, 1 - pct),
+      frais, profitNetGar, profitNetEsp,
     };
-  }, [client, base, annees, taux, forfait, bonus, proba, splitActif, partAgent]);
+  }, [client, base, annees, taux, forfait, bonus, proba, splitActif, partAgent, fraisGeneraux, taxePct]);
 
-  const inputs = { client, base, annees, taux, forfait, bonus, proba, splitActif, partAgent };
+  const inputs = { client, base, annees, taux, forfait, bonus, proba, splitActif, partAgent, fraisGeneraux, taxePct };
   const handleLoad = (o) => {
     if (!o || typeof o !== "object") return;
     // Arme le skip uniquement si le client change (sinon l'effet ne se relance pas).
@@ -94,6 +104,8 @@ export default function AgentCommissionSimulator({ player }) {
     setProba(o.proba ?? "50");
     setSplitActif(o.splitActif ?? "non");
     setPartAgent(o.partAgent ?? "70");
+    setFraisGeneraux(o.fraisGeneraux ?? "");
+    setTaxePct(o.taxePct ?? "0");
   };
   const resume = res
     ? `Commission ${fmtEUR(res.partGar)} garantie${res.bonusVal > 0 ? ` · ${fmtEUR(res.partPot)} max` : ""}`
@@ -146,6 +158,8 @@ export default function AgentCommissionSimulator({ player }) {
         {splitActif === "oui" && (
           <NumField label="Part de cet agent" value={partAgent} onChange={setPartAgent} placeholder="70" suffix="%" />
         )}
+        <NumField label="Frais généraux agence (voyages, scouting…)" value={fraisGeneraux} onChange={setFraisGeneraux} placeholder="0" />
+        <NumField label="Taxes / TVA agence" value={taxePct} onChange={setTaxePct} placeholder="0" suffix="%" />
       </div>
 
       {res && (
@@ -164,6 +178,13 @@ export default function AgentCommissionSimulator({ player }) {
               <Stat label="Potentielle (max)" value={fmtEUR(res.partPot)} color="text-slate-900" sub="tous bonus atteints" />
             )}
           </div>
+
+          {(res.frais > 0 || toNum(taxePct) > 0) && (
+            <div className="grid grid-cols-2 gap-3">
+              <Stat label="Profit net agence (garanti)" value={fmtEUR(res.profitNetGar)} color="text-indigo-700" sub={`après frais ${fmtEUR(res.frais)}${toNum(taxePct) > 0 ? ` + taxes ${toNum(taxePct)}%` : ""}`} />
+              {res.bonusVal > 0 && <Stat label="Profit net (espéré)" value={fmtEUR(res.profitNetEsp)} color="text-indigo-700" />}
+            </div>
+          )}
 
           <div className="flex items-start gap-2 text-[11px] text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
             <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />

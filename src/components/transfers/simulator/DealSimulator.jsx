@@ -11,21 +11,19 @@ import { fmtEUR, toNum, ageFromDob } from "../../../lib/transferCalc";
  * Simulation 360 — le même deal lu par les 4 acteurs (cahier ProPulse §9/§13).
  * Un seul formulaire alimente : net joueur, coût total acheteur, net vendeur
  * (waterfall §7.1), profit net agent (§6) + alertes de conformité (§10).
- * Le rôle choisi pilote les blocs de saisie et de résultat affichés (§2).
+ * Le rôle (§2) et le type d'opération (§3), pilotés par le parent, déterminent
+ * les blocs de saisie et de résultat affichés.
  */
-const ROLES = [
-  { id: "complet",  nom: "Simulation complète (360°)" },
-  { id: "joueur",   nom: "Joueur" },
-  { id: "agent",    nom: "Agent" },
-  { id: "acheteur", nom: "Club acheteur" },
-  { id: "vendeur",  nom: "Club vendeur" },
-];
-
 // Visibilité des blocs par rôle (cahier §9).
 const showJoueur   = (r) => ["complet", "joueur", "agent", "acheteur"].includes(r);
 const showAgent    = (r) => ["complet", "agent"].includes(r);
 const showAcheteur = (r) => ["complet", "agent", "acheteur"].includes(r);
-const showVendeur  = (r) => ["complet", "agent", "vendeur"].includes(r);
+const showVendeurRole = (r) => ["complet", "agent", "vendeur"].includes(r);
+
+// Opérations comportant une indemnité de transfert (cahier §3).
+const OPS_AVEC_TRANSFERT = ["transfert_payant", "pret", "pret_option"];
+// Opérations de type "club actuel" → comparer ancien vs nouveau salaire (§3).
+const OPS_RENEGO = ["renouvellement", "renegociation"];
 
 const Field = ({ label, value, onChange, ph, suffix = "€" }) => (
   <div>
@@ -53,8 +51,11 @@ const Block = ({ icon: Icon, title, accent, children }) => (
   </div>
 );
 
-export default function DealSimulator({ player }) {
-  const [role, setRole] = useState("complet");
+export default function DealSimulator({ player, role = "complet", operation = "transfert_payant" }) {
+  const hasTransfer = OPS_AVEC_TRANSFERT.includes(operation);
+  const isRenego = OPS_RENEGO.includes(operation);
+  const showVendeur = (r) => showVendeurRole(r) && hasTransfer;
+
   // Fiscalité joueur
   const [pays, setPays] = useState("FR");
   const [annee, setAnnee] = useState(String(TAX_YEAR_DEFAULT));
@@ -64,6 +65,7 @@ export default function DealSimulator({ player }) {
   const [enfants, setEnfants] = useState("0");
   const [age, setAge] = useState("");
   const [salaireBrut, setSalaireBrut] = useState("");
+  const [ancienSalaire, setAncienSalaire] = useState(""); // renouvellement / renégociation
   const [annees, setAnnees] = useState("3");
   const [signingFee, setSigningFee] = useState("");
   const [primes, setPrimes] = useState("");
@@ -116,6 +118,9 @@ export default function DealSimulator({ player }) {
     const signingNet = toNum(signingFee) * (1 - t);
     const primesNet = toNum(primes) * (1 - t);
     const valeurContratBrut = brut * dur + toNum(signingFee) + toNum(primes) * dur;
+    // Renouvellement / renégociation : écart de net vs ancien salaire (§3).
+    const ancienNet = isRenego && toNum(ancienSalaire) > 0 ? toNum(ancienSalaire) * (1 - t) : null;
+    const ecartNet = ancienNet != null ? netJoueurAn - ancienNet : null;
 
     // Acheteur (§8.1)
     const annualWage = brut + toNum(primes) + toNum(avantages);
@@ -158,25 +163,25 @@ export default function DealSimulator({ player }) {
       alerts.unshift({ level: "green", t: "Pas de zone rouge", m: "Aucun blocage détecté sur les points vérifiés ici. Estimation — à valider avant signature." });
 
     return {
-      fisc, t, netJoueurAn, impots, signingNet, primesNet, valeurContratBrut,
+      fisc, t, netJoueurAn, impots, signingNet, primesNet, valeurContratBrut, ancienNet, ecartNet,
       annualWage, annualEmployer, totalContract, transferCost, agentBuyer, buyerTotal, coutAnnee1, expectedBonus,
       grossSeller, solidarityDue, sellOnDue, sellerAgentFee, playerShareDue, sellerNet,
       commJoueur, commVendeur, commBrute, agentTaxes, profitNet, alerts,
     };
-  }, [pays, annee, regime, residency, marital, enfants, age, salaireBrut, annees, signingFee, primes, avantages,
+  }, [pays, annee, regime, residency, marital, enfants, age, salaireBrut, ancienSalaire, isRenego, annees, signingFee, primes, avantages,
       prixAchat, bonus, bonusProba, solidariteRate, tauxAgentJoueur, tauxAgentVendeur, agentForfait, agentFrais, agentTaxePct,
       sellOnRate, partJoueurRate, autresDeductions, relocation, budgetTotal, budgetSalarial]);
 
   const filled = toNum(salaireBrut) > 0 || toNum(prixAchat) > 0;
 
   const inputs = {
-    role, pays, annee, regime, residency, marital, enfants, age, salaireBrut, annees, signingFee, primes, avantages,
+    pays, annee, regime, residency, marital, enfants, age, salaireBrut, ancienSalaire, annees, signingFee, primes, avantages,
     prixAchat, bonus, bonusProba, solidariteRate, tauxAgentJoueur, tauxAgentVendeur, agentForfait, agentFrais, agentTaxePct,
     sellOnRate, partJoueurRate, autresDeductions, relocation, budgetTotal, budgetSalarial,
   };
   const setters = {
-    role: setRole, pays: setPays, annee: setAnnee, regime: setRegime, residency: setResidency, marital: setMarital,
-    enfants: setEnfants, age: setAge, salaireBrut: setSalaireBrut, annees: setAnnees, signingFee: setSigningFee,
+    pays: setPays, annee: setAnnee, regime: setRegime, residency: setResidency, marital: setMarital,
+    enfants: setEnfants, age: setAge, salaireBrut: setSalaireBrut, ancienSalaire: setAncienSalaire, annees: setAnnees, signingFee: setSigningFee,
     primes: setPrimes, avantages: setAvantages, prixAchat: setPrixAchat, bonus: setBonus, bonusProba: setBonusProba,
     solidariteRate: setSolidariteRate, tauxAgentJoueur: setTauxAgentJoueur, tauxAgentVendeur: setTauxAgentVendeur,
     agentForfait: setAgentForfait, agentFrais: setAgentFrais, agentTaxePct: setAgentTaxePct, sellOnRate: setSellOnRate,
@@ -200,17 +205,6 @@ export default function DealSimulator({ player }) {
   return (
     <div className="space-y-4">
       <SaveBar module="deal" inputs={inputs} resume={resume} playerId={player?.id} playerName={player?.nom} onLoad={handleLoad} canSave={filled} />
-
-      {/* Choix du rôle (cahier §2) */}
-      <div className="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3">
-        <Label className="text-xs font-medium text-indigo-800 mb-1.5 flex items-center gap-1.5">
-          <Layers className="w-3.5 h-3.5" /> Votre rôle dans le deal
-        </Label>
-        <Select value={role} onValueChange={setRole}>
-          <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
-          <SelectContent>{ROLES.map((o) => <SelectItem key={o.id} value={o.id}>{o.nom}</SelectItem>)}</SelectContent>
-        </Select>
-      </div>
 
       {/* ── SAISIE ─────────────────────────────────────────────── */}
       {showJoueur(role) && (
@@ -261,7 +255,8 @@ export default function DealSimulator({ player }) {
             </div>
           )}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Field label="Salaire brut / an" value={salaireBrut} onChange={setSalaireBrut} ph="300000" />
+            <Field label={isRenego ? "Nouveau salaire brut / an" : "Salaire brut / an"} value={salaireBrut} onChange={setSalaireBrut} ph="300000" />
+            {isRenego && <Field label="Ancien salaire brut / an" value={ancienSalaire} onChange={setAncienSalaire} ph="120000" />}
             <Field label="Durée" value={annees} onChange={setAnnees} ph="3" suffix="ans" />
             <Field label="Âge" value={age} onChange={setAge} ph="25" suffix="ans" />
             <Field label="Nb enfants" value={enfants} onChange={setEnfants} ph="0" suffix="" />
@@ -272,7 +267,7 @@ export default function DealSimulator({ player }) {
         </div>
       )}
 
-      {(showAcheteur(role) || showVendeur(role) || showAgent(role)) && (
+      {hasTransfer && (showAcheteur(role) || showVendeur(role) || showAgent(role)) && (
         <div className="border border-slate-200 rounded-xl p-3 space-y-3">
           <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Transfert</div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -289,7 +284,7 @@ export default function DealSimulator({ player }) {
           <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Commissions agent</div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Field label="Taux agent joueur" value={tauxAgentJoueur} onChange={setTauxAgentJoueur} ph="5" suffix="%" />
-            <Field label="Taux agent vendeur" value={tauxAgentVendeur} onChange={setTauxAgentVendeur} ph="10" suffix="%" />
+            {hasTransfer && <Field label="Taux agent vendeur" value={tauxAgentVendeur} onChange={setTauxAgentVendeur} ph="10" suffix="%" />}
             {showAgent(role) && <Field label="Forfait fixe" value={agentForfait} onChange={setAgentForfait} ph="0" />}
             {showAgent(role) && <Field label="Frais généraux agence" value={agentFrais} onChange={setAgentFrais} ph="0" />}
             {showAgent(role) && <Field label="Taxes/TVA agence" value={agentTaxePct} onChange={setAgentTaxePct} ph="0" suffix="%" />}
@@ -332,6 +327,9 @@ export default function DealSimulator({ player }) {
             <Block icon={UserCircle} title="Joueur" accent="border-green-200 bg-green-50/40">
               <Row label="Net annuel" value={fmtEUR(r.netJoueurAn)} strong color="text-green-700" />
               <Row label="Net mensuel" value={fmtEUR(r.netJoueurAn / 12)} color="text-green-700" />
+              {r.ecartNet != null && (
+                <Row label="Écart vs ancien net" value={`${r.ecartNet >= 0 ? "+" : ""}${fmtEUR(r.ecartNet)}`} color={r.ecartNet >= 0 ? "text-green-700" : "text-red-600"} />
+              )}
               <Row label="Impôts & cotisations / an" value={fmtEUR(r.impots)} color="text-slate-700" />
               <Row label="Signing fee net" value={fmtEUR(r.signingNet)} />
               <Row label="Valeur contrat (brut, durée)" value={fmtEUR(r.valeurContratBrut)} />

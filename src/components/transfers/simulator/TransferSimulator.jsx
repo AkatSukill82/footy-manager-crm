@@ -44,23 +44,46 @@ const ROLE_MODULES = {
   vendeur:  ["deal", "transfert", "formation", "conformite"],
 };
 
+// Type d'opération (cahier §3) → modules actifs.
+const OPERATIONS = [
+  { id: "transfert_payant", nom: "Transfert payant" },
+  { id: "joueur_libre",     nom: "Joueur libre" },
+  { id: "pret",             nom: "Prêt simple" },
+  { id: "pret_option",      nom: "Prêt + option/obligation" },
+  { id: "renouvellement",   nom: "Renouvellement" },
+  { id: "renegociation",    nom: "Renégociation" },
+  { id: "resiliation",      nom: "Résiliation / rupture" },
+];
+const OPERATION_MODULES = {
+  transfert_payant: ["deal", "salaire", "commission", "transfert", "formation", "conformite", "scenarios", "budget"],
+  joueur_libre:     ["deal", "salaire", "commission", "conformite"],
+  pret:             ["deal", "salaire", "commission", "transfert", "budget"],
+  pret_option:      ["deal", "transfert", "scenarios"],
+  renouvellement:   ["deal", "salaire", "commission", "conformite"],
+  renegociation:    ["deal", "salaire", "commission"],
+  resiliation:      ["deal", "salaire", "commission", "conformite"],
+};
+
 export default function TransferSimulator({ teams, players, teamPlayers }) {
   const [module, setModule] = useState("deal");
   const [playerId, setPlayerId] = useState(MANUEL);
   const [role, setRole] = useState("complet");
+  const [operation, setOperation] = useState("transfert_payant");
 
   const user = useCurrentUser();
   // Le journal global est réservé à l'admin du groupe (rôle admin ou chef/CEO).
   const isAdmin = user?.role === "admin" || isCurrentChef();
 
-  const allowed = ROLE_MODULES[role] || ROLE_MODULES.complet;
-  let modules = MODULES.filter((m) => allowed.includes(m.key));
+  // Modules visibles = intersection rôle (§2) ∩ type d'opération (§3). "deal" toujours présent.
+  const allowedRole = ROLE_MODULES[role] || ROLE_MODULES.complet;
+  const allowedOp = OPERATION_MODULES[operation] || OPERATION_MODULES.transfert_payant;
+  let modules = MODULES.filter((m) => allowedRole.includes(m.key) && allowedOp.includes(m.key));
   if (isAdmin) modules = [...modules, { key: "journal", label: "Journal (admin)", icon: History }];
 
-  // Si le module courant n'est plus visible après changement de rôle, on bascule sur le 1er.
+  // Si le module courant n'est plus visible après changement de rôle/opération, on bascule sur le 1er.
   useEffect(() => {
     if (!modules.some((m) => m.key === module)) setModule(modules[0]?.key || "deal");
-  }, [role]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [role, operation]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedPlayer = playerId === MANUEL ? null : players.find((p) => p.id === playerId) || null;
 
@@ -76,11 +99,11 @@ export default function TransferSimulator({ teams, players, teamPlayers }) {
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {/* Choix du rôle — filtre les modules pertinents (cahier §2) */}
           <div className="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3">
             <Label className="text-xs font-medium text-indigo-800 mb-1.5 flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5" /> Votre rôle dans le deal
+              <Layers className="w-3.5 h-3.5" /> Votre rôle
             </Label>
             <Select value={role} onValueChange={setRole}>
               <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
@@ -88,7 +111,21 @@ export default function TransferSimulator({ teams, players, teamPlayers }) {
                 {ROLES.map((o) => <SelectItem key={o.id} value={o.id}>{o.nom}</SelectItem>)}
               </SelectContent>
             </Select>
-            <p className="text-[11px] text-indigo-600 mt-1.5">Affiche les modules utiles à votre rôle. « Simulation 360 » donne les 4 lectures du deal.</p>
+            <p className="text-[11px] text-indigo-600 mt-1.5">« Simulation 360 » donne les 4 lectures du deal.</p>
+          </div>
+
+          {/* Type d'opération — active/désactive des modules (cahier §3) */}
+          <div className="bg-violet-50/60 border border-violet-100 rounded-xl p-3">
+            <Label className="text-xs font-medium text-violet-800 mb-1.5 flex items-center gap-1.5">
+              <ArrowRightLeft className="w-3.5 h-3.5" /> Type d'opération
+            </Label>
+            <Select value={operation} onValueChange={setOperation}>
+              <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {OPERATIONS.map((o) => <SelectItem key={o.id} value={o.id}>{o.nom}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-violet-600 mt-1.5">Filtre les modules selon le type de deal.</p>
           </div>
 
           {/* Sélecteur de joueur — préremplit les modules */}
@@ -131,7 +168,7 @@ export default function TransferSimulator({ teams, players, teamPlayers }) {
           ))}
         </div>
 
-        {module === "deal" && <DealSimulator player={selectedPlayer} />}
+        {module === "deal" && <DealSimulator player={selectedPlayer} role={role} operation={operation} />}
         {module === "salaire" && <SalarySimulator player={selectedPlayer} />}
         {module === "commission" && <AgentCommissionSimulator player={selectedPlayer} />}
         {module === "transfert" && <TransferFeeSimulator player={selectedPlayer} />}
