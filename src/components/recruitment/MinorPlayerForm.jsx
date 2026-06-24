@@ -27,7 +27,7 @@ const Section = ({ title, children, cols = "md:grid-cols-3" }) => (
   </div>
 );
 
-export default function MinorPlayerForm({ initial = null, onSave, saving }) {
+export default function MinorPlayerForm({ initial = null, editId = null, onSave, saving }) {
   const [f, setF] = useState(() => ({
     name: "", age: "", nationalite: "", ville: "", club: "", categorie: "", coach: "", championnat: "",
     positions: "", pied: "", taille: "", qualites: "", axes: "",
@@ -51,18 +51,14 @@ export default function MinorPlayerForm({ initial = null, onSave, saving }) {
 
   const handleSave = () => {
     onSave?.({
+      ...(editId ? { id: editId } : {}),
       pathway: "minor", name: f.name, is_minor: true, age: Number(f.age) || null,
       positions: f.positions, club: f.club, country: f.ville, division: f.categorie,
       legal_guardian_status: f.legal_guardian_status, fifa_agent_validated: !!f.fifa_agent_validated,
       live_seen: Number(f.live) || 0, language: f.language,
       score: r.total, score_breakdown: JSON.stringify(r.breakdown), compliance_status: "red",
-      status: r.status, owner: f.owner, next_action: f.next_action,
-      details: JSON.stringify({
-        nationalite: f.nationalite, coach: f.coach, championnat: f.championnat, pied: f.pied, taille: f.taille,
-        qualites: f.qualites, axes: f.axes, match_date: f.match_date, adversaire: f.adversaire, duree: f.duree,
-        niveau_opp: f.niveau_opp, notes: f.notes, video: f.video, contact_autorise: f.contact_autorise,
-        country_rules_checked: f.country_rules_checked, restrictions: f.restrictions, next_obs: f.next_obs,
-      }),
+      status: r.status, owner: f.owner, next_action: f.next_action, next_action_date: f.next_action_date || "",
+      details: JSON.stringify({ ...f }), // état complet du formulaire → édition round-trip
     });
   };
 

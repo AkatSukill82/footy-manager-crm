@@ -36,7 +36,7 @@ const monthsUntil = (d) => {
   return (end.getFullYear() - now.getFullYear()) * 12 + (end.getMonth() - now.getMonth());
 };
 
-export default function MajorPlayerForm({ initial = null, onSave, saving }) {
+export default function MajorPlayerForm({ initial = null, editId = null, onSave, saving }) {
   const [f, setF] = useState(() => ({
     name: "", age: "", positions: "", nationalite: "", taille: "", pied: "",
     club: "", country: "", division: "", contract_end: "", is_free: false, market_value: "",
@@ -49,7 +49,7 @@ export default function MajorPlayerForm({ initial = null, onSave, saving }) {
     ...(initial || {}),
   }));
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
-  const [message, setMessage] = useState(initial?.message_text || "");
+  const [message, setMessage] = useState(initial?.message ?? initial?.message_text ?? "");
 
   const age = Number(f.age) || 0;
   const isMinor = age > 0 && age < 18;
@@ -92,6 +92,7 @@ export default function MajorPlayerForm({ initial = null, onSave, saving }) {
 
   const handleSave = () => {
     onSave?.({
+      ...(editId ? { id: editId } : {}),
       pathway: "major", name: f.name, is_minor: isMinor, age: Number(f.age) || null,
       positions: f.positions, club: f.club, country: f.country, division: f.division,
       contract_end: f.contract_end || "", market_value: Number(f.market_value) || null,
@@ -100,7 +101,7 @@ export default function MajorPlayerForm({ initial = null, onSave, saving }) {
       language: f.language, message_text: message,
       score: r.total, score_breakdown: JSON.stringify(r.breakdown), compliance_status: r.comp.level,
       status: r.status, owner: f.owner, next_action: f.next_action, next_action_date: f.next_action_date || "",
-      details: JSON.stringify({ matches: f.matches, minutes: f.minutes, goals: f.goals, assists: f.assists, nb_clubs: f.nb_clubs, target_clubs: f.target_clubs, nationalite: f.nationalite, taille: f.taille, pied: f.pied }),
+      details: JSON.stringify({ ...f, message }), // état complet du formulaire → édition round-trip
     });
   };
 

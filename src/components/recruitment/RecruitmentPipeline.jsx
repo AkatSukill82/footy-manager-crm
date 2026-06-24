@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Trash2, Search, Clock, User, ShieldAlert, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Trash2, Search, Clock, User, ShieldAlert, ShieldCheck, AlertTriangle, Pencil } from "lucide-react";
 import { CRM_STATUS, CRM_ORDER } from "@/lib/recruitmentScoring";
 
 const compIcon = { red: ShieldAlert, amber: AlertTriangle, green: ShieldCheck };
@@ -8,7 +8,7 @@ const compColor = { red: "text-red-500", amber: "text-amber-500", green: "text-g
 
 const isOverdue = (d) => d && new Date(d) < new Date(new Date().toDateString());
 
-export default function RecruitmentPipeline({ cases = [], onDelete }) {
+export default function RecruitmentPipeline({ cases = [], onDelete, onOpen }) {
   const [q, setQ] = useState("");
 
   const filtered = useMemo(() => {
@@ -65,6 +65,7 @@ export default function RecruitmentPipeline({ cases = [], onDelete }) {
                         {c.owner && <span>· <User className="inline w-3 h-3 -mt-0.5" /> {c.owner}</span>}
                       </p>
                     </div>
+                    <button onClick={() => onOpen?.(c)} title="Ouvrir / modifier" className="p-1.5 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50 flex-shrink-0"><Pencil className="w-4 h-4" /></button>
                     <button onClick={() => { if (window.confirm(`Supprimer le dossier « ${c.name} » ?`)) onDelete?.(c); }} className="p-1.5 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 );
