@@ -205,14 +205,24 @@ export default function PlayersPage() {
       toDelete.push(...sorted.slice(1));
     }
     let failed = 0;
+    const errs = [];
     for (const p of toDelete) {
-      try { await base44.entities.Player.delete(p.id); } catch { failed++; }
+      try {
+        await base44.entities.Player.delete(p.id);
+      } catch (e) {
+        failed++;
+        errs.push({ nom: p.nom, id: p.id, err: e?.message || String(e) });
+      }
     }
-    queryClient.invalidateQueries({ queryKey: ['players'] });
+    await queryClient.invalidateQueries({ queryKey: ['players'] });
     setCleaning(false);
-    if (failed > 0) {
-      window.alert(`${toDelete.length - failed} doublon(s) supprimé(s). ${failed} non supprimé(s) (droits insuffisants).`);
-    }
+    // Diagnostic visible (console F12) + retour utilisateur systématique.
+    console.log('[doublons]', { détectés: dupExtras, tentés: toDelete.length, échecs: failed, erreurs: errs });
+    window.alert(
+      toDelete.length === 0
+        ? "Aucun doublon supprimable détecté (vérifie que les fiches sont bien partagées dans le groupe)."
+        : `${toDelete.length - failed} doublon(s) supprimé(s)${failed ? ` · ${failed} échec(s) (voir console F12)` : ''}.`
+    );
   };
 
   const filteredPlayers = players.filter(player => {
