@@ -200,16 +200,19 @@ export default function PlayersPage() {
     const toDelete = [];
     for (const g of dupGroups) {
       const sorted = [...g].sort((a, b) => score(b) - score(a));
-      for (const p of sorted.slice(1)) {
-        // ne supprime que mes propres fiches (pas les données partagées du groupe)
-        if (!currentUser || p.created_by_id === currentUser.id) toDelete.push(p);
-      }
+      // garde la fiche la plus complète, supprime les autres (y compris celles
+      // partagées par d'autres membres du groupe — la RLS delete l'autorise).
+      toDelete.push(...sorted.slice(1));
     }
+    let failed = 0;
     for (const p of toDelete) {
-      try { await base44.entities.Player.delete(p.id); } catch { /* ignore */ }
+      try { await base44.entities.Player.delete(p.id); } catch { failed++; }
     }
     queryClient.invalidateQueries({ queryKey: ['players'] });
     setCleaning(false);
+    if (failed > 0) {
+      window.alert(`${toDelete.length - failed} doublon(s) supprimé(s). ${failed} non supprimé(s) (droits insuffisants).`);
+    }
   };
 
   const filteredPlayers = players.filter(player => {
