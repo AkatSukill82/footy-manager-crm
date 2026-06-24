@@ -6,7 +6,7 @@ import {
   FileText, Network, ArrowRightLeft, Menu, X, Building2,
   Sparkles, Newspaper, FileSpreadsheet, CalendarDays, UserCircle,
   ClipboardList, Columns, ChevronDown, Search, GitCompare, Wallet, Store,
-  Sun, Moon,
+  Sun, Moon, UserSearch,
 } from "lucide-react";
 import { useTheme } from "./lib/ThemeContext";
 import { base44 } from "@/api/base44Client";
@@ -20,7 +20,7 @@ import GlobalSearch from "./components/ui/GlobalSearch";
 // Pages principales — toujours visibles
 const CORE_PAGES = ["Dashboard", "Players", "Clubs", "MyWatchList", "ClubContacts", "Organization"];
 // Outils — groupe repliable
-const TOOLS_PAGES = ["Comparator", "TransferManagement", "Teams", "News", "Calendar"];
+const TOOLS_PAGES = ["Recruitment", "Comparator", "TransferManagement", "Teams", "News", "Calendar"];
 // Avancé — groupe repliable
 const ADVANCED_PAGES = ["Pipeline", "Finance", "Marketplace", "ScoutingReports", "Alerts", "Reports", "PredictiveDashboard", "AgentNetwork", "ImportExcel"];
 
@@ -33,6 +33,7 @@ const ALL_ITEMS = (lang) => [
   { name: "Finance",             key: "finance",          icon: Wallet,        label: "Finance" },
   { name: "Marketplace",         key: "marketplace",      icon: Store,         label: "Marketplace" },
   { name: "ScoutingReports",     key: "scouting_reports", icon: ClipboardList, label: "Scouting" },
+  { name: "Recruitment",         key: "recruitment",      icon: UserSearch,    label: "Recrutement" },
   { name: "Comparator",          key: "comparator",       icon: GitCompare,    label: "Comparateur" },
   { name: "Alerts",              key: "alerts",           icon: Bell },
   { name: "ClubContacts",        key: "contacts",         icon: Phone },

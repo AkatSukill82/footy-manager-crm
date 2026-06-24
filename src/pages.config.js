@@ -73,9 +73,11 @@ const Pipeline          = lazy(() => import('./pages/Pipeline'));
 const Comparator        = lazy(() => import('./pages/Comparator'));
 const Finance           = lazy(() => import('./pages/Finance'));
 const Marketplace       = lazy(() => import('./pages/Marketplace'));
+const Recruitment       = lazy(() => import('./pages/Recruitment'));
 
 
 export const PAGES = {
+    "Recruitment": Recruitment,
     "AgentNetwork": AgentNetwork,
     "Alerts": Alerts,
     "ClubDetail": ClubDetail,
