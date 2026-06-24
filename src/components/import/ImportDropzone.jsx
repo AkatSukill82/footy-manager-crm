@@ -83,7 +83,7 @@ const CANONICAL = {
     "email_general", "telephone_general", "site_web", "instagram", "twitter",
   ],
   contacts: [
-    "nom", "prenom", "club", "poste", "nationalite",
+    "nom", "prenom", "club", "poste", "nationalite", "pays",
     "email", "telephone", "whatsapp", "instagram", "twitter", "linkedin",
     "date_naissance", "lieu_naissance", "agent", "agence",
     "valeur_marchande", "salaire", "contrat_fin", "photo_url", "lien",
