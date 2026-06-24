@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowRightLeft, Info } from "lucide-react";
+import SaveBar from "./SaveBar";
 import { coutTransfert, solidarite, netVendeur, fmtM, toNum } from "../../../lib/transferCalc";
 
 // Saisie en millions d'euros (convention de l'app)
@@ -51,8 +52,29 @@ export default function TransferFeeSimulator({ player }) {
     return { coutAcheteur, solidariteVal, commVendeur, net };
   }, [indemnite, bonus, tauxSolidarite, commissionVendeurPct, autresDeductions]);
 
+  const inputs = { indemnite, bonus, tauxSolidarite, commissionVendeurPct, autresDeductions };
+  const handleLoad = (o) => {
+    if (!o || typeof o !== "object") return;
+    setIndemnite(o.indemnite ?? "");
+    setBonus(o.bonus ?? "");
+    setTauxSolidarite(o.tauxSolidarite ?? "5");
+    setCommissionVendeurPct(o.commissionVendeurPct ?? "");
+    setAutresDeductions(o.autresDeductions ?? "");
+  };
+  const resume = res ? `Coût ${fmtM(res.coutAcheteur)} · net vendeur ${fmtM(res.net)}` : "";
+
   return (
     <div className="space-y-4">
+      <SaveBar
+        module="transfert"
+        inputs={inputs}
+        resume={resume}
+        playerId={player?.id}
+        playerName={player?.nom}
+        onLoad={handleLoad}
+        canSave={!!res}
+      />
+
       <div className="grid grid-cols-2 gap-3">
         <MField label="Indemnité de transfert (fixe)" value={indemnite} onChange={setIndemnite} placeholder="10" />
         <MField label="Bonus déclenchés" value={bonus} onChange={setBonus} placeholder="0" />

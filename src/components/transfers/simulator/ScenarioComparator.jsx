@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, FileDown, FileSpreadsheet, GitCompare } from "lucide-react";
 import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs";
+import SaveBar from "./SaveBar";
 import { PAYS_CODES, getTaxProfile } from "../../../lib/taxProfiles";
 import {
   netFromBrut, coutEmployeur, solidarite, netVendeur, fmtEUR, toNum,
@@ -82,8 +83,22 @@ export default function ScenarioComparator() {
 
   const filled = scenarios.some((s) => toNum(s.transfert) || toNum(s.salaire));
 
+  const resume = `${scenarios.length} scénario${scenarios.length > 1 ? "s" : ""}` +
+    (filled ? ` · ${scenarios.map((s) => s.nom).filter(Boolean).slice(0, 2).join(" / ")}` : "");
+  const handleLoad = (o) => {
+    if (Array.isArray(o?.scenarios) && o.scenarios.length) setScenarios(o.scenarios);
+  };
+
   return (
     <div className="space-y-4">
+      <SaveBar
+        module="scenarios"
+        inputs={{ scenarios }}
+        resume={resume}
+        onLoad={handleLoad}
+        canSave={filled}
+      />
+
       {/* Saisie des scénarios */}
       <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${scenarios.length}, minmax(0,1fr))` }}>
         {scenarios.map((s, i) => (

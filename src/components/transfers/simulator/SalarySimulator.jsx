@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Wallet, Info } from "lucide-react";
+import SaveBar from "./SaveBar";
 import { PAYS_CODES, ANNEES_FISCALES, TAX_YEAR_DEFAULT, getTaxProfile, getRegimes, tauxSalarieAjuste, AGE_SEUIL_JEUNE, ABATTEMENT_MOINS_23 } from "../../../lib/taxProfiles";
 import { packageBrut, netFromBrut, coutEmployeur, fmtEUR, fmtPct, toNum, ageFromDob } from "../../../lib/transferCalc";
 
@@ -98,8 +99,34 @@ export default function SalarySimulator({ player }) {
     return rows;
   }, [salaireAnnuel, annees, primes, signingFee, avantages, tauxSalarie, tauxPatronal]);
 
+  const inputs = { pays, regime, annee, salaireAnnuel, annees, age, signingFee, primes, avantages, tauxOverride };
+  const handleLoad = (o) => {
+    if (!o || typeof o !== "object") return;
+    setPays(o.pays ?? "FR");
+    setRegime(o.regime ?? "");
+    setAnnee(o.annee ?? String(TAX_YEAR_DEFAULT));
+    setSalaireAnnuel(o.salaireAnnuel ?? "");
+    setAnnees(o.annees ?? "3");
+    setAge(o.age ?? "");
+    setSigningFee(o.signingFee ?? "");
+    setPrimes(o.primes ?? "");
+    setAvantages(o.avantages ?? "");
+    setTauxOverride(o.tauxOverride ?? "");
+  };
+  const resume = res ? `Net ${fmtEUR(res.netAnnuel)}/an · coût club ${fmtEUR(res.coutClubAnnuel)}/an` : "";
+
   return (
     <div className="space-y-4">
+      <SaveBar
+        module="salaire"
+        inputs={inputs}
+        resume={resume}
+        playerId={player?.id}
+        playerName={player?.nom}
+        onLoad={handleLoad}
+        canSave={!!res}
+      />
+
       {/* Pays & année */}
       <div className="grid grid-cols-2 gap-3">
         <div>
