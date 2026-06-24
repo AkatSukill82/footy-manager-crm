@@ -77,6 +77,7 @@ export default function DealSimulator({ player, role = "complet", operation = "t
   const [bonus, setBonus] = useState("");
   const [bonusProba, setBonusProba] = useState("50");
   const [solidariteRate, setSolidariteRate] = useState("5");
+  const [nbEcheances, setNbEcheances] = useState("1"); // paiement du transfert en N annuités (§7/§8)
   // Agent
   const [tauxAgentJoueur, setTauxAgentJoueur] = useState("5");
   const [tauxAgentVendeur, setTauxAgentVendeur] = useState("10");
@@ -149,6 +150,20 @@ export default function DealSimulator({ player, role = "complet", operation = "t
     const agentTaxes = commBrute * (toNum(agentTaxePct) / 100);
     const profitNet = commBrute - toNum(agentFrais) - agentTaxes;
 
+    // Cash-flow par échéances (§7/§8) : transfert payé en N annuités ; salaire +
+    // charges chaque année du contrat ; signing/agent/relocation à l'année 1.
+    const N = Math.max(1, Math.floor(toNum(nbEcheances) || 1));
+    const horizon = Math.max(N, dur);
+    const transferPerYear = transferCost / N;
+    const sellerNetPerYear = sellerNet / N;
+    const echeances = [];
+    for (let y = 1; y <= horizon; y++) {
+      const transferIn = y <= N ? transferPerYear : 0;
+      const salaire = y <= dur ? annualWage + annualEmployer : 0;
+      const oneOff = y === 1 ? toNum(signingFee) + agentBuyer + toNum(relocation) : 0;
+      echeances.push({ annee: y, acheteurOut: transferIn + salaire + oneOff, vendeurIn: y <= N ? sellerNetPerYear : 0 });
+    }
+
     // Alertes (§10)
     const alerts = [];
     if (ageNum != null && ageNum < 18)
@@ -168,24 +183,24 @@ export default function DealSimulator({ player, role = "complet", operation = "t
       fisc, t, netJoueurAn, impots, signingNet, primesNet, valeurContratBrut, ancienNet, ecartNet,
       annualWage, annualEmployer, totalContract, transferCost, agentBuyer, buyerTotal, coutAnnee1, expectedBonus,
       grossSeller, solidarityDue, sellOnDue, sellerAgentFee, playerShareDue, sellerNet,
-      commJoueur, commVendeur, commBrute, agentTaxes, profitNet, alerts,
+      commJoueur, commVendeur, commBrute, agentTaxes, profitNet, alerts, echeances,
     };
   }, [pays, annee, regime, residency, marital, enfants, age, salaireBrut, ancienSalaire, isRenego, annees, signingFee, primes, avantages,
-      prixAchat, bonus, bonusProba, solidariteRate, tauxAgentJoueur, tauxAgentVendeur, agentForfait, agentFrais, agentTaxePct,
+      prixAchat, bonus, bonusProba, solidariteRate, nbEcheances, tauxAgentJoueur, tauxAgentVendeur, agentForfait, agentFrais, agentTaxePct,
       sellOnRate, partJoueurRate, autresDeductions, relocation, budgetTotal, budgetSalarial]);
 
   const filled = toNum(salaireBrut) > 0 || toNum(prixAchat) > 0;
 
   const inputs = {
     pays, annee, regime, residency, marital, enfants, age, salaireBrut, ancienSalaire, annees, signingFee, primes, avantages,
-    prixAchat, bonus, bonusProba, solidariteRate, tauxAgentJoueur, tauxAgentVendeur, agentForfait, agentFrais, agentTaxePct,
+    prixAchat, bonus, bonusProba, solidariteRate, nbEcheances, tauxAgentJoueur, tauxAgentVendeur, agentForfait, agentFrais, agentTaxePct,
     sellOnRate, partJoueurRate, autresDeductions, relocation, budgetTotal, budgetSalarial,
   };
   const setters = {
     pays: setPays, annee: setAnnee, regime: setRegime, residency: setResidency, marital: setMarital,
     enfants: setEnfants, age: setAge, salaireBrut: setSalaireBrut, ancienSalaire: setAncienSalaire, annees: setAnnees, signingFee: setSigningFee,
     primes: setPrimes, avantages: setAvantages, prixAchat: setPrixAchat, bonus: setBonus, bonusProba: setBonusProba,
-    solidariteRate: setSolidariteRate, tauxAgentJoueur: setTauxAgentJoueur, tauxAgentVendeur: setTauxAgentVendeur,
+    solidariteRate: setSolidariteRate, nbEcheances: setNbEcheances, tauxAgentJoueur: setTauxAgentJoueur, tauxAgentVendeur: setTauxAgentVendeur,
     agentForfait: setAgentForfait, agentFrais: setAgentFrais, agentTaxePct: setAgentTaxePct, sellOnRate: setSellOnRate,
     partJoueurRate: setPartJoueurRate, autresDeductions: setAutresDeductions, relocation: setRelocation,
     budgetTotal: setBudgetTotal, budgetSalarial: setBudgetSalarial,
@@ -288,6 +303,7 @@ export default function DealSimulator({ player, role = "complet", operation = "t
             <Field label="Bonus conditionnels" value={bonus} onChange={setBonus} ph="0" />
             <Field label="Probabilité bonus" value={bonusProba} onChange={setBonusProba} ph="50" suffix="%" />
             <Field label="Solidarité FIFA" value={solidariteRate} onChange={setSolidariteRate} ph="5" suffix="%" />
+            <Field label="Nb d'annuités (paiement)" value={nbEcheances} onChange={setNbEcheances} ph="1" suffix="ans" />
           </div>
         </div>
       )}
@@ -386,6 +402,38 @@ export default function DealSimulator({ player, role = "complet", operation = "t
               <Row label="Profit net agence" value={fmtEUR(r.profitNet)} strong color="text-indigo-700" />
             </Block>
           )}
+        </div>
+      )}
+
+      {/* ── CASH-FLOW PAR ÉCHÉANCE (§7/§8) ─────────────────────── */}
+      {filled && (showAcheteur(role) || showVendeur(role)) && r.echeances.length > 1 && (
+        <div className="border border-slate-200 rounded-xl overflow-hidden">
+          <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide bg-slate-50">Cash-flow par échéance</div>
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-slate-500 text-xs">
+              <tr>
+                <th className="text-left px-3 py-1.5 font-medium">Année</th>
+                {showAcheteur(role) && <th className="text-right px-3 py-1.5 font-medium">Décaissement acheteur</th>}
+                {showVendeur(role) && <th className="text-right px-3 py-1.5 font-medium">Encaissement vendeur (net)</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {r.echeances.map((e) => (
+                <tr key={e.annee} className="border-t border-slate-100">
+                  <td className="px-3 py-1.5 text-slate-600">Année {e.annee}</td>
+                  {showAcheteur(role) && <td className="px-3 py-1.5 text-right text-orange-700">{fmtEUR(e.acheteurOut)}</td>}
+                  {showVendeur(role) && <td className="px-3 py-1.5 text-right text-blue-700">{fmtEUR(e.vendeurIn)}</td>}
+                </tr>
+              ))}
+            </tbody>
+            <tfoot className="bg-slate-50 font-semibold">
+              <tr className="border-t border-slate-200">
+                <td className="px-3 py-1.5 text-slate-700">Total</td>
+                {showAcheteur(role) && <td className="px-3 py-1.5 text-right text-orange-700">{fmtEUR(r.echeances.reduce((s, e) => s + e.acheteurOut, 0))}</td>}
+                {showVendeur(role) && <td className="px-3 py-1.5 text-right text-blue-700">{fmtEUR(r.echeances.reduce((s, e) => s + e.vendeurIn, 0))}</td>}
+              </tr>
+            </tfoot>
+          </table>
         </div>
       )}
 
