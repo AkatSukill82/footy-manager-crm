@@ -2,12 +2,13 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calculator, Wallet, Briefcase, ArrowRightLeft, PiggyBank, UserCircle, ShieldCheck, GraduationCap } from "lucide-react";
+import { Calculator, Wallet, Briefcase, ArrowRightLeft, PiggyBank, UserCircle, ShieldCheck, GraduationCap, GitCompare } from "lucide-react";
 import SalarySimulator from "./SalarySimulator";
 import AgentCommissionSimulator from "./AgentCommissionSimulator";
 import TransferFeeSimulator from "./TransferFeeSimulator";
 import TrainingRewardsSimulator from "./TrainingRewardsSimulator";
 import ComplianceChecker from "./ComplianceChecker";
+import ScenarioComparator from "./ScenarioComparator";
 import BudgetSimulator from "../BudgetSimulator";
 
 const MANUEL = "__manuel__";
@@ -18,6 +19,7 @@ const MODULES = [
   { key: "transfert",   label: "Transfert",          icon: ArrowRightLeft },
   { key: "formation",   label: "Formation",          icon: GraduationCap },
   { key: "conformite",  label: "Conformité",         icon: ShieldCheck },
+  { key: "scenarios",   label: "Scénarios",          icon: GitCompare },
   { key: "budget",      label: "Faisabilité budget", icon: PiggyBank },
 ];
 
@@ -83,6 +85,7 @@ export default function TransferSimulator({ teams, players, teamPlayers }) {
         {module === "transfert" && <TransferFeeSimulator player={selectedPlayer} />}
         {module === "formation" && <TrainingRewardsSimulator player={selectedPlayer} />}
         {module === "conformite" && <ComplianceChecker player={selectedPlayer} />}
+        {module === "scenarios" && <ScenarioComparator />}
         {module === "budget" && (
           <BudgetSimulator teams={teams} players={players} teamPlayers={teamPlayers} />
         )}
