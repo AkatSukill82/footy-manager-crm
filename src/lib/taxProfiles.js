@@ -34,6 +34,23 @@ export const TAX_PROFILES = {
 
 export const PAYS_CODES = Object.keys(PROFILS_2026);
 
+// Régimes fiscaux SPÉCIAUX (impatriés / sportifs) — taux effectif salarié réduit.
+// ⚠️ Estimations pédagogiques (pas des taux officiels) : ces régimes existent mais
+// leurs conditions/durées varient → à valider par un fiscaliste. Vide = pas de régime connu.
+const REGIMES = {
+  NL: [{ id: "ruling30", nom: "Ruling 30% (impatrié)",        tauxSalarie: 0.30 }],
+  ES: [{ id: "beckham",  nom: "Régime Beckham (impatrié)",    tauxSalarie: 0.24 }],
+  IT: [{ id: "impatrie", nom: "Régime impatriés (−50%)",      tauxSalarie: 0.25 }],
+  BE: [{ id: "expat",    nom: "Régime expatriés",             tauxSalarie: 0.40 }],
+  FR: [{ id: "impatrie", nom: "Régime impatriés (prime)",     tauxSalarie: 0.38 }],
+  GB: [{ id: "nondom",   nom: "Non-dom (remittance)",         tauxSalarie: 0.40 }],
+};
+
+/** Régimes spéciaux disponibles pour un pays (peut être vide). */
+export function getRegimes(code) {
+  return REGIMES[code] || [];
+}
+
 // Abattement fiscal pour les jeunes joueurs (< 23 ans) : réduction RELATIVE du taux
 // effectif salarié. Estimation paramétrable — plusieurs pays appliquent des régimes
 // jeunes/impatriés plus favorables aux joueurs en début de carrière.

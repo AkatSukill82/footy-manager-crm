@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Wallet, Info } from "lucide-react";
-import { PAYS_CODES, ANNEES_FISCALES, TAX_YEAR_DEFAULT, getTaxProfile, tauxSalarieAjuste, AGE_SEUIL_JEUNE, ABATTEMENT_MOINS_23 } from "../../../lib/taxProfiles";
+import { PAYS_CODES, ANNEES_FISCALES, TAX_YEAR_DEFAULT, getTaxProfile, getRegimes, tauxSalarieAjuste, AGE_SEUIL_JEUNE, ABATTEMENT_MOINS_23 } from "../../../lib/taxProfiles";
 import { packageBrut, netFromBrut, coutEmployeur, fmtEUR, fmtPct, toNum, ageFromDob } from "../../../lib/transferCalc";
 
 // Champ numérique avec label + suffixe d'unité
@@ -27,6 +27,7 @@ const Stat = ({ label, value, color = "text-slate-900", sub }) => (
 
 export default function SalarySimulator({ player }) {
   const [pays, setPays] = useState("FR");
+  const [regime, setRegime] = useState("");   // régime fiscal spécial (impatrié…)
   const [annee, setAnnee] = useState(String(TAX_YEAR_DEFAULT));
   const [salaireAnnuel, setSalaireAnnuel] = useState("");
   const [annees, setAnnees] = useState("3");
@@ -49,10 +50,14 @@ export default function SalarySimulator({ player }) {
   const tauxPatronal = profil?.tauxPatronal ?? 0;
   const ageNum = age !== "" ? toNum(age) : null;
   const jeune = ageNum != null && ageNum < AGE_SEUIL_JEUNE;
-  // Override = taux exact saisi ; sinon taux du profil ajusté de l'abattement < 23 ans
+  const regimesDispo = getRegimes(pays);
+  const regimeObj = regimesDispo.find((r) => r.id === regime) || null;
+  // Priorité du taux : saisie manuelle > régime spécial > taux standard (abattement < 23 ans).
   const tauxSalarie = tauxOverride !== ""
     ? toNum(tauxOverride) / 100
-    : tauxSalarieAjuste(profil?.tauxSalarie ?? 0, ageNum);
+    : regimeObj
+      ? regimeObj.tauxSalarie
+      : tauxSalarieAjuste(profil?.tauxSalarie ?? 0, ageNum);
 
   const res = useMemo(() => {
     const brutAnnuel = toNum(salaireAnnuel);
@@ -75,13 +80,31 @@ export default function SalarySimulator({ player }) {
     };
   }, [salaireAnnuel, annees, signingFee, primes, avantages, tauxSalarie, tauxPatronal]);
 
+  // Cash-flow année par année (signing fee sur l'année 1 uniquement).
+  const cashflow = useMemo(() => {
+    const brut = toNum(salaireAnnuel);
+    if (!brut) return [];
+    const years = Math.max(1, toNum(annees) || 1);
+    const primesAn = toNum(primes), sf = toNum(signingFee), av = toNum(avantages);
+    const rows = [];
+    for (let y = 1; y <= years; y++) {
+      const rem = brut + primesAn + (y === 1 ? sf : 0);
+      rows.push({
+        annee: y,
+        net: netFromBrut(rem, tauxSalarie),
+        coutClub: coutEmployeur({ brut: rem, tauxPatronal, avantages: av }),
+      });
+    }
+    return rows;
+  }, [salaireAnnuel, annees, primes, signingFee, avantages, tauxSalarie, tauxPatronal]);
+
   return (
     <div className="space-y-4">
       {/* Pays & année */}
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label className="text-xs text-slate-500 mb-1 block">Pays (fiscalité)</Label>
-          <Select value={pays} onValueChange={(v) => { setPays(v); setTauxOverride(""); }}>
+          <Select value={pays} onValueChange={(v) => { setPays(v); setRegime(""); setTauxOverride(""); }}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               {PAYS_CODES.map((code) => {
@@ -102,6 +125,20 @@ export default function SalarySimulator({ player }) {
         </div>
       </div>
 
+      {/* Régime fiscal spécial (impatrié…) — uniquement si le pays en propose */}
+      {regimesDispo.length > 0 && (
+        <div>
+          <Label className="text-xs text-slate-500 mb-1 block">Régime fiscal</Label>
+          <Select value={regime || "__std__"} onValueChange={(v) => { setRegime(v === "__std__" ? "" : v); setTauxOverride(""); }}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__std__">Standard</SelectItem>
+              {regimesDispo.map((r) => <SelectItem key={r.id} value={r.id}>{r.nom} (≈{(r.tauxSalarie * 100).toFixed(0)}%)</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {/* Saisie contrat */}
       <div className="grid grid-cols-2 gap-3">
         <NumField label="Salaire brut annuel" value={salaireAnnuel} onChange={setSalaireAnnuel} placeholder="300000" />
@@ -112,7 +149,7 @@ export default function SalarySimulator({ player }) {
         <NumField label="Avantages / an (voiture, logement…)" value={avantages} onChange={setAvantages} placeholder="0" />
         <NumField
           label={`Taux effectif salarié${tauxOverride === "" ? " (auto)" : ""}`}
-          value={tauxOverride !== "" ? tauxOverride : (profil ? (profil.tauxSalarie * 100).toFixed(0) : "")}
+          value={tauxOverride !== "" ? tauxOverride : (tauxSalarie * 100).toFixed(0)}
           onChange={setTauxOverride}
           placeholder="45"
           suffix="%"
@@ -135,10 +172,46 @@ export default function SalarySimulator({ player }) {
             <Stat label="Package brut garanti (durée)" value={fmtEUR(res.packageGaranti)} color="text-slate-900" sub={`net estimé ${fmtEUR(res.netPackage)}`} />
           </div>
 
+          {/* Cash-flow année par année */}
+          {cashflow.length > 1 && (
+            <div>
+              <div className="text-xs font-semibold text-slate-500 mb-2">Cash-flow par année</div>
+              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 text-slate-500 text-xs">
+                    <tr>
+                      <th className="text-left px-3 py-1.5 font-medium">Année</th>
+                      <th className="text-right px-3 py-1.5 font-medium">Net joueur</th>
+                      <th className="text-right px-3 py-1.5 font-medium">Coût club</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cashflow.map((r) => (
+                      <tr key={r.annee} className="border-t border-slate-100">
+                        <td className="px-3 py-1.5 text-slate-600">Année {r.annee}</td>
+                        <td className="px-3 py-1.5 text-right font-medium text-green-700">{fmtEUR(r.net)}</td>
+                        <td className="px-3 py-1.5 text-right font-medium text-orange-700">{fmtEUR(r.coutClub)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="bg-slate-50 font-semibold">
+                    <tr className="border-t border-slate-200">
+                      <td className="px-3 py-1.5 text-slate-700">Total</td>
+                      <td className="px-3 py-1.5 text-right text-green-700">{fmtEUR(cashflow.reduce((s, r) => s + r.net, 0))}</td>
+                      <td className="px-3 py-1.5 text-right text-orange-700">{fmtEUR(cashflow.reduce((s, r) => s + r.coutClub, 0))}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-start gap-2 text-[11px] text-slate-400 bg-slate-50 rounded-lg px-3 py-2">
             <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
             <span>
-              Taux effectifs estimés (impôt + cotisations), hors régimes spéciaux (loi Beckham, ruling 30 %, impatriés…).
+              {regimeObj
+                ? `Régime « ${regimeObj.nom} » appliqué (taux estimé). `
+                : "Taux effectifs estimés (impôt + cotisations), hors régimes spéciaux. "}
               Modifiez le « taux effectif » pour affiner. À valider par un fiscaliste avant usage contractuel.
             </span>
           </div>
