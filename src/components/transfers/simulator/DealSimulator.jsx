@@ -1,11 +1,13 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserCircle, Briefcase, ArrowDownLeft, ArrowUpRight, ShieldAlert, ShieldCheck, AlertTriangle, Layers } from "lucide-react";
+import { UserCircle, Briefcase, ArrowDownLeft, ArrowUpRight, ShieldAlert, ShieldCheck, AlertTriangle, Layers, FileDown, Loader2 } from "lucide-react";
 import SaveBar from "./SaveBar";
 import { PAYS_CODES, ANNEES_FISCALES, TAX_YEAR_DEFAULT, getTaxProfile, getRegimes, estimerTauxSalarie, RESIDENCE_OPTIONS, SITUATION_OPTIONS } from "../../../lib/taxProfiles";
 import { fmtEUR, toNum, ageFromDob } from "../../../lib/transferCalc";
+import { exportNodeToPdf } from "../../../lib/exportPdf";
 
 /**
  * Simulation 360 — le même deal lu par les 4 acteurs (cahier ProPulse §9/§13).
@@ -202,6 +204,17 @@ export default function DealSimulator({ player, role = "complet", operation = "t
     green: { box: "bg-green-50 border-green-200 text-green-800", Icon: ShieldCheck,   ic: "text-green-600" },
   };
 
+  const recapRef = useRef(null);
+  const [exporting, setExporting] = useState(false);
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const titre = `Simulation 360 — ${player?.nom || "deal"}`;
+      await exportNodeToPdf(recapRef.current, `Simulation360 - ${player?.nom || "deal"}.pdf`, { title: titre, orientation: "portrait" });
+    } catch { /* export bonus — silencieux */ }
+    finally { setExporting(false); }
+  };
+
   return (
     <div className="space-y-4">
       <SaveBar module="deal" inputs={inputs} resume={resume} playerId={player?.id} playerName={player?.nom} onLoad={handleLoad} canSave={filled} />
@@ -322,6 +335,15 @@ export default function DealSimulator({ player, role = "complet", operation = "t
 
       {/* ── RÉCAP PAR ACTEUR (§9) ──────────────────────────────── */}
       {filled && (
+        <div className="flex justify-end">
+          <Button onClick={handleExport} size="sm" variant="outline" className="gap-1.5" disabled={exporting}>
+            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />} Export PDF
+          </Button>
+        </div>
+      )}
+
+      <div ref={recapRef} className="space-y-4">
+      {filled && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {showJoueur(role) && (
             <Block icon={UserCircle} title="Joueur" accent="border-green-200 bg-green-50/40">
@@ -385,6 +407,7 @@ export default function DealSimulator({ player, role = "complet", operation = "t
       <div className="flex items-start gap-2 text-[11px] text-slate-400 bg-slate-50 rounded-lg px-3 py-2">
         <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
         <span>Estimations (cahier ProPulse) : taux fiscaux 2 paliers simplifiés, conformité indicative. À valider par un fiscaliste et un juriste du sport avant tout engagement contractuel.</span>
+      </div>
       </div>
     </div>
   );

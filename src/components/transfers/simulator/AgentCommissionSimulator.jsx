@@ -40,6 +40,8 @@ export default function AgentCommissionSimulator({ player }) {
   // Frais généraux & taxes agence → profit NET réel (cahier §6.2)
   const [fraisGeneraux, setFraisGeneraux] = useState("");
   const [taxePct, setTaxePct] = useState("0");
+  // Mode de référence conformité (cahier §6.1) : libre vs grille FIFA théorique
+  const [modeRef, setModeRef] = useState("fifa");
 
   // Quand on ouvre une simulation enregistrée, on ne veut PAS que le
   // préremplissage joueur écrase les chiffres chargés.
@@ -82,15 +84,22 @@ export default function AgentCommissionSimulator({ player }) {
     const taxeR = Math.max(0, toNum(taxePct) / 100);
     const profitNetGar = partGar - frais - partGar * taxeR;
     const profitNetEsp = partEsp - frais - partEsp * taxeR;
+    // Référence conformité (cahier §6.1) : grille FIFA théorique, NON bloquante.
+    // Joueur / club acheteur ≈ 5 % ; club vendeur ≈ 10 % de la base.
+    const refRate = client === "club_vendeur" ? 0.10 : 0.05;
+    const referenceComm = baseGar * refRate;
+    const ecartRef = commGar - referenceComm;
+    const risk = rate <= refRate + 1e-9 ? "green" : rate <= refRate * 1.5 ? "amber" : "red";
     return {
       baseGar, bonusVal, commGar, commEsp, commPot,
       partGar, partEsp, partPot,
       partAutreGar: splitAgent(commGar, 1 - pct),
       frais, profitNetGar, profitNetEsp,
+      refRate, referenceComm, ecartRef, risk,
     };
   }, [client, base, annees, taux, forfait, bonus, proba, splitActif, partAgent, fraisGeneraux, taxePct]);
 
-  const inputs = { client, base, annees, taux, forfait, bonus, proba, splitActif, partAgent, fraisGeneraux, taxePct };
+  const inputs = { client, base, annees, taux, forfait, bonus, proba, splitActif, partAgent, fraisGeneraux, taxePct, modeRef };
   const handleLoad = (o) => {
     if (!o || typeof o !== "object") return;
     // Arme le skip uniquement si le client change (sinon l'effet ne se relance pas).
@@ -106,10 +115,17 @@ export default function AgentCommissionSimulator({ player }) {
     setPartAgent(o.partAgent ?? "70");
     setFraisGeneraux(o.fraisGeneraux ?? "");
     setTaxePct(o.taxePct ?? "0");
+    setModeRef(o.modeRef ?? "fifa");
   };
   const resume = res
     ? `Commission ${fmtEUR(res.partGar)} garantie${res.bonusVal > 0 ? ` · ${fmtEUR(res.partPot)} max` : ""}`
     : "";
+
+  const RISK = {
+    green: { box: "bg-green-50 border-green-200 text-green-800", label: "Dans la référence" },
+    amber: { box: "bg-amber-50 border-amber-200 text-amber-800", label: "Au-dessus de la référence" },
+    red:   { box: "bg-red-50 border-red-200 text-red-800",       label: "Nettement au-dessus" },
+  };
 
   return (
     <div className="space-y-4">
@@ -124,7 +140,7 @@ export default function AgentCommissionSimulator({ player }) {
       />
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="col-span-2">
+        <div>
           <Label className="text-xs text-slate-500 mb-1 block">Client de l'agent</Label>
           <Select value={client} onValueChange={setClient}>
             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -132,6 +148,16 @@ export default function AgentCommissionSimulator({ player }) {
               <SelectItem value="joueur">Joueur — base = contrat joueur</SelectItem>
               <SelectItem value="club_acheteur">Club acheteur — base = transfert ou salaire</SelectItem>
               <SelectItem value="club_vendeur">Club vendeur — base = indemnité de transfert</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs text-slate-500 mb-1 block">Mode de référence</Label>
+          <Select value={modeRef} onValueChange={setModeRef}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="fifa">Grille FIFA théorique</SelectItem>
+              <SelectItem value="libre">Estimation libre</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -183,6 +209,18 @@ export default function AgentCommissionSimulator({ player }) {
             <div className="grid grid-cols-2 gap-3">
               <Stat label="Profit net agence (garanti)" value={fmtEUR(res.profitNetGar)} color="text-indigo-700" sub={`après frais ${fmtEUR(res.frais)}${toNum(taxePct) > 0 ? ` + taxes ${toNum(taxePct)}%` : ""}`} />
               {res.bonusVal > 0 && <Stat label="Profit net (espéré)" value={fmtEUR(res.profitNetEsp)} color="text-indigo-700" />}
+            </div>
+          )}
+
+          {modeRef === "fifa" && (
+            <div className={`rounded-lg border px-3 py-2 text-xs ${RISK[res.risk].box}`}>
+              <div className="font-semibold mb-1.5">Conformité commission — {RISK[res.risk].label}</div>
+              <div className="grid grid-cols-3 gap-2">
+                <div><div className="text-[10px] opacity-70">Commission saisie</div><div className="font-semibold">{fmtEUR(res.commGar)}</div></div>
+                <div><div className="text-[10px] opacity-70">Plafond référence ({(res.refRate * 100).toFixed(0)}%)</div><div className="font-semibold">{fmtEUR(res.referenceComm)}</div></div>
+                <div><div className="text-[10px] opacity-70">Écart</div><div className="font-semibold">{res.ecartRef >= 0 ? "+" : ""}{fmtEUR(res.ecartRef)}</div></div>
+              </div>
+              <div className="mt-1.5 text-[10px] opacity-80">Grille FIFA théorique (indicative) — ne bloque pas le deal. Règles nationales de plafonnement à vérifier (droit applicable).</div>
             </div>
           )}
 
