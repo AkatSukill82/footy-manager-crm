@@ -8,6 +8,7 @@ import SaveBar from "./SaveBar";
 import { PAYS_CODES, ANNEES_FISCALES, TAX_YEAR_DEFAULT, getTaxProfile, getRegimes, estimerTauxSalarie, RESIDENCE_OPTIONS, SITUATION_OPTIONS } from "../../../lib/taxProfiles";
 import { fmtEUR, toNum, ageFromDob } from "../../../lib/transferCalc";
 import { exportNodeToPdf } from "../../../lib/exportPdf";
+import { useAgentRules } from "../../../lib/useAgentRules";
 
 /**
  * Simulation 360 — le même deal lu par les 4 acteurs (cahier ProPulse §9/§13).
@@ -219,6 +220,22 @@ export default function DealSimulator({ player, role = "complet", operation = "t
     green: { box: "bg-green-50 border-green-200 text-green-800", Icon: ShieldCheck,   ic: "text-green-600" },
   };
 
+  // Conformité commissions (§6.1) : plafond national prioritaire sinon grille FIFA.
+  const { ruleFor } = useAgentRules();
+  const natRule = ruleFor(pays);
+  const refJoueur = natRule ? toNum(natRule.taux_joueur) : 5;
+  const refVendeur = natRule ? toNum(natRule.taux_vendeur) : 10;
+  const riskOf = (saisi, ref) => (saisi <= ref + 1e-9 ? "green" : saisi <= ref * 1.5 ? "amber" : "red");
+  const legJoueur = { saisi: toNum(tauxAgentJoueur), ref: refJoueur, risk: riskOf(toNum(tauxAgentJoueur), refJoueur) };
+  const legVendeur = { saisi: toNum(tauxAgentVendeur), ref: refVendeur, risk: riskOf(toNum(tauxAgentVendeur), refVendeur) };
+  const legs = hasTransfer ? [legJoueur, legVendeur] : [legJoueur];
+  const worstRisk = legs.some((l) => l.risk === "red") ? "red" : legs.some((l) => l.risk === "amber") ? "amber" : "green";
+  const RISK = {
+    green: "bg-green-50 border-green-200 text-green-800",
+    amber: "bg-amber-50 border-amber-200 text-amber-800",
+    red:   "bg-red-50 border-red-200 text-red-800",
+  };
+
   const recapRef = useRef(null);
   const [exporting, setExporting] = useState(false);
   const handleExport = async () => {
@@ -402,6 +419,20 @@ export default function DealSimulator({ player, role = "complet", operation = "t
               <Row label="Profit net agence" value={fmtEUR(r.profitNet)} strong color="text-indigo-700" />
             </Block>
           )}
+        </div>
+      )}
+
+      {/* ── CONFORMITÉ COMMISSIONS (§6.1) ──────────────────────── */}
+      {filled && showAgent(role) && (
+        <div className={`rounded-xl border px-4 py-3 ${RISK[worstRisk]}`}>
+          <div className="font-semibold text-sm mb-1.5">
+            Conformité commissions — {natRule ? `règle nationale ${natRule.pays_nom || natRule.pays}` : "grille FIFA théorique"}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <div>Agent joueur : <b>{legJoueur.saisi}%</b> vs plafond <b>{legJoueur.ref}%</b> — écart {legJoueur.saisi - legJoueur.ref >= 0 ? "+" : ""}{(legJoueur.saisi - legJoueur.ref).toFixed(1)} pt</div>
+            {hasTransfer && <div>Agent vendeur : <b>{legVendeur.saisi}%</b> vs plafond <b>{legVendeur.ref}%</b> — écart {legVendeur.saisi - legVendeur.ref >= 0 ? "+" : ""}{(legVendeur.saisi - legVendeur.ref).toFixed(1)} pt</div>}
+          </div>
+          <div className="text-[10px] opacity-80 mt-1.5">Indicatif et non bloquant. {natRule ? "Règle nationale active (prioritaire sur la grille FIFA)." : "Grille FIFA théorique — vérifier le droit national applicable."}</div>
         </div>
       )}
 

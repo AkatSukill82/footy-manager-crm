@@ -1,10 +1,79 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FolderOpen, Trash2, History, User } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FolderOpen, Trash2, History, User, Globe, Save, Pencil, Plus } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useSimulations } from "@/lib/useSimulations";
+import { useAgentRules } from "@/lib/useAgentRules";
+import { PAYS_CODES, getTaxProfile } from "@/lib/taxProfiles";
 import SimulationAuditLog from "./SimulationAuditLog";
+
+const EMPTY_RULE = { id: null, pays: "FR", taux_joueur: "3", taux_vendeur: "10", actif: true };
+
+/** Éditeur des règles nationales de commission d'agent (cahier §6.1). */
+function AgentRulesEditor() {
+  const { rules, save, remove } = useAgentRules();
+  const [form, setForm] = useState(EMPTY_RULE);
+
+  const submit = () => {
+    const p = getTaxProfile(form.pays);
+    save.mutate({ ...form, pays_nom: p?.nom || form.pays }, { onSuccess: () => setForm(EMPTY_RULE) });
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Globe className="w-4 h-4 text-slate-400" /> Règles nationales d'agents
+        </CardTitle>
+        <p className="text-xs text-slate-500">Plafonds de commission par pays. Une règle active est prioritaire sur la grille FIFA dans la Simulation 360. Éditable par tous.</p>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {rules.map((r) => (
+          <div key={r.id} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+            <div className="flex-1 min-w-0">
+              <span className="font-medium text-slate-800">{getTaxProfile(r.pays)?.drapeau} {r.pays_nom || r.pays}</span>
+              <span className="text-slate-400 text-xs"> · joueur {r.taux_joueur}% · vendeur {r.taux_vendeur}%</span>
+              {r.actif === false && <span className="ml-1 text-[10px] text-slate-400">(inactive)</span>}
+            </div>
+            <button onClick={() => setForm({ id: r.id, pays: r.pays, taux_joueur: String(r.taux_joueur), taux_vendeur: String(r.taux_vendeur), actif: r.actif !== false })} className="p-1.5 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50"><Pencil className="w-3.5 h-3.5" /></button>
+            <button onClick={() => remove.mutate(r)} className="p-1.5 rounded text-slate-400 hover:text-red-600 hover:bg-red-50"><Trash2 className="w-3.5 h-3.5" /></button>
+          </div>
+        ))}
+
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end border-t border-slate-100 pt-3">
+          <div className="col-span-2 sm:col-span-1">
+            <label className="text-[11px] text-slate-500 mb-1 block">Pays</label>
+            <Select value={form.pays} onValueChange={(v) => setForm({ ...form, pays: v })}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>{PAYS_CODES.map((c) => { const p = getTaxProfile(c); return <SelectItem key={c} value={c}>{p.drapeau} {p.nom}</SelectItem>; })}</SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-[11px] text-slate-500 mb-1 block">Plafond joueur (%)</label>
+            <Input type="number" min="0" value={form.taux_joueur} onChange={(e) => setForm({ ...form, taux_joueur: e.target.value })} className="h-9" />
+          </div>
+          <div>
+            <label className="text-[11px] text-slate-500 mb-1 block">Plafond vendeur (%)</label>
+            <Input type="number" min="0" value={form.taux_vendeur} onChange={(e) => setForm({ ...form, taux_vendeur: e.target.value })} className="h-9" />
+          </div>
+          <label className="flex items-center gap-1.5 text-xs text-slate-600 h-9">
+            <input type="checkbox" checked={form.actif} onChange={(e) => setForm({ ...form, actif: e.target.checked })} /> Active
+          </label>
+          <Button onClick={submit} size="sm" disabled={save.isPending} className="gap-1.5 h-9">
+            {form.id ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />}{form.id ? "Mettre à jour" : "Ajouter"}
+          </Button>
+        </div>
+        {form.id && (
+          <button onClick={() => setForm(EMPTY_RULE)} className="text-[11px] text-slate-400 hover:text-slate-600">Annuler la modification</button>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 /**
  * Onglet « Historique » de la Simulation 360.
@@ -67,6 +136,8 @@ export default function SimulationHistory({ onOpen }) {
           <SimulationAuditLog />
         </CardContent>
       </Card>
+
+      <AgentRulesEditor />
     </div>
   );
 }
