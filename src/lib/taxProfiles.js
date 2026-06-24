@@ -70,7 +70,7 @@ export const SITUATION_OPTIONS = [
 
 /**
  * Profil "legacy" d'un pays (compat ascendante) : renvoie un objet avec
- * `tauxSalarie` (= palier gros) + `tauxPatronal`. Utilisé par ScenarioComparator.
+ * `tauxSalarie` (= palier gros) + `tauxPatronal`. Sert au sélecteur de pays.
  */
 export function getTaxProfile(code, year = TAX_YEAR_DEFAULT) {
   const table = PALIERS[year] || PALIERS[TAX_YEAR_DEFAULT];

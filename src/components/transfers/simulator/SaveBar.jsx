@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Save, FolderOpen, Copy, Trash2, FilePlus2, Loader2, User } from "lucide-react";
@@ -21,12 +21,24 @@ import { useSimulations } from "@/lib/useSimulations";
  *   playerId/playerName  joueur lié (optionnel)
  *   onLoad(inputs)       hydrate le module quand on ouvre une simulation
  *   canSave     bool — désactive l'enregistrement si rien à sauver
+ *   openSim     simulation à ouvrir depuis l'extérieur (ex. page Historique)
  */
-export default function SaveBar({ module, inputs, resume, playerId, playerName, onLoad, canSave = true }) {
+export default function SaveBar({ module, inputs, resume, playerId, playerName, onLoad, canSave = true, openSim = null }) {
   const { simulations, save, remove, user } = useSimulations(module);
   const [nom, setNom] = useState("");
   const [loaded, setLoaded] = useState(null); // simulation ouverte (ou null = nouvelle)
   const [panelOpen, setPanelOpen] = useState(false);
+
+  // Ouverture pilotée depuis l'extérieur (clic « Ouvrir » dans l'onglet Historique).
+  useEffect(() => {
+    if (!openSim?.id) return;
+    let parsed = {};
+    try { parsed = JSON.parse(openSim.inputs || "{}"); } catch { parsed = {}; }
+    onLoad?.(parsed);
+    setLoaded(openSim);
+    setNom(openSim.nom);
+    setPanelOpen(false);
+  }, [openSim]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = () => {
     save.mutate(

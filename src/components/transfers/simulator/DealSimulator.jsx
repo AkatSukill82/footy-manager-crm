@@ -53,7 +53,7 @@ const Block = ({ icon: Icon, title, accent, children }) => (
   </div>
 );
 
-export default function DealSimulator({ player, role = "complet", operation = "transfert_payant" }) {
+export default function DealSimulator({ player, role = "complet", operation = "transfert_payant", openSim = null }) {
   const hasTransfer = OPS_AVEC_TRANSFERT.includes(operation);
   const isRenego = OPS_RENEGO.includes(operation);
   const showVendeur = (r) => showVendeurRole(r) && hasTransfer;
@@ -232,7 +232,7 @@ export default function DealSimulator({ player, role = "complet", operation = "t
 
   return (
     <div className="space-y-4">
-      <SaveBar module="deal" inputs={inputs} resume={resume} playerId={player?.id} playerName={player?.nom} onLoad={handleLoad} canSave={filled} />
+      <SaveBar module="deal" inputs={inputs} resume={resume} playerId={player?.id} playerName={player?.nom} onLoad={handleLoad} canSave={filled} openSim={openSim} />
 
       {/* ── SAISIE ─────────────────────────────────────────────── */}
       {showJoueur(role) && (
