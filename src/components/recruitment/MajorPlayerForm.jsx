@@ -4,11 +4,12 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ExternalLink, ShieldAlert, ShieldCheck, AlertTriangle, Save, Wand2, Copy } from "lucide-react";
+import { ExternalLink, ShieldAlert, ShieldCheck, AlertTriangle, Save, Wand2, Copy, Download, Loader2 } from "lucide-react";
 import {
   TM_LINKS, ageScore, contractScore, marketScore, scoreMajor, scoreTier,
   compliance, deriveStatus, canBeContactReady, generateMessage, canGenerateMessage, isOffensive,
 } from "@/lib/recruitmentScoring";
+import { fetchPlayerFromLink, playerToMajorFields } from "@/lib/playerLookup";
 
 const F = ({ label, children }) => (
   <div><Label className="text-[11px] text-slate-500 mb-1 block">{label}</Label>{children}</div>
@@ -50,6 +51,21 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
   }));
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const [message, setMessage] = useState(initial?.message ?? initial?.message_text ?? "");
+
+  // Récupération auto des données depuis un lien Transfermarkt/FotMob (ou un nom).
+  const [srcUrl, setSrcUrl] = useState("");
+  const [fetching, setFetching] = useState(false);
+  const [fetchMsg, setFetchMsg] = useState(null);
+  const handleFetch = async () => {
+    if (!srcUrl.trim()) return;
+    setFetching(true); setFetchMsg(null);
+    const p = await fetchPlayerFromLink(srcUrl);
+    setFetching(false);
+    if (!p) { setFetchMsg({ ok: false, text: "Aucune donnée trouvée pour ce lien / ce nom." }); return; }
+    const mapped = playerToMajorFields(p);
+    setF((s) => { const next = { ...s }; Object.entries(mapped).forEach(([k, v]) => { if (v) next[k] = v; }); return next; });
+    setFetchMsg({ ok: true, text: `Données récupérées : ${p.nom || "joueur"} — vérifiez et complétez.` });
+  };
 
   const age = Number(f.age) || 0;
   const isMinor = age > 0 && age < 18;
@@ -117,6 +133,19 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
             <ExternalLink className="w-3.5 h-3.5" /> {l.label}
           </a>
         ))}
+      </div>
+
+      {/* Récupération auto depuis un lien (Transfermarkt / FotMob) ou un nom */}
+      <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-3 space-y-2">
+        <Label className="text-[11px] font-medium text-blue-800 flex items-center gap-1.5"><Download className="w-3.5 h-3.5" /> Récupérer les données depuis un lien (Transfermarkt / FotMob) ou un nom</Label>
+        <div className="flex gap-2">
+          <Input value={srcUrl} onChange={(e) => setSrcUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleFetch()} placeholder="https://www.transfermarkt.com/.../profil/spieler/... ou un nom de joueur" className="h-9 bg-white" />
+          <Button onClick={handleFetch} disabled={fetching || !srcUrl.trim()} size="sm" className="gap-1.5 flex-shrink-0">
+            {fetching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Récupérer
+          </Button>
+        </div>
+        {fetchMsg && <p className={`text-[11px] ${fetchMsg.ok ? "text-green-600" : "text-red-600"}`}>{fetchMsg.text}</p>}
+        <p className="text-[10px] text-slate-400">Préremplit identité, club, division, contrat et valeur marchande. À vérifier — les sources peuvent être incomplètes ou datées.</p>
       </div>
 
       {isMinor && (
