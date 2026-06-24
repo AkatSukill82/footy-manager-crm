@@ -122,11 +122,13 @@ Deno.serve(async (req) => {
       if (!org.invite_code_expires || new Date(org.invite_code_expires).getTime() < Date.now()) {
         return Response.json({ ok: false, error: "Ce code a expiré. Demandez-en un nouveau au chef du groupe." });
       }
-      // On NE marque PAS les données du membre : elles restent privées.
-      // Rejoindre = juste rattacher l'utilisateur au groupe → la RLS lui donne
-      // accès en lecture/écriture aux données partagées par le CEO (chef).
+      // PARTAGE TOTAL : rejoindre = rattacher l'utilisateur au groupe ET partager
+      // ses données existantes (stampées avec l'organization_id du groupe). Les
+      // futures données sont partagées automatiquement via withOrg. La RLS donne
+      // à tout le groupe l'accès lecture/écriture.
       await base44.auth.updateMe({ organization_id: org.id });
-      return Response.json({ ok: true, group: { id: org.id, nom: org.nom } });
+      const res = await stampUserData(svc, user.id, org.id);
+      return Response.json({ ok: true, group: { id: org.id, nom: org.nom }, stamped: res.updated });
     }
 
     // ── Quitter le groupe ────────────────────────────────────────────────────
