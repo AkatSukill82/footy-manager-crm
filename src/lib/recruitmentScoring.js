@@ -6,13 +6,14 @@
  */
 
 // ── Liens Transfermarkt (§4) ────────────────────────────────────────────────
+// Liens de sourcing Transfermarkt (URL canoniques vérifiées — pages /statistik/).
 export const TM_LINKS = [
   { key: "goals_assists", label: "Buts + passes (G+A)", url: "https://www.transfermarkt.com/statistik/topscorer" },
-  { key: "contracts_ending", label: "Fins de contrat", url: "https://www.transfermarkt.com/spieler-statistik/vertragsende/marktwertetop" },
-  { key: "appearances", label: "Temps de jeu (matchs)", url: "https://www.transfermarkt.com/statistik/meisteeinsaetze" },
-  { key: "advanced_search", label: "Recherche détaillée", url: "https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche" },
-  { key: "free_agents", label: "Joueurs libres", url: "https://www.transfermarkt.com/marktwertetop/marktwertetop/marktwertetop/0/ajax/yw1/plus/1?wettbewerb_id=alle&land_id=&kontinent_id=&...vereinslos=1" },
-  { key: "agencies", label: "Agences de joueurs", url: "https://www.transfermarkt.com/berater/berateruebersicht/berater" },
+  { key: "contracts_ending", label: "Fins de contrat", url: "https://www.transfermarkt.com/statistik/endendevertraege" },
+  { key: "appearances", label: "Temps de jeu (matchs)", url: "https://www.transfermarkt.com/statistik/gesamteinsaetze" },
+  { key: "advanced_search", label: "Recherche détaillée", url: "https://www.transfermarkt.com/detailsuche/spielerdetail/suche" },
+  { key: "free_agents", label: "Joueurs libres", url: "https://www.transfermarkt.com/statistik/vertragslosespieler" },
+  { key: "agencies", label: "Agences de joueurs", url: "https://www.transfermarkt.com/berater/beraterfirmenuebersicht/berater" },
 ];
 
 // Postes offensifs (§17) → on utilise G+A, sinon matchs/minutes/attributs.
