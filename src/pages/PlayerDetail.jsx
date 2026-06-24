@@ -86,10 +86,8 @@ export default function PlayerDetailPage() {
       return players[0];
     },
     enabled: !!playerId,
-    // Rafraîchit la fiche depuis la base toutes les 15 min (sans clic), et
-    // récupère les màj faites par le Sync ou par un membre du groupe.
-    refetchInterval: 15 * 60 * 1000,
-    refetchIntervalInBackground: false,
+    // Rafraîchissement auto via la synchro globale (10 s) → récupère les màj du
+    // Sync ou d'un membre du groupe. (Le scraping externe reste à 15 min.)
   });
 
   // Réutilise le cache global — zéro requête réseau supplémentaire

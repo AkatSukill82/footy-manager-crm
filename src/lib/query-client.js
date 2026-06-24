@@ -10,7 +10,10 @@ export const queryClientInstance = new QueryClient({
 			staleTime:       FOUR_HOURS,
 			gcTime:          60 * 60 * 1000, // 1h — garde les données plus longtemps entre navigations
 			placeholderData: keepPreviousData,
-			// refetchInterval supprimé — le staleTime suffit, le polling arrière-plan est inutile
+			// Synchro auto toutes les 10 s (partage groupe quasi temps réel).
+			// Uniquement quand l'onglet est visible → pas de polling en arrière-plan.
+			refetchInterval:             10_000,
+			refetchIntervalInBackground: false,
 		},
 	},
 });
