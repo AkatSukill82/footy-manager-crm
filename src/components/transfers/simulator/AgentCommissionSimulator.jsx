@@ -30,6 +30,9 @@ export default function AgentCommissionSimulator({ player }) {
   const [annees, setAnnees] = useState("1");
   const [taux, setTaux] = useState("5");
   const [forfait, setForfait] = useState("");
+  // Bonus conditionnel (revenu potentiel) + probabilité de réalisation
+  const [bonus, setBonus] = useState("");
+  const [proba, setProba] = useState("50");
   // Split éventuel avec un second agent (apporteur, co-mandat…)
   const [splitActif, setSplitActif] = useState("non");
   const [partAgent, setPartAgent] = useState("70");
@@ -50,17 +53,26 @@ export default function AgentCommissionSimulator({ player }) {
     : "Indemnité de transfert";
 
   const res = useMemo(() => {
-    const baseVal = toNum(base) * (client === "joueur" ? Math.max(1, toNum(annees) || 1) : 1);
-    if (!baseVal && !toNum(forfait)) return null;
-    const commission = commissionAgent({ base: baseVal, taux: toNum(taux) / 100, forfait: toNum(forfait) });
+    const mult = client === "joueur" ? Math.max(1, toNum(annees) || 1) : 1;
+    const baseGar = toNum(base) * mult;            // rémunération GARANTIE
+    const ff = toNum(forfait);
+    if (!baseGar && !ff) return null;
+    const rate = toNum(taux) / 100;
+    const bonusVal = toNum(bonus);
+    const probaR = Math.min(1, Math.max(0, (toNum(proba) || 0) / 100));
     const pct = splitActif === "oui" ? toNum(partAgent) / 100 : 1;
+    // Garantie (sûr) · Espérée (pondérée par la proba) · Potentielle (tous bonus atteints)
+    const commGar = commissionAgent({ base: baseGar, taux: rate, forfait: ff });
+    const commEsp = commissionAgent({ base: baseGar + bonusVal * probaR, taux: rate, forfait: ff });
+    const commPot = commissionAgent({ base: baseGar + bonusVal, taux: rate, forfait: ff });
     return {
-      baseVal,
-      commission,
-      partCetAgent: splitAgent(commission, pct),
-      partAutreAgent: splitAgent(commission, 1 - pct),
+      baseGar, bonusVal, commGar, commEsp, commPot,
+      partGar: splitAgent(commGar, pct),
+      partEsp: splitAgent(commEsp, pct),
+      partPot: splitAgent(commPot, pct),
+      partAutreGar: splitAgent(commGar, 1 - pct),
     };
-  }, [client, base, annees, taux, forfait, splitActif, partAgent]);
+  }, [client, base, annees, taux, forfait, bonus, proba, splitActif, partAgent]);
 
   return (
     <div className="space-y-4">
@@ -83,6 +95,8 @@ export default function AgentCommissionSimulator({ player }) {
         )}
         <NumField label="Taux de commission" value={taux} onChange={setTaux} placeholder="5" suffix="%" />
         <NumField label="Forfait fixe (optionnel)" value={forfait} onChange={setForfait} placeholder="0" />
+        <NumField label="Bonus conditionnel (optionnel)" value={bonus} onChange={setBonus} placeholder="0" />
+        <NumField label="Probabilité du bonus" value={proba} onChange={setProba} placeholder="50" suffix="%" />
 
         <div>
           <Label className="text-xs text-slate-500 mb-1 block">Partage avec un autre agent ?</Label>
@@ -101,14 +115,19 @@ export default function AgentCommissionSimulator({ player }) {
 
       {res && (
         <div className="space-y-4 pt-4 border-t border-slate-200">
-          <div className="grid grid-cols-2 gap-3">
-            <Stat label="Commission brute totale" value={fmtEUR(res.commission)} color="text-slate-900" sub={`base ${fmtEUR(res.baseVal)} × ${toNum(taux)}%`} />
+          <div className={`grid gap-3 ${res.bonusVal > 0 ? "grid-cols-3" : "grid-cols-2"}`}>
             <Stat
-              label={splitActif === "oui" ? "Part de cet agent" : "Revenu de l'agent"}
-              value={fmtEUR(res.partCetAgent)}
+              label={splitActif === "oui" ? "Garantie (cet agent)" : "Commission garantie"}
+              value={fmtEUR(res.partGar)}
               color="text-green-600"
-              sub={splitActif === "oui" ? `autre agent : ${fmtEUR(res.partAutreAgent)}` : undefined}
+              sub={splitActif === "oui" ? `autre agent : ${fmtEUR(res.partAutreGar)}` : `base sûre ${fmtEUR(res.baseGar)}`}
             />
+            {res.bonusVal > 0 && (
+              <Stat label="Espérée (pondérée)" value={fmtEUR(res.partEsp)} color="text-blue-600" sub={`bonus × ${toNum(proba)}%`} />
+            )}
+            {res.bonusVal > 0 && (
+              <Stat label="Potentielle (max)" value={fmtEUR(res.partPot)} color="text-slate-900" sub="tous bonus atteints" />
+            )}
           </div>
 
           <div className="flex items-start gap-2 text-[11px] text-amber-700 bg-amber-50 rounded-lg px-3 py-2">

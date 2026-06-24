@@ -59,6 +59,28 @@ export function solidarite(base, taux = 0.05) {
   return base * taux;
 }
 
+// Taux de solidarité par SAISON selon l'âge (Annexe 5) :
+//   12-15 ans → 0,25 %/an ; 16-23 ans → 0,50 %/an. (4×0,25 + 8×0,50 = 5 %)
+export function solidarityYearRate(age) {
+  if (age >= 12 && age <= 15) return 0.0025;
+  if (age >= 16 && age <= 23) return 0.0050;
+  return 0;
+}
+
+// Répartition de la solidarité entre les clubs formateurs.
+// periods: [{ club, ageDebut, ageFin }] → part de chaque club + total.
+export function solidarityDistribution(transferBase, periods = []) {
+  const rows = periods.map((p) => {
+    const a0 = Math.max(12, Math.min(23, Math.floor(Number(p.ageDebut) || 0)));
+    const a1 = Math.max(12, Math.min(23, Math.floor(Number(p.ageFin) || 0)));
+    let rate = 0;
+    for (let age = a0; age <= a1; age++) rate += solidarityYearRate(age);
+    return { club: p.club || "—", rate, montant: (Number(transferBase) || 0) * rate };
+  });
+  const totalRate = rows.reduce((s, r) => s + r.rate, 0);
+  return { rows, totalRate, totalMontant: (Number(transferBase) || 0) * totalRate };
+}
+
 // Net encaissé par le club vendeur après déductions.
 export function netVendeur({ transfertPercu, solidariteMontant = 0, commissionAgentVendeur = 0, autresDeductions = 0 }) {
   return transfertPercu - solidariteMontant - commissionAgentVendeur - autresDeductions;
