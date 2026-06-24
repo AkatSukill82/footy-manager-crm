@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Calculator, History } from "lucide-react";
@@ -9,6 +10,8 @@ import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
 
 export default function TransferManagementPage() {
+  const location = useLocation();
+  const dealPrefill = location.state?.dealPrefill || null; // depuis un dossier de recrutement
   const [activeTab, setActiveTab] = useState("simulator");
   const [openSim, setOpenSim] = useState(null);
   const { lang } = useLanguage();
@@ -54,7 +57,7 @@ export default function TransferManagementPage() {
 
         {/* Les deux onglets restent montés (visibilité togglée) pour préserver l'état du 360 */}
         <div className={activeTab === "simulator" ? "" : "hidden"}>
-          <TransferSimulator players={players} openSim={openSim} />
+          <TransferSimulator players={players} openSim={openSim} prefill={dealPrefill} />
         </div>
         <div className={activeTab === "history" ? "" : "hidden"}>
           <SimulationHistory onOpen={handleOpenFromHistory} />

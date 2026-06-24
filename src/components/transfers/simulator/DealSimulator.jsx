@@ -54,7 +54,7 @@ const Block = ({ icon: Icon, title, accent, children }) => (
   </div>
 );
 
-export default function DealSimulator({ player, role = "complet", operation = "transfert_payant", openSim = null }) {
+export default function DealSimulator({ player, role = "complet", operation = "transfert_payant", openSim = null, prefill = null }) {
   const hasTransfer = OPS_AVEC_TRANSFERT.includes(operation);
   const isRenego = OPS_RENEGO.includes(operation);
   const showVendeur = (r) => showVendeurRole(r) && hasTransfer;
@@ -210,6 +210,11 @@ export default function DealSimulator({ player, role = "complet", operation = "t
     if (!o || typeof o !== "object") return;
     Object.entries(setters).forEach(([k, set]) => { if (o[k] !== undefined) set(o[k]); });
   };
+
+  // Pré-remplissage depuis un dossier de recrutement (sans marquer comme « chargé »
+  // → la sauvegarde crée un nouveau dossier).
+  useEffect(() => { if (prefill) handleLoad(prefill); }, [prefill]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const resume = filled
     ? `Net joueur ${fmtEUR(r.netJoueurAn)}/an · coût acheteur ${fmtEUR(r.buyerTotal)} · net vendeur ${fmtEUR(r.sellerNet)}`
     : "";

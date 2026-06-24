@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -8,7 +10,9 @@ import MajorPlayerForm from "../components/recruitment/MajorPlayerForm";
 import MinorPlayerForm from "../components/recruitment/MinorPlayerForm";
 import RecruitmentPipeline from "../components/recruitment/RecruitmentPipeline";
 import ImportTransfermarkt from "../components/recruitment/ImportTransfermarkt";
+import ActivityLogList from "@/components/activity/ActivityLogList";
 import { useRecruitment } from "../lib/useRecruitment";
+import { caseToDealInputs } from "../lib/recruitmentScoring";
 
 const PATHWAYS = [
   { id: "major", label: "Joueur majeur (18+)", icon: UserCheck, desc: "Sourcing Transfermarkt, fiche, scoring auto, contact.", accent: "border-blue-200 hover:border-blue-300" },
@@ -20,11 +24,13 @@ const safeParse = (s) => { try { return JSON.parse(s || "{}"); } catch { return 
 
 export default function RecruitmentPage() {
   const { cases, save, remove } = useRecruitment();
+  const navigate = useNavigate();
   const [tab, setTab] = useState("new");
   const [pathway, setPathway] = useState(null);
   const [editCase, setEditCase] = useState(null);
 
   const resetForm = () => { setPathway(null); setEditCase(null); };
+  const handleSimulate = (c) => navigate(createPageUrl("TransferManagement"), { state: { dealPrefill: caseToDealInputs(c) } });
   const handleSave = (data) => {
     save.mutate(data, { onSuccess: () => { resetForm(); setTab("pipeline"); } });
   };
@@ -50,7 +56,7 @@ export default function RecruitmentPage() {
 
         {tab === "pipeline" && (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-6">
-            <RecruitmentPipeline cases={cases} onDelete={(c) => remove.mutate(c)} onOpen={handleEdit} />
+            <RecruitmentPipeline cases={cases} onDelete={(c) => remove.mutate(c)} onOpen={handleEdit} onSimulate={handleSimulate} />
           </div>
         )}
 
@@ -75,6 +81,7 @@ export default function RecruitmentPage() {
             {pathway === "major" && <MajorPlayerForm initial={initialForm} editId={editId} onSave={handleSave} saving={save.isPending} />}
             {pathway === "minor" && <MinorPlayerForm initial={initialForm} editId={editId} onSave={handleSave} saving={save.isPending} />}
             {pathway === "club_need" && <ClubNeedForm initial={initialForm} editId={editId} onSave={handleSave} saving={save.isPending} />}
+            {editCase && <ActivityLogList entityId={editCase.id} entityType="RecruitmentCase" />}
           </div>
         )}
       </div>

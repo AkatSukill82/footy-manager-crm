@@ -27,7 +27,7 @@ const OPERATIONS = [
   { id: "resiliation",      nom: "Résiliation / rupture" },
 ];
 
-export default function TransferSimulator({ players = [], openSim = null }) {
+export default function TransferSimulator({ players = [], openSim = null, prefill = null }) {
   const [playerId, setPlayerId] = useState(MANUEL);
   const [role, setRole] = useState("complet");
   const [operation, setOperation] = useState("transfert_payant");
@@ -92,7 +92,7 @@ export default function TransferSimulator({ players = [], openSim = null }) {
           </div>
         </div>
 
-        <DealSimulator player={selectedPlayer} role={role} operation={operation} openSim={openSim} />
+        <DealSimulator player={selectedPlayer} role={role} operation={operation} openSim={openSim} prefill={prefill} />
       </CardContent>
     </Card>
   );

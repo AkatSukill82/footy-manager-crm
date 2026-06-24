@@ -18,22 +18,39 @@ export function useRecruitment() {
     staleTime: 30 * 1000,
   });
 
+  const logActivity = (id, name, action) => {
+    if (!user || !id) return;
+    base44.entities.ActivityLog.create({
+      entity_type: "RecruitmentCase", entity_id: id, entity_name: name || "",
+      action, user_email: user.email, user_name: user.full_name || user.email,
+    }).catch(() => {});
+  };
+
   const save = useMutation({
     mutationFn: async ({ id, ...data }) => {
       const payload = { ...data, organization_id: user?.organization_id ?? null };
-      if (id) return base44.entities.RecruitmentCase.update(id, payload);
-      return base44.entities.RecruitmentCase.create({
+      if (id) {
+        const res = await base44.entities.RecruitmentCase.update(id, payload);
+        logActivity(id, data.name, "update");
+        return res;
+      }
+      const created = await base44.entities.RecruitmentCase.create({
         ...payload,
         owner: data.owner || user?.full_name || user?.email || "",
         user_email: user?.email || "",
         user_name: user?.full_name || user?.email || "",
       });
+      logActivity(created?.id, data.name, "create");
+      return created;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   });
 
   const remove = useMutation({
-    mutationFn: (c) => base44.entities.RecruitmentCase.delete(c.id),
+    mutationFn: async (c) => {
+      await base44.entities.RecruitmentCase.delete(c.id);
+      logActivity(c.id, c.name, "delete");
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   });
 

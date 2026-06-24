@@ -161,3 +161,31 @@ export const CRM_STATUS = {
   monitor_high: { label: "Monitor + (mineur)", color: "bg-orange-100 text-orange-700" },
 };
 export const CRM_ORDER = ["long_list", "qualified", "watchlist", "contact_ready", "contacted", "replied", "call_done", "mandate", "monitor", "monitor_high", "closed_lost"];
+
+// ── Pont vers la Simulation 360 (module transfert) ──────────────────────────
+// Mappe un pays (texte libre) vers un code fiscal connu de la Simulation 360.
+const COUNTRY_CODE = {
+  france: "FR", belgique: "BE", belgium: "BE", "pays-bas": "NL", netherlands: "NL", holland: "NL",
+  espagne: "ES", spain: "ES", angleterre: "GB", england: "GB", uk: "GB", "royaume-uni": "GB",
+  italie: "IT", italy: "IT", allemagne: "DE", germany: "DE", autriche: "AT", austria: "AT", portugal: "PT",
+};
+export function countryToCode(country) {
+  const k = String(country || "").trim().toLowerCase();
+  return COUNTRY_CODE[k] || "FR";
+}
+
+// Pré-remplit les inputs de la Simulation 360 depuis un dossier de recrutement.
+export function caseToDealInputs(c = {}) {
+  return {
+    pays: countryToCode(c.country),
+    annee: "2026",
+    age: c.age != null && c.age !== "" ? String(c.age) : "",
+    annees: "3",
+    prixAchat: c.market_value ? String(Math.round(Number(c.market_value) * 1_000_000)) : "",
+    tauxAgentJoueur: "5",
+    tauxAgentVendeur: "10",
+    solidariteRate: "5",
+    bonusProba: "50",
+    nbEcheances: "1",
+  };
+}
