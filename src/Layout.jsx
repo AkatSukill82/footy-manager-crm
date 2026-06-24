@@ -92,6 +92,8 @@ export default function Layout({ children, currentPageName }) {
   const { lang } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const items = navItems(lang);
+  // Logo selon le thème : fond noir (noir-doré) en sombre, fond blanc (blanc-doré) en clair.
+  const logoSrc = theme === "dark" ? "/brand/logo-dark.png" : "/brand/logo-light.png";
 
   // Cmd+K / Ctrl+K global shortcut
   useEffect(() => {
@@ -122,7 +124,7 @@ export default function Layout({ children, currentPageName }) {
         {/* Logo */}
         <div className="p-5 border-b border-slate-100 flex-shrink-0">
           <Link to={createPageUrl("Dashboard")} className="flex items-center gap-3">
-            <img src="/brand/logo.png" alt={BRAND_SHORT} className="w-10 h-10 rounded-xl object-contain flex-shrink-0" />
+            <img src={logoSrc} alt={BRAND_SHORT} className="w-10 h-10 rounded-xl object-contain flex-shrink-0" />
             <div>
               <div className="font-bold text-lg tracking-tight text-slate-900 leading-none">{BRAND_SHORT}</div>
               <div className="text-xs text-slate-400 leading-tight mt-0.5">{BRAND_NAME}</div>
@@ -274,7 +276,7 @@ export default function Layout({ children, currentPageName }) {
           <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <img src="/brand/logo.png" alt={BRAND_SHORT} className="w-8 h-8 rounded-lg object-contain" />
+                <img src={logoSrc} alt={BRAND_SHORT} className="w-8 h-8 rounded-lg object-contain" />
                 <span className="font-bold text-slate-900">{BRAND_SHORT}</span>
               </div>
               <button onClick={() => setDrawerOpen(false)} className="text-slate-400 p-1">

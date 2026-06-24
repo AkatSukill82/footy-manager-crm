@@ -56,7 +56,7 @@ export default function Login() {
         <div className="absolute bottom-0 right-0 w-[28rem] h-[28rem] rounded-full bg-indigo-500/10 blur-3xl" />
         <div className="relative z-10 flex flex-col justify-between p-14 w-full">
           <div className="flex items-center gap-2.5">
-            <img src="/brand/logo.png" alt="Global Sports Agency" className="w-10 h-10 rounded-xl object-contain bg-white/95 p-0.5" />
+            <img src="/brand/logo-dark.png" alt="Global Sports Agency" className="w-10 h-10 rounded-xl object-contain" />
             <span className="text-white font-semibold tracking-tight">{BRAND_NAME}</span>
           </div>
 
@@ -102,7 +102,7 @@ export default function Login() {
           <div className="w-full max-w-sm">
             {/* logo mobile (panneau gauche masqué) */}
             <div className="lg:hidden flex items-center gap-2.5 mb-10">
-              <img src="/brand/logo.png" alt="Global Sports Agency" className="w-10 h-10 rounded-xl object-contain" />
+              <img src="/brand/logo-light.png" alt="Global Sports Agency" className="w-10 h-10 rounded-xl object-contain" />
               <span className="text-slate-900 font-semibold">{BRAND_NAME}</span>
             </div>
 
