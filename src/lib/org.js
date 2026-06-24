@@ -1,11 +1,14 @@
 /**
  * Contexte de groupe de l'utilisateur courant, mis en cache au niveau module.
  *
- * Modèle de partage : SEUL le CEO (chef = créateur du groupe) partage ses
- * données avec le groupe. Les données des membres restent PRIVÉES.
- * → withOrg ne marque organization_id QUE si l'utilisateur est le chef.
+ * Modèle de partage : PARTAGE TOTAL dans le groupe. TOUT membre d'un groupe
+ * partage ses données avec l'ensemble du groupe (création/modification visibles
+ * par tous). Les règles RLS (read/update/delete) matchent sur organization_id,
+ * donc chaque membre peut lire ET modifier les données du groupe.
+ * → withOrg marque organization_id dès que l'utilisateur appartient à un groupe.
+ *   Un utilisateur SANS groupe (_orgId null) reste privé (solo).
  *
- * Alimenté par useCurrentUser.
+ * Alimenté par useCurrentUser. (_isChef conservé pour l'UI « Mon organisation ».)
  */
 let _orgId = null;
 let _isChef = false;
@@ -18,10 +21,10 @@ export function getCurrentOrgId() { return _orgId; }
 export function isCurrentChef() { return _isChef; }
 
 /**
- * Ajoute organization_id à un payload de création — UNIQUEMENT pour le chef
- * (CEO). Pour un membre, organization_id reste null → donnée privée.
- * Une valeur déjà présente dans `data` n'est pas écrasée.
+ * Ajoute organization_id à un payload de création pour TOUT membre du groupe
+ * → la donnée est partagée avec l'ensemble du groupe. Sans groupe, reste null
+ * (privé). Une valeur déjà présente dans `data` n'est pas écrasée.
  */
 export function withOrg(data = {}) {
-  return { organization_id: _isChef ? _orgId : null, ...data };
+  return { organization_id: _orgId, ...data };
 }
