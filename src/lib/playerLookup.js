@@ -33,9 +33,10 @@ export async function fetchPlayerFromLink(input) {
 
 const str = (v) => (v != null && v !== "" ? String(v) : "");
 
-/** Mappe une fiche joueur (proxy) vers les champs du formulaire majeur. */
+/** Mappe une fiche joueur (proxy/moteur) vers les champs du formulaire majeur. */
 export function playerToMajorFields(p = {}) {
   const ageVal = p.age != null && p.age !== "" ? p.age : ageFromDob(p.date_naissance);
+  const st = p.stats_saison || {};
   return {
     name: p.nom || p.name || "",
     age: str(ageVal),
@@ -48,5 +49,10 @@ export function playerToMajorFields(p = {}) {
     division: p.ligue || p.division || "",
     contract_end: p.contrat_fin || "",
     market_value: str(p.valeur_marchande),
+    // Stats saison (depuis le moteur de recherche multi-sources)
+    matches: str(st.matchs_joues),
+    minutes: str(st.minutes_jouees),
+    goals: str(st.buts),
+    assists: str(st.passes_decisives),
   };
 }
