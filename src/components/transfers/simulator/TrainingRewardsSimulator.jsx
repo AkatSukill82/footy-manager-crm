@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { GraduationCap, Plus, Trash2, Info } from "lucide-react";
+import SaveBar from "./SaveBar";
 import { solidarityDistribution, fmtEUR, fmtPct, toNum } from "../../../lib/transferCalc";
 
 /**
@@ -26,8 +27,25 @@ export default function TrainingRewardsSimulator({ player }) {
     return solidarityDistribution(base, periods.filter((r) => r.ageDebut !== "" && r.ageFin !== ""));
   }, [transfert, periods]);
 
+  const handleLoad = (o) => {
+    if (!o || typeof o !== "object") return;
+    setTransfert(o.transfert ?? "");
+    if (Array.isArray(o.periods) && o.periods.length) setPeriods(o.periods);
+  };
+  const resume = res ? `Solidarité ${fmtEUR(res.totalMontant)} (${fmtPct(res.totalRate)})` : "";
+
   return (
     <div className="space-y-4">
+      <SaveBar
+        module="formation"
+        inputs={{ transfert, periods }}
+        resume={resume}
+        playerId={player?.id}
+        playerName={player?.nom}
+        onLoad={handleLoad}
+        canSave={!!res}
+      />
+
       <div>
         <Label className="text-xs text-slate-500 mb-1 block">Indemnité de transfert (base solidarité)</Label>
         <div className="relative">

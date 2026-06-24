@@ -2,14 +2,17 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calculator, Wallet, Briefcase, ArrowRightLeft, PiggyBank, UserCircle, ShieldCheck, GraduationCap, GitCompare } from "lucide-react";
+import { Calculator, Wallet, Briefcase, ArrowRightLeft, PiggyBank, UserCircle, ShieldCheck, GraduationCap, GitCompare, History } from "lucide-react";
 import SalarySimulator from "./SalarySimulator";
 import AgentCommissionSimulator from "./AgentCommissionSimulator";
 import TransferFeeSimulator from "./TransferFeeSimulator";
 import TrainingRewardsSimulator from "./TrainingRewardsSimulator";
 import ComplianceChecker from "./ComplianceChecker";
 import ScenarioComparator from "./ScenarioComparator";
+import SimulationAuditLog from "./SimulationAuditLog";
 import BudgetSimulator from "../BudgetSimulator";
+import { useCurrentUser } from "@/lib/useCurrentUser";
+import { isCurrentChef } from "@/lib/org";
 
 const MANUEL = "__manuel__";
 
@@ -26,6 +29,13 @@ const MODULES = [
 export default function TransferSimulator({ teams, players, teamPlayers }) {
   const [module, setModule] = useState("salaire");
   const [playerId, setPlayerId] = useState(MANUEL);
+
+  const user = useCurrentUser();
+  // Le journal global est réservé à l'admin du groupe (rôle admin ou chef/CEO).
+  const isAdmin = user?.role === "admin" || isCurrentChef();
+  const modules = isAdmin
+    ? [...MODULES, { key: "journal", label: "Journal (admin)", icon: History }]
+    : MODULES;
 
   const selectedPlayer = playerId === MANUEL ? null : players.find((p) => p.id === playerId) || null;
 
@@ -66,7 +76,7 @@ export default function TransferSimulator({ teams, players, teamPlayers }) {
 
         {/* Sous-onglets des modules */}
         <div className="bg-slate-100 rounded-xl p-1 flex gap-1 overflow-x-auto">
-          {MODULES.map(({ key, label, icon: Icon }) => (
+          {modules.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
               onClick={() => setModule(key)}
@@ -89,6 +99,7 @@ export default function TransferSimulator({ teams, players, teamPlayers }) {
         {module === "budget" && (
           <BudgetSimulator teams={teams} players={players} teamPlayers={teamPlayers} />
         )}
+        {module === "journal" && isAdmin && <SimulationAuditLog />}
       </CardContent>
     </Card>
   );

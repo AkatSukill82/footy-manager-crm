@@ -1,8 +1,9 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Briefcase, AlertTriangle } from "lucide-react";
+import SaveBar from "./SaveBar";
 import { commissionAgent, splitAgent, fmtEUR, toNum } from "../../../lib/transferCalc";
 
 const NumField = ({ label, value, onChange, placeholder, suffix = "€" }) => (
@@ -37,8 +38,13 @@ export default function AgentCommissionSimulator({ player }) {
   const [splitActif, setSplitActif] = useState("non");
   const [partAgent, setPartAgent] = useState("70");
 
+  // Quand on ouvre une simulation enregistrée, on ne veut PAS que le
+  // préremplissage joueur écrase les chiffres chargés.
+  const skipPrefill = useRef(false);
+
   // Préremplissage selon le client : joueur → salaire annuel (M€→€) ; club → valeur de transfert (M€→€)
   useEffect(() => {
+    if (skipPrefill.current) { skipPrefill.current = false; return; }
     if (!player) return;
     if (client === "joueur") {
       if (player.salaire) setBase(String(Math.round(player.salaire * 1_000_000)));
@@ -74,8 +80,37 @@ export default function AgentCommissionSimulator({ player }) {
     };
   }, [client, base, annees, taux, forfait, bonus, proba, splitActif, partAgent]);
 
+  const inputs = { client, base, annees, taux, forfait, bonus, proba, splitActif, partAgent };
+  const handleLoad = (o) => {
+    if (!o || typeof o !== "object") return;
+    // Arme le skip uniquement si le client change (sinon l'effet ne se relance pas).
+    if ((o.client ?? "joueur") !== client) skipPrefill.current = true;
+    setClient(o.client ?? "joueur");
+    setBase(o.base ?? "");
+    setAnnees(o.annees ?? "1");
+    setTaux(o.taux ?? "5");
+    setForfait(o.forfait ?? "");
+    setBonus(o.bonus ?? "");
+    setProba(o.proba ?? "50");
+    setSplitActif(o.splitActif ?? "non");
+    setPartAgent(o.partAgent ?? "70");
+  };
+  const resume = res
+    ? `Commission ${fmtEUR(res.partGar)} garantie${res.bonusVal > 0 ? ` · ${fmtEUR(res.partPot)} max` : ""}`
+    : "";
+
   return (
     <div className="space-y-4">
+      <SaveBar
+        module="commission"
+        inputs={inputs}
+        resume={resume}
+        playerId={player?.id}
+        playerName={player?.nom}
+        onLoad={handleLoad}
+        canSave={!!res}
+      />
+
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2">
           <Label className="text-xs text-slate-500 mb-1 block">Client de l'agent</Label>

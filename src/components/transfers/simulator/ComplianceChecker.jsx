@@ -3,6 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ShieldAlert, ShieldCheck, AlertTriangle, Info } from "lucide-react";
+import SaveBar from "./SaveBar";
 import { toNum, ageFromDob } from "../../../lib/transferCalc";
 
 /**
@@ -55,8 +56,29 @@ export default function ComplianceChecker({ player }) {
     green: { box: "bg-green-50 border-green-200 text-green-800", Icon: ShieldCheck,   ic: "text-green-600" },
   };
 
+  const handleLoad = (o) => {
+    if (!o || typeof o !== "object") return;
+    setAge(o.age ?? "");
+    setMandat(o.mandat ?? "oui");
+    setRepr(o.repr ?? "joueur");
+    setTpi(o.tpi ?? "non");
+    setMode(o.mode ?? "fifa");
+  };
+  const reds = alerts.filter((x) => x.level === "red").length;
+  const resume = reds > 0 ? `${reds} zone${reds > 1 ? "s" : ""} rouge` : "Pas de zone rouge";
+
   return (
     <div className="space-y-4">
+      <SaveBar
+        module="conformite"
+        inputs={{ age, mandat, repr, tpi, mode }}
+        resume={resume}
+        playerId={player?.id}
+        playerName={player?.nom}
+        onLoad={handleLoad}
+        canSave
+      />
+
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label className="text-xs text-slate-500 mb-1 block">Âge du joueur</Label>
