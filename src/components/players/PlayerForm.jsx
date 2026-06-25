@@ -40,6 +40,7 @@ export default function PlayerForm({ player, onSubmit, onCancel }) {
   const { lang } = useLanguage();
   const [formData, setFormData] = useState({
     nom: "", age: "", date_naissance: "", lieu_naissance: "", poste: "", poste_secondaire: "",
+    niveau: "", disponibilite: "", priorite_recrutement: "",
     nationalite: "", nationalite_secondaire: "", sexe: "", club_actuel: "", valeur_marchande: "",
     pied_fort: "", taille: "", poids: "", contrat_fin: "", photo_url: "",
     en_pret: false, club_proprietaire: "", pret_fin: "",
@@ -135,6 +136,30 @@ export default function PlayerForm({ player, onSubmit, onCancel }) {
                   <SelectContent>
                     <SelectItem value="Masculin">{t(lang,'playerForm.male')}</SelectItem>
                     <SelectItem value="Féminin">{t(lang,'playerForm.female')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </F>
+              <F id="niveau" label="Niveau joué">
+                <Select value={formData.niveau || ""} onValueChange={setSelect("niveau")}>
+                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectContent>
+                    {["International","1re division","2e division","3e division","4e division / amateur","Jeunes / académie","Autre"].map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </F>
+              <F id="disponibilite" label="Disponibilité">
+                <Select value={formData.disponibilite || ""} onValueChange={setSelect("disponibilite")}>
+                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectContent>
+                    {["Sous contrat","Fin de contrat (<12 mois)","Libre","Prêt possible","Indisponible"].map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </F>
+              <F id="priorite_recrutement" label="Priorité recrutement">
+                <Select value={formData.priorite_recrutement || ""} onValueChange={setSelect("priorite_recrutement")}>
+                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectContent>
+                    {["Priorité A","Priorité B","Veille","Aucune"].map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </F>

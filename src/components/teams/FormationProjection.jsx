@@ -93,8 +93,24 @@ export default function FormationProjection() {
     enabled: !!user?.id,
   });
 
+  // Filtres (cahier §11)
+  const [fPays, setFPays] = useState("");
+  const [fNiveau, setFNiveau] = useState("");
+  const [fDispo, setFDispo] = useState("");
+  const [fPrio, setFPrio] = useState("");
+  const [fAgeMax, setFAgeMax] = useState("");
+
+  const fPlayers = useMemo(() => players.filter((p) => {
+    if (fPays && !(p.nationalite || "").toLowerCase().includes(fPays.toLowerCase())) return false;
+    if (fNiveau && p.niveau !== fNiveau) return false;
+    if (fDispo && p.disponibilite !== fDispo) return false;
+    if (fPrio && p.priorite_recrutement !== fPrio) return false;
+    if (fAgeMax && !(p.age != null && Number(p.age) <= Number(fAgeMax))) return false;
+    return true;
+  }), [players, fPays, fNiveau, fDispo, fPrio, fAgeMax]);
+
   const slots = useMemo(() => buildSlots(formation), [formation]);
-  const { placed, bench } = useMemo(() => assign(slots, players), [slots, players]);
+  const { placed, bench } = useMemo(() => assign(slots, fPlayers), [slots, fPlayers]);
 
   // Postes manquants (slots vides) + effectif par poste.
   const missing = useMemo(() => {
@@ -104,22 +120,48 @@ export default function FormationProjection() {
   }, [placed]);
   const parPoste = useMemo(() => {
     const c = {};
-    for (const p of players) { const r = POSTE_TO_ROLE[p.poste]; if (r) c[r] = (c[r] || 0) + 1; }
+    for (const p of fPlayers) { const r = POSTE_TO_ROLE[p.poste]; if (r) c[r] = (c[r] || 0) + 1; }
     return c;
-  }, [players]);
+  }, [fPlayers]);
 
   const goPlayer = (p) => navigate(createPageUrl("PlayerDetail") + "?id=" + p.id);
 
   if (isLoading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 text-green-500 animate-spin" /></div>;
 
+  const selCls = "text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white";
+  const anyFilter = fPays || fAgeMax || fNiveau || fDispo || fPrio;
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div className="space-y-4">
+      {/* Filtres (§11) */}
+      <div className="flex flex-wrap gap-2 items-center bg-white border border-slate-200 rounded-xl p-2">
+        <span className="text-xs text-slate-400 px-1">Filtrer :</span>
+        <input value={fPays} onChange={(e) => setFPays(e.target.value)} placeholder="Pays" className={`${selCls} w-24`} />
+        <input type="number" min="0" value={fAgeMax} onChange={(e) => setFAgeMax(e.target.value)} placeholder="Âge max" className={`${selCls} w-20`} />
+        <select value={fNiveau} onChange={(e) => setFNiveau(e.target.value)} className={selCls}>
+          <option value="">Niveau</option>
+          {["International", "1re division", "2e division", "3e division", "4e division / amateur", "Jeunes / académie", "Autre"].map((v) => <option key={v} value={v}>{v}</option>)}
+        </select>
+        <select value={fDispo} onChange={(e) => setFDispo(e.target.value)} className={selCls}>
+          <option value="">Dispo</option>
+          {["Sous contrat", "Fin de contrat (<12 mois)", "Libre", "Prêt possible", "Indisponible"].map((v) => <option key={v} value={v}>{v}</option>)}
+        </select>
+        <select value={fPrio} onChange={(e) => setFPrio(e.target.value)} className={selCls}>
+          <option value="">Priorité</option>
+          {["Priorité A", "Priorité B", "Veille", "Aucune"].map((v) => <option key={v} value={v}>{v}</option>)}
+        </select>
+        {anyFilter && (
+          <button onClick={() => { setFPays(""); setFAgeMax(""); setFNiveau(""); setFDispo(""); setFPrio(""); }} className="text-xs text-slate-400 hover:text-slate-700 underline">Réinitialiser</button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       {/* Terrain */}
       <div className="lg:col-span-2">
         <div className="flex items-center justify-between gap-3 mb-3">
           <div>
             <h2 className="font-semibold text-slate-800">Projection de l'effectif</h2>
-            <p className="text-xs text-slate-500">{players.length} joueur{players.length > 1 ? "s" : ""} dans la liste · {placed.filter(s => s.fit !== "empty").length}/11 postes couverts</p>
+            <p className="text-xs text-slate-500">{fPlayers.length} joueur{fPlayers.length > 1 ? "s" : ""}{fPlayers.length !== players.length ? ` / ${players.length}` : ""} · {placed.filter(s => s.fit !== "empty").length}/11 postes couverts</p>
           </div>
           <Select value={formation} onValueChange={setFormation}>
             <SelectTrigger className="w-32 bg-white"><SelectValue /></SelectTrigger>
@@ -212,6 +254,7 @@ export default function FormationProjection() {
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

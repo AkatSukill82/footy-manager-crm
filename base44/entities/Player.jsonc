@@ -55,6 +55,40 @@
       ],
       "description": "Poste secondaire"
     },
+    "niveau": {
+      "type": "string",
+      "enum": [
+        "International",
+        "1re division",
+        "2e division",
+        "3e division",
+        "4e division / amateur",
+        "Jeunes / acad\u00e9mie",
+        "Autre"
+      ],
+      "description": "Niveau jou\u00e9 (pour pilotage recrutement / projection effectif)"
+    },
+    "disponibilite": {
+      "type": "string",
+      "enum": [
+        "Sous contrat",
+        "Fin de contrat (<12 mois)",
+        "Libre",
+        "Pr\u00eat possible",
+        "Indisponible"
+      ],
+      "description": "Disponibilit\u00e9 du joueur sur le march\u00e9"
+    },
+    "priorite_recrutement": {
+      "type": "string",
+      "enum": [
+        "Priorit\u00e9 A",
+        "Priorit\u00e9 B",
+        "Veille",
+        "Aucune"
+      ],
+      "description": "Priorit\u00e9 de recrutement dans la liste"
+    },
     "nationalite": {
       "type": "string",
       "description": "Nationalit\u00e9 principale"
