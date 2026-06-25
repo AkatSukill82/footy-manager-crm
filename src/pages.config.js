@@ -51,7 +51,6 @@ import { lazy } from 'react';
 import __Layout from './Layout.jsx';
 
 const AgentNetwork      = lazy(() => import('./pages/AgentNetwork'));
-const Alerts            = lazy(() => import('./pages/Alerts'));
 const ClubDetail        = lazy(() => import('./pages/ClubDetail'));
 const Clubs             = lazy(() => import('./pages/Clubs'));
 const ClubContacts      = lazy(() => import('./pages/ClubContacts'));
@@ -79,7 +78,6 @@ const Recruitment       = lazy(() => import('./pages/Recruitment'));
 export const PAGES = {
     "Recruitment": Recruitment,
     "AgentNetwork": AgentNetwork,
-    "Alerts": Alerts,
     "ClubDetail": ClubDetail,
     "Clubs": Clubs,
     "ClubContacts": ClubContacts,

@@ -114,6 +114,12 @@ export default function Dashboard() {
     enabled: !!userEmail,
   });
 
+  const { data: commissions = [] } = useQuery({
+    queryKey: ['dashboard-commissions', userEmail],
+    queryFn: () => base44.entities.Commission.filter({}),
+    enabled: !!userEmail,
+  });
+
   // ── Préférences de disposition (cross-appareil via Base44 + cache localStorage) ──
   const qc = useQueryClient();
   const prefsKey = user?.id ? `fdm_dash_${user.id}` : null;
@@ -186,6 +192,12 @@ export default function Dashboard() {
     .filter(r => r.statut !== "Terminé" && daysUntil(r.date_rappel) < 0)
     .sort((a, b) => new Date(a.date_rappel) - new Date(b.date_rappel));
 
+  // Commissions Finance en retard : entrée encore en projection dont l'échéance est passée.
+  const todayStr = new Date().toISOString().split("T")[0];
+  const overdueCommissions = commissions
+    .filter(c => (c.sens || "entree") !== "sortie" && c.nature !== "reel" && c.date_echeance && c.date_echeance < todayStr)
+    .sort((a, b) => new Date(a.date_echeance) - new Date(b.date_echeance));
+
   const upcomingReminders = reminders
     .filter(r => r.statut !== "Terminé" && daysUntil(r.date_rappel) >= 0 && daysUntil(r.date_rappel) <= 7)
     .sort((a, b) => new Date(a.date_rappel) - new Date(b.date_rappel));
@@ -195,7 +207,7 @@ export default function Dashboard() {
   const recentPlayers = players
     .filter(p => p.created_date && daysUntil(p.created_date.split("T")[0]) > -8)
     .slice(0, 5);
-  const urgentCount = overdueReminders.length + (contractsExpired.length > 0 ? 1 : 0);
+  const urgentCount = overdueReminders.length + overdueCommissions.length + (contractsExpired.length > 0 ? 1 : 0);
 
   // ── Widgets (nœuds JSX, rendus selon les préférences) ─────────────────────────
 
@@ -203,6 +215,7 @@ export default function Dashboard() {
     const focus = [];
     contractsExpired.forEach(p => focus.push({ type: "contract-expired", label: `Contrat expiré — ${p.nom}`, sub: p.club_actuel || "Sans club", level: 0, href: createPageUrl("PlayerDetail") + "?id=" + p.id }));
     overdueReminders.forEach(r => focus.push({ type: "reminder-overdue", label: r.titre, sub: `Rappel en retard · ${new Date(r.date_rappel).toLocaleDateString("fr-FR")}`, level: 1, href: createPageUrl("Contacts") }));
+    overdueCommissions.forEach(c => focus.push({ type: "finance-overdue", label: `Commission en retard — ${c.titre}`, sub: `Échéance ${c.date_echeance}${c.player_nom ? " · " + c.player_nom : ""}`, level: 0, href: createPageUrl("Finance") }));
     contractsExpiring.filter(p => daysUntil(p.contrat_fin) <= 30).forEach(p => focus.push({ type: "contract-soon", label: `Contrat expire dans ${daysUntil(p.contrat_fin)}j — ${p.nom}`, sub: p.club_actuel || "—", level: 2, href: createPageUrl("PlayerDetail") + "?id=" + p.id }));
     upcomingReminders.filter(r => daysUntil(r.date_rappel) === 0).forEach(r => focus.push({ type: "reminder-today", label: r.titre, sub: "Rappel aujourd'hui", level: 2, href: createPageUrl("Contacts") }));
     activeNego.filter(n => n.date_limite && daysUntil(n.date_limite) <= 1).forEach(n => focus.push({ type: "nego-deadline", label: `Deadline négociation — ${n.player_nom || "joueur"}`, sub: n.date_limite ? `Limite : ${new Date(n.date_limite).toLocaleDateString("fr-FR")}` : "", level: 1, href: createPageUrl("TransferManagement") }));
@@ -243,7 +256,7 @@ export default function Dashboard() {
     </div>
   );
 
-  const urgentNode = (overdueReminders.length > 0 || contractsExpired.length > 0) ? (
+  const urgentNode = (overdueReminders.length > 0 || contractsExpired.length > 0 || overdueCommissions.length > 0) ? (
     <div className="bg-white border border-slate-100 rounded-xl overflow-hidden">
       <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-50">
         <span className="w-1 h-4 bg-red-500 rounded-full flex-shrink-0" />
@@ -260,6 +273,12 @@ export default function Dashboard() {
         {overdueReminders.map(r => (
           <div key={r.id} onClick={() => navigate(createPageUrl("Contacts"))} className="flex items-center justify-between rounded-lg px-3 py-2.5 cursor-pointer hover:bg-slate-50 transition-colors">
             <div><p className="text-sm font-semibold text-slate-900">{r.titre}</p><p className="text-xs text-red-500">Rappel en retard · {new Date(r.date_rappel).toLocaleDateString("fr-FR")}</p></div>
+            <ChevronRight className="w-4 h-4 text-slate-300" />
+          </div>
+        ))}
+        {overdueCommissions.map(c => (
+          <div key={c.id} onClick={() => navigate(createPageUrl("Finance"))} className="flex items-center justify-between rounded-lg px-3 py-2.5 cursor-pointer hover:bg-slate-50 transition-colors">
+            <div><p className="text-sm font-semibold text-slate-900">{c.titre}</p><p className="text-xs text-red-500">Commission en retard · échéance {c.date_echeance}</p></div>
             <ChevronRight className="w-4 h-4 text-slate-300" />
           </div>
         ))}
