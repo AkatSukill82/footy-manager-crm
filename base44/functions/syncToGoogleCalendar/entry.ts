@@ -18,10 +18,9 @@ Deno.serve(async (req) => {
 
     // List upcoming events
     if (action === 'list') {
-      const timeMin = body.timeMin || new Date().toISOString();
-      const timeMax = body.timeMax || new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
-      const maxResults = body.maxResults || 50;
-      const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true&orderBy=startTime&maxResults=${maxResults}`;
+      const timeMin = new Date().toISOString();
+      const timeMax = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(); // 90 days ahead
+      const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true&orderBy=startTime&maxResults=50`;
       const res = await fetch(url, { headers: authHeader });
       if (!res.ok) {
         const err = await res.text();
