@@ -26,7 +26,7 @@ const GoogleCalendarService = {
   getClientId() {
     const stored = localStorage.getItem(CLIENT_ID_KEY);
     if (stored && stored.trim()) return stored.trim();
-    return '1022745870815-anpp0ufhj85flr6t7r2rqc46difrudc1.apps.googleusercontent.com';
+    return '614478963291-6lralciv1c676pi61dker53q0gpminfs.apps.googleusercontent.com';
   },
   setClientId(id) { localStorage.setItem(CLIENT_ID_KEY, id.trim()); },
   hasClientId() { return true; },
