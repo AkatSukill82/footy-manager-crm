@@ -323,16 +323,14 @@ export default function CalendarPage() {
   const [showCalPicker, setShowCalPicker] = useState(false);
   const [deletingId, setDeletingId]   = useState(null);
 
-  // Reconnexion silencieuse au chargement si le token a expiré
-  // mais que l'utilisateur était déjà connecté (session Google toujours active)
+  // Au chargement : vérifie l'état RÉEL côté serveur (sans popup). La connexion
+  // est maintenue côté backend via le refresh token → pas de reconnexion manuelle.
   useEffect(() => {
-    if (!connected && GoogleCalendarService.getUserInfoCache()) {
-      setAutoReconnecting(true);
-      GoogleCalendarService.connect()
-        .then(() => setConnected(true))
-        .catch(() => {}) // échec silencieux → l'utilisateur verra le bouton connect
-        .finally(() => setAutoReconnecting(false));
-    }
+    setAutoReconnecting(true);
+    GoogleCalendarService.checkStatus()
+      .then((ok) => setConnected(ok))
+      .catch(() => {})
+      .finally(() => setAutoReconnecting(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: players = [] } = useQuery({

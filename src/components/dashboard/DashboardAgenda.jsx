@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import GoogleCalendarService from "@/services/googleCalendar";
 import { CalendarDays, Loader2, ChevronLeft, ChevronRight, RefreshCw, MapPin } from "lucide-react";
@@ -32,6 +32,11 @@ export default function DashboardAgenda() {
   const [connected, setConnected] = useState(() => GoogleCalendarService.isConnected());
   const [connecting, setConnecting] = useState(false);
   const [date, setDate] = useState(todayISO());
+
+  // Synchronise l'état réel depuis le serveur (gère le multi-appareils).
+  useEffect(() => {
+    GoogleCalendarService.checkStatus().then(setConnected).catch(() => {});
+  }, []);
 
   const calId = GoogleCalendarService.getSelectedCalendar()?.id || "primary";
 

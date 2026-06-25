@@ -1,0 +1,40 @@
+{
+  "name": "GoogleToken",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID de l'utilisateur Base44 propriétaire du jeton"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email du compte Google connecté"
+    },
+    "refresh_token": {
+      "type": "string",
+      "description": "Refresh token Google (secret durable — JAMAIS exposé au client)"
+    },
+    "access_token": {
+      "type": "string",
+      "description": "Dernier access token (cache court terme)"
+    },
+    "expiry": {
+      "type": "number",
+      "description": "Expiration de l'access token (epoch ms)"
+    },
+    "scope": {
+      "type": "string",
+      "description": "Scopes accordés"
+    }
+  },
+  "required": [
+    "user_id",
+    "refresh_token"
+  ],
+  "rls": {
+    "create": { "user_condition": { "role": "admin" } },
+    "read":   { "user_condition": { "role": "admin" } },
+    "update": { "user_condition": { "role": "admin" } },
+    "delete": { "user_condition": { "role": "admin" } }
+  }
+}

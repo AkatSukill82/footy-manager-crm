@@ -1,21 +1,23 @@
 /* ============================================================
-   GOOGLE CALENDAR SERVICE
-   Uses Google Identity Services (token flow — no backend needed)
-   Le jeton d'accès expire après ~1h MAIS est renouvelé SILENCIEUSEMENT
-   (prompt:'none') tant que l'utilisateur reste « lié » (LINKED_KEY) →
-   connexion qui tient sans repasser par le popup.
+   GOOGLE CALENDAR SERVICE — version « blindée » (backend + refresh token)
+   - connect() : flux OAuth "code" (popup) → la fonction Base44 googleCalendar
+     échange le code et stocke le REFRESH TOKEN côté serveur (jamais ici).
+   - ensureToken() : demande un access token frais à la fonction (qui le
+     renouvelle via le refresh token) → connexion qui tient indéfiniment.
+   - Les appels API Google Calendar partent du navigateur avec cet access token
+     court terme (mis en cache localement le temps de sa validité).
    ============================================================ */
+import { invokeFn } from '@/api/base44Client';
 
 const SCOPES = 'https://www.googleapis.com/auth/calendar';
-const TOKEN_KEY = 'gcal_token';
+const TOKEN_KEY = 'gcal_token';            // cache local de l'access token vendu
 const TOKEN_EXPIRY_KEY = 'gcal_token_expiry';
 const CLIENT_ID_KEY = 'gcal_client_id';
 const SELECTED_CAL_KEY = 'gcal_selected_calendar';
 const USER_INFO_KEY = 'gcal_user_info';
-const LINKED_KEY = 'gcal_linked';   // intention de rester connecté (≠ token valide)
+const LINKED_KEY = 'gcal_linked';
 const API_BASE = 'https://www.googleapis.com/calendar/v3';
-
-let _refreshTimer = null;           // timer de renouvellement silencieux
+const USERINFO_URL = 'https://www.googleapis.com/oauth2/v3/userinfo';
 
 const GoogleCalendarService = {
 
@@ -24,107 +26,60 @@ const GoogleCalendarService = {
   getClientId() {
     const stored = localStorage.getItem(CLIENT_ID_KEY);
     if (stored && stored.trim()) return stored.trim();
-    // Client ID de l'app FDM (Google Cloud Console → FDM OAuth)
     return '1022745870815-anpp0ufhj85flr6t7r2rqc46difrudc1.apps.googleusercontent.com';
   },
-
-  setClientId(id) {
-    localStorage.setItem(CLIENT_ID_KEY, id.trim());
-  },
-
-  hasClientId() {
-    return true; // toujours configuré (Client ID hardcodé)
-  },
+  setClientId(id) { localStorage.setItem(CLIENT_ID_KEY, id.trim()); },
+  hasClientId() { return true; },
 
   getSelectedCalendar() {
     try { return JSON.parse(localStorage.getItem(SELECTED_CAL_KEY)); } catch { return null; }
   },
-
-  setSelectedCalendar(cal) {
-    localStorage.setItem(SELECTED_CAL_KEY, JSON.stringify(cal));
-  },
+  setSelectedCalendar(cal) { localStorage.setItem(SELECTED_CAL_KEY, JSON.stringify(cal)); },
 
   getUserInfoCache() {
     try { return JSON.parse(localStorage.getItem(USER_INFO_KEY)); } catch { return null; }
   },
 
-  async getUserInfo() {
-    const token = this.getToken();
-    if (!token) return null;
-    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (!res.ok) return null;
-    const info = await res.json();
-    localStorage.setItem(USER_INFO_KEY, JSON.stringify({ name: info.name, email: info.email, picture: info.picture }));
-    return info;
-  },
+  // ── État de connexion ─────────────────────────────────────
 
-  getToken() {
-    const expiry = parseInt(localStorage.getItem(TOKEN_EXPIRY_KEY) || '0');
-    if (Date.now() > expiry) {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(TOKEN_EXPIRY_KEY);
-      return null;
-    }
-    return localStorage.getItem(TOKEN_KEY);
-  },
+  isLinked() { return localStorage.getItem(LINKED_KEY) === '1'; },
+  // Synchrone (utilisé pour l'init UI) — l'intention de connexion persiste.
+  isConnected() { return this.isLinked(); },
 
-  saveToken(accessToken, expiresIn) {
-    localStorage.setItem(TOKEN_KEY, accessToken);
-    localStorage.setItem(TOKEN_EXPIRY_KEY, String(Date.now() + expiresIn * 1000 - 60_000));
-    this.scheduleRefresh(expiresIn);
-  },
-
-  // Renouvelle le jeton ~2 min avant expiration, en silence (tant que lié).
-  scheduleRefresh(expiresIn) {
-    if (_refreshTimer) clearTimeout(_refreshTimer);
-    const ms = Math.max(30_000, (Number(expiresIn) || 3600) * 1000 - 120_000);
-    _refreshTimer = setTimeout(() => {
-      if (this.isLinked()) this.connect({ silent: true }).catch(() => {});
-    }, ms);
-  },
-
-  disconnect() {
-    const token = this.getToken();
-    if (_refreshTimer) { clearTimeout(_refreshTimer); _refreshTimer = null; }
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(TOKEN_EXPIRY_KEY);
-    localStorage.removeItem(SELECTED_CAL_KEY);
-    localStorage.removeItem(USER_INFO_KEY);
-    localStorage.removeItem(LINKED_KEY);
-    if (window.google?.accounts?.oauth2 && token) {
-      window.google.accounts.oauth2.revoke(token, () => {});
-    }
-  },
-
-  // « Connecté » du point de vue UI = l'utilisateur a lié son agenda (intention).
-  // Le jeton est renouvelé en arrière-plan → on ne dégrade plus l'UI à chaque
-  // expiration horaire.
-  isConnected() {
+  // Vérifie l'état RÉEL côté serveur (gère le multi-appareils) et synchronise le flag.
+  async checkStatus() {
+    try {
+      const res = await invokeFn('googleCalendar', { action: 'status' });
+      if (res?.ok) {
+        if (res.connected) {
+          localStorage.setItem(LINKED_KEY, '1');
+          if (res.email) localStorage.setItem(USER_INFO_KEY, JSON.stringify({ email: res.email }));
+        } else {
+          localStorage.removeItem(LINKED_KEY);
+        }
+        return !!res.connected;
+      }
+    } catch { /* hors-ligne / fonction non déployée → on garde le flag local */ }
     return this.isLinked();
   },
 
-  isLinked() {
-    return localStorage.getItem(LINKED_KEY) === '1';
+  // ── Cache local de l'access token ─────────────────────────
+
+  _getCachedToken() {
+    const expiry = parseInt(localStorage.getItem(TOKEN_EXPIRY_KEY) || '0');
+    if (Date.now() > expiry) { localStorage.removeItem(TOKEN_KEY); return null; }
+    return localStorage.getItem(TOKEN_KEY);
+  },
+  _cacheToken(token, expiry) {
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(TOKEN_EXPIRY_KEY, String((expiry || Date.now() + 3600_000) - 30_000));
+  },
+  _clearToken() {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(TOKEN_EXPIRY_KEY);
   },
 
-  // Renvoie un jeton valide ; si expiré mais lié, le renouvelle SILENCIEUSEMENT.
-  async ensureToken() {
-    const token = this.getToken();
-    if (token) {
-      // Au 1er accès après un rechargement, arme le renouvellement proactif.
-      if (!_refreshTimer) {
-        const remainMs = parseInt(localStorage.getItem(TOKEN_EXPIRY_KEY) || '0') - Date.now();
-        this.scheduleRefresh(Math.max(60, Math.floor(remainMs / 1000)));
-      }
-      return token;
-    }
-    if (!this.isLinked()) throw new Error('Non connecté — connectez votre Google Calendar');
-    return this.connect({ silent: true });
-  },
-
-  // ── Load Google Identity Services script ─────────────────
+  // ── Google Identity Services ──────────────────────────────
 
   loadGIS() {
     return new Promise((resolve, reject) => {
@@ -142,40 +97,72 @@ const GoogleCalendarService = {
     });
   },
 
-  // ── OAuth — request access token (opens Google popup) ────
+  // ── Connexion : flux "code" → backend stocke le refresh token ─────────────
 
-  async connect({ silent = false } = {}) {
+  async connect() {
     const clientId = this.getClientId();
     if (!clientId) throw new Error('Client ID Google non configuré');
-
     await this.loadGIS();
 
-    return new Promise((resolve, reject) => {
-      const client = window.google.accounts.oauth2.initTokenClient({
+    const code = await new Promise((resolve, reject) => {
+      const client = window.google.accounts.oauth2.initCodeClient({
         client_id: clientId,
         scope: SCOPES,
-        callback: (response) => {
-          if (response.error) {
-            reject(new Error(response.error_description || response.error));
-            return;
-          }
-          this.saveToken(response.access_token, response.expires_in);
-          localStorage.setItem(LINKED_KEY, '1');   // lié → reconnexion silencieuse possible
-          resolve(response.access_token);
+        ux_mode: 'popup',
+        callback: (resp) => {
+          if (resp.error) { reject(new Error(resp.error_description || resp.error)); return; }
+          resolve(resp.code);
         },
-        // Échec d'un renouvellement silencieux (session Google fermée, consentement requis…).
-        error_callback: (err) => reject(new Error(err?.message || 'Renouvellement Google impossible')),
+        error_callback: (err) => reject(new Error(err?.message || 'Autorisation Google annulée')),
       });
-      // silent → renouvellement SANS UI ; sinon popup de consentement au 1er lien.
-      client.requestAccessToken({ prompt: silent ? 'none' : '' });
+      client.requestCode();
     });
+
+    const res = await invokeFn('googleCalendar', { action: 'exchangeCode', code });
+    if (!res?.ok) throw new Error(res?.error || 'Connexion Google impossible');
+    localStorage.setItem(LINKED_KEY, '1');
+    if (res.email) localStorage.setItem(USER_INFO_KEY, JSON.stringify({ email: res.email }));
+    this._clearToken();
+    return true;
+  },
+
+  // Access token frais : cache local sinon backend (renouvelle via refresh token).
+  async ensureToken() {
+    const cached = this._getCachedToken();
+    if (cached) return cached;
+    const res = await invokeFn('googleCalendar', { action: 'getAccessToken' });
+    if (!res?.ok || !res.access_token) {
+      if (res?.needsReconnect) localStorage.removeItem(LINKED_KEY);
+      throw new Error(res?.error || 'Non connecté — reconnectez votre Google Calendar');
+    }
+    this._cacheToken(res.access_token, res.expiry);
+    return res.access_token;
+  },
+
+  async disconnect() {
+    // Vide le local tout de suite (UI réactive), puis révoque côté serveur.
+    this._clearToken();
+    localStorage.removeItem(SELECTED_CAL_KEY);
+    localStorage.removeItem(USER_INFO_KEY);
+    localStorage.removeItem(LINKED_KEY);
+    try { await invokeFn('googleCalendar', { action: 'disconnect' }); } catch { /* ignore */ }
+  },
+
+  async getUserInfo() {
+    try {
+      const token = await this.ensureToken();
+      const res = await fetch(USERINFO_URL, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) return this.getUserInfoCache();
+      const info = await res.json();
+      localStorage.setItem(USER_INFO_KEY, JSON.stringify({ name: info.name, email: info.email, picture: info.picture }));
+      return info;
+    } catch { return this.getUserInfoCache(); }
   },
 
   // ── API helpers ───────────────────────────────────────────
 
   async _fetch(path, options = {}, _retried = false) {
     const token = await this.ensureToken();
-
     const res = await fetch(`${API_BASE}${path}`, {
       ...options,
       headers: {
@@ -186,64 +173,46 @@ const GoogleCalendarService = {
     });
 
     if (res.status === 401) {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(TOKEN_EXPIRY_KEY);
-      // Renouvelle en silence et réessaie UNE fois avant d'abandonner.
+      this._clearToken(); // force un nouveau token côté backend
       if (!_retried && this.isLinked()) return this._fetch(path, options, true);
       throw new Error('Session expirée — reconnectez votre Google Calendar');
     }
-
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err?.error?.message || `Erreur HTTP ${res.status}`);
     }
-
     return res.json();
   },
-
-  // ── Calendar list ─────────────────────────────────────────
 
   async getCalendars() {
     const data = await this._fetch('/users/me/calendarList');
     return data.items || [];
   },
 
-  // ── Events ───────────────────────────────────────────────
-
   async getUpcomingEvents(calendarId = 'primary', maxResults = 20) {
-    const now = new Date().toISOString();
     const params = new URLSearchParams({
-      orderBy: 'startTime',
-      singleEvents: 'true',
-      timeMin: now,
-      maxResults: String(maxResults),
+      orderBy: 'startTime', singleEvents: 'true',
+      timeMin: new Date().toISOString(), maxResults: String(maxResults),
     });
     const data = await this._fetch(`/calendars/${encodeURIComponent(calendarId)}/events?${params}`);
     return data.items || [];
   },
 
-  // Événements d'une journée précise (dateISO = "YYYY-MM-DD").
   async getEventsForDay(dateISO, calendarId = 'primary') {
     const start = new Date(`${dateISO}T00:00:00`);
     const end = new Date(`${dateISO}T23:59:59`);
     const params = new URLSearchParams({
-      orderBy: 'startTime',
-      singleEvents: 'true',
-      timeMin: start.toISOString(),
-      timeMax: end.toISOString(),
-      maxResults: '50',
+      orderBy: 'startTime', singleEvents: 'true',
+      timeMin: start.toISOString(), timeMax: end.toISOString(), maxResults: '50',
     });
     const data = await this._fetch(`/calendars/${encodeURIComponent(calendarId)}/events?${params}`);
     return data.items || [];
   },
 
   async getPastEvents(calendarId = 'primary', maxResults = 10) {
-    const now = new Date().toISOString();
     const params = new URLSearchParams({
-      orderBy: 'startTime',
-      singleEvents: 'true',
-      timeMax: now,
-      maxResults: String(maxResults),
+      orderBy: 'startTime', singleEvents: 'true',
+      timeMax: new Date().toISOString(), maxResults: String(maxResults),
     });
     const data = await this._fetch(`/calendars/${encodeURIComponent(calendarId)}/events?${params}`);
     return (data.items || []).reverse();
@@ -251,18 +220,16 @@ const GoogleCalendarService = {
 
   async createEvent(eventData, calendarId = 'primary') {
     return this._fetch(`/calendars/${encodeURIComponent(calendarId)}/events`, {
-      method: 'POST',
-      body: JSON.stringify(eventData),
+      method: 'POST', body: JSON.stringify(eventData),
     });
   },
 
   async deleteEvent(eventId, calendarId = 'primary') {
     const token = await this.ensureToken();
     const res = await fetch(`${API_BASE}/calendars/${encodeURIComponent(calendarId)}/events/${eventId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
+      method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
     });
-    if (res.status === 401) { localStorage.removeItem(TOKEN_KEY); throw new Error('Session expirée'); }
+    if (res.status === 401) { this._clearToken(); throw new Error('Session expirée'); }
     if (!res.ok && res.status !== 204) throw new Error(`Erreur HTTP ${res.status}`);
   },
 
@@ -273,16 +240,11 @@ const GoogleCalendarService = {
     return {
       summary: `⚠️ Contrat expire — ${playerName}`,
       description: `Le contrat de ${playerName} arrive à expiration. Action requise.`,
-      start: { date },
-      end: { date },
-      reminders: {
-        useDefault: false,
-        overrides: [
-          { method: 'email', minutes: 43200 },  // 30 jours avant
-          { method: 'popup', minutes: 10080 },  // 7 jours avant
-        ],
-      },
-      colorId: '11', // Tomato
+      start: { date }, end: { date },
+      reminders: { useDefault: false, overrides: [
+        { method: 'email', minutes: 43200 }, { method: 'popup', minutes: 10080 },
+      ] },
+      colorId: '11',
     };
   },
 
@@ -290,23 +252,19 @@ const GoogleCalendarService = {
     const start = new Date(dateTime);
     const end = new Date(start.getTime() + durationMinutes * 60_000);
     return {
-      summary: title,
-      description,
-      start: { dateTime: start.toISOString() },
-      end: { dateTime: end.toISOString() },
-      reminders: { useDefault: true },
-      colorId: '2', // Sage
+      summary: title, description,
+      start: { dateTime: start.toISOString() }, end: { dateTime: end.toISOString() },
+      reminders: { useDefault: true }, colorId: '2',
     };
   },
 
   buildMatchEvent(matchInfo, dateTime) {
     const start = new Date(dateTime);
-    const end = new Date(start.getTime() + 105 * 60_000); // 1h45
+    const end = new Date(start.getTime() + 105 * 60_000);
     return {
       summary: `⚽ ${matchInfo}`,
-      start: { dateTime: start.toISOString() },
-      end: { dateTime: end.toISOString() },
-      colorId: '10', // Basil
+      start: { dateTime: start.toISOString() }, end: { dateTime: end.toISOString() },
+      colorId: '10',
     };
   },
 
@@ -315,16 +273,13 @@ const GoogleCalendarService = {
   formatEventDate(event) {
     const raw = event.start?.dateTime || event.start?.date;
     if (!raw) return '';
-    const d = new Date(raw);
-    return d.toLocaleDateString('fr-FR', {
+    return new Date(raw).toLocaleDateString('fr-FR', {
       weekday: 'short', day: 'numeric', month: 'short',
       ...(event.start?.dateTime ? { hour: '2-digit', minute: '2-digit' } : {}),
     });
   },
 
-  isAllDay(event) {
-    return !!event.start?.date;
-  },
+  isAllDay(event) { return !!event.start?.date; },
 };
 
 export default GoogleCalendarService;
