@@ -22,7 +22,7 @@ const CORE_PAGES = ["Dashboard", "Players", "Clubs", "MyWatchList", "ClubContact
 // Outils — groupe repliable
 const TOOLS_PAGES = ["Recruitment", "Comparator", "TransferManagement", "Teams", "News", "Calendar"];
 // Avancé — groupe repliable
-const ADVANCED_PAGES = ["Pipeline", "Finance", "Marketplace", "ScoutingReports", "Alerts", "Reports", "PredictiveDashboard", "AgentNetwork", "ImportExcel"];
+const ADVANCED_PAGES = ["Pipeline", "Finance", "Marketplace", "ScoutingReports", "Reports", "PredictiveDashboard", "AgentNetwork", "ImportExcel"];
 
 const ALL_ITEMS = (lang) => [
   { name: "Dashboard",           key: "dashboard",        icon: BarChart3 },
@@ -35,7 +35,6 @@ const ALL_ITEMS = (lang) => [
   { name: "ScoutingReports",     key: "scouting_reports", icon: ClipboardList, label: "Scouting" },
   { name: "Recruitment",         key: "recruitment",      icon: UserSearch,    label: "Recrutement" },
   { name: "Comparator",          key: "comparator",       icon: GitCompare,    label: "Comparateur" },
-  { name: "Alerts",              key: "alerts",           icon: Bell },
   { name: "ClubContacts",        key: "contacts",         icon: Phone },
   { name: "TransferManagement",  key: "transfers",        icon: ArrowRightLeft },
   { name: "Teams",               key: "teams",            icon: Shield },
@@ -49,7 +48,7 @@ const ALL_ITEMS = (lang) => [
 ].map(item => ({ ...item, label: item.label || t(lang, `nav.${item.key}`) }));
 
 const navItems = (lang) => ALL_ITEMS(lang);
-const bottomPrimary_items = ["Dashboard", "Players", "Pipeline", "Alerts", "Clubs"];
+const bottomPrimary_items = ["Dashboard", "Players", "Pipeline", "Recruitment", "Clubs"];
 
 const bottomPrimary = bottomPrimary_items;
 
