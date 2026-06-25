@@ -5,14 +5,16 @@ import { base44 } from "@/api/base44Client";
 import { useCurrentUser } from "../lib/useCurrentUser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Users, Search, Shield, AlertCircle, X } from "lucide-react";
+import { Plus, Users, Search, Shield, AlertCircle, X, LayoutGrid } from "lucide-react";
 import TeamCard from "../components/teams/TeamCard";
 import TeamForm from "../components/teams/TeamForm";
+import FormationProjection from "../components/teams/FormationProjection";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
 
 export default function TeamsPage() {
   const { lang } = useLanguage();
+  const [view, setView] = useState("projection");   // projection (par défaut) | teams
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState("");
   const [mutationError, setMutationError] = useState(null);
@@ -60,7 +62,7 @@ export default function TeamsPage() {
     !search || t.nom?.toLowerCase().includes(search.toLowerCase())
   );
 
-  if (isLoading) {
+  if (isLoading && view === "teams") {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-slate-500">Chargement des équipes...</div>
@@ -85,15 +87,32 @@ export default function TeamsPage() {
               <Shield className="w-7 h-7 text-blue-600 flex-shrink-0" />
               <span className="truncate">{t(lang, 'teams.title')}</span>
             </h1>
-            <p className="text-slate-500 mt-0.5 text-sm">{t(lang, 'teams.count', { count: teams.length })}</p>
+            <p className="text-slate-500 mt-0.5 text-sm">
+              {view === "projection" ? "Projection de votre effectif sur une formation" : t(lang, 'teams.count', { count: teams.length })}
+            </p>
           </div>
-          <Button onClick={() => setShowForm(!showForm)} className="bg-blue-600 hover:bg-blue-700 flex-shrink-0">
-            <Plus className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">{t(lang, 'teams.newTeam')}</span>
-            <span className="sm:hidden">{t(lang, 'common.create')}</span>
-          </Button>
+          {view === "teams" && (
+            <Button onClick={() => setShowForm(!showForm)} className="bg-blue-600 hover:bg-blue-700 flex-shrink-0">
+              <Plus className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">{t(lang, 'teams.newTeam')}</span>
+              <span className="sm:hidden">{t(lang, 'common.create')}</span>
+            </Button>
+          )}
         </div>
 
+        {/* Toggle de vue */}
+        <div className="bg-white border border-slate-200 rounded-lg p-1 inline-flex gap-1">
+          <button onClick={() => setView("projection")} className={`text-xs px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5 ${view === "projection" ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-800"}`}>
+            <LayoutGrid className="w-3.5 h-3.5" /> Projection formation
+          </button>
+          <button onClick={() => setView("teams")} className={`text-xs px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5 ${view === "teams" ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-800"}`}>
+            <Shield className="w-3.5 h-3.5" /> Mes équipes
+          </button>
+        </div>
+
+        {view === "projection" && <FormationProjection />}
+
+        {view === "teams" && (<>
         {/* Form */}
         {showForm && (
           <>
@@ -149,6 +168,7 @@ export default function TeamsPage() {
             ))}
           </div>
         )}
+        </>)}
       </div>
     </div>
   );
