@@ -1,7 +1,9 @@
 /* ============================================================
    GOOGLE CALENDAR SERVICE
    Uses Google Identity Services (token flow — no backend needed)
-   Access tokens stored in localStorage, expire after ~1h
+   Le jeton d'accès expire après ~1h MAIS est renouvelé SILENCIEUSEMENT
+   (prompt:'none') tant que l'utilisateur reste « lié » (LINKED_KEY) →
+   connexion qui tient sans repasser par le popup.
    ============================================================ */
 
 const SCOPES = 'https://www.googleapis.com/auth/calendar';
@@ -10,7 +12,10 @@ const TOKEN_EXPIRY_KEY = 'gcal_token_expiry';
 const CLIENT_ID_KEY = 'gcal_client_id';
 const SELECTED_CAL_KEY = 'gcal_selected_calendar';
 const USER_INFO_KEY = 'gcal_user_info';
+const LINKED_KEY = 'gcal_linked';   // intention de rester connecté (≠ token valide)
 const API_BASE = 'https://www.googleapis.com/calendar/v3';
+
+let _refreshTimer = null;           // timer de renouvellement silencieux
 
 const GoogleCalendarService = {
 
@@ -68,21 +73,55 @@ const GoogleCalendarService = {
   saveToken(accessToken, expiresIn) {
     localStorage.setItem(TOKEN_KEY, accessToken);
     localStorage.setItem(TOKEN_EXPIRY_KEY, String(Date.now() + expiresIn * 1000 - 60_000));
+    this.scheduleRefresh(expiresIn);
+  },
+
+  // Renouvelle le jeton ~2 min avant expiration, en silence (tant que lié).
+  scheduleRefresh(expiresIn) {
+    if (_refreshTimer) clearTimeout(_refreshTimer);
+    const ms = Math.max(30_000, (Number(expiresIn) || 3600) * 1000 - 120_000);
+    _refreshTimer = setTimeout(() => {
+      if (this.isLinked()) this.connect({ silent: true }).catch(() => {});
+    }, ms);
   },
 
   disconnect() {
     const token = this.getToken();
+    if (_refreshTimer) { clearTimeout(_refreshTimer); _refreshTimer = null; }
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(TOKEN_EXPIRY_KEY);
     localStorage.removeItem(SELECTED_CAL_KEY);
     localStorage.removeItem(USER_INFO_KEY);
+    localStorage.removeItem(LINKED_KEY);
     if (window.google?.accounts?.oauth2 && token) {
       window.google.accounts.oauth2.revoke(token, () => {});
     }
   },
 
+  // « Connecté » du point de vue UI = l'utilisateur a lié son agenda (intention).
+  // Le jeton est renouvelé en arrière-plan → on ne dégrade plus l'UI à chaque
+  // expiration horaire.
   isConnected() {
-    return !!this.getToken();
+    return this.isLinked();
+  },
+
+  isLinked() {
+    return localStorage.getItem(LINKED_KEY) === '1';
+  },
+
+  // Renvoie un jeton valide ; si expiré mais lié, le renouvelle SILENCIEUSEMENT.
+  async ensureToken() {
+    const token = this.getToken();
+    if (token) {
+      // Au 1er accès après un rechargement, arme le renouvellement proactif.
+      if (!_refreshTimer) {
+        const remainMs = parseInt(localStorage.getItem(TOKEN_EXPIRY_KEY) || '0') - Date.now();
+        this.scheduleRefresh(Math.max(60, Math.floor(remainMs / 1000)));
+      }
+      return token;
+    }
+    if (!this.isLinked()) throw new Error('Non connecté — connectez votre Google Calendar');
+    return this.connect({ silent: true });
   },
 
   // ── Load Google Identity Services script ─────────────────
@@ -105,7 +144,7 @@ const GoogleCalendarService = {
 
   // ── OAuth — request access token (opens Google popup) ────
 
-  async connect() {
+  async connect({ silent = false } = {}) {
     const clientId = this.getClientId();
     if (!clientId) throw new Error('Client ID Google non configuré');
 
@@ -121,18 +160,21 @@ const GoogleCalendarService = {
             return;
           }
           this.saveToken(response.access_token, response.expires_in);
+          localStorage.setItem(LINKED_KEY, '1');   // lié → reconnexion silencieuse possible
           resolve(response.access_token);
         },
+        // Échec d'un renouvellement silencieux (session Google fermée, consentement requis…).
+        error_callback: (err) => reject(new Error(err?.message || 'Renouvellement Google impossible')),
       });
-      client.requestAccessToken({ prompt: '' });
+      // silent → renouvellement SANS UI ; sinon popup de consentement au 1er lien.
+      client.requestAccessToken({ prompt: silent ? 'none' : '' });
     });
   },
 
   // ── API helpers ───────────────────────────────────────────
 
-  async _fetch(path, options = {}) {
-    const token = this.getToken();
-    if (!token) throw new Error('Non connecté — reconnectez votre Google Calendar');
+  async _fetch(path, options = {}, _retried = false) {
+    const token = await this.ensureToken();
 
     const res = await fetch(`${API_BASE}${path}`, {
       ...options,
@@ -146,6 +188,8 @@ const GoogleCalendarService = {
     if (res.status === 401) {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(TOKEN_EXPIRY_KEY);
+      // Renouvelle en silence et réessaie UNE fois avant d'abandonner.
+      if (!_retried && this.isLinked()) return this._fetch(path, options, true);
       throw new Error('Session expirée — reconnectez votre Google Calendar');
     }
 
@@ -213,8 +257,7 @@ const GoogleCalendarService = {
   },
 
   async deleteEvent(eventId, calendarId = 'primary') {
-    const token = this.getToken();
-    if (!token) throw new Error('Non connecté');
+    const token = await this.ensureToken();
     const res = await fetch(`${API_BASE}/calendars/${encodeURIComponent(calendarId)}/events/${eventId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
