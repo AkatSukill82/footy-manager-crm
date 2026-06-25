@@ -48,10 +48,17 @@ export default function DashboardAgenda() {
     retry: false,
   });
 
+  const [connectErr, setConnectErr] = useState(null);
   const connect = async () => {
     setConnecting(true);
+    setConnectErr(null);
     try { await GoogleCalendarService.connect(); setConnected(true); }
-    catch { /* annulé */ }
+    catch (e) {
+      const msg = e?.message || String(e);
+      // Ignore l'annulation volontaire du popup ; affiche les vraies erreurs.
+      if (!/popup|annul|cancel|closed/i.test(msg)) setConnectErr(msg);
+      console.error("[agenda] connexion échouée:", e);
+    }
     finally { setConnecting(false); }
   };
 
@@ -84,6 +91,9 @@ export default function DashboardAgenda() {
             {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarDays className="w-4 h-4" />}
             {t(lang, "session.dash.agendaConnect")}
           </button>
+          {connectErr && (
+            <p className="text-[11px] text-red-500 mt-2 px-2 break-words">{connectErr}</p>
+          )}
         </div>
       ) : (
         <>
