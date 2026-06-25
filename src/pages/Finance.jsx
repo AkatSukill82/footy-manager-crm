@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Wallet, Plus, Loader2, ArrowDownLeft, ArrowUpRight, Scale,
-  Pencil, Trash2, FileDown, Users, List, FlaskConical, CheckCircle2,
+  Pencil, Trash2, FileDown, FileText, Users, List, FlaskConical, CheckCircle2,
 } from "lucide-react";
 
 // ── Référentiels ──────────────────────────────────────────────────────────────
@@ -246,6 +246,40 @@ function downloadCSV(filename, rows) {
   URL.revokeObjectURL(url);
 }
 
+// Export PDF (impression) — rapport comptable / joueur (obligation FIFA).
+function exportPDF(title, rows, sub = "") {
+  const esc = (s) => String(s ?? "").replace(/</g, "&lt;");
+  let entrees = 0, sorties = 0;
+  const body = rows.map((c) => {
+    const m = Number(c.montant) || 0;
+    if (isSortie(c)) sorties += m; else entrees += m;
+    return `<tr><td>${c.date_paiement || c.date_echeance || ""}</td><td>${isSortie(c) ? "Sortie" : "Entrée"}</td>`
+      + `<td>${isReel(c) ? "Réel" : "Projection"}</td><td>${esc(typeLabel(c.type))}</td>`
+      + `<td class="l">${esc(c.titre)}${c.player_nom ? `<br><span class="m">${esc(c.player_nom)}</span>` : ""}</td>`
+      + `<td class="r ${isSortie(c) ? "red" : "grn"}">${isSortie(c) ? "−" : "+"}${m.toLocaleString("fr-FR")} €</td></tr>`;
+  }).join("");
+  const solde = entrees - sorties;
+  const fmt = (n) => `${Math.round(n).toLocaleString("fr-FR")} €`;
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(title)}</title>
+   <style>body{font-family:Arial,sans-serif;padding:32px;color:#1e293b}h1{font-size:20px;margin:0}
+   .sub{color:#64748b;font-size:12px;margin:4px 0 16px}table{border-collapse:collapse;width:100%;font-size:12px}
+   th,td{border:1px solid #e2e8f0;padding:6px 10px;text-align:left}th{background:#0f172a;color:#fff}
+   td.r,th.r{text-align:right}.grn{color:#15803d}.red{color:#dc2626}.m{color:#94a3b8;font-size:10px}
+   tfoot td{font-weight:bold;background:#f8fafc}.foot{margin-top:24px;font-size:10px;color:#94a3b8}</style></head><body>
+   <h1>${esc(title)}</h1><div class="sub">${esc(sub)}${sub ? " · " : ""}Généré le ${new Date().toLocaleDateString("fr-FR")}</div>
+   <table><thead><tr><th>Date</th><th>Sens</th><th>Nature</th><th>Catégorie</th><th>Libellé</th><th class="r">Montant</th></tr></thead>
+   <tbody>${body}</tbody><tfoot>
+     <tr><td colspan="5">Total entrées (gains)</td><td class="r grn">${fmt(entrees)}</td></tr>
+     <tr><td colspan="5">Total sorties (dépenses)</td><td class="r red">${fmt(sorties)}</td></tr>
+     <tr><td colspan="5">Solde net</td><td class="r ${solde >= 0 ? "grn" : "red"}">${solde >= 0 ? "+" : "−"}${fmt(Math.abs(solde))}</td></tr>
+   </tfoot></table>
+   <p class="foot">Football Data Management — document financier. « Projection » = estimé/prévu, « Réel » = réalisé. À usage interne / comptable.</p>
+   <script>window.onload=function(){setTimeout(function(){window.print()},400)}</script></body></html>`;
+  const w = window.open("", "_blank");
+  if (!w) return;
+  w.document.write(html); w.document.close();
+}
+
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function FinancePage() {
@@ -321,11 +355,12 @@ export default function FinancePage() {
       .sort((a, b) => a.solde - b.solde); // les moins rentables en premier
   }, [filtered]);
 
+  const sub = `${fSens === "tous" ? "Entrées + sorties" : fSens === "sortie" ? "Sorties" : "Entrées"} · ${fNature === "tous" ? "Réel + projection" : fNature === "reel" ? "Réel" : "Projection"}`;
   const exportAll = () => downloadCSV(`finance_${todayISO()}.csv`, filtered);
-  const exportPlayer = (row) => {
-    const rows = entries.filter((c) => (c.player_id || `__${c.player_nom || "Sans joueur"}`) === row.key);
-    downloadCSV(`finance_${(row.name || "joueur").replace(/\s+/g, "_")}.csv`, rows);
-  };
+  const exportAllPDF = () => exportPDF("Finance — toutes transactions", filtered, sub);
+  const playerRows = (row) => entries.filter((c) => (c.player_id || `__${c.player_nom || "Sans joueur"}`) === row.key);
+  const exportPlayer = (row) => downloadCSV(`finance_${(row.name || "joueur").replace(/\s+/g, "_")}.csv`, playerRows(row));
+  const exportPlayerPDF = (row) => exportPDF(`Finance — ${row.name}`, playerRows(row), "Détail par joueur");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-6">
@@ -347,7 +382,8 @@ export default function FinancePage() {
             <p className="text-xs text-slate-500 mt-1">Commissions, dépenses et rentabilité, par opération ou par joueur. Projection vs réel.</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={exportAll} disabled={!filtered.length}><FileDown className="w-4 h-4 mr-2" /> Export CSV</Button>
+            <Button variant="outline" onClick={exportAll} disabled={!filtered.length}><FileDown className="w-4 h-4 mr-2" /> CSV</Button>
+            <Button variant="outline" onClick={exportAllPDF} disabled={!filtered.length}><FileText className="w-4 h-4 mr-2" /> PDF</Button>
             <Button onClick={() => { setEditing(null); setShowForm(true); }} className="bg-green-600 hover:bg-green-700">
               <Plus className="w-4 h-4 mr-2" /> Nouvelle ligne
             </Button>
@@ -407,7 +443,10 @@ export default function FinancePage() {
                     <td className="px-3 py-2.5 text-right text-red-600">{fmtMoney(r.sortie)}</td>
                     <td className={`px-3 py-2.5 text-right font-bold ${r.solde >= 0 ? "text-green-700" : "text-red-600"}`}>{fmtSigned(r.solde)}</td>
                     <td className="px-3 py-2.5 text-right">
-                      <button onClick={() => exportPlayer(r)} title="Export joueur (CSV)" className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"><FileDown className="w-4 h-4" /></button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => exportPlayer(r)} title="Export joueur (CSV)" className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"><FileDown className="w-4 h-4" /></button>
+                        <button onClick={() => exportPlayerPDF(r)} title="Export joueur (PDF — FIFA)" className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"><FileText className="w-4 h-4" /></button>
+                      </div>
                     </td>
                   </tr>
                 ))}
