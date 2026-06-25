@@ -3,7 +3,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserCircle, Briefcase, ArrowDownLeft, ArrowUpRight, ShieldAlert, ShieldCheck, AlertTriangle, Layers, FileDown, Loader2 } from "lucide-react";
+import { UserCircle, Briefcase, ArrowDownLeft, ArrowUpRight, ShieldAlert, ShieldCheck, AlertTriangle, Layers, FileDown, Loader2, Wallet } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import { useMutation } from "@tanstack/react-query";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 import SaveBar from "./SaveBar";
 import { PAYS_CODES, ANNEES_FISCALES, TAX_YEAR_DEFAULT, getTaxProfile, getRegimes, estimerTauxSalarie, RESIDENCE_OPTIONS, SITUATION_OPTIONS } from "../../../lib/taxProfiles";
 import { fmtEUR, toNum, ageFromDob } from "../../../lib/transferCalc";
@@ -215,6 +218,33 @@ export default function DealSimulator({ player, role = "complet", operation = "t
   // → la sauvegarde crée un nouveau dossier).
   useEffect(() => { if (prefill) handleLoad(prefill); }, [prefill]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Envoi de la commission agent vers Finance (entrée, projection) ──────────
+  const me = useCurrentUser();
+  const [sentFin, setSentFin] = useState(false);
+  useEffect(() => { setSentFin(false); }, [player?.id]);
+
+  const finType = (operation === "renouvellement" || operation === "renegociation")
+    ? "renouvellement_contrat" : operation === "transfert_payant" ? "transfert" : "autre";
+
+  const sendToFinance = useMutation({
+    mutationFn: () => base44.entities.Commission.create({
+      titre: `Commission agent — ${player?.nom || "joueur"}`,
+      sens: "entree",
+      nature: "projection",
+      type: finType,
+      player_id: player?.id || "",
+      player_nom: player?.nom || "",
+      club: player?.club_actuel || "",
+      montant_operation: toNum(prixAchat) ? toNum(prixAchat) / 1_000_000 : null,
+      montant: Math.round(r?.commBrute || 0),
+      devise: "EUR",
+      statut: "a_facturer",
+      simulation_id: openSim?.id || "",
+      organization_id: me?.organization_id ?? null,
+    }),
+    onSuccess: () => setSentFin(true),
+  });
+
   const resume = filled
     ? `Net joueur ${fmtEUR(r.netJoueurAn)}/an · coût acheteur ${fmtEUR(r.buyerTotal)} · net vendeur ${fmtEUR(r.sellerNet)}`
     : "";
@@ -422,6 +452,16 @@ export default function DealSimulator({ player, role = "complet", operation = "t
               <Row label="Commission brute totale" value={fmtEUR(r.commBrute)} color="text-indigo-700" />
               <Row label="− Frais + taxes" value={fmtEUR(toNum(agentFrais) + r.agentTaxes)} color="text-slate-600" />
               <Row label="Profit net agence" value={fmtEUR(r.profitNet)} strong color="text-indigo-700" />
+              <button
+                onClick={() => sendToFinance.mutate()}
+                disabled={sentFin || sendToFinance.isPending || !(r.commBrute > 0)}
+                className="mt-2 w-full inline-flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60"
+                title="Crée une entrée « commission agent » (projection) dans Finance"
+              >
+                {sendToFinance.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wallet className="w-3.5 h-3.5" />}
+                {sentFin ? "Envoyé vers Finance ✓" : "Envoyer la commission vers Finance"}
+              </button>
+              {sendToFinance.isError && <p className="text-[11px] text-red-500 mt-1">Échec de l'envoi vers Finance.</p>}
             </Block>
           )}
         </div>
