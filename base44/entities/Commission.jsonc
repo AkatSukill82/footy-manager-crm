@@ -27,10 +27,30 @@
         "sponsoring",
         "commission_salaire",
         "prime",
-        "autre"
+        "autre",
+        "frais_scouting",
+        "deplacement",
+        "frais_juridique",
+        "autre_depense"
       ],
       "default": "transfert",
-      "description": "Type de commission"
+      "description": "Catégorie : revenus (transfert, contrat, prime…) ou dépenses (scouting, déplacement, juridique…)"
+    },
+    "sens": {
+      "type": "string",
+      "enum": ["entree", "sortie"],
+      "default": "entree",
+      "description": "Sens financier : entree (gain/commission) ou sortie (dépense)"
+    },
+    "nature": {
+      "type": "string",
+      "enum": ["projection", "reel"],
+      "default": "projection",
+      "description": "projection (estimation/prévu) ou reel (réalisé/encaissé/dépensé)"
+    },
+    "simulation_id": {
+      "type": "string",
+      "description": "ID de la simulation de transfert source (si envoyé depuis le simulateur)"
     },
     "montant_operation": {
       "type": "number",
