@@ -13,6 +13,7 @@ import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
 import PlayerCard from "../components/players/PlayerCard";
 import PlayerAvatar from "../components/ui/PlayerAvatar";
+import QuickImport from "../components/shared/QuickImport";
 import AdvancedFilters from "../components/players/AdvancedFilters";
 import PlayerForm from "../components/players/PlayerForm";
 import PlayerStatusModal, { STATUTS, statutConfig } from "../components/players/PlayerStatusModal";
@@ -298,15 +299,34 @@ export default function PlayersPage() {
             <p className="text-slate-600 mt-0.5 text-sm">{t(lang, 'players.count', { count: players.length })}</p>
           </div>
           {activeTab === "liste" && (
-            <Button
-              onClick={() => setShowForm(!showForm)}
-              className="bg-green-600 hover:bg-green-700 flex-shrink-0"
-              size="sm"
-            >
-              <Plus className="w-4 h-4 md:mr-2" />
-              <span className="hidden md:inline">{t(lang, 'players.addPlayer')}</span>
-              <span className="md:hidden">{t(lang, 'common.add')}</span>
-            </Button>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <QuickImport
+                entity="Player"
+                label="Importer"
+                onDone={() => queryClient.invalidateQueries({ queryKey: ['players'] })}
+                fields={[
+                  { key: "nom", label: "Nom", aliases: ["name", "joueur", "player"] },
+                  { key: "age", label: "Âge", aliases: ["age"], num: true },
+                  { key: "poste", label: "Poste", aliases: ["position"] },
+                  { key: "club_actuel", label: "Club", aliases: ["club", "team", "equipe"] },
+                  { key: "nationalite", label: "Nationalité", aliases: ["nationality", "pays", "country"] },
+                  { key: "valeur_marchande", label: "Valeur (M€)", aliases: ["market_value", "valeur", "value"], num: true },
+                  { key: "contrat_fin", label: "Fin de contrat", aliases: ["contract_end", "contrat"] },
+                  { key: "agent", label: "Agent", aliases: ["agence", "agency"] },
+                  { key: "taille", label: "Taille", aliases: ["height"], num: true },
+                  { key: "pied_fort", label: "Pied fort", aliases: ["foot", "pied"] },
+                ]}
+              />
+              <Button
+                onClick={() => setShowForm(!showForm)}
+                className="bg-green-600 hover:bg-green-700"
+                size="sm"
+              >
+                <Plus className="w-4 h-4 md:mr-2" />
+                <span className="hidden md:inline">{t(lang, 'players.addPlayer')}</span>
+                <span className="md:hidden">{t(lang, 'common.add')}</span>
+              </Button>
+            </div>
           )}
         </div>
 
