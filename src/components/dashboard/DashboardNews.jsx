@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Newspaper, Settings2, RefreshCw, Loader2, ExternalLink, Plus, X } from "lucide-react";
+import { withOrg } from "@/lib/org";
+import { Newspaper, Settings2, RefreshCw, Loader2, ExternalLink, Plus, X, UserPlus, Check } from "lucide-react";
 
 /**
  * Journal d'actualités configurable sur le dashboard.
@@ -19,7 +20,7 @@ const CATEGORIES = [
   { id: "blessure",    label: "Blessures" },
   { id: "rumeur",      label: "Rumeurs" },
 ];
-const DEFAULT_PREFS = { sources: [], categories: ["transfert"] };
+const DEFAULT_PREFS = { sources: [], categories: ["transfert"], keywords: [] };
 
 function loadPrefs() {
   try { return { ...DEFAULT_PREFS, ...JSON.parse(localStorage.getItem(PREFS_KEY) || "{}") }; }
@@ -39,10 +40,13 @@ async function fetchNews(prefs) {
   const sources = (prefs.sources?.length ? prefs.sources : DEFAULT_SOURCES).join(", ");
   const catLabels = (prefs.categories?.length ? prefs.categories : ["transfert"])
     .map((id) => CATEGORIES.find((c) => c.id === id)?.label || id).join(", ");
+  const kwLine = prefs.keywords?.length
+    ? `\nPriorise les articles mentionnant ces mots-clés : ${prefs.keywords.join(", ")}.`
+    : "";
   const data = await base44.integrations.Core.InvokeLLM({
     prompt: `Tu es un agrégateur de news football. Nous sommes le ${today}.
 Cherche les vrais articles publiés aujourd'hui ou cette semaine, UNIQUEMENT depuis ces médias/sources : ${sources}.
-Ne retiens QUE les actualités de ces types : ${catLabels}.
+Ne retiens QUE les actualités de ces types : ${catLabels}.${kwLine}
 Pour chaque article : "titre" (exact, sans reformuler), "source_nom", "source_url" (URL https complète et VALIDE), "categorie".
 RÈGLE ABSOLUE : uniquement des articles réels avec une URL exacte valide. 6 à 10 articles max, du plus récent au plus ancien.`,
     add_context_from_internet: true,
@@ -55,13 +59,22 @@ export default function DashboardNews() {
   const [prefs, setPrefs] = useState(loadPrefs);
   const [showSettings, setShowSettings] = useState(false);
   const [newSource, setNewSource] = useState("");
+  const [newKeyword, setNewKeyword] = useState("");
+  const [linked, setLinked] = useState({}); // index article → true quand associé à un joueur
 
   const { data: articles = [], isFetching, refetch } = useQuery({
-    queryKey: ["dashNews", prefs.sources, prefs.categories],
+    queryKey: ["dashNews", prefs.sources, prefs.categories, prefs.keywords],
     queryFn: () => fetchNews(prefs),
     staleTime: 1000 * 60 * 30,   // 30 min — appel LLM coûteux
     refetchInterval: false,      // surtout PAS le polling global 10 s
     retry: false,
+  });
+
+  // Joueurs (pour associer une news à un joueur).
+  const { data: players = [] } = useQuery({
+    queryKey: ["players-news"],
+    queryFn: () => base44.entities.Player.filter({}, "-created_date", 500),
+    staleTime: 1000 * 60 * 10,
   });
 
   const apply = (p) => { setPrefs(p); savePrefs(p); };
@@ -70,9 +83,27 @@ export default function DashboardNews() {
     apply({ ...prefs, sources: [...(prefs.sources || []), s] }); setNewSource("");
   };
   const removeSource = (i) => apply({ ...prefs, sources: prefs.sources.filter((_, idx) => idx !== i) });
+  const addKeyword = () => {
+    const k = newKeyword.trim(); if (!k) return;
+    apply({ ...prefs, keywords: [...(prefs.keywords || []), k] }); setNewKeyword("");
+  };
+  const removeKeyword = (i) => apply({ ...prefs, keywords: prefs.keywords.filter((_, idx) => idx !== i) });
   const toggleCat = (id) => {
     const has = prefs.categories?.includes(id);
     apply({ ...prefs, categories: has ? prefs.categories.filter((c) => c !== id) : [...(prefs.categories || []), id] });
+  };
+
+  // Associe un article à un joueur → crée une note (PlayerNote) partagée au groupe.
+  const associate = async (article, playerId, idx) => {
+    if (!playerId) return;
+    try {
+      await base44.entities.PlayerNote.create(withOrg({
+        player_id: playerId,
+        note: `📰 ${article.titre}${article.source_nom ? ` (${article.source_nom})` : ""}${article.source_url ? `\n${article.source_url}` : ""}`,
+        date_observation: new Date().toISOString().split("T")[0],
+      }));
+      setLinked((l) => ({ ...l, [idx]: true }));
+    } catch { /* ignore */ }
   };
 
   return (
@@ -116,6 +147,21 @@ export default function DashboardNews() {
               })}
             </div>
           </div>
+          <div>
+            <p className="text-xs font-medium text-slate-600 mb-1.5">Mots-clés (joueur, club, championnat, agence…)</p>
+            <div className="flex gap-1.5 mb-2">
+              <input value={newKeyword} onChange={(e) => setNewKeyword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addKeyword()}
+                placeholder="Ex: Mbappé, Ligue 1, OL…" className="flex-1 text-sm border border-slate-200 rounded-lg px-2.5 py-1.5" />
+              <button onClick={addKeyword} className="px-2.5 rounded-lg bg-slate-900 text-white"><Plus className="w-4 h-4" /></button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {(prefs.keywords || []).map((k, i) => (
+                <span key={i} className="inline-flex items-center gap-1 text-[11px] bg-white border border-slate-200 rounded-full px-2 py-0.5 text-slate-600">
+                  {k}<button onClick={() => removeKeyword(i)} className="text-slate-300 hover:text-red-500"><X className="w-3 h-3" /></button>
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
@@ -127,13 +173,24 @@ export default function DashboardNews() {
         ) : (
           <div className="space-y-1">
             {articles.slice(0, 10).map((a, i) => (
-              <a key={i} href={a.source_url || "#"} target="_blank" rel="noreferrer" className="flex items-start justify-between gap-2 rounded-lg px-2.5 py-2 hover:bg-slate-50 group">
-                <div className="min-w-0">
+              <div key={i} className="flex items-start justify-between gap-2 rounded-lg px-2.5 py-2 hover:bg-slate-50 group">
+                <a href={a.source_url || "#"} target="_blank" rel="noreferrer" className="min-w-0 flex-1">
                   <p className="text-sm text-slate-800 leading-snug line-clamp-2 group-hover:text-green-700">{a.titre}</p>
                   {a.source_nom && <span className="text-[10px] font-semibold text-slate-400">{a.source_nom}</span>}
+                </a>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {linked[i] ? (
+                    <span className="inline-flex items-center gap-0.5 text-[10px] text-green-600" title="Associé à un joueur"><Check className="w-3.5 h-3.5" /></span>
+                  ) : (
+                    <select defaultValue="" onChange={(e) => associate(a, e.target.value, i)} title="Associer à un joueur"
+                      className="text-[10px] border border-slate-200 rounded px-1 py-0.5 text-slate-500 max-w-[92px]">
+                      <option value="">+ joueur</option>
+                      {players.map((p) => <option key={p.id} value={p.id}>{p.nom}</option>)}
+                    </select>
+                  )}
+                  <a href={a.source_url || "#"} target="_blank" rel="noreferrer"><ExternalLink className="w-3.5 h-3.5 text-slate-300 group-hover:text-green-600" /></a>
                 </div>
-                <ExternalLink className="w-3.5 h-3.5 text-slate-300 group-hover:text-green-600 flex-shrink-0 mt-0.5" />
-              </a>
+              </div>
             ))}
           </div>
         )}
