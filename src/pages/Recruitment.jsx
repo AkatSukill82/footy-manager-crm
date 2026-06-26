@@ -53,17 +53,6 @@ export default function RecruitmentPage() {
           <div className="flex-shrink-0"><RecruitmentScoringConfig /></div>
         </div>
 
-        {/* Tabs */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-1 flex gap-1">
-          <button onClick={() => { setTab("new"); }} className={tabCls(tab === "new")}><ArrowRightLeft className="w-4 h-4" /> {editCase ? "Édition" : "Nouveau"}</button>
-          <button onClick={() => setTab("pipeline")} className={tabCls(tab === "pipeline")}><Columns className="w-4 h-4" /> Pipeline ({cases.length})</button>
-        </div>
-
-        {tab === "pipeline" && (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-6">
-            <RecruitmentPipeline cases={cases} onDelete={(c) => remove.mutate(c)} onOpen={handleEdit} onSimulate={handleSimulate} />
-          </div>
-        )}
 
         {tab === "new" && !pathway && (
           <>

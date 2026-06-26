@@ -4,7 +4,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ExternalLink, ShieldAlert, ShieldCheck, AlertTriangle, Save, Wand2, Copy } from "lucide-react";
+import { ExternalLink, ShieldAlert, ShieldCheck, AlertTriangle, Save, Wand2, Copy, UserPlus, Loader2, CheckCircle2 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { addPlayerAsProspect } from "@/lib/addProspect";
 import {
   TM_LINKS, ageScore, contractScore, marketScore, scoreMajor, scoreTier,
   compliance, deriveStatus, canBeContactReady, generateMessage, canGenerateMessage, isOffensive,
@@ -54,9 +58,25 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
   const [message, setMessage] = useState(initial?.message ?? initial?.message_text ?? "");
 
   // Préremplissage depuis le moteur de recherche (même moteur que la page Joueurs).
+  const [lastFound, setLastFound] = useState(null);   // profil recherché → bouton « prospect »
+  const [prospect, setProspect] = useState(null);     // { id, nom } | { exists, nom } | "loading"
+  const qc = useQueryClient();
+  const navigate = useNavigate();
+
   const applyPlayer = (p) => {
+    setLastFound(p);
+    setProspect(null);
     const mapped = playerToMajorFields(p);
     setF((s) => { const next = { ...s }; Object.entries(mapped).forEach(([k, v]) => { if (v) next[k] = v; }); return next; });
+  };
+
+  const addProspect = async () => {
+    if (!lastFound) return;
+    setProspect("loading");
+    const res = await addPlayerAsProspect(lastFound);
+    if (res.error) { setProspect(null); return; }
+    if (!res.exists) { qc.invalidateQueries({ queryKey: ["players"] }); qc.invalidateQueries({ queryKey: ["watchList"] }); }
+    setProspect(res);
   };
 
   const age = Number(f.age) || 0;
@@ -129,6 +149,22 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
 
       {/* Recherche joueur — même moteur que la section Joueurs */}
       <PlayerSearchBox onSelect={applyPlayer} />
+
+      {lastFound && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-green-200 bg-green-50/50 px-3 py-2 -mt-1">
+          <span className="text-xs text-green-800 min-w-0 truncate">
+            {prospect?.id ? <>✅ <b>{prospect.nom}</b> ajouté à ta liste (prospect). </>
+              : prospect?.exists ? <>« {prospect.nom} » est déjà dans ta liste.</>
+              : <>Repéré : <b>{lastFound.nom}</b>. Tu peux aussi l'ajouter directement à ta liste joueurs.</>}
+            {prospect?.id && <button type="button" onClick={() => navigate(createPageUrl("PlayerDetail") + "?id=" + prospect.id)} className="underline">Ouvrir la fiche</button>}
+          </span>
+          {!prospect?.id && !prospect?.exists && (
+            <Button type="button" onClick={addProspect} disabled={prospect === "loading"} size="sm" variant="outline" className="gap-1.5 flex-shrink-0 border-green-300 text-green-800 hover:bg-green-100">
+              {prospect === "loading" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />} Ajouter en prospect
+            </Button>
+          )}
+        </div>
+      )}
 
       {isMinor && (
         <div className="flex items-start gap-2 border rounded-lg px-3 py-2 text-xs bg-red-50 border-red-200 text-red-800">
