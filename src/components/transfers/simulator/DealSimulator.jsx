@@ -72,19 +72,19 @@ export default function DealSimulator({ player, role = "complet", operation = "t
   const [age, setAge] = useState("");
   const [salaireBrut, setSalaireBrut] = useState("");
   const [ancienSalaire, setAncienSalaire] = useState(""); // renouvellement / renégociation
-  const [annees, setAnnees] = useState("3");
+  const [annees, setAnnees] = useState(""); // §7 : vide par défaut (pas de fausse simulation)
   const [signingFee, setSigningFee] = useState("");
   const [primes, setPrimes] = useState("");
   const [avantages, setAvantages] = useState("");
   // Transfert
   const [prixAchat, setPrixAchat] = useState("");
   const [bonus, setBonus] = useState("");
-  const [bonusProba, setBonusProba] = useState("50");
-  const [solidariteRate, setSolidariteRate] = useState("5");
-  const [nbEcheances, setNbEcheances] = useState("1"); // paiement du transfert en N annuités (§7/§8)
+  const [bonusProba, setBonusProba] = useState("");        // §7 : vide
+  const [solidariteRate, setSolidariteRate] = useState("5"); // §7 : SEUL défaut conservé (5%)
+  const [nbEcheances, setNbEcheances] = useState("");      // §7 : vide
   // Agent
-  const [tauxAgentJoueur, setTauxAgentJoueur] = useState("5");
-  const [tauxAgentVendeur, setTauxAgentVendeur] = useState("10");
+  const [tauxAgentJoueur, setTauxAgentJoueur] = useState("");   // §7 : vide
+  const [tauxAgentVendeur, setTauxAgentVendeur] = useState(""); // §7 : vide
   const [agentForfait, setAgentForfait] = useState("");
   const [agentFrais, setAgentFrais] = useState("");
   const [agentTaxePct, setAgentTaxePct] = useState("0");
