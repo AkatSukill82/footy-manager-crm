@@ -13,6 +13,7 @@ import {
   Wallet, Plus, Loader2, ArrowDownLeft, ArrowUpRight, Scale,
   Pencil, Trash2, FileDown, FileText, Users, List, FlaskConical, CheckCircle2, Briefcase,
 } from "lucide-react";
+import QuickImport from "../components/shared/QuickImport";
 
 // ── Référentiels ──────────────────────────────────────────────────────────────
 
@@ -401,6 +402,22 @@ export default function FinancePage() {
             <p className="text-xs text-slate-500 mt-1">Commissions, dépenses et rentabilité, par opération ou par joueur. Projection vs réel.</p>
           </div>
           <div className="flex items-center gap-2">
+            <QuickImport
+              entity="Commission"
+              label="Importer"
+              onDone={invalidate}
+              fields={[
+                { key: "titre", label: "Libellé", aliases: ["libelle", "label", "description"] },
+                { key: "montant", label: "Montant (€)", aliases: ["amount", "montant_eur"], num: true },
+                { key: "sens", label: "Sens", aliases: ["entree_sortie"] },
+                { key: "nature", label: "Nature", aliases: ["projection_reel"] },
+                { key: "type", label: "Catégorie", aliases: ["categorie", "category"] },
+                { key: "player_nom", label: "Joueur", aliases: ["joueur", "player", "nom"] },
+                { key: "club", label: "Club", aliases: ["team"] },
+                { key: "agent_beneficiaire", label: "Agent", aliases: ["agent", "partenaire"] },
+                { key: "date_echeance", label: "Échéance", aliases: ["date", "echeance", "due_date"] },
+              ]}
+            />
             <Button variant="outline" onClick={exportAll} disabled={!filtered.length}><FileDown className="w-4 h-4 mr-2" /> CSV</Button>
             <Button variant="outline" onClick={exportAllPDF} disabled={!filtered.length}><FileText className="w-4 h-4 mr-2" /> PDF</Button>
             <Button onClick={() => { setEditing(null); setShowForm(true); }} className="bg-green-600 hover:bg-green-700">
