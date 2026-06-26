@@ -159,11 +159,11 @@ export default function Login() {
               <span className="text-xs">{t(lang, "login.secured")}</span>
             </div>
 
-            <p className="mt-4 text-center text-sm text-slate-400">
-              Pas encore de compte ?{" "}
-              <Link to="/register" className="text-slate-700 font-semibold hover:underline">
-                Créer un compte
-              </Link>
+            <p className="mt-4 text-center text-xs text-slate-400">
+              L'accès se fait sur invitation. Besoin d'un compte ?{" "}
+              <a href="https://football-dm.com/demande-acces" target="_blank" rel="noreferrer" className="text-slate-700 font-semibold hover:underline">
+                Demander un accès
+              </a>
             </p>
           </div>
         </div>
