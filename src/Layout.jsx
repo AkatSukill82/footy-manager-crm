@@ -6,7 +6,7 @@ import {
   FileText, Network, ArrowRightLeft, Menu, X, Building2,
   Sparkles, Newspaper, FileSpreadsheet, CalendarDays, UserCircle,
   ClipboardList, Columns, ChevronDown, Search, GitCompare, Wallet, Store,
-  Sun, Moon, UserSearch,
+  Sun, Moon, UserSearch, Inbox,
 } from "lucide-react";
 import { useTheme } from "./lib/ThemeContext";
 import { base44 } from "@/api/base44Client";
@@ -22,7 +22,7 @@ const CORE_PAGES = ["Dashboard", "Players", "Clubs", "MyWatchList", "ClubContact
 // Outils — groupe repliable
 const TOOLS_PAGES = ["Recruitment", "Comparator", "TransferManagement", "Teams", "News", "Calendar"];
 // Avancé — groupe repliable
-const ADVANCED_PAGES = ["Pipeline", "Finance", "Marketplace", "ScoutingReports", "Reports", "PredictiveDashboard", "AgentNetwork", "ImportExcel"];
+const ADVANCED_PAGES = ["Pipeline", "Finance", "Marketplace", "ScoutingReports", "Reports", "PredictiveDashboard", "AgentNetwork", "ImportExcel", "AccessRequests"];
 
 const ALL_ITEMS = (lang) => [
   { name: "Dashboard",           key: "dashboard",        icon: BarChart3 },
@@ -44,6 +44,7 @@ const ALL_ITEMS = (lang) => [
   { name: "PredictiveDashboard", key: "predictive",       icon: Sparkles },
   { name: "AgentNetwork",        key: "network",          icon: Network },
   { name: "ImportExcel",         key: "import",           icon: FileSpreadsheet },
+  { name: "AccessRequests",      key: "access_requests",  icon: Inbox,         label: "Demandes d'accès" },
   { name: "Organization",        key: "organization",     icon: Users },
 ].map(item => ({ ...item, label: item.label || t(lang, `nav.${item.key}`) }));
 

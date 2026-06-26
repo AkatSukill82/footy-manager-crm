@@ -15,6 +15,7 @@ import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
+import Vitrine from '@/pages/Vitrine';
 import { base44 } from '@/api/base44Client';
 
 const ImportExcel  = lazy(() => import('./pages/ImportExcel'));
@@ -100,6 +101,9 @@ const AuthenticatedApp = () => {
         <Route path="/ForgotPassword" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/ResetPassword" element={<ResetPassword />} />
+        {/* Site vitrine public + demande d'accès */}
+        <Route path="/vitrine" element={<Vitrine />} />
+        <Route path="/demande-acces" element={<Vitrine />} />
 
         {/* Protected routes — unauthenticated users → /login */}
         <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>

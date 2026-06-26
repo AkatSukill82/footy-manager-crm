@@ -161,9 +161,9 @@ export default function Login() {
 
             <p className="mt-4 text-center text-xs text-slate-400">
               L'accès se fait sur invitation. Besoin d'un compte ?{" "}
-              <a href="https://football-dm.com/demande-acces" target="_blank" rel="noreferrer" className="text-slate-700 font-semibold hover:underline">
+              <Link to="/vitrine" className="text-slate-700 font-semibold hover:underline">
                 Demander un accès
-              </a>
+              </Link>
             </p>
           </div>
         </div>

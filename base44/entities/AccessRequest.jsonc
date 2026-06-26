@@ -1,0 +1,30 @@
+{
+  "name": "AccessRequest",
+  "type": "object",
+  "properties": {
+    "nom": { "type": "string", "description": "Nom du demandeur" },
+    "prenom": { "type": "string", "description": "Prénom" },
+    "email": { "type": "string", "description": "E-mail de contact" },
+    "telephone": { "type": "string", "description": "Téléphone" },
+    "societe": { "type": "string", "description": "Agence / club / société" },
+    "formule": {
+      "type": "string",
+      "enum": ["standard", "pro", "surmesure"],
+      "description": "Formule souhaitée (50€ / 100€ / sur-mesure)"
+    },
+    "message": { "type": "string", "description": "Message / besoin" },
+    "statut": {
+      "type": "string",
+      "enum": ["en_attente", "valide", "refuse"],
+      "default": "en_attente",
+      "description": "Statut de la demande"
+    }
+  },
+  "required": ["email"],
+  "rls": {
+    "create": { "user_condition": { "role": "admin" } },
+    "read":   { "user_condition": { "role": "admin" } },
+    "update": { "user_condition": { "role": "admin" } },
+    "delete": { "user_condition": { "role": "admin" } }
+  }
+}
