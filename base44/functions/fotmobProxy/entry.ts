@@ -355,8 +355,26 @@ const toNum = (v: any): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 
+// Fallback : si le profil n'a pas de PrimaryStageId, on déduit le stageId depuis
+// profile.Stats (compétition la plus JOUÉE de la saison la plus récente). Permet
+// de récupérer les stats détaillées des joueurs sans compétition principale
+// marquée (transferts récents, petites divisions, multi-compétitions…).
+const fallbackStageId = (profile: any): number | null => {
+  const stats: any[] = (Array.isArray(profile?.Stats) ? profile.Stats : []).filter((s) => s?.StageId);
+  if (!stats.length) return null;
+  const endMs = (s: any) => { const m = /Date\((\d+)\)/.exec(String(s?.EndOfTournament || "")); return m ? Number(m[1]) : 0; };
+  // Saison la plus récente = SeasonName de l'entrée dont la compétition finit le plus tard.
+  let latestSeason: any = null, latestEnd = -1;
+  for (const s of stats) { const e = endMs(s); if (e > latestEnd) { latestEnd = e; latestSeason = s.SeasonName; } }
+  const inSeason = stats.filter((s) => s.SeasonName === latestSeason);
+  const pool = inSeason.length ? inSeason : stats;
+  // Dans la saison récente : compétition la plus JOUÉE (la principale).
+  pool.sort((a, b) => (Number(b.MatchesPlayed) || 0) - (Number(a.MatchesPlayed) || 0));
+  return pool[0]?.StageId ? Number(pool[0].StageId) : null;
+};
+
 // Récupère le profil (data.fotmob.com) puis les deep stats de la compétition
-// principale (PrimaryStageId). Best-effort : renvoie {} si quoi que ce soit échoue.
+// principale (PrimaryStageId, sinon fallback). Best-effort : {} si échec.
 const getDeepStats = async (playerId: number): Promise<Record<string, any>> => {
   const out: Record<string, any> = {};
   try {
@@ -374,7 +392,7 @@ const getDeepStats = async (playerId: number): Promise<Record<string, any>> => {
     if (profile?.Weight) out.poids  = toNum(profile.Weight);
     if (profile?.Foot)   out.pied_fort = profile.Foot === "left" ? "Gauche" : profile.Foot === "right" ? "Droit" : "Les deux";
 
-    const stageId = profile?.PrimaryStageId;
+    const stageId = profile?.PrimaryStageId || fallbackStageId(profile);
     if (!stageId) return out;
 
     const dRes = await fetch(`https://pub.fotmob.com/beta/db/api/player/${playerId}/stats/stage/${stageId}`, {
