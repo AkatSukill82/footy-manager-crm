@@ -1,135 +1,135 @@
 import React, { useRef, useEffect } from "react";
 
 /**
- * Hero animé en particules (canvas). Des « billes » convergent depuis tous les
- * côtés et forment un FOOTBALLEUR (silhouette échantillonnée depuis un emoji).
- * Un BALLON (groupe de particules) arrive en arc, frappe la TÊTE, puis repart
- * (coup de tête), en boucle. Léger scintillement quand la forme est assemblée.
+ * Essaim de « drones » (boids / flocking). Chaque agent est AUTONOME : il suit
+ * la meute via 3 règles (séparation, alignement, cohésion) + une dérive douce et
+ * une réaction au curseur. Rendu premium : traînées lumineuses, connexions fines
+ * et lueur émeraude. Mouvement organique type murmuration.
  */
 export default function ParticleHero() {
-  const canvasRef = useRef(null);
+  const ref = useRef(null);
   useEffect(() => {
-    const canvas = canvasRef.current;
+    const canvas = ref.current;
     const ctx = canvas.getContext("2d");
-    let raf = 0, W = 0, H = 0;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
+    let W = 0, H = 0, raf = 0;
+    let agents = [];
+    const mouse = { x: -9999, y: -9999 };
 
-    // ── Échantillonne les pixels opaques d'un emoji → points normalisés (0..1) ──
-    const sample = (glyph, px, gap) => {
-      const off = document.createElement("canvas");
-      off.width = off.height = px;
-      const o = off.getContext("2d");
-      o.clearRect(0, 0, px, px);
-      o.fillStyle = "#fff";
-      o.font = `${Math.floor(px * 0.82)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
-      o.textAlign = "center"; o.textBaseline = "middle";
-      o.fillText(glyph, px / 2, px / 2);
-      const d = o.getImageData(0, 0, px, px).data;
-      const pts = [];
-      for (let y = 0; y < px; y += gap) for (let x = 0; x < px; x += gap) {
-        if (d[(y * px + x) * 4 + 3] > 130) pts.push([x / px - 0.5, y / px - 0.5]);
-      }
-      return pts;
-    };
+    let N = 0, PERC = 64, SEP = 26, MAXV = 2.4, MINV = 0.7, LINK = 78, LINKS_ON = true;
 
-    let figure = sample("🏃", 220, 4);
-    if (figure.length < 60) figure = sample("⚽", 200, 4); // fallback si l'emoji ne rend pas
-    const ballShape = (() => {
-      const pts = []; const n = 70;
-      for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2, r = 0.5 * Math.sqrt(Math.random()); pts.push([Math.cos(a) * r, Math.sin(a) * r]); }
-      return pts;
-    })();
-
-    let figParticles = [], ballParticles = [], focal = { x: 0, y: 0, s: 0 }, headY = 0;
-
-    const setup = () => {
+    const resize = () => {
       const rect = canvas.getBoundingClientRect();
       W = rect.width; H = rect.height;
-      canvas.width = W * dpr; canvas.height = H * dpr;
+      canvas.width = Math.floor(W * dpr); canvas.height = Math.floor(H * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const s = Math.min(W, H) * 0.58;
-      focal = { x: W * 0.5, y: H * 0.42, s };
-      // figure
-      figParticles = figure.map(([nx, ny]) => ({
-        tx: focal.x + nx * s, ty: focal.y + ny * s,
-        x: Math.random() * W, y: Math.random() * H,
-        vx: 0, vy: 0, ph: Math.random() * Math.PI * 2,
-      }));
-      // tête = barycentre du 12 % supérieur des points figure
-      const sorted = figure.map(([, ny]) => ny).sort((a, b) => a - b);
-      const topThresh = sorted[Math.floor(sorted.length * 0.1)] ?? -0.4;
-      const topPts = figure.filter(([, ny]) => ny <= topThresh);
-      const hx = topPts.reduce((a, [nx]) => a + nx, 0) / (topPts.length || 1);
-      const hy = topPts.reduce((a, [, ny]) => a + ny, 0) / (topPts.length || 1);
-      headPos = { x: focal.x + hx * s, y: focal.y + hy * s };
-      headY = headPos.y;
-      // ballon
-      const bs = s * 0.26;
-      ballParticles = ballShape.map(([nx, ny]) => ({ ox: nx * bs, oy: ny * bs, x: 0, y: 0 }));
+      const target = W < 640 ? 110 : W < 1100 ? 220 : 320;
+      LINKS_ON = W >= 640;
+      if (agents.length === 0) {
+        for (let i = 0; i < target; i++) {
+          const a = Math.random() * Math.PI * 2, sp = MINV + Math.random();
+          agents.push({ x: Math.random() * W, y: Math.random() * H, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 0.8 + Math.random() * 1.4 });
+        }
+      }
+      N = agents.length;
     };
 
-    let headPos = { x: 0, y: 0 };
-    let t0 = performance.now();
-    // état du ballon : approche → header → sortie → reset (cycle)
-    const CYCLE = 4200;
+    const step = () => {
+      // Traînées : on n'efface pas tout → effet de scie lumineuse.
+      ctx.fillStyle = "rgba(10,14,26,0.22)";
+      ctx.fillRect(0, 0, W, H);
 
-    const draw = (now) => {
-      const t = now - t0;
-      ctx.clearRect(0, 0, W, H);
-
-      // ── Figure : ressort vers la cible + scintillement ──
-      for (const p of figParticles) {
-        const k = 0.06;
-        p.vx += (p.tx - p.x) * k; p.vy += (p.ty - p.y) * k;
-        p.vx *= 0.82; p.vy *= 0.82;
-        p.x += p.vx; p.y += p.vy;
-        p.ph += 0.05;
+      const cx0 = W * 0.5, cy0 = H * 0.44;
+      for (let i = 0; i < N; i++) {
+        const a = agents[i];
+        let ax = 0, ay = 0, gx = 0, gy = 0, sx = 0, sy = 0, n = 0;
+        for (let j = 0; j < N; j++) {
+          if (i === j) continue;
+          const b = agents[j];
+          const dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
+          if (d2 < PERC * PERC) {
+            n++;
+            ax += b.vx; ay += b.vy;            // alignement
+            gx += b.x; gy += b.y;              // cohésion
+            if (d2 < SEP * SEP && d2 > 0) { const inv = 1 / Math.sqrt(d2); sx -= dx * inv; sy -= dy * inv; } // séparation
+          }
+        }
+        if (n > 0) {
+          a.vx += (ax / n - a.vx) * 0.045;
+          a.vy += (ay / n - a.vy) * 0.045;
+          a.vx += (gx / n - a.x) * 0.0009;
+          a.vy += (gy / n - a.y) * 0.0009;
+          a.vx += sx * 0.05; a.vy += sy * 0.05;
+        }
+        // Dérive douce vers le centre + léger tourbillon (garde la meute à l'écran, vivante).
+        const tdx = cx0 - a.x, tdy = cy0 - a.y;
+        a.vx += tdx * 0.0006 - tdy * 0.00035;
+        a.vy += tdy * 0.0006 + tdx * 0.00035;
+        // Répulsion souris (interactif).
+        const mdx = a.x - mouse.x, mdy = a.y - mouse.y, md2 = mdx * mdx + mdy * mdy;
+        if (md2 < 130 * 130 && md2 > 0) { const d = Math.sqrt(md2), f = (1 - d / 130) * 1.8; a.vx += (mdx / d) * f; a.vy += (mdy / d) * f; }
+        // Limite de vitesse.
+        const sp = Math.hypot(a.vx, a.vy) || 1;
+        if (sp > MAXV) { a.vx *= MAXV / sp; a.vy *= MAXV / sp; }
+        else if (sp < MINV) { a.vx *= MINV / sp; a.vy *= MINV / sp; }
+        a.x += a.vx; a.y += a.vy;
+        // Bords : on enveloppe.
+        if (a.x < -30) a.x = W + 30; else if (a.x > W + 30) a.x = -30;
+        if (a.y < -30) a.y = H + 30; else if (a.y > H + 30) a.y = -30;
       }
-      ctx.save();
-      ctx.fillStyle = "rgba(16,185,129,0.85)";
-      ctx.shadowBlur = 8; ctx.shadowColor = "rgba(16,185,129,0.6)";
-      for (const p of figParticles) {
-        const sx = p.x + Math.cos(p.ph) * 0.8, sy = p.y + Math.sin(p.ph) * 0.8;
-        ctx.beginPath(); ctx.arc(sx, sy, 1.5, 0, Math.PI * 2); ctx.fill();
+
+      // Connexions (réseau) entre agents proches.
+      if (LINKS_ON) {
+        ctx.lineWidth = 0.6;
+        for (let i = 0; i < N; i++) {
+          const a = agents[i];
+          for (let j = i + 1; j < N; j++) {
+            const b = agents[j];
+            const dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
+            if (d2 < LINK * LINK) {
+              ctx.strokeStyle = `rgba(16,185,129,${(1 - Math.sqrt(d2) / LINK) * 0.16})`;
+              ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+            }
+          }
+        }
       }
-      ctx.restore();
 
-      // ── Ballon : cycle approche/header/sortie ──
-      const ct = (t % CYCLE) / CYCLE; // 0..1
-      const start = { x: W + 60, y: focal.y - focal.s * 0.1 };
-      const exit = { x: focal.x - focal.s * 0.9, y: focal.y - focal.s * 0.95 };
-      let cx, cy, alpha = 1;
-      if (ct < 0.45) {                       // approche en arc vers la tête
-        const u = ct / 0.45, e = u * u * (3 - 2 * u);
-        cx = start.x + (headPos.x - start.x) * e;
-        cy = start.y + (headPos.y - start.y) * e - Math.sin(u * Math.PI) * focal.s * 0.18;
-      } else if (ct < 0.52) {                // impact tête (petit rebond)
-        cx = headPos.x; cy = headPos.y - Math.sin((ct - 0.45) / 0.07 * Math.PI) * 6;
-      } else if (ct < 0.78) {                // header : repart vers le haut-gauche
-        const u = (ct - 0.52) / 0.26, e = u * u;
-        cx = headPos.x + (exit.x - headPos.x) * e;
-        cy = headPos.y + (exit.y - headPos.y) * e;
-        alpha = 1 - u * 0.7;
-      } else { cx = start.x; cy = start.y; alpha = 0; }  // reset hors écran
-
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = "rgba(255,255,255,0.95)";
-      ctx.shadowBlur = 12; ctx.shadowColor = "rgba(255,255,255,0.7)";
-      for (const b of ballParticles) {
-        ctx.beginPath(); ctx.arc(cx + b.ox, cy + b.oy, 1.6, 0, Math.PI * 2); ctx.fill();
+      // Agents (mode "lighter" → lueur naturelle aux recouvrements).
+      ctx.globalCompositeOperation = "lighter";
+      for (let i = 0; i < N; i++) {
+        const a = agents[i];
+        ctx.beginPath(); ctx.arc(a.x, a.y, a.r + 1.6, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(16,185,129,0.18)"; ctx.fill();           // halo
+        ctx.beginPath(); ctx.arc(a.x, a.y, a.r, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(190,255,225,0.95)"; ctx.fill();          // cœur
       }
-      ctx.restore();
+      ctx.globalCompositeOperation = "source-over";
 
-      raf = requestAnimationFrame(draw);
+      raf = requestAnimationFrame(step);
     };
 
-    setup();
-    raf = requestAnimationFrame(draw);
-    const onResize = () => setup();
-    window.addEventListener("resize", onResize);
-    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", onResize); };
+    const onMove = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const p = e.touches ? e.touches[0] : e;
+      mouse.x = p.clientX - rect.left; mouse.y = p.clientY - rect.top;
+    };
+    const onLeave = () => { mouse.x = -9999; mouse.y = -9999; };
+
+    resize();
+    ctx.fillStyle = "#0a0e1a"; ctx.fillRect(0, 0, W, H);
+    raf = requestAnimationFrame(step);
+    window.addEventListener("resize", resize);
+    canvas.addEventListener("mousemove", onMove);
+    canvas.addEventListener("touchmove", onMove, { passive: true });
+    canvas.addEventListener("mouseleave", onLeave);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", resize);
+      canvas.removeEventListener("mousemove", onMove);
+      canvas.removeEventListener("touchmove", onMove);
+      canvas.removeEventListener("mouseleave", onLeave);
+    };
   }, []);
 
-  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />;
+  return <canvas ref={ref} className="absolute inset-0 w-full h-full" />;
 }
