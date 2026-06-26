@@ -17,6 +17,7 @@ import DashboardAgenda from "../components/dashboard/DashboardAgenda";
 import DashboardNews from "../components/dashboard/DashboardNews";
 import DashboardFinance from "../components/dashboard/DashboardFinance";
 import DashboardReports from "../components/dashboard/DashboardReports";
+import DashboardAlerts from "../components/dashboard/DashboardAlerts";
 import {
   Users, TrendingUp, AlertTriangle, Clock, ChevronRight,
   Calendar, ArrowRightLeft, Bell, BarChart3, ChevronDown, ChevronUp,
@@ -69,9 +70,10 @@ function SectionHeader({ icon: Icon, title, count, cta, onCta }) {
 }
 
 // ── Widgets personnalisables (ordre par défaut + libellés) ────────────────────
-const DEFAULT_ORDER = ["stats", "today_matches", "agenda", "news", "finance", "reports", "scouting", "focus", "urgent", "contracts", "reminders", "negotiations", "recent", "analytics"];
+const DEFAULT_ORDER = ["stats", "alertes", "today_matches", "agenda", "news", "finance", "reports", "scouting", "focus", "urgent", "contracts", "reminders", "negotiations", "recent", "analytics"];
 const WIDGET_LABEL = {
-  stats: "Indicateurs", today_matches: "Matchs du jour", agenda: "Agenda", news: "Journal / Actualités",
+  stats: "Indicateurs", alertes: "Alertes (à traiter)",
+  today_matches: "Matchs du jour", agenda: "Agenda", news: "Journal / Actualités",
   finance: "Finance", reports: "Rapports / Exports",
   scouting: "Joueurs à suivre",
   focus: "Focus du jour", urgent: "Points urgents", contracts: "Contrats à surveiller",
@@ -382,6 +384,7 @@ export default function Dashboard() {
     news: <DashboardNews />,
     finance: <DashboardFinance />,
     reports: <DashboardReports />,
+    alertes: <DashboardAlerts players={players} commissions={commissions} reminders={reminders} />,
     scouting: <DashboardScouting players={players} />,
     focus: focusNode, urgent: urgentNode, contracts: contractsNode, reminders: remindersNode,
     negotiations: negotiationsNode, recent: recentNode, analytics: analyticsNode,
