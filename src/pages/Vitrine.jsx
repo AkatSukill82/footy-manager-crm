@@ -5,6 +5,22 @@ import {
   Newspaper, CheckCircle2, ArrowRight, Loader2, ShieldCheck, Sparkles, X,
   TrendingUp, Globe, Zap, ChevronDown, Star, PlayCircle,
 } from "lucide-react";
+import ParticleHero from "@/components/vitrine/ParticleHero";
+
+const PAINS = [
+  "Tu ressaisis chaque fiche joueur à la main",
+  "Tu découvres une fin de contrat… trop tard",
+  "Tu négocies un transfert sans connaître ta vraie marge",
+  "Tes infos sont éparpillées dans 10 fichiers Excel",
+  "Un concurrent signe le joueur que tu suivais",
+];
+const GAINS = [
+  "Les fiches se remplissent seules depuis 4 sources",
+  "Les alertes te préviennent avant chaque échéance",
+  "Le simulateur FIFA chiffre net joueur, coût club et ta commission",
+  "Tout est centralisé et partagé avec ton équipe en temps réel",
+  "Tu repères les pépites et tu signes avant les autres",
+];
 
 const VIDEO_HERO = "https://assets.mixkit.co/videos/17398/17398-720.mp4";   // stade vue aérienne
 const VIDEO_CTA  = "https://assets.mixkit.co/videos/9660/9660-720.mp4";     // terrain de foot
@@ -98,52 +114,41 @@ export default function Vitrine() {
         </div>
       </header>
 
-      {/* HERO */}
-      <section className="relative min-h-[100svh] flex items-center justify-center overflow-hidden">
-        <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover opacity-40">
-          <source src={VIDEO_HERO} type="video/mp4" />
-        </video>
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0e1a]/70 via-[#0a0e1a]/60 to-[#0a0e1a]" />
-        <div className="absolute -top-40 -left-40 w-[40rem] h-[40rem] bg-emerald-500/20 blur-[120px] rounded-full" />
-        <div className="relative max-w-4xl mx-auto px-5 text-center pt-20">
+      {/* HERO — animation particules + copy de vente */}
+      <section className="relative min-h-[100svh] flex flex-col justify-end overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0e1a] via-[#0a1410] to-[#0a0e1a]" />
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[50rem] h-[50rem] bg-emerald-500/15 blur-[140px] rounded-full" />
+        <ParticleHero />
+        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-[#0a0e1a] via-[#0a0e1a]/85 to-transparent" />
+        <div className="relative max-w-4xl mx-auto px-5 text-center pb-16 md:pb-24">
           <Reveal>
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-white/10 border border-white/15 rounded-full px-3.5 py-1.5 mb-7 backdrop-blur">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" /> Le système d'exploitation des agents de football
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-white/10 border border-white/15 rounded-full px-3.5 py-1.5 mb-6 backdrop-blur">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" /> Conçu pour les agents qui veulent prendre l'avantage
             </span>
           </Reveal>
           <Reveal delay={80}>
-            <h1 className="text-5xl md:text-7xl font-black leading-[1.05] tracking-tight">
-              Gère ta carrière d'agent<br />
-              <span className="bg-gradient-to-r from-emerald-300 via-emerald-400 to-teal-300 bg-clip-text text-transparent">comme les plus grands.</span>
+            <h1 className="text-5xl md:text-7xl font-black leading-[1.04] tracking-tight">
+              Repère, chiffre et signe<br />
+              <span className="bg-gradient-to-r from-emerald-300 via-emerald-400 to-teal-300 bg-clip-text text-transparent">avant tout le monde.</span>
             </h1>
           </Reveal>
           <Reveal delay={160}>
-            <p className="mt-7 text-lg md:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
-              Données joueurs en direct, simulateur de transfert FIFA, finance, recrutement et collaboration — <span className="text-white font-medium">tout dans un seul outil.</span> Ce que les autres CRM n'ont pas.
+            <p className="mt-6 text-lg md:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
+              Pendant que les autres ressaisissent leurs données à la main et ratent des fins de contrat, toi tu <span className="text-white font-medium">pilotes tes joueurs, simules tes transferts et suis ta rentabilité</span> — dans un seul outil.
             </p>
           </Reveal>
           <Reveal delay={240}>
-            <div className="mt-10 flex items-center justify-center gap-3 flex-wrap">
+            <div className="mt-9 flex items-center justify-center gap-3 flex-wrap">
               <button onClick={() => scrollToForm()} className="group bg-emerald-500 hover:bg-emerald-400 text-[#06210f] rounded-xl px-7 py-3.5 font-bold inline-flex items-center gap-2 transition shadow-xl shadow-emerald-500/30">
-                Demander un accès <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                Prendre l'avantage maintenant <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </button>
-              <a href="#features" className="border border-white/20 hover:bg-white/10 rounded-xl px-7 py-3.5 font-semibold inline-flex items-center gap-2 transition backdrop-blur">
-                <PlayCircle className="w-4 h-4" /> Découvrir
+              <a href="#pricing" className="border border-white/20 hover:bg-white/10 rounded-xl px-7 py-3.5 font-semibold inline-flex items-center gap-2 transition backdrop-blur">
+                Voir les tarifs
               </a>
             </div>
           </Reveal>
-          <Reveal delay={340}>
-            <div className="mt-16 grid grid-cols-3 max-w-lg mx-auto gap-4 text-center">
-              {[["4", "sources de data"], ["8+", "modules métier"], ["FIFA", "simulateur intégré"]].map(([n, l]) => (
-                <div key={l}>
-                  <div className="text-3xl md:text-4xl font-black text-emerald-400">{n}</div>
-                  <div className="text-[11px] uppercase tracking-wider text-slate-400 mt-1">{l}</div>
-                </div>
-              ))}
-            </div>
-          </Reveal>
         </div>
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-slate-400 animate-bounce"><ChevronDown className="w-5 h-5" /></div>
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-slate-500 animate-bounce"><ChevronDown className="w-5 h-5" /></div>
       </section>
 
       {/* SOURCES strip */}
@@ -153,6 +158,39 @@ export default function Vitrine() {
           <div className="flex items-center gap-6 sm:gap-10 flex-wrap justify-center">
             {SOURCES.map((s) => <span key={s} className="text-slate-300 font-semibold tracking-tight">{s}</span>)}
           </div>
+        </div>
+      </section>
+
+      {/* PAIN → SOLUTION */}
+      <section className="max-w-6xl mx-auto px-5 py-24 md:py-28">
+        <Reveal>
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <span className="text-emerald-400 text-sm font-semibold uppercase tracking-widest">Le constat</span>
+            <h2 className="text-4xl md:text-5xl font-black mt-3 tracking-tight leading-tight">Le métier a changé.<br />Tes outils, non ?</h2>
+            <p className="mt-4 text-slate-400 text-lg">Chaque jour sans le bon outil, c'est une info qui te manque — et un deal qui part chez un autre.</p>
+          </div>
+        </Reveal>
+        <div className="grid md:grid-cols-2 gap-5">
+          <Reveal>
+            <div className="h-full rounded-3xl border border-red-500/20 bg-red-500/[0.04] p-7">
+              <h3 className="font-bold text-red-300 mb-5 flex items-center gap-2"><X className="w-5 h-5" /> Sans outil dédié</h3>
+              <ul className="space-y-3.5">
+                {PAINS.map((p) => (
+                  <li key={p} className="flex items-start gap-3 text-slate-400"><X className="w-4 h-4 text-red-400/70 flex-shrink-0 mt-0.5" /> {p}</li>
+                ))}
+              </ul>
+            </div>
+          </Reveal>
+          <Reveal delay={120}>
+            <div className="h-full rounded-3xl border border-emerald-500/30 bg-emerald-500/[0.05] p-7 shadow-2xl shadow-emerald-500/5">
+              <h3 className="font-bold text-emerald-300 mb-5 flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> Avec Football Data Management</h3>
+              <ul className="space-y-3.5">
+                {GAINS.map((g) => (
+                  <li key={g} className="flex items-start gap-3 text-slate-200"><CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" /> {g}</li>
+                ))}
+              </ul>
+            </div>
+          </Reveal>
         </div>
       </section>
 
