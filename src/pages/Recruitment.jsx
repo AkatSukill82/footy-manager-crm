@@ -10,6 +10,7 @@ import MajorPlayerForm from "../components/recruitment/MajorPlayerForm";
 import MinorPlayerForm from "../components/recruitment/MinorPlayerForm";
 import RecruitmentPipeline from "../components/recruitment/RecruitmentPipeline";
 import ImportTransfermarkt from "../components/recruitment/ImportTransfermarkt";
+import RecruitmentScoringConfig from "../components/recruitment/RecruitmentScoringConfig";
 import ActivityLogList from "@/components/activity/ActivityLogList";
 import { useRecruitment } from "../lib/useRecruitment";
 import { caseToDealInputs } from "../lib/recruitmentScoring";
@@ -43,9 +44,12 @@ export default function RecruitmentPage() {
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {/* Header */}
-        <div className="min-w-0">
-          <h1 className="text-2xl md:text-4xl font-bold text-slate-900 flex items-center gap-2"><Search className="w-7 h-7" /> Recrutement</h1>
-          <p className="text-slate-500 text-sm mt-0.5 hidden md:block">Identifier, qualifier, contacter et suivre des joueurs — avec scoring, conformité et CRM.</p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-2xl md:text-4xl font-bold text-slate-900 flex items-center gap-2"><Search className="w-7 h-7" /> Recrutement</h1>
+            <p className="text-slate-500 text-sm mt-0.5 hidden md:block">Identifier, qualifier, contacter et suivre des joueurs — avec scoring, conformité et CRM.</p>
+          </div>
+          <div className="flex-shrink-0"><RecruitmentScoringConfig /></div>
         </div>
 
         {/* Tabs */}

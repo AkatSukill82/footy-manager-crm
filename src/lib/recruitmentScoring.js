@@ -67,11 +67,32 @@ export function scoreMajor(notes = {}) {
   return { total, breakdown };
 }
 
-// Libellé "tier" du score final (§7).
-export function scoreTier(total) {
-  if (total >= 16) return { key: "priority", label: "Priorité A", color: "green" };
-  if (total >= 13) return { key: "contact",  label: "Contact (après validation)", color: "blue" };
-  if (total >= 9)  return { key: "watch",    label: "Observation / watchlist", color: "amber" };
+// ── Seuils de décision CONFIGURABLES (§8/§19 : critères pas figés) ───────────
+// Le score reste /18 (6 critères × 3). Les seuils sont éditables et stockés en
+// localStorage → scoreTier/deriveStatus s'y réfèrent automatiquement.
+export const SCORE_MAX = MAJOR_CRITERIA.length * 3; // 18
+const TIERS_KEY = "fdm_recruit_tiers";
+const DEFAULT_TIERS = { priority: 16, contact: 13, watch: 9 };
+
+export function getTiers() {
+  try {
+    const t = { ...DEFAULT_TIERS, ...JSON.parse(localStorage.getItem(TIERS_KEY) || "{}") };
+    // garde-fou : ordonné et borné
+    return {
+      priority: clampInt(t.priority, 1, SCORE_MAX),
+      contact:  clampInt(t.contact, 1, SCORE_MAX),
+      watch:    clampInt(t.watch, 0, SCORE_MAX),
+    };
+  } catch { return DEFAULT_TIERS; }
+}
+export function setTiers(t) { try { localStorage.setItem(TIERS_KEY, JSON.stringify(t)); } catch { /* ignore */ } }
+export function resetTiers() { try { localStorage.removeItem(TIERS_KEY); } catch { /* ignore */ } }
+
+// Libellé "tier" du score final (§7) — seuils configurables.
+export function scoreTier(total, tiers = getTiers()) {
+  if (total >= tiers.priority) return { key: "priority", label: "Priorité A", color: "green" };
+  if (total >= tiers.contact)  return { key: "contact",  label: "Contact (après validation)", color: "blue" };
+  if (total >= tiers.watch)    return { key: "watch",    label: "Observation / watchlist", color: "amber" };
   return { key: "abandon", label: "Abandon", color: "slate" };
 }
 
@@ -110,13 +131,13 @@ export function compliance(c = {}) {
 }
 
 // ── Statut CRM dérivé (§7 pseudo-code + §17) ─────────────────────────────────
-export function deriveStatus({ is_minor, score, compliance_status, minor_requirements_ok }) {
+export function deriveStatus({ is_minor, score, compliance_status, minor_requirements_ok }, tiers = getTiers()) {
   if (is_minor) {
     return score >= 14 && minor_requirements_ok ? "monitor_high" : "monitor";
   }
-  if (score >= 16 && compliance_status === "green") return "contact_ready";
-  if (score >= 13) return "qualified"; // contact après validation agent FIFA
-  if (score >= 9) return "watchlist";
+  if (score >= tiers.priority && compliance_status === "green") return "contact_ready";
+  if (score >= tiers.contact) return "qualified"; // contact après validation agent FIFA
+  if (score >= tiers.watch) return "watchlist";
   return "closed_lost"; // abandon
 }
 
