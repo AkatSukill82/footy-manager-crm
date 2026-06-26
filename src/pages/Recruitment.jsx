@@ -11,7 +11,6 @@ import MinorPlayerForm from "../components/recruitment/MinorPlayerForm";
 import RecruitmentPipeline from "../components/recruitment/RecruitmentPipeline";
 import ImportTransfermarkt from "../components/recruitment/ImportTransfermarkt";
 import RecruitmentScoringConfig from "../components/recruitment/RecruitmentScoringConfig";
-import ProspectFinder from "../components/recruitment/ProspectFinder";
 import ActivityLogList from "@/components/activity/ActivityLogList";
 import { useRecruitment } from "../lib/useRecruitment";
 import { caseToDealInputs } from "../lib/recruitmentScoring";
@@ -56,7 +55,6 @@ export default function RecruitmentPage() {
 
         {tab === "new" && !pathway && (
           <>
-            <ProspectFinder />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {PATHWAYS.map((p) => (
                 <button key={p.id} onClick={() => { setEditCase(null); setPathway(p.id); }} className={`text-left rounded-2xl border-2 bg-white p-5 transition-all shadow-sm ${p.accent}`}>
