@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { UserCheck, Baby, Building2, ArrowRightLeft, Columns, ArrowLeft, Save, Search } from "lucide-react";
+import { UserCheck, Baby, Building2, ArrowRightLeft, ArrowLeft, Save, Search, CheckCircle2 } from "lucide-react";
 import MajorPlayerForm from "../components/recruitment/MajorPlayerForm";
 import MinorPlayerForm from "../components/recruitment/MinorPlayerForm";
 import RecruitmentPipeline from "../components/recruitment/RecruitmentPipeline";
@@ -29,11 +29,19 @@ export default function RecruitmentPage() {
   const [tab, setTab] = useState("new");
   const [pathway, setPathway] = useState(null);
   const [editCase, setEditCase] = useState(null);
+  const [savedMsg, setSavedMsg] = useState(null);
 
   const resetForm = () => { setPathway(null); setEditCase(null); };
   const handleSimulate = (c) => navigate(createPageUrl("TransferManagement"), { state: { dealPrefill: caseToDealInputs(c) } });
   const handleSave = (data) => {
-    save.mutate(data, { onSuccess: () => { resetForm(); setTab("pipeline"); } });
+    save.mutate(data, {
+      onSuccess: () => {
+        resetForm();
+        setTab("new");
+        setSavedMsg(data?.name || "Dossier enregistré");
+        setTimeout(() => setSavedMsg(null), 5000);
+      },
+    });
   };
   const handleEdit = (c) => { setEditCase(c); setPathway(c.pathway); setTab("new"); };
 
@@ -52,6 +60,11 @@ export default function RecruitmentPage() {
           <div className="flex-shrink-0"><RecruitmentScoringConfig /></div>
         </div>
 
+        {savedMsg && (
+          <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800 rounded-xl px-4 py-2.5 text-sm">
+            <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> Enregistré : <b>{savedMsg}</b>
+          </div>
+        )}
 
         {tab === "new" && !pathway && (
           <>
