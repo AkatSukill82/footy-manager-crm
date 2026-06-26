@@ -52,6 +52,10 @@
       "type": "string",
       "description": "ID de la simulation de transfert source (si envoyé depuis le simulateur)"
     },
+    "agent_beneficiaire": {
+      "type": "string",
+      "description": "Agent / partenaire bénéficiaire ou concerné par la ligne (pour la vue par agent / splits)"
+    },
     "montant_operation": {
       "type": "number",
       "description": "Montant de l'opération sous-jacente en M€ (montant du transfert / contrat)"

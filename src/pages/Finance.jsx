@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Wallet, Plus, Loader2, ArrowDownLeft, ArrowUpRight, Scale,
-  Pencil, Trash2, FileDown, FileText, Users, List, FlaskConical, CheckCircle2,
+  Pencil, Trash2, FileDown, FileText, Users, List, FlaskConical, CheckCircle2, Briefcase,
 } from "lucide-react";
 
 // ── Référentiels ──────────────────────────────────────────────────────────────
@@ -51,7 +51,7 @@ function EntryForm({ open, onClose, onSave, initial, players, saving }) {
   const [f, setF] = useState(() => initial || {
     sens: "entree", nature: "projection", titre: "", player_id: "", player_nom: "", club: "",
     type: "transfert", montant_operation: "", taux: "", montant: "", devise: "EUR",
-    statut: "a_facturer", date_echeance: "", date_paiement: "", notes: "",
+    statut: "a_facturer", date_echeance: "", date_paiement: "", notes: "", agent_beneficiaire: "",
   });
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e?.target ? e.target.value : e }));
   const sortie = f.sens === "sortie";
@@ -140,9 +140,15 @@ function EntryForm({ open, onClose, onSave, initial, players, saving }) {
             </div>
           </div>
 
-          <div>
-            <Label className="text-xs">Club</Label>
-            <Input value={f.club} onChange={set("club")} placeholder="Club concerné" />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Club</Label>
+              <Input value={f.club} onChange={set("club")} placeholder="Club concerné" />
+            </div>
+            <div>
+              <Label className="text-xs">Agent / partenaire</Label>
+              <Input value={f.agent_beneficiaire || ""} onChange={set("agent_beneficiaire")} placeholder="Bénéficiaire / split" />
+            </div>
           </div>
 
           {!sortie && (
@@ -355,6 +361,19 @@ export default function FinancePage() {
       .sort((a, b) => a.solde - b.solde); // les moins rentables en premier
   }, [filtered]);
 
+  // Agrégat par agent / partenaire (splits, soldes).
+  const perAgent = useMemo(() => {
+    const map = {};
+    for (const c of filtered) {
+      const name = (c.agent_beneficiaire || "").trim() || "— Sans agent";
+      const row = map[name] || (map[name] = { key: name, name, entree: 0, sortie: 0, n: 0 });
+      if (isSortie(c)) row.sortie += Number(c.montant) || 0;
+      else row.entree += Number(c.montant) || 0;
+      row.n++;
+    }
+    return Object.values(map).map((r) => ({ ...r, solde: r.entree - r.sortie })).sort((a, b) => b.entree - a.entree);
+  }, [filtered]);
+
   const sub = `${fSens === "tous" ? "Entrées + sorties" : fSens === "sortie" ? "Sorties" : "Entrées"} · ${fNature === "tous" ? "Réel + projection" : fNature === "reel" ? "Réel" : "Projection"}`;
   const exportAll = () => downloadCSV(`finance_${todayISO()}.csv`, filtered);
   const exportAllPDF = () => exportPDF("Finance — toutes transactions", filtered, sub);
@@ -403,6 +422,7 @@ export default function FinancePage() {
           <div className="bg-white border border-slate-200 rounded-lg p-1 flex gap-1">
             <button onClick={() => setView("global")} className={`text-xs px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5 ${view === "global" ? "bg-slate-900 text-white" : "text-slate-500"}`}><List className="w-3.5 h-3.5" /> Global</button>
             <button onClick={() => setView("players")} className={`text-xs px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5 ${view === "players" ? "bg-slate-900 text-white" : "text-slate-500"}`}><Users className="w-3.5 h-3.5" /> Par joueur</button>
+            <button onClick={() => setView("agents")} className={`text-xs px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5 ${view === "agents" ? "bg-slate-900 text-white" : "text-slate-500"}`}><Briefcase className="w-3.5 h-3.5" /> Par agent</button>
           </div>
           <div className="flex items-center gap-1 ml-auto">
             {[["tous", "Tout"], ["reel", "Réel"], ["projection", "Projection"]].map(([k, l]) => (
@@ -448,6 +468,28 @@ export default function FinancePage() {
                         <button onClick={() => exportPlayerPDF(r)} title="Export joueur (PDF — FIFA)" className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"><FileText className="w-4 h-4" /></button>
                       </div>
                     </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div></CardContent></Card>
+        ) : view === "agents" ? (
+          /* ── Vue par agent / partenaire ── */
+          <Card><CardContent className="p-0"><div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50"><tr className="text-xs text-slate-500">
+                <th className="text-left px-4 py-2.5 font-medium">Agent / partenaire</th>
+                <th className="text-right px-3 py-2.5 font-medium">Commissions (entrées)</th>
+                <th className="text-right px-3 py-2.5 font-medium">Sorties / splits</th>
+                <th className="text-right px-3 py-2.5 font-medium">Solde</th>
+              </tr></thead>
+              <tbody>
+                {perAgent.map((r) => (
+                  <tr key={r.key} className="border-t border-slate-50 hover:bg-slate-50/60">
+                    <td className="px-4 py-2.5 font-medium text-slate-800">{r.name}<span className="text-[11px] text-slate-400 font-normal"> · {r.n} ligne{r.n > 1 ? "s" : ""}</span></td>
+                    <td className="px-3 py-2.5 text-right text-green-700">{fmtMoney(r.entree)}</td>
+                    <td className="px-3 py-2.5 text-right text-red-600">{fmtMoney(r.sortie)}</td>
+                    <td className={`px-3 py-2.5 text-right font-bold ${r.solde >= 0 ? "text-green-700" : "text-red-600"}`}>{fmtSigned(r.solde)}</td>
                   </tr>
                 ))}
               </tbody>
