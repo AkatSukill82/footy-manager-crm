@@ -99,6 +99,15 @@ const tabCls = (active) =>
   }`;
 
 // Besoin club (V1 simple) — part du besoin de poste pour bâtir une shortlist.
+// ⚠️ Module-level (identité stable) — défini DANS le composant, il remontait
+// l'input à chaque frappe et faisait perdre le focus.
+const ClubFld = ({ label, value, onChange, ph, span }) => (
+  <div className={span ? "sm:col-span-2" : ""}>
+    <Label className="text-[11px] text-slate-500 mb-1 block">{label}</Label>
+    <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={ph} className="h-9" />
+  </div>
+);
+
 function ClubNeedForm({ initial = null, editId = null, onSave, saving }) {
   const [f, setF] = useState({ club: "", country: "", poste: "", niveau: "", budget: "", notes: "", ...(initial || {}) });
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
@@ -109,18 +118,14 @@ function ClubNeedForm({ initial = null, editId = null, onSave, saving }) {
     status: "long_list", compliance_status: "green", next_action: "Constituer la shortlist de profils compatibles",
     details: JSON.stringify({ ...f }),
   });
-  const Fld = ({ label, k, ph, span }) => (
-    <div className={span ? "sm:col-span-2" : ""}><Label className="text-[11px] text-slate-500 mb-1 block">{label}</Label>
-      <Input value={f[k]} onChange={(e) => set(k, e.target.value)} placeholder={ph} className="h-9" /></div>
-  );
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <Fld label="Club cible" k="club" ph="" />
-        <Fld label="Pays" k="country" ph="" />
-        <Fld label="Poste recherché" k="poste" ph="Ailier droit" />
-        <Fld label="Niveau visé" k="niveau" ph="D1 / D2" />
-        <Fld label="Budget salarial (M€/an)" k="budget" ph="" />
+        <ClubFld label="Club cible" value={f.club} onChange={(v) => set("club", v)} ph="" />
+        <ClubFld label="Pays" value={f.country} onChange={(v) => set("country", v)} ph="" />
+        <ClubFld label="Poste recherché" value={f.poste} onChange={(v) => set("poste", v)} ph="Ailier droit" />
+        <ClubFld label="Niveau visé" value={f.niveau} onChange={(v) => set("niveau", v)} ph="D1 / D2" />
+        <ClubFld label="Budget salarial (M€/an)" value={f.budget} onChange={(v) => set("budget", v)} ph="" />
       </div>
       <div><Label className="text-[11px] text-slate-500 mb-1 block">Notes besoin</Label><Textarea value={f.notes} onChange={(e) => set("notes", e.target.value)} rows={3} /></div>
       <div className="flex justify-end"><Button onClick={submit} disabled={saving || !f.club} className="gap-1.5"><Save className="w-4 h-4" /> {editId ? "Mettre à jour" : "Créer le besoin"}</Button></div>
