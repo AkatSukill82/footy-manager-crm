@@ -30,6 +30,13 @@ const posteColors = {
   "Attaquant": "bg-red-100 text-red-800",
 };
 
+// Normalisation par 90 minutes (cahier §10). Sous 90 min jouées → non significatif.
+const p90 = (val, mins) => {
+  const m = Number(mins) || 0;
+  if (m < 90) return "—";
+  return (((Number(val) || 0) / m) * 90).toFixed(2);
+};
+
 const TABLE_ROWS = [
   ["Poste",            p => p.poste || "—"],
   ["Âge",              p => p.age ? `${p.age} ans` : "—"],
@@ -39,9 +46,19 @@ const TABLE_ROWS = [
   ["Taille",           p => p.taille ? `${p.taille} cm` : "—"],
   ["Pied fort",        p => p.pied_fort || "—"],
   ["Matchs",           p => p.matchs_joues ?? "—"],
+  ["Minutes jouées",   p => p.minutes_jouees ?? "—"],
   ["Buts",             p => p.buts ?? "—"],
   ["Passes déc.",      p => p.passes_decisives ?? "—"],
   ["Note moyenne",     p => p.note_moyenne ?? "—"],
+  // ── Par 90 minutes ──
+  ["Buts / 90",            p => p90(p.buts, p.minutes_jouees)],
+  ["Passes déc. / 90",     p => p90(p.passes_decisives, p.minutes_jouees)],
+  ["Buts + passes / 90",   p => p90((Number(p.buts) || 0) + (Number(p.passes_decisives) || 0), p.minutes_jouees)],
+  ["Tirs / 90",            p => p90(p.tirs, p.minutes_jouees)],
+  ["Passes clés / 90",     p => p90(p.passes_cles, p.minutes_jouees)],
+  ["Dribbles réussis / 90",p => p90(p.dribbles_reussis, p.minutes_jouees)],
+  ["xG / 90",              p => p90(p.xg, p.minutes_jouees)],
+  ["xA / 90",              p => p90(p.xa, p.minutes_jouees)],
   ["Fin de contrat",   p => p.contrat_fin || "—"],
 ];
 
