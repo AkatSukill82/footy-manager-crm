@@ -28,28 +28,14 @@ export default function AccessRequestsPage() {
   const approve = async (r) => {
     setBusy(r.id); setNotice(null);
     try {
-      const res = await invokeFn("accessRequest", { action: "setStatut", id: r.id, statut: "valide" });
-      if (!res?.ok) throw new Error(res?.error || "Échec.");
-      // SÉCURITÉ : autorise (allowlist) cet e-mail à créer un compte dans Base44.
-      // Couplé à l'app en mode "sur invitation", seul un e-mail autorisé peut s'inscrire.
-      let allowError = "";
-      try { await base44.users.inviteUser(r.email, "user"); }
-      catch (e) { allowError = e?.message || String(e); }
-      // Envoie l'invitation : lien vers la création de compte, e-mail/nom pré-remplis.
-      const origin = window.location.origin;
-      const params = new URLSearchParams({ email: r.email || "", prenom: r.prenom || "", nom: r.nom || "" });
-      const link = `${origin}/register?${params.toString()}`;
-      await base44.integrations.Core.SendEmail({
-        to: r.email,
-        subject: "Votre accès à Football Data Management",
-        body: `Bonjour ${r.prenom || ""},\n\nVotre demande d'accès a été acceptée 🎉\n\nCréez votre compte en cliquant ici :\n${link}\n\nVotre e-mail (${r.email}) est déjà pré-rempli ; il vous suffit de choisir un mot de passe.\n\nÀ bientôt,\nL'équipe Football Data Management`,
-      });
-      setNotice(allowError
-        ? `Invitation e-mail envoyée à ${r.email}, mais l'autorisation Base44 a échoué : ${allowError}`
-        : `Invitation envoyée à ${r.email} ✓ (accès autorisé)`);
+      await invokeFn("accessRequest", { action: "setStatut", id: r.id, statut: "valide" });
+      // Invitation Base44 : autorise l'e-mail ET lui envoie l'e-mail d'invitation
+      // (Base44 sait écrire aux non-utilisateurs ; SendEmail ne le peut pas).
+      await base44.users.inviteUser(r.email, "user");
+      setNotice(`Invitation envoyée à ${r.email} ✓ — Base44 lui envoie l'e-mail pour créer son compte.`);
       refetch();
     } catch (e) {
-      setNotice(`Validé, mais erreur : ${e?.message || ""}`);
+      setNotice(`Erreur : ${e?.message || ""}`);
       refetch();
     } finally { setBusy(null); }
   };

@@ -75,24 +75,15 @@ export default function ProfilePage() {
     if (!email || !/.+@.+\..+/.test(email)) { setInviteMsg({ type: "err", text: "E-mail invalide." }); return; }
     setInviteBusy(true); setInviteMsg(null);
     try {
-      // 1. Autorise l'e-mail à s'inscrire (allowlist Base44).
-      let allowError = "";
-      try { await base44.users.inviteUser(email, "user"); } catch (e) { allowError = e?.message || String(e); }
-      // 2. Trace l'invitation (validée + formule) dans "Demandes d'accès".
+      // Invitation Base44 : autorise l'e-mail ET envoie l'e-mail d'invitation
+      // au prospect (Base44 sait écrire aux non-utilisateurs, contrairement à SendEmail).
+      await base44.users.inviteUser(email, "user");
+      // Trace l'invitation + la formule choisie (servira à attribuer le plan au compte).
       try { await base44.entities.AccessRequest.create({ email, formule: invitePlan, statut: "valide", message: "Invitation directe (admin)" }); } catch { /* non bloquant */ }
-      // 3. E-mail avec lien /register pré-rempli (e-mail + formule).
-      const origin = window.location.origin;
-      const link = `${origin}/register?${new URLSearchParams({ email, plan: invitePlan }).toString()}`;
-      await base44.integrations.Core.SendEmail({
-        to: email,
-        from_name: "Football Data Management",
-        subject: "Votre accès à Football Data Management",
-        body: `Bonjour,\n\nVous êtes invité(e) à rejoindre Football Data Management — formule ${PLAN_LABEL[invitePlan]}.\n\nCréez votre compte ici :\n${link}\n\nVotre e-mail (${email}) est déjà pré-rempli ; il vous suffit de choisir un mot de passe.\n\nÀ bientôt,\nL'équipe Football Data Management`,
-      });
-      setInviteMsg({ type: "ok", text: allowError ? `E-mail envoyé à ${email}, mais autorisation Base44 échouée : ${allowError}` : `Invitation envoyée à ${email} ✓` });
+      setInviteMsg({ type: "ok", text: `Invitation envoyée à ${email} ✓ — Base44 lui envoie l'e-mail pour créer son compte (formule ${PLAN_LABEL[invitePlan]}).` });
       setInviteEmail("");
     } catch (e) {
-      setInviteMsg({ type: "err", text: e?.message || "Échec de l'envoi." });
+      setInviteMsg({ type: "err", text: e?.message || "Échec de l'invitation." });
     } finally { setInviteBusy(false); }
   };
 
