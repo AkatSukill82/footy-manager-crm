@@ -29,15 +29,19 @@ Deno.serve(async (req) => {
         message: (d.message || "").trim(),
         statut: "en_attente",
       });
-      // Notifie l'admin (best-effort, n'échoue pas si l'intégration n'est pas dispo côté serveur).
+      // Notifie l'admin. On capture le résultat pour pouvoir diagnostiquer si
+      // l'envoi serveur fonctionne (réponse : notified / notifyError).
+      let notified = false, notifyError: string | null = null;
       try {
         await base44.integrations.Core.SendEmail({
           to: "support@football-dm.com",
+          from_name: "Football Data Management",
           subject: `Nouvelle demande d'accès — ${(d.prenom || "")} ${(d.nom || "")}`.trim(),
           body: `Nouvelle demande d'accès FDM :\n\nNom : ${d.prenom || ""} ${d.nom || ""}\nEmail : ${d.email}\nTél : ${d.telephone || "-"}\nSociété : ${d.societe || "-"}\nFormule : ${d.formule || "standard"}\nMessage : ${d.message || "-"}\n\n→ Valide-la dans l'app (Demandes d'accès).`,
         });
-      } catch { /* ignore */ }
-      return Response.json({ ok: true });
+        notified = true;
+      } catch (e: any) { notifyError = e?.message || String(e); }
+      return Response.json({ ok: true, notified, notifyError });
     }
 
     // ── Actions ADMIN ──
