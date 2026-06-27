@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Check, Globe, Briefcase, Building2, Lock, ShieldCheck } from "lucide-react";
+import { User, Check, Globe, Briefcase, Building2, Lock, ShieldCheck, UserPlus, Send, Loader2 } from "lucide-react";
 import { useLanguage } from "../lib/LanguageContext";
 import { t } from "../i18n/translations";
 import { extraTranslations } from "../i18n/extra";
@@ -16,6 +16,7 @@ const LANGUAGES = [
 ];
 
 const ROLE_OPTIONS = ["CEO", "Directeur sportif", "Scout", "Agent", "Analyste", "Recruteur", "Autre"];
+const PLAN_LABEL = { standard: "Standard (50 €)", pro: "Pro (100 €)", surmesure: "Sur-mesure" };
 
 function te(lang, key) {
   const keys = key.split(".");
@@ -34,6 +35,11 @@ export default function ProfilePage() {
   const [roleChoice, setRoleChoice] = useState("");
   const [roleSaved, setRoleSaved] = useState(false);
   const [roleSaving, setRoleSaving] = useState(false);
+  // Invitation directe (admin)
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [invitePlan, setInvitePlan] = useState("standard");
+  const [inviteBusy, setInviteBusy] = useState(false);
+  const [inviteMsg, setInviteMsg] = useState(null);
 
   const { data: user } = useQuery({
     queryKey: ["currentUser"],
@@ -62,6 +68,33 @@ export default function ProfilePage() {
   }, [user, orgFormLoaded]);
 
   const initials = user?.email ? user.email.slice(0, 2).toUpperCase() : "??";
+  const isAdmin = user?.role === "admin";
+
+  const handleInvite = async () => {
+    const email = inviteEmail.trim();
+    if (!email || !/.+@.+\..+/.test(email)) { setInviteMsg({ type: "err", text: "E-mail invalide." }); return; }
+    setInviteBusy(true); setInviteMsg(null);
+    try {
+      // 1. Autorise l'e-mail à s'inscrire (allowlist Base44).
+      let allowError = "";
+      try { await base44.users.inviteUser(email, "user"); } catch (e) { allowError = e?.message || String(e); }
+      // 2. Trace l'invitation (validée + formule) dans "Demandes d'accès".
+      try { await base44.entities.AccessRequest.create({ email, formule: invitePlan, statut: "valide", message: "Invitation directe (admin)" }); } catch { /* non bloquant */ }
+      // 3. E-mail avec lien /register pré-rempli (e-mail + formule).
+      const origin = window.location.origin;
+      const link = `${origin}/register?${new URLSearchParams({ email, plan: invitePlan }).toString()}`;
+      await base44.integrations.Core.SendEmail({
+        to: email,
+        from_name: "Football Data Management",
+        subject: "Votre accès à Football Data Management",
+        body: `Bonjour,\n\nVous êtes invité(e) à rejoindre Football Data Management — formule ${PLAN_LABEL[invitePlan]}.\n\nCréez votre compte ici :\n${link}\n\nVotre e-mail (${email}) est déjà pré-rempli ; il vous suffit de choisir un mot de passe.\n\nÀ bientôt,\nL'équipe Football Data Management`,
+      });
+      setInviteMsg({ type: "ok", text: allowError ? `E-mail envoyé à ${email}, mais autorisation Base44 échouée : ${allowError}` : `Invitation envoyée à ${email} ✓` });
+      setInviteEmail("");
+    } catch (e) {
+      setInviteMsg({ type: "err", text: e?.message || "Échec de l'envoi." });
+    } finally { setInviteBusy(false); }
+  };
 
   const handleSelectLang = (code) => {
     setLang(code);
@@ -124,6 +157,40 @@ export default function ProfilePage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Inviter un utilisateur — réservé à l'administrateur */}
+        {isAdmin && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <UserPlus className="w-4 h-4 text-green-600" />
+              Inviter un utilisateur
+            </CardTitle>
+            <p className="text-xs text-slate-400 mt-1">Saisis l'e-mail, choisis la formule, et envoie l'invitation (lien de création de compte).</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <label className="text-sm text-slate-500 mb-1 block">E-mail</label>
+              <Input type="email" placeholder="nouveau@agent.com" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-sm text-slate-500 mb-1 block">Formule</label>
+              <select value={invitePlan} onChange={e => setInvitePlan(e.target.value)}
+                className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400">
+                <option value="standard">Standard (50 €)</option>
+                <option value="pro">Pro (100 €)</option>
+                <option value="surmesure">Sur-mesure</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <Button onClick={handleInvite} disabled={inviteBusy || !inviteEmail.trim()} className="bg-green-600 hover:bg-green-700">
+                {inviteBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />} Inviter
+              </Button>
+              {inviteMsg && <span className={`text-sm ${inviteMsg.type === "ok" ? "text-green-600" : "text-red-500"}`}>{inviteMsg.text}</span>}
+            </div>
+          </CardContent>
+        </Card>
+        )}
 
         {/* Organisation & Poste — réservé au CEO */}
         {user?.role_metier === "CEO" && (

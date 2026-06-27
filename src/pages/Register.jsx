@@ -57,6 +57,7 @@ export default function Register() {
         await base44.auth.updateMe({
           full_name: `${firstName.trim()} ${lastName.trim()}`.trim() || undefined,
           role_metier: role || undefined,
+          plan: searchParams.get("plan") || undefined,   // formule choisie à l'invitation
         });
       } catch { /* non bloquant */ }
       window.location.href = "/";
