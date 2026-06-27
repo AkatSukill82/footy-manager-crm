@@ -15,6 +15,7 @@ import { useLanguage } from "./lib/LanguageContext";
 import { BRAND_NAME, BRAND_SHORT } from "./lib/brand";
 import { t } from "./i18n/translations";
 import { useQuery } from "@tanstack/react-query";
+import { canAccessPage } from "@/lib/planAccess";
 import GlobalSearch from "./components/ui/GlobalSearch";
 
 // Pages principales — toujours visibles
@@ -114,6 +115,9 @@ export default function Layout({ children, currentPageName }) {
     staleTime: Infinity,
   });
 
+  // Menu filtré selon la formule (Standard masque les pages Pro).
+  const accessibleItems = items.filter(i => canAccessPage(user, i.name));
+
   const initials = user?.email ? user.email.slice(0, 2).toUpperCase() : "??";
 
   return (
@@ -148,7 +152,7 @@ export default function Layout({ children, currentPageName }) {
         {/* Nav items */}
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {/* Core pages — toujours visibles */}
-          {items.filter(i => CORE_PAGES.includes(i.name)).map((item) => {
+          {accessibleItems.filter(i => CORE_PAGES.includes(i.name)).map((item) => {
             const Icon = item.icon;
             const isActive = currentPageName === item.name;
             return (
@@ -170,7 +174,7 @@ export default function Layout({ children, currentPageName }) {
           <div className="pt-1">
             <NavGroup
               label="Outils"
-              items={items.filter(i => TOOLS_PAGES.includes(i.name))}
+              items={accessibleItems.filter(i => TOOLS_PAGES.includes(i.name))}
               currentPageName={currentPageName}
               open={toolsOpen || TOOLS_PAGES.includes(currentPageName)}
               onToggle={() => setToolsOpen(o => !o)}
@@ -180,7 +184,7 @@ export default function Layout({ children, currentPageName }) {
           <div className="pt-1">
             <NavGroup
               label="Avancé"
-              items={items.filter(i => ADVANCED_PAGES.includes(i.name))}
+              items={accessibleItems.filter(i => ADVANCED_PAGES.includes(i.name))}
               currentPageName={currentPageName}
               open={advancedOpen || ADVANCED_PAGES.includes(currentPageName)}
               onToggle={() => setAdvancedOpen(o => !o)}
@@ -286,7 +290,7 @@ export default function Layout({ children, currentPageName }) {
             </div>
 
             <div className="grid grid-cols-3 gap-2 p-4">
-              {items.filter(i => !bottomPrimary.includes(i.name)).map((item) => {
+              {accessibleItems.filter(i => !bottomPrimary.includes(i.name)).map((item) => {
                 const Icon = item.icon;
                 const isActive = currentPageName === item.name;
                 return (
