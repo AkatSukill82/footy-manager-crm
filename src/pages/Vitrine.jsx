@@ -84,6 +84,8 @@ export default function Vitrine() {
     if (formule) setF((s) => ({ ...s, formule }));
     formRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+  // Sélectionne un plan SANS rediriger (met juste à jour le formulaire).
+  const selectPlan = (id) => setF((s) => ({ ...s, formule: id }));
 
   const submit = async (e) => {
     e.preventDefault();
@@ -255,10 +257,16 @@ export default function Vitrine() {
           </div>
         </Reveal>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
-          {PLANS.map((p, i) => (
+          {PLANS.map((p, i) => {
+            const selected = f.formule === p.id;
+            return (
             <Reveal key={p.id} delay={i * 90} className="h-full">
-              <div className={`relative h-full rounded-3xl p-7 flex flex-col transition-all ${p.best ? "bg-gradient-to-b from-emerald-500/15 to-white/[0.03] border-2 border-emerald-500/60 shadow-2xl shadow-emerald-500/10 md:-translate-y-3" : "bg-white/[0.03] border border-white/10 hover:border-white/20"}`}>
-                {p.best && <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-[11px] font-bold bg-emerald-500 text-[#06210f] rounded-full px-4 py-1 shadow-lg flex items-center gap-1"><Star className="w-3 h-3 fill-current" /> POPULAIRE</span>}
+              <div onClick={() => selectPlan(p.id)} role="button" tabIndex={0}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectPlan(p.id); } }}
+                className={`relative h-full rounded-3xl p-7 flex flex-col transition-all cursor-pointer ${selected ? "bg-emerald-500/15 border-2 border-emerald-400 ring-2 ring-emerald-400/40 shadow-2xl shadow-emerald-500/20 md:-translate-y-3" : p.best ? "bg-gradient-to-b from-emerald-500/15 to-white/[0.03] border-2 border-emerald-500/60 shadow-2xl shadow-emerald-500/10 md:-translate-y-3 hover:border-emerald-400" : "bg-white/[0.03] border border-white/10 hover:border-white/30"}`}>
+                {selected
+                  ? <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-[11px] font-bold bg-emerald-400 text-[#06210f] rounded-full px-4 py-1 shadow-lg flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> SÉLECTIONNÉ</span>
+                  : p.best && <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-[11px] font-bold bg-emerald-500 text-[#06210f] rounded-full px-4 py-1 shadow-lg flex items-center gap-1"><Star className="w-3 h-3 fill-current" /> POPULAIRE</span>}
                 <h3 className="font-bold text-xl">{p.title}</h3>
                 <p className="text-sm text-slate-400 mt-0.5">{p.tagline}</p>
                 <div className="mt-5 mb-6 flex items-end gap-1">
@@ -271,12 +279,13 @@ export default function Vitrine() {
                     <li key={j} className="flex items-start gap-2.5 text-sm text-slate-300"><CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" /> {feat}</li>
                   ))}
                 </ul>
-                <button onClick={() => scrollToForm(p.id)} className={`mt-7 rounded-xl px-5 py-3 font-bold transition ${p.best ? "bg-emerald-500 hover:bg-emerald-400 text-[#06210f] shadow-lg shadow-emerald-500/20" : "border border-white/15 hover:bg-white/10"}`}>
-                  {p.id === "surmesure" ? "Demander un devis" : "Choisir cette formule"}
-                </button>
+                <div className={`mt-7 rounded-xl px-5 py-3 font-bold text-center transition ${selected ? "bg-emerald-400 text-[#06210f]" : p.best ? "bg-emerald-500 text-[#06210f]" : "border border-white/15"}`}>
+                  {selected ? "✓ Formule sélectionnée" : p.id === "surmesure" ? "Choisir le sur-mesure" : "Choisir cette formule"}
+                </div>
               </div>
             </Reveal>
-          ))}
+            );
+          })}
         </div>
       </section>
 
