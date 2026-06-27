@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, Navigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,6 +83,12 @@ export default function Register() {
   const handleGoogle = () => {
     base44.auth.loginWithProvider("google", "/");
   };
+
+  // Accès UNIQUEMENT via un lien d'invitation (qui porte ?email=). Sinon, on
+  // renvoie vers la page de demande d'accès — pas d'inscription libre.
+  if (!searchParams.get("email")) {
+    return <Navigate to="/vitrine" replace />;
+  }
 
   if (showOtp) {
     return (
@@ -212,11 +218,10 @@ export default function Register() {
               id="email"
               type="email"
               autoComplete="email"
-              autoFocus
+              readOnly
               placeholder="you@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 h-12"
+              className="pl-10 h-12 bg-muted/40 cursor-not-allowed"
               required
             />
           </div>
