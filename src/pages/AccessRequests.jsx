@@ -30,12 +30,15 @@ export default function AccessRequestsPage() {
     try {
       const res = await invokeFn("accessRequest", { action: "setStatut", id: r.id, statut: "valide" });
       if (!res?.ok) throw new Error(res?.error || "Échec.");
-      // Envoie l'invitation (lien /register) depuis le front.
+      // Envoie l'invitation : lien vers la page de création de compte, avec
+      // e-mail/nom pré-remplis (?email=&prenom=&nom=).
       const origin = window.location.origin;
+      const params = new URLSearchParams({ email: r.email || "", prenom: r.prenom || "", nom: r.nom || "" });
+      const link = `${origin}/register?${params.toString()}`;
       await base44.integrations.Core.SendEmail({
         to: r.email,
         subject: "Votre accès à Football Data Management",
-        body: `Bonjour ${r.prenom || ""},\n\nVotre demande d'accès a été acceptée 🎉\n\nCréez votre compte ici :\n${origin}/register\n\nUtilisez l'adresse ${r.email}.\n\nÀ bientôt,\nL'équipe Football Data Management`,
+        body: `Bonjour ${r.prenom || ""},\n\nVotre demande d'accès a été acceptée 🎉\n\nCréez votre compte en cliquant ici :\n${link}\n\nVotre e-mail (${r.email}) est déjà pré-rempli ; il vous suffit de choisir un mot de passe.\n\nÀ bientôt,\nL'équipe Football Data Management`,
       });
       setNotice(`Invitation envoyée à ${r.email} ✓`);
       refetch();

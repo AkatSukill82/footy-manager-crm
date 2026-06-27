@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,10 +13,12 @@ import { toast } from "@/components/ui/use-toast";
 const ROLE_OPTIONS = ["CEO", "Directeur sportif", "Scout", "Agent", "Analyste", "Recruteur", "Autre"];
 
 export default function Register() {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  // Pré-remplissage depuis le lien d'invitation (?email=&prenom=&nom=).
+  const [searchParams] = useSearchParams();
+  const [firstName, setFirstName] = useState(searchParams.get("prenom") || "");
+  const [lastName, setLastName] = useState(searchParams.get("nom") || "");
   const [role, setRole] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(searchParams.get("email") || "");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
