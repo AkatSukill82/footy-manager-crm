@@ -61,7 +61,7 @@ const PLANS = [
     feats: ["Fiches joueurs enrichies (4 sources)", "Recrutement, scoring & CRM", "Agenda, alertes & journal", "Travail en équipe", "Comparateur de joueurs"] },
   { id: "pro", price: "100", title: "Pro", tagline: "L'arsenal complet.", best: true,
     feats: ["Tout le Standard", "Simulateur de transfert FIFA complet", "Finance & rentabilité + exports PDF/Excel", "Projection d'effectif par formation", "Stats avancées par 90 min"] },
-  { id: "surmesure", price: "150", title: "Sur-mesure", tagline: "Ton outil, tes règles.", best: false,
+  { id: "surmesure", price: null, priceLabel: "Sur devis", title: "Sur-mesure", tagline: "Ton outil, tes règles.", best: false,
     feats: ["Tout le Pro", "Application modifiable de A à Z", "Fonctionnalités développées sur demande", "Accompagnement & support dédiés", "Devis personnalisé"] },
 ];
 
@@ -88,6 +88,10 @@ export default function Vitrine() {
   const submit = async (e) => {
     e.preventDefault();
     if (!f.email.trim()) return;
+    if (f.formule === "surmesure" && !f.message.trim()) {
+      setErr("Pour une offre sur-mesure, décris ton besoin dans le message (obligatoire pour établir un devis).");
+      setState("error"); return;
+    }
     setState("sending"); setErr(null);
     try {
       const res = await invokeFn("accessRequest", { action: "submit", data: f });
@@ -258,8 +262,9 @@ export default function Vitrine() {
                 <h3 className="font-bold text-xl">{p.title}</h3>
                 <p className="text-sm text-slate-400 mt-0.5">{p.tagline}</p>
                 <div className="mt-5 mb-6 flex items-end gap-1">
-                  <span className="text-5xl font-black tracking-tight">{p.price}</span>
-                  <span className="text-slate-400 mb-1.5">€ / mois</span>
+                  {p.price
+                    ? (<><span className="text-5xl font-black tracking-tight">{p.price}</span><span className="text-slate-400 mb-1.5">€ / mois</span></>)
+                    : (<span className="text-4xl font-black tracking-tight">{p.priceLabel}</span>)}
                 </div>
                 <ul className="space-y-3 flex-1">
                   {p.feats.map((feat, j) => (
@@ -326,15 +331,17 @@ export default function Vitrine() {
                 <select value={f.formule} onChange={set("formule")} className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white outline-none focus:border-emerald-500/50">
                   <option className="bg-[#0a0e1a]" value="standard">Standard — 50 €/mois</option>
                   <option className="bg-[#0a0e1a]" value="pro">Pro — 100 €/mois</option>
-                  <option className="bg-[#0a0e1a]" value="surmesure">Sur-mesure — devis</option>
+                  <option className="bg-[#0a0e1a]" value="surmesure">Sur-mesure — sur devis</option>
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-slate-400 mb-1.5 block">Message (optionnel)</label>
-                <textarea value={f.message} onChange={set("message")} rows={3} className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white outline-none focus:border-emerald-500/50" placeholder="Ton activité, ton besoin…" />
+                <label className="text-xs font-medium text-slate-400 mb-1.5 block">
+                  Message {f.formule === "surmesure" ? <span className="text-emerald-400">* (obligatoire pour le sur-mesure)</span> : "(optionnel)"}
+                </label>
+                <textarea value={f.message} onChange={set("message")} rows={3} required={f.formule === "surmesure"} className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white outline-none focus:border-emerald-500/50" placeholder={f.formule === "surmesure" ? "Décris ton besoin : fonctionnalités souhaitées, volume, intégrations…" : "Ton activité, ton besoin…"} />
               </div>
               {err && <p className="text-sm text-red-400">{err}</p>}
-              <button type="submit" disabled={state === "sending" || !f.email.trim()} className="w-full bg-emerald-500 hover:bg-emerald-400 text-[#06210f] rounded-xl px-4 py-3.5 font-bold inline-flex items-center justify-center gap-2 disabled:opacity-60 transition shadow-lg shadow-emerald-500/20">
+              <button type="submit" disabled={state === "sending" || !f.email.trim() || (f.formule === "surmesure" && !f.message.trim())} className="w-full bg-emerald-500 hover:bg-emerald-400 text-[#06210f] rounded-xl px-4 py-3.5 font-bold inline-flex items-center justify-center gap-2 disabled:opacity-60 transition shadow-lg shadow-emerald-500/20">
                 {state === "sending" ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />} Envoyer ma demande
               </button>
               <p className="text-[11px] text-slate-500 flex items-center justify-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> Accès sur invitation après validation.</p>
