@@ -160,9 +160,9 @@ export default function Login() {
             </div>
 
             <p className="mt-4 text-center text-xs text-slate-400">
-              L'accès se fait sur invitation. Besoin d'un compte ?{" "}
+              {lang === "en" ? "Access is by invitation. Need an account? " : lang === "es" ? "El acceso es por invitación. ¿Necesitas una cuenta? " : "L'accès se fait sur invitation. Besoin d'un compte ? "}
               <Link to="/vitrine" className="text-slate-700 font-semibold hover:underline">
-                Demander un accès
+                {lang === "en" ? "Request access" : lang === "es" ? "Solicitar acceso" : "Demander un accès"}
               </Link>
             </p>
           </div>
