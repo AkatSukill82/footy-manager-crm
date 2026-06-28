@@ -9,7 +9,6 @@ import { UserCheck, Baby, Building2, ArrowRightLeft, ArrowLeft, Save, Search, Ch
 import MajorPlayerForm from "../components/recruitment/MajorPlayerForm";
 import MinorPlayerForm from "../components/recruitment/MinorPlayerForm";
 import RecruitmentPipeline from "../components/recruitment/RecruitmentPipeline";
-import ImportTransfermarkt from "../components/recruitment/ImportTransfermarkt";
 import RecruitmentScoringConfig from "../components/recruitment/RecruitmentScoringConfig";
 import ActivityLogList from "@/components/activity/ActivityLogList";
 import { useRecruitment } from "../lib/useRecruitment";
@@ -77,7 +76,6 @@ export default function RecruitmentPage() {
                 </button>
               ))}
             </div>
-            <ImportTransfermarkt onImport={(rows) => rows.forEach((row) => save.mutate(row))} />
           </>
         )}
 

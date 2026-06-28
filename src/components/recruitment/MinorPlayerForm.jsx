@@ -131,11 +131,6 @@ export default function MinorPlayerForm({ initial = null, editId = null, onSave,
         </div>
       </div>
 
-      <Section title="Suivi CRM" cols="md:grid-cols-2">
-        <Txt label="Responsable" value={f.owner} onChange={(v) => set("owner", v)} ph="" />
-        <Txt label="Prochaine action" value={f.next_action} onChange={(v) => set("next_action", v)} ph="" />
-      </Section>
-
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={saving || !f.name} className="gap-1.5"><Save className="w-4 h-4" /> Enregistrer la fiche mineur</Button>
       </div>

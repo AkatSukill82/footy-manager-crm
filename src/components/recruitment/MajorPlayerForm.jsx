@@ -203,30 +203,6 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
         <Sel label="Production (apprécation)" value={f.production_note} onChange={(v) => set("production_note", v)} options={[{ v: "0", l: "Faible" }, { v: "1", l: "Moyen" }, { v: "2", l: "Bon" }, { v: "3", l: "Élite pour l'âge" }]} />
       </Section>
 
-      {/* Agence & marché */}
-      <Section title="Agence & marché">
-        <Sel label="Situation agence" value={f.agency_status} onChange={(v) => set("agency_status", v)} options={[{ v: "none", l: "Sans agent" }, { v: "small", l: "Petite agence" }, { v: "large", l: "Grande agence" }, { v: "unknown", l: "Incertaine" }]} />
-        <Txt label="Nom agent / agence" value={f.agent_name} onChange={(v) => set("agent_name", v)} ph="" />
-        <Sel label="Mandat verrouillé ?" value={f.mandate_locked ? "1" : "0"} onChange={(v) => set("mandate_locked", v === "1")} options={[{ v: "0", l: "Non / inconnu" }, { v: "1", l: "Oui (exclusif confirmé)" }]} />
-        <Num label="Nb clubs cibles" value={f.nb_clubs} onChange={(v) => set("nb_clubs", v)} ph="5" />
-        <div className="sm:col-span-2"><Txt label="Clubs cibles" value={f.target_clubs} onChange={(v) => set("target_clubs", v)} ph="Club A, Club B, …" /></div>
-      </Section>
-
-      {/* Contact */}
-      <Section title="Contact">
-        <Txt label="Instagram" value={f.instagram} onChange={(v) => set("instagram", v)} ph="@handle" />
-        <Sel label="IG validé ?" value={f.instagram_validated ? "1" : "0"} onChange={(v) => set("instagram_validated", v === "1")} options={[{ v: "0", l: "Non" }, { v: "1", l: "Oui (photo/club/bio)" }]} />
-        <Sel label="Validé par agent FIFA ?" value={f.fifa_agent_validated ? "1" : "0"} onChange={(v) => set("fifa_agent_validated", v === "1")} options={[{ v: "0", l: "Non" }, { v: "1", l: "Oui" }]} />
-        <Sel label="Langue" value={f.language} onChange={(v) => set("language", v)} options={[{ v: "FR", l: "Français" }, { v: "EN", l: "Anglais" }]} />
-      </Section>
-
-      {/* CRM */}
-      <Section title="Suivi CRM">
-        <Txt label="Responsable" value={f.owner} onChange={(v) => set("owner", v)} ph="" />
-        <Txt label="Prochaine action" value={f.next_action} onChange={(v) => set("next_action", v)} ph="" />
-        <F label="Date de relance"><Input type="date" value={f.next_action_date} onChange={(e) => set("next_action_date", e.target.value)} className="h-9" /></F>
-      </Section>
-
       {/* ── RÉCAP / SCORING / CONFORMITÉ ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t border-slate-200">
         <div className="rounded-xl border border-slate-200 p-4">
