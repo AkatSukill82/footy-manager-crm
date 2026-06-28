@@ -14,6 +14,7 @@ import {
   Pencil, Trash2, FileDown, FileText, Users, List, FlaskConical, CheckCircle2, Briefcase,
 } from "lucide-react";
 import QuickImport from "../components/shared/QuickImport";
+import { useLanguage } from "../lib/LanguageContext";
 
 // ── Référentiels ──────────────────────────────────────────────────────────────
 
@@ -226,61 +227,66 @@ function Kpi({ icon: Icon, label, value, sub, color }) {
 
 // ── Export CSV ───────────────────────────────────────────────────────────────
 
-function toCSV(rows) {
-  const headers = ["Date", "Sens", "Nature", "Catégorie", "Libellé", "Joueur", "Club", "Montant (€)", "Devise"];
+const FIN_LOC = { fr: "fr-FR", en: "en-GB", es: "es-ES" };
+const FIN_L = {
+  fr: { date: "Date", sens: "Sens", nature: "Nature", cat: "Catégorie", lib: "Libellé", joueur: "Joueur", club: "Club", montant: "Montant", devise: "Devise", sortie: "Sortie", entree: "Entrée", reel: "Réel", projection: "Projection", generatedOn: "Généré le", totalIn: "Total entrées (gains)", totalOut: "Total sorties (dépenses)", solde: "Solde net", footer: "Football Data Management — document financier. « Projection » = estimé/prévu, « Réel » = réalisé. À usage interne / comptable.", allTitle: "Finance — toutes transactions", perPlayer: "Détail par joueur", subIn: "Entrées", subOut: "Sorties", subBoth: "Entrées + sorties", subReelN: "Réel", subProjN: "Projection", subBothN: "Réel + projection" },
+  en: { date: "Date", sens: "Type", nature: "Status", cat: "Category", lib: "Label", joueur: "Player", club: "Club", montant: "Amount", devise: "Currency", sortie: "Expense", entree: "Income", reel: "Actual", projection: "Projection", generatedOn: "Generated on", totalIn: "Total income (gains)", totalOut: "Total expenses", solde: "Net balance", footer: "Football Data Management — financial document. \"Projection\" = estimated, \"Actual\" = realized. Internal / accounting use.", allTitle: "Finance — all transactions", perPlayer: "Per-player detail", subIn: "Income", subOut: "Expenses", subBoth: "Income + expenses", subReelN: "Actual", subProjN: "Projection", subBothN: "Actual + projection" },
+  es: { date: "Fecha", sens: "Tipo", nature: "Estado", cat: "Categoría", lib: "Concepto", joueur: "Jugador", club: "Club", montant: "Importe", devise: "Moneda", sortie: "Salida", entree: "Entrada", reel: "Real", projection: "Proyección", generatedOn: "Generado el", totalIn: "Total entradas (ganancias)", totalOut: "Total salidas (gastos)", solde: "Saldo neto", footer: "Football Data Management — documento financiero. «Proyección» = estimado, «Real» = realizado. Uso interno / contable.", allTitle: "Finanzas — todas las transacciones", perPlayer: "Detalle por jugador", subIn: "Entradas", subOut: "Salidas", subBoth: "Entradas + salidas", subReelN: "Real", subProjN: "Proyección", subBothN: "Real + proyección" },
+};
+
+function toCSV(rows, lang = "fr") {
+  const D = FIN_L[lang] || FIN_L.fr;
+  const headers = [D.date, D.sens, D.nature, D.cat, D.lib, D.joueur, D.club, `${D.montant} (€)`, D.devise];
   const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
   const lines = [headers.join(";")];
   for (const c of rows) {
     lines.push([
       c.date_paiement || c.date_echeance || "",
-      isSortie(c) ? "Sortie" : "Entrée",
-      isReel(c) ? "Réel" : "Projection",
+      isSortie(c) ? D.sortie : D.entree,
+      isReel(c) ? D.reel : D.projection,
       typeLabel(c.type),
-      c.titre || "",
-      c.player_nom || "",
-      c.club || "",
-      signed(c),
-      c.devise || "EUR",
+      c.titre || "", c.player_nom || "", c.club || "", signed(c), c.devise || "EUR",
     ].map(esc).join(";"));
   }
   return lines.join("\r\n");
 }
-function downloadCSV(filename, rows) {
-  const blob = new Blob(["﻿" + toCSV(rows)], { type: "text/csv;charset=utf-8;" });
+function downloadCSV(filename, rows, lang = "fr") {
+  const blob = new Blob(["﻿" + toCSV(rows, lang)], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url; a.download = filename; a.click();
   URL.revokeObjectURL(url);
 }
 
-// Export PDF (impression) — rapport comptable / joueur (obligation FIFA).
-function exportPDF(title, rows, sub = "") {
+// Export PDF (impression) — rapport comptable / joueur (obligation FIFA). Multilingue.
+function exportPDF(title, rows, sub = "", lang = "fr") {
+  const D = FIN_L[lang] || FIN_L.fr; const loc = FIN_LOC[lang] || FIN_LOC.fr;
   const esc = (s) => String(s ?? "").replace(/</g, "&lt;");
   let entrees = 0, sorties = 0;
   const body = rows.map((c) => {
     const m = Number(c.montant) || 0;
     if (isSortie(c)) sorties += m; else entrees += m;
-    return `<tr><td>${c.date_paiement || c.date_echeance || ""}</td><td>${isSortie(c) ? "Sortie" : "Entrée"}</td>`
-      + `<td>${isReel(c) ? "Réel" : "Projection"}</td><td>${esc(typeLabel(c.type))}</td>`
+    return `<tr><td>${c.date_paiement || c.date_echeance || ""}</td><td>${isSortie(c) ? D.sortie : D.entree}</td>`
+      + `<td>${isReel(c) ? D.reel : D.projection}</td><td>${esc(typeLabel(c.type))}</td>`
       + `<td class="l">${esc(c.titre)}${c.player_nom ? `<br><span class="m">${esc(c.player_nom)}</span>` : ""}</td>`
-      + `<td class="r ${isSortie(c) ? "red" : "grn"}">${isSortie(c) ? "−" : "+"}${m.toLocaleString("fr-FR")} €</td></tr>`;
+      + `<td class="r ${isSortie(c) ? "red" : "grn"}">${isSortie(c) ? "−" : "+"}${m.toLocaleString(loc)} €</td></tr>`;
   }).join("");
   const solde = entrees - sorties;
-  const fmt = (n) => `${Math.round(n).toLocaleString("fr-FR")} €`;
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(title)}</title>
+  const fmt = (n) => `${Math.round(n).toLocaleString(loc)} €`;
+  const html = `<!DOCTYPE html><html lang="${lang}"><head><meta charset="utf-8"><title>${esc(title)}</title>
    <style>body{font-family:Arial,sans-serif;padding:32px;color:#1e293b}h1{font-size:20px;margin:0}
    .sub{color:#64748b;font-size:12px;margin:4px 0 16px}table{border-collapse:collapse;width:100%;font-size:12px}
    th,td{border:1px solid #e2e8f0;padding:6px 10px;text-align:left}th{background:#0f172a;color:#fff}
    td.r,th.r{text-align:right}.grn{color:#15803d}.red{color:#dc2626}.m{color:#94a3b8;font-size:10px}
    tfoot td{font-weight:bold;background:#f8fafc}.foot{margin-top:24px;font-size:10px;color:#94a3b8}</style></head><body>
-   <h1>${esc(title)}</h1><div class="sub">${esc(sub)}${sub ? " · " : ""}Généré le ${new Date().toLocaleDateString("fr-FR")}</div>
-   <table><thead><tr><th>Date</th><th>Sens</th><th>Nature</th><th>Catégorie</th><th>Libellé</th><th class="r">Montant</th></tr></thead>
+   <h1>${esc(title)}</h1><div class="sub">${esc(sub)}${sub ? " · " : ""}${D.generatedOn} ${new Date().toLocaleDateString(loc)}</div>
+   <table><thead><tr><th>${D.date}</th><th>${D.sens}</th><th>${D.nature}</th><th>${D.cat}</th><th>${D.lib}</th><th class="r">${D.montant}</th></tr></thead>
    <tbody>${body}</tbody><tfoot>
-     <tr><td colspan="5">Total entrées (gains)</td><td class="r grn">${fmt(entrees)}</td></tr>
-     <tr><td colspan="5">Total sorties (dépenses)</td><td class="r red">${fmt(sorties)}</td></tr>
-     <tr><td colspan="5">Solde net</td><td class="r ${solde >= 0 ? "grn" : "red"}">${solde >= 0 ? "+" : "−"}${fmt(Math.abs(solde))}</td></tr>
+     <tr><td colspan="5">${D.totalIn}</td><td class="r grn">${fmt(entrees)}</td></tr>
+     <tr><td colspan="5">${D.totalOut}</td><td class="r red">${fmt(sorties)}</td></tr>
+     <tr><td colspan="5">${D.solde}</td><td class="r ${solde >= 0 ? "grn" : "red"}">${solde >= 0 ? "+" : "−"}${fmt(Math.abs(solde))}</td></tr>
    </tfoot></table>
-   <p class="foot">Football Data Management — document financier. « Projection » = estimé/prévu, « Réel » = réalisé. À usage interne / comptable.</p>
+   <p class="foot">${D.footer}</p>
    <script>window.onload=function(){setTimeout(function(){window.print()},400)}</script></body></html>`;
   const w = window.open("", "_blank");
   if (!w) return;
@@ -290,6 +296,7 @@ function exportPDF(title, rows, sub = "") {
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function FinancePage() {
+  const { lang } = useLanguage();
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -375,12 +382,13 @@ export default function FinancePage() {
     return Object.values(map).map((r) => ({ ...r, solde: r.entree - r.sortie })).sort((a, b) => b.entree - a.entree);
   }, [filtered]);
 
-  const sub = `${fSens === "tous" ? "Entrées + sorties" : fSens === "sortie" ? "Sorties" : "Entrées"} · ${fNature === "tous" ? "Réel + projection" : fNature === "reel" ? "Réel" : "Projection"}`;
-  const exportAll = () => downloadCSV(`finance_${todayISO()}.csv`, filtered);
-  const exportAllPDF = () => exportPDF("Finance — toutes transactions", filtered, sub);
+  const FD = FIN_L[lang] || FIN_L.fr;
+  const sub = `${fSens === "tous" ? FD.subBoth : fSens === "sortie" ? FD.subOut : FD.subIn} · ${fNature === "tous" ? FD.subBothN : fNature === "reel" ? FD.subReelN : FD.subProjN}`;
+  const exportAll = () => downloadCSV(`finance_${todayISO()}.csv`, filtered, lang);
+  const exportAllPDF = () => exportPDF(FD.allTitle, filtered, sub, lang);
   const playerRows = (row) => entries.filter((c) => (c.player_id || `__${c.player_nom || "Sans joueur"}`) === row.key);
-  const exportPlayer = (row) => downloadCSV(`finance_${(row.name || "joueur").replace(/\s+/g, "_")}.csv`, playerRows(row));
-  const exportPlayerPDF = (row) => exportPDF(`Finance — ${row.name}`, playerRows(row), "Détail par joueur");
+  const exportPlayer = (row) => downloadCSV(`finance_${(row.name || "joueur").replace(/\s+/g, "_")}.csv`, playerRows(row), lang);
+  const exportPlayerPDF = (row) => exportPDF(`Finance — ${row.name}`, playerRows(row), FD.perPlayer, lang);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-6">

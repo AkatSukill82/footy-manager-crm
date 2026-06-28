@@ -374,9 +374,9 @@ export default function PlayerDetailPage() {
                             <Edit2 className="w-3.5 h-3.5 mr-2 text-slate-400" />
                             Modifier
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => exportPlayerPDF(player, playerNotes)}>
+                          <DropdownMenuItem onClick={() => exportPlayerPDF(player, playerNotes, lang)}>
                             <FileDown className="w-3.5 h-3.5 mr-2 text-slate-400" />
-                            Exporter PDF
+                            {t(lang, 'players.exportPDF')}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem

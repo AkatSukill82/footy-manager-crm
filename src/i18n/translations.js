@@ -1012,7 +1012,7 @@ export const translations = {
       confirm: "Confirmar", close: "Cerrar", update: "Actualizar",
       create: "Crear", saving: "Guardando…", noResults: "Sin resultados",
       seeAll: "Ver todo", preview: "Vista previa", optional: "Opcional",
-      select: "Seleccionar", ageUnit: "años",
+      select: "Seleccionar", ageUnit: "años", male: "Hombre", female: "Mujer",
     },
     players: {
       title: "Jugadores",
@@ -1959,7 +1959,7 @@ export const translations = {
       confirm: "Confirm", close: "Close", update: "Update",
       create: "Create", saving: "Saving…", noResults: "No results",
       seeAll: "See all", preview: "Preview", optional: "Optional",
-      select: "Select", ageUnit: "yrs",
+      select: "Select", ageUnit: "yrs", male: "Male", female: "Female",
     },
     players: {
       title: "Players",
