@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { UserCheck, Baby, Building2, ArrowRightLeft, ArrowLeft, Save, Search, CheckCircle2 } from "lucide-react";
+import { UserCheck, Baby, Building2, ArrowRightLeft, ArrowLeft, Save, Search, CheckCircle2, Sliders } from "lucide-react";
 import MajorPlayerForm from "../components/recruitment/MajorPlayerForm";
 import MinorPlayerForm from "../components/recruitment/MinorPlayerForm";
 import RecruitmentPipeline from "../components/recruitment/RecruitmentPipeline";
 import RecruitmentScoringConfig from "../components/recruitment/RecruitmentScoringConfig";
+import RecruitmentCriteriaConfig from "../components/recruitment/RecruitmentCriteriaConfig";
 import ActivityLogList from "@/components/activity/ActivityLogList";
 import { useRecruitment } from "../lib/useRecruitment";
 import { caseToDealInputs } from "../lib/recruitmentScoring";
@@ -29,6 +30,8 @@ export default function RecruitmentPage() {
   const [pathway, setPathway] = useState(null);
   const [editCase, setEditCase] = useState(null);
   const [savedMsg, setSavedMsg] = useState(null);
+  const [showCriteria, setShowCriteria] = useState(false);
+  const [criteriaVersion, setCriteriaVersion] = useState(0);
 
   const resetForm = () => { setPathway(null); setEditCase(null); };
   const handleSimulate = (c) => navigate(createPageUrl("TransferManagement"), { state: { dealPrefill: caseToDealInputs(c) } });
@@ -56,8 +59,24 @@ export default function RecruitmentPage() {
             <h1 className="text-2xl md:text-4xl font-bold text-slate-900 flex items-center gap-2"><Search className="w-7 h-7" /> Recrutement</h1>
             <p className="text-slate-500 text-sm mt-0.5 hidden md:block">Identifier, qualifier, contacter et suivre des joueurs — avec scoring, conformité et CRM.</p>
           </div>
-          <div className="flex-shrink-0"><RecruitmentScoringConfig /></div>
+          <div className="flex-shrink-0 flex items-center gap-2">
+            <button onClick={() => setShowCriteria((v) => !v)} className="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 inline-flex items-center gap-1.5">
+              <Sliders className="w-3.5 h-3.5" /> Critères
+            </button>
+            <RecruitmentScoringConfig />
+          </div>
         </div>
+
+        {showCriteria && (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-slate-800">Personnaliser mes critères</h3>
+              <button onClick={() => setShowCriteria(false)} className="text-slate-400 hover:text-slate-600 text-sm">Fermer</button>
+            </div>
+            <p className="text-xs text-slate-500 mb-4">Active/désactive des critères, ajuste leur poids, ajoute les tiens, et fixe ton profil cible. Le scoring s'adapte automatiquement.</p>
+            <RecruitmentCriteriaConfig onSaved={() => setCriteriaVersion((v) => v + 1)} />
+          </div>
+        )}
 
         {savedMsg && (
           <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800 rounded-xl px-4 py-2.5 text-sm">
@@ -82,7 +101,7 @@ export default function RecruitmentPage() {
         {tab === "new" && pathway && (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-6 space-y-4">
             <button onClick={resetForm} className="text-sm text-slate-500 hover:text-slate-800 flex items-center gap-1.5"><ArrowLeft className="w-4 h-4" /> {editCase ? "Annuler l'édition" : "Changer de parcours"}</button>
-            {pathway === "major" && <MajorPlayerForm initial={initialForm} editId={editId} onSave={handleSave} saving={save.isPending} />}
+            {pathway === "major" && <MajorPlayerForm initial={initialForm} editId={editId} onSave={handleSave} saving={save.isPending} criteriaVersion={criteriaVersion} />}
             {pathway === "minor" && <MinorPlayerForm initial={initialForm} editId={editId} onSave={handleSave} saving={save.isPending} />}
             {pathway === "club_need" && <ClubNeedForm initial={initialForm} editId={editId} onSave={handleSave} saving={save.isPending} />}
             {editCase && <ActivityLogList entityId={editCase.id} entityType="RecruitmentCase" />}

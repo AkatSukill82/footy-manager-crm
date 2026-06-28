@@ -61,11 +61,59 @@ export function marketScore(nbClubs) {
   return 0;
 }
 
-export function scoreMajor(notes = {}) {
-  const breakdown = MAJOR_CRITERIA.map((c) => ({ key: c.key, label: c.label, note: clampInt(notes[c.key], 0, 3) }));
-  const total = breakdown.reduce((s, b) => s + b.note, 0); // max 18
-  return { total, breakdown };
+// Scoring pondéré : ne compte que les critères ACTIVÉS, chacun × son poids.
+// Renvoie aussi `max` (dynamique) car il dépend des critères actifs et des poids.
+export function scoreMajor(notes = {}, config = getCriteriaConfig()) {
+  const active = config.filter((c) => c.enabled);
+  const breakdown = active.map((c) => ({
+    key: c.key, label: c.label, weight: c.weight, custom: !!c.custom,
+    note: clampInt(notes[c.key], 0, 3),
+  }));
+  const total = breakdown.reduce((s, b) => s + b.note * b.weight, 0);
+  const max = active.reduce((s, c) => s + 3 * c.weight, 0) || 1;
+  return { total, max, breakdown };
 }
+
+// ── Critères CONFIGURABLES : activer/désactiver, pondérer, ajouter (par user) ─
+const CRITERIA_KEY = "fdm_recruit_criteria";
+
+export function getCriteriaConfig() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(CRITERIA_KEY) || "{}"); } catch { saved = {}; }
+  const ov = saved.base || {};
+  const base = MAJOR_CRITERIA.map((c) => ({
+    key: c.key, label: c.label, hint: c.hint, custom: false,
+    enabled: ov[c.key]?.enabled !== false,                 // activé par défaut
+    weight: clampInt(ov[c.key]?.weight ?? 1, 1, 5),
+  }));
+  const custom = Array.isArray(saved.custom) ? saved.custom.map((c) => ({
+    key: c.key, label: c.label || "Critère", hint: c.hint || "Faible / Moyen / Bon / Excellent",
+    custom: true, enabled: c.enabled !== false, weight: clampInt(c.weight ?? 1, 1, 5),
+  })) : [];
+  return [...base, ...custom];
+}
+export function setCriteriaConfig(list) {
+  const base = {}, custom = [];
+  for (const c of (list || [])) {
+    if (c.custom) custom.push({ key: c.key, label: c.label, hint: c.hint, enabled: !!c.enabled, weight: clampInt(c.weight, 1, 5) });
+    else base[c.key] = { enabled: !!c.enabled, weight: clampInt(c.weight, 1, 5) };
+  }
+  try { localStorage.setItem(CRITERIA_KEY, JSON.stringify({ base, custom })); } catch { /* ignore */ }
+}
+export function resetCriteriaConfig() { try { localStorage.removeItem(CRITERIA_KEY); } catch { /* ignore */ } }
+export function currentScoreMax(config = getCriteriaConfig()) {
+  return config.filter((c) => c.enabled).reduce((s, c) => s + 3 * c.weight, 0) || 18;
+}
+
+// ── Profil cible de recherche (par user) ─────────────────────────────────────
+const TARGET_KEY = "fdm_recruit_target";
+const DEFAULT_TARGET = { poste: "", ageMin: "", ageMax: "", niveau: "", pays: "", pied: "" };
+export function getTargetProfile() {
+  try { return { ...DEFAULT_TARGET, ...JSON.parse(localStorage.getItem(TARGET_KEY) || "{}") }; }
+  catch { return { ...DEFAULT_TARGET }; }
+}
+export function setTargetProfile(t) { try { localStorage.setItem(TARGET_KEY, JSON.stringify({ ...DEFAULT_TARGET, ...t })); } catch { /* ignore */ } }
+export function resetTargetProfile() { try { localStorage.removeItem(TARGET_KEY); } catch { /* ignore */ } }
 
 // ── Seuils de décision CONFIGURABLES (§8/§19 : critères pas figés) ───────────
 // Le score reste /18 (6 critères × 3). Les seuils sont éditables et stockés en
@@ -75,13 +123,14 @@ const TIERS_KEY = "fdm_recruit_tiers";
 const DEFAULT_TIERS = { priority: 16, contact: 13, watch: 9 };
 
 export function getTiers() {
+  const max = currentScoreMax();
   try {
     const t = { ...DEFAULT_TIERS, ...JSON.parse(localStorage.getItem(TIERS_KEY) || "{}") };
-    // garde-fou : ordonné et borné
+    // garde-fou : borné au max courant (dépend des critères actifs + poids)
     return {
-      priority: clampInt(t.priority, 1, SCORE_MAX),
-      contact:  clampInt(t.contact, 1, SCORE_MAX),
-      watch:    clampInt(t.watch, 0, SCORE_MAX),
+      priority: clampInt(t.priority, 1, max),
+      contact:  clampInt(t.contact, 1, max),
+      watch:    clampInt(t.watch, 0, max),
     };
   } catch { return DEFAULT_TIERS; }
 }

@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ExternalLink, ShieldAlert, ShieldCheck, AlertTriangle, Save, Wand2, Copy, UserPlus, Loader2, CheckCircle2 } from "lucide-react";
+import { ExternalLink, ShieldAlert, ShieldCheck, AlertTriangle, Save, Wand2, Copy, UserPlus, Loader2, CheckCircle2, Target } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -12,6 +12,7 @@ import { addPlayerAsProspect } from "@/lib/addProspect";
 import {
   TM_LINKS, ageScore, contractScore, marketScore, scoreMajor, scoreTier,
   compliance, deriveStatus, canBeContactReady, generateMessage, canGenerateMessage, isOffensive,
+  getCriteriaConfig, getTargetProfile,
 } from "@/lib/recruitmentScoring";
 import { playerToMajorFields } from "@/lib/playerLookup";
 import PlayerSearchBox from "./PlayerSearchBox";
@@ -42,7 +43,7 @@ const monthsUntil = (d) => {
   return (end.getFullYear() - now.getFullYear()) * 12 + (end.getMonth() - now.getMonth());
 };
 
-export default function MajorPlayerForm({ initial = null, editId = null, onSave, saving }) {
+export default function MajorPlayerForm({ initial = null, editId = null, onSave, saving, criteriaVersion = 0 }) {
   const [f, setF] = useState(() => ({
     name: "", age: "", positions: "", nationalite: "", taille: "", pied: "",
     club: "", country: "", division: "", contract_end: "", is_free: false, market_value: "",
@@ -52,9 +53,15 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
     nb_clubs: "", target_clubs: "",
     instagram: "", instagram_validated: false, fifa_agent_validated: false, language: "FR",
     owner: "", next_action: "Qualifier et identifier les clubs cibles", next_action_date: "",
+    criteriaNotes: {},
     ...(initial || {}),
   }));
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  const setNote = (key, val) => setF((s) => ({ ...s, criteriaNotes: { ...(s.criteriaNotes || {}), [key]: val } }));
+  // Config critères + profil cible (par utilisateur), recalculés quand ils changent.
+  const criteriaCfg = useMemo(() => getCriteriaConfig(), [criteriaVersion]);
+  const target = useMemo(() => getTargetProfile(), [criteriaVersion]);
+  const hasTarget = !!(target.poste || target.ageMin || target.ageMax || target.niveau || target.pays || target.pied);
   const [message, setMessage] = useState(initial?.message ?? initial?.message_text ?? "");
 
   // Préremplissage depuis le moteur de recherche (même moteur que la page Joueurs).
@@ -92,8 +99,9 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
       production: Number(f.production_note),
       agency: agencyNote,
       market: marketScore(f.nb_clubs),
+      ...(f.criteriaNotes || {}),   // critères personnalisés
     };
-    const { total, breakdown } = scoreMajor(notes);
+    const { total, max, breakdown } = scoreMajor(notes, criteriaCfg);
     const tier = scoreTier(total);
     const incomplete = !f.name || !f.age || !f.club || !f.division || !f.positions;
     const comp = compliance({
@@ -106,8 +114,8 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
       is_minor: isMinor, compliance_status: comp.level, instagram_validated: f.instagram_validated,
       mandate_locked: f.mandate_locked, nb_clubs: f.nb_clubs, fifa_agent_validated: f.fifa_agent_validated,
     });
-    return { total, breakdown, tier, comp, status, ready, incomplete };
-  }, [f, age, isMinor]);
+    return { total, max, breakdown, tier, comp, status, ready, incomplete };
+  }, [f, age, isMinor, criteriaCfg]);
 
   const seasonHint = offensive
     ? [f.goals && `${f.goals} buts`, f.assists && `${f.assists} passes`].filter(Boolean).join(", ")
@@ -173,6 +181,13 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
         </div>
       )}
 
+      {hasTarget && (
+        <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+          <Target className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+          <span><b>Profil cible :</b> {[target.poste, (target.ageMin || target.ageMax) ? `${target.ageMin || "?"}-${target.ageMax || "?"} ans` : "", target.niveau, target.pays, target.pied].filter(Boolean).join(" · ")}</span>
+        </div>
+      )}
+
       {/* Identité */}
       <Section title="Identité">
         <Txt label="Nom" value={f.name} onChange={(v) => set("name", v)} ph="Nom Prénom" />
@@ -203,11 +218,25 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
         <Sel label="Production (apprécation)" value={f.production_note} onChange={(v) => set("production_note", v)} options={[{ v: "0", l: "Faible" }, { v: "1", l: "Moyen" }, { v: "2", l: "Bon" }, { v: "3", l: "Élite pour l'âge" }]} />
       </Section>
 
+      {/* Critères personnalisés (config utilisateur) */}
+      {criteriaCfg.some((c) => c.custom && c.enabled) && (
+        <Section title="Critères personnalisés">
+          {criteriaCfg.filter((c) => c.custom && c.enabled).map((c) => {
+            const labels = (c.hint || "Faible / Moyen / Bon / Excellent").split("/").map((s) => s.trim());
+            return (
+              <Sel key={c.key} label={c.label} value={String((f.criteriaNotes || {})[c.key] ?? 0)}
+                onChange={(v) => setNote(c.key, Number(v))}
+                options={[0, 1, 2, 3].map((n) => ({ v: String(n), l: labels[n] || String(n) }))} />
+            );
+          })}
+        </Section>
+      )}
+
       {/* ── RÉCAP / SCORING / CONFORMITÉ ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t border-slate-200">
         <div className="rounded-xl border border-slate-200 p-4">
           <div className="text-xs text-slate-500 mb-1">Score recrutement</div>
-          <div className="text-2xl font-bold text-slate-900">{r.total}<span className="text-base text-slate-400"> / 18</span></div>
+          <div className="text-2xl font-bold text-slate-900">{r.total}<span className="text-base text-slate-400"> / {r.max}</span></div>
           <div className={`text-xs font-semibold mt-1 ${r.tier.color === "green" ? "text-green-600" : r.tier.color === "blue" ? "text-blue-600" : r.tier.color === "amber" ? "text-amber-600" : "text-slate-500"}`}>{r.tier.label}</div>
           <div className="mt-2 space-y-0.5">
             {r.breakdown.map((b) => <div key={b.key} className="flex justify-between text-[11px] text-slate-500"><span>{b.label}</span><span className="font-medium text-slate-700">{b.note}/3</span></div>)}
