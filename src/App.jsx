@@ -16,6 +16,7 @@ import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import Vitrine from '@/pages/Vitrine';
+import { Confidentialite, CGU, MentionsLegales } from '@/pages/Legal';
 import { base44 } from '@/api/base44Client';
 
 const ImportExcel  = lazy(() => import('./pages/ImportExcel'));
@@ -104,6 +105,10 @@ const AuthenticatedApp = () => {
         {/* Site vitrine public + demande d'accès */}
         <Route path="/vitrine" element={<Vitrine />} />
         <Route path="/demande-acces" element={<Vitrine />} />
+        {/* Pages légales (publiques) */}
+        <Route path="/confidentialite" element={<Confidentialite />} />
+        <Route path="/cgu" element={<CGU />} />
+        <Route path="/mentions-legales" element={<MentionsLegales />} />
 
         {/* Protected routes — unauthenticated users → /login */}
         <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>

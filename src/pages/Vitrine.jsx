@@ -361,7 +361,13 @@ export default function Vitrine() {
 
       <footer className="border-t border-white/5 py-10 text-center text-sm text-slate-500">
         <div className="font-bold text-slate-300 mb-2">Football Data <span className="text-emerald-400">Management</span></div>
-        © {new Date().getFullYear()} · L'outil des agents de football · <a href="/login" className="hover:text-slate-200">Se connecter</a>
+        <div className="flex items-center justify-center gap-4 flex-wrap mb-2 text-slate-400">
+          <a href="/confidentialite" className="hover:text-slate-200">Confidentialité</a>
+          <a href="/cgu" className="hover:text-slate-200">CGU</a>
+          <a href="/mentions-legales" className="hover:text-slate-200">Mentions légales</a>
+          <a href="/login" className="hover:text-slate-200">Se connecter</a>
+        </div>
+        © {new Date().getFullYear()} · L'outil des agents de football
       </footer>
     </div>
   );
