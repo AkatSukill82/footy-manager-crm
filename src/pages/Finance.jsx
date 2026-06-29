@@ -18,23 +18,10 @@ import { useLanguage } from "../lib/LanguageContext";
 
 // ── Référentiels ──────────────────────────────────────────────────────────────
 
-const INCOME_TYPES = [
-  { v: "transfert",              label: "Transfert" },
-  { v: "renouvellement_contrat", label: "Renouvellement contrat" },
-  { v: "premier_contrat",        label: "Premier contrat" },
-  { v: "sponsoring",             label: "Sponsoring" },
-  { v: "commission_salaire",     label: "Commission sur salaire" },
-  { v: "prime",                  label: "Prime" },
-  { v: "autre",                  label: "Autre (revenu)" },
-];
-const EXPENSE_TYPES = [
-  { v: "frais_scouting",  label: "Frais de scouting" },
-  { v: "deplacement",     label: "Déplacement" },
-  { v: "frais_juridique", label: "Frais juridiques" },
-  { v: "autre_depense",   label: "Autre (dépense)" },
-];
-const ALL_TYPES = [...INCOME_TYPES, ...EXPENSE_TYPES];
-const typeLabel = (v) => ALL_TYPES.find((t) => t.v === v)?.label || v || "—";
+const INCOME_KEYS = ["transfert", "renouvellement_contrat", "premier_contrat", "sponsoring", "commission_salaire", "prime", "autre"];
+const EXPENSE_KEYS = ["frais_scouting", "deplacement", "frais_juridique", "autre_depense"];
+// Libellé de catégorie traduit (FIN_L défini plus bas, lu au runtime).
+const typeLabel = (v, lang = "fr") => (FIN_L[lang] || FIN_L.fr).cats[v] || v || "—";
 
 const DEVISE_SY = { EUR: "€", GBP: "£", USD: "$" };
 const fmtMoney = (n, d = "EUR") =>
@@ -49,7 +36,8 @@ const signed = (c) => (isSortie(c) ? -1 : 1) * (Number(c.montant) || 0);
 
 // ── Formulaire ──────────────────────────────────────────────────────────────
 
-function EntryForm({ open, onClose, onSave, initial, players, saving }) {
+function EntryForm({ open, onClose, onSave, initial, players, saving, lang = "fr" }) {
+  const D = FIN_L[lang] || FIN_L.fr; const U = D.ui;
   const [f, setF] = useState(() => initial || {
     sens: "entree", nature: "projection", titre: "", player_id: "", player_nom: "", club: "",
     type: "transfert", montant_operation: "", taux: "", montant: "", devise: "EUR",
@@ -57,7 +45,7 @@ function EntryForm({ open, onClose, onSave, initial, players, saving }) {
   });
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e?.target ? e.target.value : e }));
   const sortie = f.sens === "sortie";
-  const typeOptions = sortie ? EXPENSE_TYPES : INCOME_TYPES;
+  const typeOptions = sortie ? EXPENSE_KEYS : INCOME_KEYS;
 
   const autoMontant = () => {
     const op = parseFloat(f.montant_operation), tx = parseFloat(f.taux);
@@ -69,7 +57,7 @@ function EntryForm({ open, onClose, onSave, initial, players, saving }) {
   };
   const onSens = (v) => setF((s) => ({
     ...s, sens: v,
-    type: (v === "sortie" ? EXPENSE_TYPES : INCOME_TYPES).some((t) => t.v === s.type) ? s.type : (v === "sortie" ? "frais_scouting" : "transfert"),
+    type: (v === "sortie" ? EXPENSE_KEYS : INCOME_KEYS).includes(s.type) ? s.type : (v === "sortie" ? "frais_scouting" : "transfert"),
   }));
 
   const submit = () => {
@@ -88,55 +76,55 @@ function EntryForm({ open, onClose, onSave, initial, players, saving }) {
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{initial?.id ? "Modifier la ligne" : "Nouvelle ligne financière"}</DialogTitle>
+          <DialogTitle>{initial?.id ? U.formEdit : U.formNew}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-3 py-2">
           {/* Sens + Nature */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs">Sens *</Label>
+              <Label className="text-xs">{U.sensReq}</Label>
               <Select value={f.sens} onValueChange={onSens}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="entree">Entrée (gain / commission)</SelectItem>
-                  <SelectItem value="sortie">Sortie (dépense)</SelectItem>
+                  <SelectItem value="entree">{U.sensInLong}</SelectItem>
+                  <SelectItem value="sortie">{U.sensOutLong}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Nature *</Label>
+              <Label className="text-xs">{U.natReq}</Label>
               <Select value={f.nature} onValueChange={set("nature")}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="projection">Projection (estimé)</SelectItem>
-                  <SelectItem value="reel">Réel (réalisé)</SelectItem>
+                  <SelectItem value="projection">{U.natProjLong}</SelectItem>
+                  <SelectItem value="reel">{U.natReelLong}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div>
-            <Label className="text-xs">Libellé *</Label>
-            <Input value={f.titre} onChange={set("titre")} placeholder={sortie ? "Ex: Déplacement scouting Lisbonne" : "Ex: Commission transfert J. Doe → OL"} />
+            <Label className="text-xs">{U.libReq}</Label>
+            <Input value={f.titre} onChange={set("titre")} placeholder={sortie ? U.titrePhOut : U.titrePhIn} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs">Joueur</Label>
+              <Label className="text-xs">{D.joueur}</Label>
               <Select value={f.player_id || ""} onValueChange={onPlayer}>
-                <SelectTrigger><SelectValue placeholder="Aucun" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={U.none} /></SelectTrigger>
                 <SelectContent>
                   {players.map((p) => <SelectItem key={p.id} value={p.id}>{p.nom}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Catégorie</Label>
+              <Label className="text-xs">{D.cat}</Label>
               <Select value={f.type} onValueChange={set("type")}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {typeOptions.map((t) => <SelectItem key={t.v} value={t.v}>{t.label}</SelectItem>)}
+                  {typeOptions.map((v) => <SelectItem key={v} value={v}>{D.cats[v]}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -144,23 +132,23 @@ function EntryForm({ open, onClose, onSave, initial, players, saving }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs">Club</Label>
-              <Input value={f.club} onChange={set("club")} placeholder="Club concerné" />
+              <Label className="text-xs">{D.club}</Label>
+              <Input value={f.club} onChange={set("club")} placeholder={U.clubPh} />
             </div>
             <div>
-              <Label className="text-xs">Agent / partenaire</Label>
-              <Input value={f.agent_beneficiaire || ""} onChange={set("agent_beneficiaire")} placeholder="Bénéficiaire / split" />
+              <Label className="text-xs">{U.agentPart}</Label>
+              <Input value={f.agent_beneficiaire || ""} onChange={set("agent_beneficiaire")} placeholder={U.agentPh} />
             </div>
           </div>
 
           {!sortie && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs">Opération (M€)</Label>
+                <Label className="text-xs">{U.op}</Label>
                 <Input type="number" value={f.montant_operation} onChange={set("montant_operation")} onBlur={autoMontant} placeholder="0" />
               </div>
               <div>
-                <Label className="text-xs">Taux (%)</Label>
+                <Label className="text-xs">{U.taux}</Label>
                 <Input type="number" value={f.taux} onChange={set("taux")} onBlur={autoMontant} placeholder="0" />
               </div>
             </div>
@@ -168,11 +156,11 @@ function EntryForm({ open, onClose, onSave, initial, players, saving }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs">{sortie ? "Montant dépensé (€) *" : "Commission (€) *"}</Label>
+              <Label className="text-xs">{sortie ? U.montantOut : U.montantIn}</Label>
               <Input type="number" value={f.montant} onChange={set("montant")} placeholder="0" />
             </div>
             <div>
-              <Label className="text-xs">Devise</Label>
+              <Label className="text-xs">{D.devise}</Label>
               <Select value={f.devise} onValueChange={set("devise")}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -186,21 +174,21 @@ function EntryForm({ open, onClose, onSave, initial, players, saving }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs">{isReel(f) ? "Date (réalisé)" : "Échéance prévue"}</Label>
+              <Label className="text-xs">{isReel(f) ? U.dateReel : U.dateEch}</Label>
               <Input type="date" value={(isReel(f) ? f.date_paiement : f.date_echeance) || ""} onChange={set(isReel(f) ? "date_paiement" : "date_echeance")} />
             </div>
             <div>
-              <Label className="text-xs">Notes</Label>
+              <Label className="text-xs">{U.notes}</Label>
               <Input value={f.notes || ""} onChange={set("notes")} placeholder="—" />
             </div>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Annuler</Button>
+          <Button variant="outline" onClick={onClose}>{U.cancel}</Button>
           <Button onClick={submit} disabled={saving || !f.titre.trim() || f.montant === ""} className="bg-slate-900 hover:bg-slate-700">
             {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-            {initial?.id ? "Enregistrer" : "Ajouter"}
+            {initial?.id ? U.save : U.add}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -229,9 +217,15 @@ function Kpi({ icon: Icon, label, value, sub, color }) {
 
 const FIN_LOC = { fr: "fr-FR", en: "en-GB", es: "es-ES" };
 const FIN_L = {
-  fr: { date: "Date", sens: "Sens", nature: "Nature", cat: "Catégorie", lib: "Libellé", joueur: "Joueur", club: "Club", montant: "Montant", devise: "Devise", sortie: "Sortie", entree: "Entrée", reel: "Réel", projection: "Projection", generatedOn: "Généré le", totalIn: "Total entrées (gains)", totalOut: "Total sorties (dépenses)", solde: "Solde net", footer: "Football Data Management — document financier. « Projection » = estimé/prévu, « Réel » = réalisé. À usage interne / comptable.", allTitle: "Finance — toutes transactions", perPlayer: "Détail par joueur", subIn: "Entrées", subOut: "Sorties", subBoth: "Entrées + sorties", subReelN: "Réel", subProjN: "Projection", subBothN: "Réel + projection" },
-  en: { date: "Date", sens: "Type", nature: "Status", cat: "Category", lib: "Label", joueur: "Player", club: "Club", montant: "Amount", devise: "Currency", sortie: "Expense", entree: "Income", reel: "Actual", projection: "Projection", generatedOn: "Generated on", totalIn: "Total income (gains)", totalOut: "Total expenses", solde: "Net balance", footer: "Football Data Management — financial document. \"Projection\" = estimated, \"Actual\" = realized. Internal / accounting use.", allTitle: "Finance — all transactions", perPlayer: "Per-player detail", subIn: "Income", subOut: "Expenses", subBoth: "Income + expenses", subReelN: "Actual", subProjN: "Projection", subBothN: "Actual + projection" },
-  es: { date: "Fecha", sens: "Tipo", nature: "Estado", cat: "Categoría", lib: "Concepto", joueur: "Jugador", club: "Club", montant: "Importe", devise: "Moneda", sortie: "Salida", entree: "Entrada", reel: "Real", projection: "Proyección", generatedOn: "Generado el", totalIn: "Total entradas (ganancias)", totalOut: "Total salidas (gastos)", solde: "Saldo neto", footer: "Football Data Management — documento financiero. «Proyección» = estimado, «Real» = realizado. Uso interno / contable.", allTitle: "Finanzas — todas las transacciones", perPlayer: "Detalle por jugador", subIn: "Entradas", subOut: "Salidas", subBoth: "Entradas + salidas", subReelN: "Real", subProjN: "Proyección", subBothN: "Real + proyección" },
+  fr: { date: "Date", sens: "Sens", nature: "Nature", cat: "Catégorie", lib: "Libellé", joueur: "Joueur", club: "Club", montant: "Montant", devise: "Devise", sortie: "Sortie", entree: "Entrée", reel: "Réel", projection: "Projection", generatedOn: "Généré le", totalIn: "Total entrées (gains)", totalOut: "Total sorties (dépenses)", solde: "Solde net", footer: "Football Data Management — document financier. « Projection » = estimé/prévu, « Réel » = réalisé. À usage interne / comptable.", allTitle: "Finance — toutes transactions", perPlayer: "Détail par joueur", subIn: "Entrées", subOut: "Sorties", subBoth: "Entrées + sorties", subReelN: "Réel", subProjN: "Projection", subBothN: "Réel + projection",
+    cats: { transfert: "Transfert", renouvellement_contrat: "Renouvellement contrat", premier_contrat: "Premier contrat", sponsoring: "Sponsoring", commission_salaire: "Commission sur salaire", prime: "Prime", autre: "Autre (revenu)", frais_scouting: "Frais de scouting", deplacement: "Déplacement", frais_juridique: "Frais juridiques", autre_depense: "Autre (dépense)" },
+    ui: { formEdit: "Modifier la ligne", formNew: "Nouvelle ligne financière", sensReq: "Sens *", sensInLong: "Entrée (gain / commission)", sensOutLong: "Sortie (dépense)", natReq: "Nature *", natProjLong: "Projection (estimé)", natReelLong: "Réel (réalisé)", libReq: "Libellé *", titrePhOut: "Ex: Déplacement scouting Lisbonne", titrePhIn: "Ex: Commission transfert J. Doe → OL", none: "Aucun", agentPart: "Agent / partenaire", agentPh: "Bénéficiaire / split", clubPh: "Club concerné", op: "Opération (M€)", taux: "Taux (%)", montantOut: "Montant dépensé (€) *", montantIn: "Commission (€) *", dateReel: "Date (réalisé)", dateEch: "Échéance prévue", notes: "Notes", cancel: "Annuler", save: "Enregistrer", add: "Ajouter", title: "Finance — entrées & sorties", subtitle: "Commissions, dépenses et rentabilité, par opération ou par joueur. Projection vs réel.", import: "Importer", newLine: "Nouvelle ligne", kpiIn: "Entrées (réel)", kpiOut: "Sorties (réel)", kpiReal: "Solde réel (rentabilité)", kpiRealSub: "gains − dépenses réalisés", kpiProj: "Solde projeté", kpiProjSub: "réel + projections", viewGlobal: "Global", viewPlayers: "Par joueur", viewAgents: "Par agent", fAll: "Tout", fAllM: "Tous", lignes: "ligne", lignesP: "lignes", emptyAll: "Aucune ligne. Ajoutez une entrée/sortie ou envoyez une commission depuis le simulateur.", emptyFilter: "Aucune ligne dans ce filtre.", thComm: "Commissions (entrées)", thSplits: "Sorties / splits", expCSV: "Export joueur (CSV)", expPDF: "Export joueur (PDF — FIFA)", markReel: "Marquer réalisé (réel)", edit: "Modifier", del: "Supprimer", confirmDel: "Supprimer" } },
+  en: { date: "Date", sens: "Type", nature: "Status", cat: "Category", lib: "Label", joueur: "Player", club: "Club", montant: "Amount", devise: "Currency", sortie: "Expense", entree: "Income", reel: "Actual", projection: "Projection", generatedOn: "Generated on", totalIn: "Total income (gains)", totalOut: "Total expenses", solde: "Net balance", footer: "Football Data Management — financial document. \"Projection\" = estimated, \"Actual\" = realized. Internal / accounting use.", allTitle: "Finance — all transactions", perPlayer: "Per-player detail", subIn: "Income", subOut: "Expenses", subBoth: "Income + expenses", subReelN: "Actual", subProjN: "Projection", subBothN: "Actual + projection",
+    cats: { transfert: "Transfer", renouvellement_contrat: "Contract renewal", premier_contrat: "First contract", sponsoring: "Sponsorship", commission_salaire: "Salary commission", prime: "Bonus", autre: "Other (income)", frais_scouting: "Scouting costs", deplacement: "Travel", frais_juridique: "Legal fees", autre_depense: "Other (expense)" },
+    ui: { formEdit: "Edit entry", formNew: "New financial entry", sensReq: "Type *", sensInLong: "Income (gain / commission)", sensOutLong: "Expense (cost)", natReq: "Status *", natProjLong: "Projection (estimated)", natReelLong: "Actual (realized)", libReq: "Label *", titrePhOut: "e.g. Scouting trip Lisbon", titrePhIn: "e.g. Transfer commission J. Doe → OL", none: "None", agentPart: "Agent / partner", agentPh: "Beneficiary / split", clubPh: "Club involved", op: "Operation (€M)", taux: "Rate (%)", montantOut: "Amount spent (€) *", montantIn: "Commission (€) *", dateReel: "Date (realized)", dateEch: "Expected due date", notes: "Notes", cancel: "Cancel", save: "Save", add: "Add", title: "Finance — income & expenses", subtitle: "Commissions, expenses and profitability, per operation or per player. Projection vs actual.", import: "Import", newLine: "New entry", kpiIn: "Income (actual)", kpiOut: "Expenses (actual)", kpiReal: "Actual balance (profitability)", kpiRealSub: "realized gains − expenses", kpiProj: "Projected balance", kpiProjSub: "actual + projections", viewGlobal: "Global", viewPlayers: "Per player", viewAgents: "Per agent", fAll: "All", fAllM: "All", lignes: "entry", lignesP: "entries", emptyAll: "No entries. Add an income/expense or send a commission from the simulator.", emptyFilter: "No entries in this filter.", thComm: "Commissions (income)", thSplits: "Expenses / splits", expCSV: "Player export (CSV)", expPDF: "Player export (PDF — FIFA)", markReel: "Mark as realized (actual)", edit: "Edit", del: "Delete", confirmDel: "Delete" } },
+  es: { date: "Fecha", sens: "Tipo", nature: "Estado", cat: "Categoría", lib: "Concepto", joueur: "Jugador", club: "Club", montant: "Importe", devise: "Moneda", sortie: "Salida", entree: "Entrada", reel: "Real", projection: "Proyección", generatedOn: "Generado el", totalIn: "Total entradas (ganancias)", totalOut: "Total salidas (gastos)", solde: "Saldo neto", footer: "Football Data Management — documento financiero. «Proyección» = estimado, «Real» = realizado. Uso interno / contable.", allTitle: "Finanzas — todas las transacciones", perPlayer: "Detalle por jugador", subIn: "Entradas", subOut: "Salidas", subBoth: "Entradas + salidas", subReelN: "Real", subProjN: "Proyección", subBothN: "Real + proyección",
+    cats: { transfert: "Traspaso", renouvellement_contrat: "Renovación de contrato", premier_contrat: "Primer contrato", sponsoring: "Patrocinio", commission_salaire: "Comisión sobre salario", prime: "Prima", autre: "Otro (ingreso)", frais_scouting: "Gastos de scouting", deplacement: "Desplazamiento", frais_juridique: "Gastos jurídicos", autre_depense: "Otro (gasto)" },
+    ui: { formEdit: "Editar línea", formNew: "Nueva línea financiera", sensReq: "Tipo *", sensInLong: "Entrada (ganancia / comisión)", sensOutLong: "Salida (gasto)", natReq: "Estado *", natProjLong: "Proyección (estimado)", natReelLong: "Real (realizado)", libReq: "Concepto *", titrePhOut: "Ej: Viaje de scouting Lisboa", titrePhIn: "Ej: Comisión traspaso J. Doe → OL", none: "Ninguno", agentPart: "Agente / socio", agentPh: "Beneficiario / reparto", clubPh: "Club implicado", op: "Operación (M€)", taux: "Tasa (%)", montantOut: "Importe gastado (€) *", montantIn: "Comisión (€) *", dateReel: "Fecha (realizado)", dateEch: "Vencimiento previsto", notes: "Notas", cancel: "Cancelar", save: "Guardar", add: "Añadir", title: "Finanzas — entradas y salidas", subtitle: "Comisiones, gastos y rentabilidad, por operación o por jugador. Proyección vs real.", import: "Importar", newLine: "Nueva línea", kpiIn: "Entradas (real)", kpiOut: "Salidas (real)", kpiReal: "Saldo real (rentabilidad)", kpiRealSub: "ganancias − gastos realizados", kpiProj: "Saldo proyectado", kpiProjSub: "real + proyecciones", viewGlobal: "Global", viewPlayers: "Por jugador", viewAgents: "Por agente", fAll: "Todo", fAllM: "Todos", lignes: "línea", lignesP: "líneas", emptyAll: "Sin líneas. Añade una entrada/salida o envía una comisión desde el simulador.", emptyFilter: "Sin líneas en este filtro.", thComm: "Comisiones (entradas)", thSplits: "Salidas / repartos", expCSV: "Exportar jugador (CSV)", expPDF: "Exportar jugador (PDF — FIFA)", markReel: "Marcar como realizado (real)", edit: "Editar", del: "Eliminar", confirmDel: "Eliminar" } },
 };
 
 function toCSV(rows, lang = "fr") {
@@ -244,7 +238,7 @@ function toCSV(rows, lang = "fr") {
       c.date_paiement || c.date_echeance || "",
       isSortie(c) ? D.sortie : D.entree,
       isReel(c) ? D.reel : D.projection,
-      typeLabel(c.type),
+      typeLabel(c.type, lang),
       c.titre || "", c.player_nom || "", c.club || "", signed(c), c.devise || "EUR",
     ].map(esc).join(";"));
   }
@@ -267,7 +261,7 @@ function exportPDF(title, rows, sub = "", lang = "fr") {
     const m = Number(c.montant) || 0;
     if (isSortie(c)) sorties += m; else entrees += m;
     return `<tr><td>${c.date_paiement || c.date_echeance || ""}</td><td>${isSortie(c) ? D.sortie : D.entree}</td>`
-      + `<td>${isReel(c) ? D.reel : D.projection}</td><td>${esc(typeLabel(c.type))}</td>`
+      + `<td>${isReel(c) ? D.reel : D.projection}</td><td>${esc(typeLabel(c.type, lang))}</td>`
       + `<td class="l">${esc(c.titre)}${c.player_nom ? `<br><span class="m">${esc(c.player_nom)}</span>` : ""}</td>`
       + `<td class="r ${isSortie(c) ? "red" : "grn"}">${isSortie(c) ? "−" : "+"}${m.toLocaleString(loc)} €</td></tr>`;
   }).join("");
@@ -382,7 +376,7 @@ export default function FinancePage() {
     return Object.values(map).map((r) => ({ ...r, solde: r.entree - r.sortie })).sort((a, b) => b.entree - a.entree);
   }, [filtered]);
 
-  const FD = FIN_L[lang] || FIN_L.fr;
+  const FD = FIN_L[lang] || FIN_L.fr; const U = FD.ui;
   const sub = `${fSens === "tous" ? FD.subBoth : fSens === "sortie" ? FD.subOut : FD.subIn} · ${fNature === "tous" ? FD.subBothN : fNature === "reel" ? FD.subReelN : FD.subProjN}`;
   const exportAll = () => downloadCSV(`finance_${todayISO()}.csv`, filtered, lang);
   const exportAllPDF = () => exportPDF(FD.allTitle, filtered, sub, lang);
@@ -405,57 +399,57 @@ export default function FinancePage() {
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-2">
-              <Wallet className="w-7 h-7 text-green-600" /> Finance — entrées & sorties
+              <Wallet className="w-7 h-7 text-green-600" /> {U.title}
             </h1>
-            <p className="text-xs text-slate-500 mt-1">Commissions, dépenses et rentabilité, par opération ou par joueur. Projection vs réel.</p>
+            <p className="text-xs text-slate-500 mt-1">{U.subtitle}</p>
           </div>
           <div className="flex items-center gap-2">
             <QuickImport
               entity="Commission"
-              label="Importer"
+              label={U.import}
               onDone={invalidate}
               fields={[
-                { key: "titre", label: "Libellé", aliases: ["libelle", "label", "description"] },
-                { key: "montant", label: "Montant (€)", aliases: ["amount", "montant_eur"], num: true },
-                { key: "sens", label: "Sens", aliases: ["entree_sortie"] },
-                { key: "nature", label: "Nature", aliases: ["projection_reel"] },
-                { key: "type", label: "Catégorie", aliases: ["categorie", "category"] },
-                { key: "player_nom", label: "Joueur", aliases: ["joueur", "player", "nom"] },
-                { key: "club", label: "Club", aliases: ["team"] },
-                { key: "agent_beneficiaire", label: "Agent", aliases: ["agent", "partenaire"] },
-                { key: "date_echeance", label: "Échéance", aliases: ["date", "echeance", "due_date"] },
+                { key: "titre", label: FD.lib, aliases: ["libelle", "label", "description"] },
+                { key: "montant", label: `${FD.montant} (€)`, aliases: ["amount", "montant_eur"], num: true },
+                { key: "sens", label: FD.sens, aliases: ["entree_sortie"] },
+                { key: "nature", label: FD.nature, aliases: ["projection_reel"] },
+                { key: "type", label: FD.cat, aliases: ["categorie", "category"] },
+                { key: "player_nom", label: FD.joueur, aliases: ["joueur", "player", "nom"] },
+                { key: "club", label: FD.club, aliases: ["team"] },
+                { key: "agent_beneficiaire", label: U.agentPart, aliases: ["agent", "partenaire"] },
+                { key: "date_echeance", label: U.dateEch, aliases: ["date", "echeance", "due_date"] },
               ]}
             />
             <Button variant="outline" onClick={exportAll} disabled={!filtered.length}><FileDown className="w-4 h-4 mr-2" /> CSV</Button>
             <Button variant="outline" onClick={exportAllPDF} disabled={!filtered.length}><FileText className="w-4 h-4 mr-2" /> PDF</Button>
             <Button onClick={() => { setEditing(null); setShowForm(true); }} className="bg-green-600 hover:bg-green-700">
-              <Plus className="w-4 h-4 mr-2" /> Nouvelle ligne
+              <Plus className="w-4 h-4 mr-2" /> {U.newLine}
             </Button>
           </div>
         </div>
 
         {/* KPIs rentabilité */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Kpi icon={ArrowDownLeft} label="Entrées (réel)" value={fmtMoney(kpi.entRe)} color="bg-green-100 text-green-700" />
-          <Kpi icon={ArrowUpRight} label="Sorties (réel)" value={fmtMoney(kpi.sorRe)} color="bg-red-100 text-red-700" />
-          <Kpi icon={Scale} label="Solde réel (rentabilité)" value={fmtSigned(kpi.soldeReel)} sub="gains − dépenses réalisés" color={kpi.soldeReel >= 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"} />
-          <Kpi icon={FlaskConical} label="Solde projeté" value={fmtSigned(kpi.soldeProj)} sub="réel + projections" color="bg-indigo-100 text-indigo-700" />
+          <Kpi icon={ArrowDownLeft} label={U.kpiIn} value={fmtMoney(kpi.entRe)} color="bg-green-100 text-green-700" />
+          <Kpi icon={ArrowUpRight} label={U.kpiOut} value={fmtMoney(kpi.sorRe)} color="bg-red-100 text-red-700" />
+          <Kpi icon={Scale} label={U.kpiReal} value={fmtSigned(kpi.soldeReel)} sub={U.kpiRealSub} color={kpi.soldeReel >= 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"} />
+          <Kpi icon={FlaskConical} label={U.kpiProj} value={fmtSigned(kpi.soldeProj)} sub={U.kpiProjSub} color="bg-indigo-100 text-indigo-700" />
         </div>
 
         {/* Barre d'outils : vue + filtres */}
         <div className="flex items-center gap-2 flex-wrap">
           <div className="bg-white border border-slate-200 rounded-lg p-1 flex gap-1">
-            <button onClick={() => setView("global")} className={`text-xs px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5 ${view === "global" ? "bg-slate-900 text-white" : "text-slate-500"}`}><List className="w-3.5 h-3.5" /> Global</button>
-            <button onClick={() => setView("players")} className={`text-xs px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5 ${view === "players" ? "bg-slate-900 text-white" : "text-slate-500"}`}><Users className="w-3.5 h-3.5" /> Par joueur</button>
-            <button onClick={() => setView("agents")} className={`text-xs px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5 ${view === "agents" ? "bg-slate-900 text-white" : "text-slate-500"}`}><Briefcase className="w-3.5 h-3.5" /> Par agent</button>
+            <button onClick={() => setView("global")} className={`text-xs px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5 ${view === "global" ? "bg-slate-900 text-white" : "text-slate-500"}`}><List className="w-3.5 h-3.5" /> {U.viewGlobal}</button>
+            <button onClick={() => setView("players")} className={`text-xs px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5 ${view === "players" ? "bg-slate-900 text-white" : "text-slate-500"}`}><Users className="w-3.5 h-3.5" /> {U.viewPlayers}</button>
+            <button onClick={() => setView("agents")} className={`text-xs px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5 ${view === "agents" ? "bg-slate-900 text-white" : "text-slate-500"}`}><Briefcase className="w-3.5 h-3.5" /> {U.viewAgents}</button>
           </div>
           <div className="flex items-center gap-1 ml-auto">
-            {[["tous", "Tout"], ["reel", "Réel"], ["projection", "Projection"]].map(([k, l]) => (
+            {[["tous", U.fAll], ["reel", FD.reel], ["projection", FD.projection]].map(([k, l]) => (
               <button key={k} onClick={() => setFNature(k)} className={`text-xs px-3 py-1.5 rounded-full font-medium ${fNature === k ? "bg-indigo-600 text-white" : "bg-white border border-slate-200 text-slate-500"}`}>{l}</button>
             ))}
           </div>
           <div className="flex items-center gap-1">
-            {[["tous", "Tous"], ["entree", "Entrées"], ["sortie", "Sorties"]].map(([k, l]) => (
+            {[["tous", U.fAllM], ["entree", FD.subIn], ["sortie", FD.subOut]].map(([k, l]) => (
               <button key={k} onClick={() => setFSens(k)} className={`text-xs px-3 py-1.5 rounded-full font-medium ${fSens === k ? "bg-slate-700 text-white" : "bg-white border border-slate-200 text-slate-500"}`}>{l}</button>
             ))}
           </div>
@@ -467,30 +461,30 @@ export default function FinancePage() {
         ) : filtered.length === 0 ? (
           <Card><CardContent className="py-16 text-center text-slate-400">
             <Wallet className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-            {entries.length === 0 ? "Aucune ligne. Ajoutez une entrée/sortie ou envoyez une commission depuis le simulateur." : "Aucune ligne dans ce filtre."}
+            {entries.length === 0 ? U.emptyAll : U.emptyFilter}
           </CardContent></Card>
         ) : view === "players" ? (
           /* ── Vue par joueur (rentabilité) ── */
           <Card><CardContent className="p-0"><div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-50"><tr className="text-xs text-slate-500">
-                <th className="text-left px-4 py-2.5 font-medium">Joueur</th>
-                <th className="text-right px-3 py-2.5 font-medium">Entrées</th>
-                <th className="text-right px-3 py-2.5 font-medium">Sorties</th>
-                <th className="text-right px-3 py-2.5 font-medium">Solde</th>
+                <th className="text-left px-4 py-2.5 font-medium">{FD.joueur}</th>
+                <th className="text-right px-3 py-2.5 font-medium">{FD.subIn}</th>
+                <th className="text-right px-3 py-2.5 font-medium">{FD.subOut}</th>
+                <th className="text-right px-3 py-2.5 font-medium">{FD.solde}</th>
                 <th className="px-3 py-2.5"></th>
               </tr></thead>
               <tbody>
                 {perPlayer.map((r) => (
                   <tr key={r.key} className="border-t border-slate-50 hover:bg-slate-50/60">
-                    <td className="px-4 py-2.5 font-medium text-slate-800">{r.name}<span className="text-[11px] text-slate-400 font-normal"> · {r.n} ligne{r.n > 1 ? "s" : ""}</span></td>
+                    <td className="px-4 py-2.5 font-medium text-slate-800">{r.name}<span className="text-[11px] text-slate-400 font-normal"> · {r.n} {r.n > 1 ? U.lignesP : U.lignes}</span></td>
                     <td className="px-3 py-2.5 text-right text-green-700">{fmtMoney(r.entree)}</td>
                     <td className="px-3 py-2.5 text-right text-red-600">{fmtMoney(r.sortie)}</td>
                     <td className={`px-3 py-2.5 text-right font-bold ${r.solde >= 0 ? "text-green-700" : "text-red-600"}`}>{fmtSigned(r.solde)}</td>
                     <td className="px-3 py-2.5 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => exportPlayer(r)} title="Export joueur (CSV)" className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"><FileDown className="w-4 h-4" /></button>
-                        <button onClick={() => exportPlayerPDF(r)} title="Export joueur (PDF — FIFA)" className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"><FileText className="w-4 h-4" /></button>
+                        <button onClick={() => exportPlayer(r)} title={U.expCSV} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"><FileDown className="w-4 h-4" /></button>
+                        <button onClick={() => exportPlayerPDF(r)} title={U.expPDF} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"><FileText className="w-4 h-4" /></button>
                       </div>
                     </td>
                   </tr>
@@ -503,15 +497,15 @@ export default function FinancePage() {
           <Card><CardContent className="p-0"><div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-50"><tr className="text-xs text-slate-500">
-                <th className="text-left px-4 py-2.5 font-medium">Agent / partenaire</th>
-                <th className="text-right px-3 py-2.5 font-medium">Commissions (entrées)</th>
-                <th className="text-right px-3 py-2.5 font-medium">Sorties / splits</th>
-                <th className="text-right px-3 py-2.5 font-medium">Solde</th>
+                <th className="text-left px-4 py-2.5 font-medium">{U.agentPart}</th>
+                <th className="text-right px-3 py-2.5 font-medium">{U.thComm}</th>
+                <th className="text-right px-3 py-2.5 font-medium">{U.thSplits}</th>
+                <th className="text-right px-3 py-2.5 font-medium">{FD.solde}</th>
               </tr></thead>
               <tbody>
                 {perAgent.map((r) => (
                   <tr key={r.key} className="border-t border-slate-50 hover:bg-slate-50/60">
-                    <td className="px-4 py-2.5 font-medium text-slate-800">{r.name}<span className="text-[11px] text-slate-400 font-normal"> · {r.n} ligne{r.n > 1 ? "s" : ""}</span></td>
+                    <td className="px-4 py-2.5 font-medium text-slate-800">{r.name}<span className="text-[11px] text-slate-400 font-normal"> · {r.n} {r.n > 1 ? U.lignesP : U.lignes}</span></td>
                     <td className="px-3 py-2.5 text-right text-green-700">{fmtMoney(r.entree)}</td>
                     <td className="px-3 py-2.5 text-right text-red-600">{fmtMoney(r.sortie)}</td>
                     <td className={`px-3 py-2.5 text-right font-bold ${r.solde >= 0 ? "text-green-700" : "text-red-600"}`}>{fmtSigned(r.solde)}</td>
@@ -525,10 +519,10 @@ export default function FinancePage() {
           <Card><CardContent className="p-0"><div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-50"><tr className="text-xs text-slate-500">
-                <th className="text-left px-4 py-2.5 font-medium">Libellé</th>
-                <th className="text-left px-3 py-2.5 font-medium">Catégorie</th>
-                <th className="text-left px-3 py-2.5 font-medium">Nature</th>
-                <th className="text-right px-3 py-2.5 font-medium">Montant</th>
+                <th className="text-left px-4 py-2.5 font-medium">{FD.lib}</th>
+                <th className="text-left px-3 py-2.5 font-medium">{FD.cat}</th>
+                <th className="text-left px-3 py-2.5 font-medium">{FD.nature}</th>
+                <th className="text-right px-3 py-2.5 font-medium">{FD.montant}</th>
                 <th className="px-3 py-2.5"></th>
               </tr></thead>
               <tbody>
@@ -541,10 +535,10 @@ export default function FinancePage() {
                       </div>
                       <div className="text-[11px] text-slate-400">{[c.player_nom, c.club].filter(Boolean).join(" · ") || "—"}</div>
                     </td>
-                    <td className="px-3 py-2.5 text-slate-500 text-xs">{typeLabel(c.type)}</td>
+                    <td className="px-3 py-2.5 text-slate-500 text-xs">{typeLabel(c.type, lang)}</td>
                     <td className="px-3 py-2.5">
                       <Badge className={`border-0 text-[11px] ${isReel(c) ? "bg-green-100 text-green-700" : "bg-indigo-100 text-indigo-700"}`}>
-                        {isReel(c) ? "Réel" : "Projection"}
+                        {isReel(c) ? FD.reel : FD.projection}
                       </Badge>
                     </td>
                     <td className={`px-3 py-2.5 text-right font-semibold whitespace-nowrap ${isSortie(c) ? "text-red-600" : "text-green-700"}`}>
@@ -553,10 +547,10 @@ export default function FinancePage() {
                     <td className="px-3 py-2.5">
                       <div className="flex items-center justify-end gap-1">
                         {!isReel(c) && (
-                          <button onClick={() => markReel(c)} title="Marquer réalisé (réel)" className="p-1.5 rounded-lg text-green-600 hover:bg-green-50"><CheckCircle2 className="w-4 h-4" /></button>
+                          <button onClick={() => markReel(c)} title={U.markReel} className="p-1.5 rounded-lg text-green-600 hover:bg-green-50"><CheckCircle2 className="w-4 h-4" /></button>
                         )}
-                        <button onClick={() => { setEditing(c); setShowForm(true); }} title="Modifier" className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"><Pencil className="w-4 h-4" /></button>
-                        <button onClick={() => { if (confirm(`Supprimer "${c.titre}" ?`)) deleteMut.mutate(c.id); }} title="Supprimer" className="p-1.5 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => { setEditing(c); setShowForm(true); }} title={U.edit} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"><Pencil className="w-4 h-4" /></button>
+                        <button onClick={() => { if (confirm(`${U.confirmDel} "${c.titre}" ?`)) deleteMut.mutate(c.id); }} title={U.del} className="p-1.5 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
                   </tr>
@@ -575,6 +569,7 @@ export default function FinancePage() {
           initial={editing}
           players={players}
           saving={saving}
+          lang={lang}
         />
       )}
     </div>
