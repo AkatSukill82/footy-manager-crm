@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useSearchParams, Navigate } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useLanguage } from "@/lib/LanguageContext";
 import { Button } from "@/components/ui/button";
@@ -82,9 +82,6 @@ export default function Register() {
 
   const handleGoogle = () => base44.auth.loginWithProvider("google", "/");
 
-  // Accès UNIQUEMENT via un lien d'invitation (qui porte ?email=).
-  if (!searchParams.get("email")) return <Navigate to="/vitrine" replace />;
-
   if (showOtp) {
     return (
       <AuthLayout icon={Mail} title={T.verifyTitle} subtitle={`${T.verifySub} ${email}`}>
@@ -150,7 +147,7 @@ export default function Register() {
           <Label htmlFor="email">{T.email}</Label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-            <Input id="email" type="email" autoComplete="email" readOnly placeholder="you@example.com" value={email} className="pl-10 h-12 bg-muted/40 cursor-not-allowed" required />
+            <Input id="email" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="pl-10 h-12" required />
           </div>
         </div>
         <div className="space-y-2">
