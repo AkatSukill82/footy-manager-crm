@@ -8,6 +8,8 @@ import { t } from "../i18n/translations";
 import { extraTranslations } from "../i18n/extra";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { sendEmail } from "../lib/sendEmail";
+import { BRAND_NAME } from "../lib/brand";
 
 const LANGUAGES = [
   { code: "fr", label: "Français", flag: "🇫🇷", native: "Français" },
@@ -75,12 +77,26 @@ export default function ProfilePage() {
     if (!email || !/.+@.+\..+/.test(email)) { setInviteMsg({ type: "err", text: "E-mail invalide." }); return; }
     setInviteBusy(true); setInviteMsg(null);
     try {
-      // Invitation Base44 : autorise l'e-mail ET envoie l'e-mail d'invitation
-      // au prospect (Base44 sait écrire aux non-utilisateurs, contrairement à SendEmail).
-      await base44.users.inviteUser(email, "user");
+      // E-mail d'invitation PERSONNALISÉ (au nom de la marque) avec le lien
+      // d'inscription — remplace l'e-mail système Base44 (non modifiable).
+      const link = `${window.location.origin}/register?email=${encodeURIComponent(email)}&plan=${invitePlan}`;
+      const subject = `Ton invitation à ${BRAND_NAME}`;
+      const body = [
+        "Bonjour,",
+        "",
+        `Tu as été invité(e) à rejoindre ${BRAND_NAME}.`,
+        "",
+        "Crée ton compte en cliquant sur le lien ci-dessous :",
+        link,
+        "",
+        "À très vite,",
+        `L'équipe ${BRAND_NAME}`,
+      ].join("\n");
+      const res = await sendEmail({ to: email, subject, body });
+      if (!res.ok) throw new Error(res.error || "Échec de l'envoi.");
       // Trace l'invitation + la formule choisie (servira à attribuer le plan au compte).
       try { await base44.entities.AccessRequest.create({ email, formule: invitePlan, statut: "valide", message: "Invitation directe (admin)" }); } catch { /* non bloquant */ }
-      setInviteMsg({ type: "ok", text: `Invitation envoyée à ${email} ✓ — Base44 lui envoie l'e-mail pour créer son compte (formule ${PLAN_LABEL[invitePlan]}).` });
+      setInviteMsg({ type: "ok", text: `Invitation envoyée à ${email} ✓ (formule ${PLAN_LABEL[invitePlan]}).` });
       setInviteEmail("");
     } catch (e) {
       setInviteMsg({ type: "err", text: e?.message || "Échec de l'invitation." });
