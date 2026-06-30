@@ -3,6 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { withOrg } from "@/lib/org";
 import { Newspaper, Settings2, RefreshCw, Loader2, ExternalLink, Plus, X, UserPlus, Check } from "lucide-react";
+import { useLanguage } from "@/lib/LanguageContext";
+
+const NW = {
+  fr: { journal: "Journal", configSources: "Configurer mes sources", refresh: "Actualiser", mySources: "Mes médias / sources (nom ou URL collée)", sourcePh: "Ex: L'Équipe  ou  https://www.lequipe.fr/Football/", noSources: "Aucune → sources par défaut (L'Équipe, Sky, Fabrizio Romano…)", newsTypes: "Types d'actualités", keywords: "Mots-clés (joueur, club, championnat, agence…)", keywordPh: "Ex: Mbappé, Ligue 1, OL…", searching: "Recherche des actualités…", empty: "Aucune actualité. Configure tes sources (⚙️) puis actualise.", addPlayer: "+ joueur", linked: "Associé à un joueur", linkPlayer: "Associer à un joueur", cats: { transfert: "Transferts / Mercato", contrat: "Contrats", performance: "Performances / Résultats", blessure: "Blessures", rumeur: "Rumeurs" } },
+  en: { journal: "News", configSources: "Configure my sources", refresh: "Refresh", mySources: "My media / sources (name or pasted URL)", sourcePh: "e.g. BBC Sport  or  https://www.bbc.com/sport/football", noSources: "None → default sources (L'Équipe, Sky, Fabrizio Romano…)", newsTypes: "News types", keywords: "Keywords (player, club, league, agency…)", keywordPh: "e.g. Mbappé, Premier League…", searching: "Searching the news…", empty: "No news. Configure your sources (⚙️) then refresh.", addPlayer: "+ player", linked: "Linked to a player", linkPlayer: "Link to a player", cats: { transfert: "Transfers / Market", contrat: "Contracts", performance: "Performance / Results", blessure: "Injuries", rumeur: "Rumors" } },
+  es: { journal: "Noticias", configSources: "Configurar mis fuentes", refresh: "Actualizar", mySources: "Mis medios / fuentes (nombre o URL pegada)", sourcePh: "Ej: Marca  o  https://www.marca.com/futbol.html", noSources: "Ninguna → fuentes por defecto (L'Équipe, Sky, Fabrizio Romano…)", newsTypes: "Tipos de noticias", keywords: "Palabras clave (jugador, club, liga, agencia…)", keywordPh: "Ej: Mbappé, LaLiga…", searching: "Buscando noticias…", empty: "Sin noticias. Configura tus fuentes (⚙️) y actualiza.", addPlayer: "+ jugador", linked: "Vinculado a un jugador", linkPlayer: "Vincular a un jugador", cats: { transfert: "Fichajes / Mercado", contrat: "Contratos", performance: "Rendimiento / Resultados", blessure: "Lesiones", rumeur: "Rumores" } },
+};
 
 /**
  * Journal d'actualités configurable sur le dashboard.
@@ -56,6 +63,8 @@ RÈGLE ABSOLUE : uniquement des articles réels avec une URL exacte valide. 6 à
 }
 
 export default function DashboardNews() {
+  const { lang } = useLanguage();
+  const T = NW[lang] || NW.fr;
   const [prefs, setPrefs] = useState(loadPrefs);
   const [showSettings, setShowSettings] = useState(false);
   const [newSource, setNewSource] = useState("");
@@ -111,25 +120,25 @@ export default function DashboardNews() {
       <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-50">
         <div className="flex items-center gap-2">
           <Newspaper className="w-4 h-4 text-green-600" />
-          <span className="font-semibold text-slate-800 text-sm">Journal</span>
+          <span className="font-semibold text-slate-800 text-sm">{T.journal}</span>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={() => setShowSettings((s) => !s)} title="Configurer mes sources" className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"><Settings2 className="w-4 h-4" /></button>
-          <button onClick={() => refetch()} disabled={isFetching} title="Actualiser" className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"><RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} /></button>
+          <button onClick={() => setShowSettings((s) => !s)} title={T.configSources} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"><Settings2 className="w-4 h-4" /></button>
+          <button onClick={() => refetch()} disabled={isFetching} title={T.refresh} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"><RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} /></button>
         </div>
       </div>
 
       {showSettings && (
         <div className="p-4 bg-slate-50/60 border-b border-slate-100 space-y-3">
           <div>
-            <p className="text-xs font-medium text-slate-600 mb-1.5">Mes médias / sources (nom ou URL collée)</p>
+            <p className="text-xs font-medium text-slate-600 mb-1.5">{T.mySources}</p>
             <div className="flex gap-1.5 mb-2">
               <input value={newSource} onChange={(e) => setNewSource(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addSource()}
-                placeholder="Ex: L'Équipe  ou  https://www.lequipe.fr/Football/" className="flex-1 text-sm border border-slate-200 rounded-lg px-2.5 py-1.5" />
+                placeholder={T.sourcePh} className="flex-1 text-sm border border-slate-200 rounded-lg px-2.5 py-1.5" />
               <button onClick={addSource} className="px-2.5 rounded-lg bg-slate-900 text-white"><Plus className="w-4 h-4" /></button>
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {(prefs.sources || []).length === 0 && <span className="text-[11px] text-slate-400">Aucune → sources par défaut (L'Équipe, Sky, Fabrizio Romano…)</span>}
+              {(prefs.sources || []).length === 0 && <span className="text-[11px] text-slate-400">{T.noSources}</span>}
               {(prefs.sources || []).map((s, i) => (
                 <span key={i} className="inline-flex items-center gap-1 text-[11px] bg-white border border-slate-200 rounded-full px-2 py-0.5 text-slate-600 max-w-[200px]">
                   <span className="truncate">{s}</span>
@@ -139,19 +148,19 @@ export default function DashboardNews() {
             </div>
           </div>
           <div>
-            <p className="text-xs font-medium text-slate-600 mb-1.5">Types d'actualités</p>
+            <p className="text-xs font-medium text-slate-600 mb-1.5">{T.newsTypes}</p>
             <div className="flex flex-wrap gap-1.5">
               {CATEGORIES.map((c) => {
                 const on = prefs.categories?.includes(c.id);
-                return <button key={c.id} onClick={() => toggleCat(c.id)} className={`text-[11px] px-2.5 py-1 rounded-full font-medium ${on ? "bg-green-600 text-white" : "bg-white border border-slate-200 text-slate-500"}`}>{c.label}</button>;
+                return <button key={c.id} onClick={() => toggleCat(c.id)} className={`text-[11px] px-2.5 py-1 rounded-full font-medium ${on ? "bg-green-600 text-white" : "bg-white border border-slate-200 text-slate-500"}`}>{T.cats[c.id] || c.label}</button>;
               })}
             </div>
           </div>
           <div>
-            <p className="text-xs font-medium text-slate-600 mb-1.5">Mots-clés (joueur, club, championnat, agence…)</p>
+            <p className="text-xs font-medium text-slate-600 mb-1.5">{T.keywords}</p>
             <div className="flex gap-1.5 mb-2">
               <input value={newKeyword} onChange={(e) => setNewKeyword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addKeyword()}
-                placeholder="Ex: Mbappé, Ligue 1, OL…" className="flex-1 text-sm border border-slate-200 rounded-lg px-2.5 py-1.5" />
+                placeholder={T.keywordPh} className="flex-1 text-sm border border-slate-200 rounded-lg px-2.5 py-1.5" />
               <button onClick={addKeyword} className="px-2.5 rounded-lg bg-slate-900 text-white"><Plus className="w-4 h-4" /></button>
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -167,9 +176,9 @@ export default function DashboardNews() {
 
       <div className="p-3">
         {isFetching && articles.length === 0 ? (
-          <div className="flex items-center justify-center gap-2 py-6 text-slate-400 text-sm"><Loader2 className="w-4 h-4 animate-spin" /> Recherche des actualités…</div>
+          <div className="flex items-center justify-center gap-2 py-6 text-slate-400 text-sm"><Loader2 className="w-4 h-4 animate-spin" /> {T.searching}</div>
         ) : articles.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-4">Aucune actualité. Configure tes sources (⚙️) puis actualise.</p>
+          <p className="text-sm text-slate-400 text-center py-4">{T.empty}</p>
         ) : (
           <div className="space-y-1">
             {articles.slice(0, 10).map((a, i) => (
@@ -180,11 +189,11 @@ export default function DashboardNews() {
                 </a>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   {linked[i] ? (
-                    <span className="inline-flex items-center gap-0.5 text-[10px] text-green-600" title="Associé à un joueur"><Check className="w-3.5 h-3.5" /></span>
+                    <span className="inline-flex items-center gap-0.5 text-[10px] text-green-600" title={T.linked}><Check className="w-3.5 h-3.5" /></span>
                   ) : (
-                    <select defaultValue="" onChange={(e) => associate(a, e.target.value, i)} title="Associer à un joueur"
+                    <select defaultValue="" onChange={(e) => associate(a, e.target.value, i)} title={T.linkPlayer}
                       className="text-[10px] border border-slate-200 rounded px-1 py-0.5 text-slate-500 max-w-[92px]">
-                      <option value="">+ joueur</option>
+                      <option value="">{T.addPlayer}</option>
                       {players.map((p) => <option key={p.id} value={p.id}>{p.nom}</option>)}
                     </select>
                   )}
