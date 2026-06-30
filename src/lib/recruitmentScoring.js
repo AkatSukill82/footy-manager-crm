@@ -23,43 +23,81 @@ export const isOffensive = (poste = "") =>
 
 const clampInt = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.floor(Number(v) || 0)));
 
-// ── Scoring joueur MAJEUR (§7) — 6 critères notés 0..3, total /18 ────────────
+// ── BARÈMES configurables des critères chiffrés (bornes des 4 paliers) ───────
+// Chaque critère numérique = 3 bornes (entre les notes 3/2/1/0) + un sens :
+//   dir "desc" → valeur ≤ borne donne la note haute (plus petit = mieux)
+//   dir "asc"  → valeur ≥ borne donne la note haute (plus grand = mieux)
+// Les valeurs par défaut reproduisent EXACTEMENT le barème historique.
+// L'utilisateur peut déplacer les bornes (stockées en localStorage, par user).
+export const NUMERIC_BANDS = {
+  age:          { label: "Âge",              unit: "ans",            dir: "desc", step: 1,    t: [21, 23, 25] },
+  contract:     { label: "Contrat",          unit: "mois restants",  dir: "desc", step: 1,    t: [12, 18, 24] },
+  market:       { label: "Fit marché",       unit: "clubs cibles",   dir: "asc",  step: 1,    t: [5, 3, 2] },
+  market_value: { label: "Valeur marchande", unit: "M€",             dir: "desc", step: 0.1,  t: [1, 5, 15] },
+  production:   { label: "Production",       unit: "(buts+passes)/90", dir: "asc", step: 0.05, t: [0.75, 0.45, 0.20] },
+};
+const BANDS_KEY = "fdm_recruit_bands";
+
+export function getBandsConfig() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(BANDS_KEY) || "{}"); } catch { saved = {}; }
+  const out = {};
+  for (const [k, def] of Object.entries(NUMERIC_BANDS)) {
+    const t = Array.isArray(saved[k]?.t) && saved[k].t.length === 3
+      ? saved[k].t.map((x) => Number(x))
+      : def.t;
+    out[k] = { ...def, t };
+  }
+  return out;
+}
+export function setBandsConfig(cfg) {
+  const slim = {};
+  for (const k of Object.keys(NUMERIC_BANDS)) if (cfg?.[k]?.t) slim[k] = { t: cfg[k].t.map((x) => Number(x)) };
+  try { localStorage.setItem(BANDS_KEY, JSON.stringify(slim)); } catch { /* ignore */ }
+}
+export function resetBandsConfig() { try { localStorage.removeItem(BANDS_KEY); } catch { /* ignore */ } }
+
+// Note 0..3 d'une valeur selon une définition de bande { dir, t:[a,b,c] }.
+export function noteFromBands(value, band) {
+  const v = Number(value);
+  if (isNaN(v) || !band || !Array.isArray(band.t)) return 0;
+  const [a, b, c] = band.t.map(Number);
+  if (band.dir === "asc") return v >= a ? 3 : v >= b ? 2 : v >= c ? 1 : 0;
+  return v <= a ? 3 : v <= b ? 2 : v <= c ? 1 : 0; // desc
+}
+
+// ── Scoring joueur MAJEUR (§7) — critères notés 0..3 ─────────────────────────
 // Chaque critère stocke directement une note 0..3 saisie/dérivée.
 export const MAJOR_CRITERIA = [
-  { key: "age",        label: "Âge",                hint: "26+ / 24-25 / 22-23 / 18-21" },
-  { key: "contract",   label: "Contrat",            hint: ">24m / 18-24m / 12-18m / ≤12m ou libre" },
-  { key: "level",      label: "Niveau joué",        hint: "D4-jeunes / D3 / D2 / D1 ou D2 forte" },
-  { key: "production", label: "Production/minutes", hint: "faible / moyen / bon / élite" },
-  { key: "agency",     label: "Agence",             hint: "verrouillé / grande / petite / sans agent" },
-  { key: "market",     label: "Fit marché",         hint: "0 club / 2 / 3-4 / 5+" },
-  { key: "fit",        label: "Fit profil cible",   hint: "adéquation au profil recherché (poste, âge, niveau, pays, pied)" },
+  { key: "age",          label: "Âge",                hint: "barème éditable (bornes des paliers)" },
+  { key: "contract",     label: "Contrat",            hint: "barème éditable (mois restants ; libre = note max)" },
+  { key: "level",        label: "Niveau joué",        hint: "D4-jeunes / D3 / D2 / D1 ou D2 forte" },
+  { key: "production",   label: "Production/minutes", hint: "faible / moyen / bon / élite" },
+  { key: "agency",       label: "Agence",             hint: "verrouillé / grande / petite / sans agent" },
+  { key: "market",       label: "Fit marché",         hint: "barème éditable (nb de clubs cibles)" },
+  { key: "market_value", label: "Valeur marchande",   hint: "barème éditable (tranches en M€) — à activer" },
+  { key: "fit",          label: "Fit profil cible",   hint: "adéquation au profil recherché (poste, âge, niveau, pays, pied)" },
 ];
 
-// Dérive la note d'âge (0..3) — 18-21 = 3, plus on vieillit moins de potentiel.
-export function ageScore(age) {
-  const a = Number(age) || 0;
-  if (a >= 18 && a <= 21) return 3;
-  if (a >= 22 && a <= 23) return 2;
-  if (a >= 24 && a <= 25) return 1;
-  return 0; // 26+
+// Note d'âge (0..3) selon le barème configurable (défaut : 18-21=3 … 26+=0).
+export function ageScore(age, bands = getBandsConfig()) {
+  return noteFromBands(age, bands.age);
 }
-// Dérive la note de contrat (0..3) depuis les mois restants (0 = libre/court bon).
-export function contractScore(monthsLeft, isFree) {
+// Note de contrat (0..3) depuis les mois restants — joueur libre = note max.
+export function contractScore(monthsLeft, isFree, bands = getBandsConfig()) {
   if (isFree) return 3;
   const m = Number(monthsLeft);
   if (isNaN(m)) return 0;
-  if (m <= 12) return 3;
-  if (m <= 18) return 2;
-  if (m <= 24) return 1;
-  return 0;
+  return noteFromBands(m, bands.contract);
 }
 // Fit marché depuis le nombre de clubs cibles réalistes.
-export function marketScore(nbClubs) {
-  const n = Number(nbClubs) || 0;
-  if (n >= 5) return 3;
-  if (n >= 3) return 2;
-  if (n >= 2) return 1;
-  return 0;
+export function marketScore(nbClubs, bands = getBandsConfig()) {
+  return noteFromBands(nbClubs, bands.market);
+}
+// Note de valeur marchande (M€) selon le barème configurable.
+export function marketValueScore(valueM, bands = getBandsConfig()) {
+  if (valueM == null || valueM === "") return 0;
+  return noteFromBands(valueM, bands.market_value);
 }
 
 // ── Dérivation AUTOMATIQUE des notes "Niveau" et "Production" ─────────────────
@@ -88,7 +126,7 @@ export function deriveLevelNote({ league_tier, league_code } = {}) {
 // le poste. Offensifs : jugés sur (buts+passes)/90. Autres : note moyenne
 // (SofaScore) prioritaire, sinon contribution + régularité. Petit échantillon
 // (peu de minutes) → note plafonnée par prudence.
-export function deriveProductionNote(stats = {}, poste = "") {
+export function deriveProductionNote(stats = {}, poste = "", bands = getBandsConfig()) {
   const s = stats || {};
   const goals   = Number(s.buts ?? s.goals) || 0;
   const assists = Number(s.passes_decisives ?? s.assists) || 0;
@@ -100,7 +138,7 @@ export function deriveProductionNote(stats = {}, poste = "") {
   const ga90 = (goals + assists) * 90 / minutes;
   let note;
   if (isOffensive(poste)) {
-    note = ga90 >= 0.75 ? 3 : ga90 >= 0.45 ? 2 : ga90 >= 0.20 ? 1 : 0;
+    note = noteFromBands(ga90, bands.production);  // seuils (buts+passes)/90 configurables
     if (rating >= 7.4 && note < 3) note += 1;     // surperformance confirmée par la note
     if (rating && rating < 6.6 && note > 0) note -= 1;
   } else if (rating >= 6.8) {
@@ -166,6 +204,8 @@ export function getCriteriaConfig() {
     key: c.key, label: c.label, hint: c.hint, custom: false,
     enabled: c.key === "fit"
       ? (hasTarget && ov.fit?.enabled !== false)           // fit : seulement si profil cible défini
+      : c.key === "market_value"
+      ? (ov.market_value?.enabled === true)                // valeur marchande : opt-in (désactivé par défaut)
       : (ov[c.key]?.enabled !== false),                    // activé par défaut
     weight: clampInt(ov[c.key]?.weight ?? 1, 1, 5),
   }));
