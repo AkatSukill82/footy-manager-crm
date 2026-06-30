@@ -200,13 +200,18 @@ export function getCriteriaConfig() {
   // (et il ne compte donc pas dans le score ni dans le max).
   const tp = getTargetProfile();
   const hasTarget = !!(tp.poste || tp.ageMin || tp.ageMax || tp.niveau || tp.pays || tp.pied);
+  // Par défaut, le score ne note QUE des infos du joueur + ses stats :
+  // âge, contrat, niveau, production, valeur marchande. "Agence" et "Fit marché"
+  // (nb de clubs) ne sont pas des données du joueur → désactivés par défaut
+  // (réactivables). "Fit profil cible" reste conditionné à un profil défini.
+  const OPT_IN = new Set(["agency", "market"]);
   const base = MAJOR_CRITERIA.map((c) => ({
     key: c.key, label: c.label, hint: c.hint, custom: false,
     enabled: c.key === "fit"
       ? (hasTarget && ov.fit?.enabled !== false)           // fit : seulement si profil cible défini
-      : c.key === "market_value"
-      ? (ov.market_value?.enabled === true)                // valeur marchande : opt-in (désactivé par défaut)
-      : (ov[c.key]?.enabled !== false),                    // activé par défaut
+      : OPT_IN.has(c.key)
+      ? (ov[c.key]?.enabled === true)                      // agence / fit marché : désactivés par défaut
+      : (ov[c.key]?.enabled !== false),                    // joueur + stats : activés par défaut
     weight: clampInt(ov[c.key]?.weight ?? 1, 1, 5),
   }));
   const custom = Array.isArray(saved.custom) ? saved.custom.map((c) => ({
@@ -291,12 +296,10 @@ export function compliance(c = {}) {
 
   if (c.is_minor && !c.fifa_agent_validated) { reasons.push("Mineur sans validation d'un agent FIFA"); bump("red"); }
   if (c.mandate_locked) { reasons.push("Mandat exclusif verrouillé confirmé"); bump("red"); }
-  if (c.instagram && !c.instagram_validated) { reasons.push("Compte Instagram non validé (faux compte possible)"); bump("red"); }
 
   if (c.agency_status === "unknown") { reasons.push("Situation d'agence incertaine"); bump("amber"); }
   if (c.contract_long) { reasons.push("Contrat long (faible fenêtre)"); bump("amber"); }
   if (c.incomplete) { reasons.push("Fiche incomplète"); bump("amber"); }
-  if (!c.is_minor && c.instagram && !c.instagram_validated && level !== "red") bump("amber");
 
   if (level === "green" && reasons.length === 0) reasons.push("Aucun point bloquant détecté");
   return { level, reasons };
@@ -317,7 +320,6 @@ export function deriveStatus({ is_minor, score, compliance_status, minor_require
 export function canBeContactReady(c = {}) {
   if (c.is_minor) return { ok: false, reason: "Mineur : approche directe interdite sans validation." };
   if (c.compliance_status === "red") return { ok: false, reason: "Conformité rouge : à corriger avant contact." };
-  if (!c.instagram_validated) return { ok: false, reason: "Compte Instagram non validé." };
   if (c.mandate_locked) return { ok: false, reason: "Mandat exclusif verrouillé." };
   if ((Number(c.nb_clubs) || 0) < 3) return { ok: false, reason: "Moins de 3 clubs cibles réalistes." };
   if (!c.fifa_agent_validated) return { ok: false, reason: "Validation d'un agent FIFA requise." };
@@ -335,9 +337,9 @@ export function generateMessage({ name = "", club = "", season_hint = "", langua
   return `Bonjour ${prenom}, je suis ta saison à ${club || "ton club"}${season_hint ? ` (${season_hint})` : ""} et ta progression m'impressionne. Je travaille avec ProPulse Agency & Academy sur le projet de carrière et le positionnement marché. Par curiosité : es-tu accompagné actuellement ? Je peux te partager un plan concret si ça t'est utile.`;
 }
 
-// Le message ne se génère que si fiche complète + IG validé + conformité non rouge (§9/§17).
+// Le message ne se génère que si fiche complète + conformité non rouge + non mineur (§9/§17).
 export function canGenerateMessage(c = {}) {
-  return !!c.instagram_validated && c.compliance_status !== "red" && !c.incomplete && !c.is_minor;
+  return c.compliance_status !== "red" && !c.incomplete && !c.is_minor;
 }
 
 // Libellés CRM (§14) pour l'affichage.

@@ -110,12 +110,11 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
     const incomplete = !f.name || !f.age || !f.club || !f.division || !f.positions;
     const comp = compliance({
       is_minor: isMinor, fifa_agent_validated: f.fifa_agent_validated, mandate_locked: f.mandate_locked,
-      instagram: f.instagram, instagram_validated: f.instagram_validated,
       agency_status: f.agency_status, contract_long: monthsUntil(f.contract_end) > 24, incomplete,
     });
     const status = deriveStatus({ is_minor: isMinor, score: total, compliance_status: comp.level });
     const ready = canBeContactReady({
-      is_minor: isMinor, compliance_status: comp.level, instagram_validated: f.instagram_validated,
+      is_minor: isMinor, compliance_status: comp.level,
       mandate_locked: f.mandate_locked, nb_clubs: f.nb_clubs, fifa_agent_validated: f.fifa_agent_validated,
     });
     return { total, max, breakdown, tier, comp, status, ready, incomplete };
@@ -126,7 +125,7 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
     : [f.matches && `${f.matches} matchs`, f.minutes && `${f.minutes} min`].filter(Boolean).join(", ");
 
   const handleGenerate = () => {
-    if (!canGenerateMessage({ instagram_validated: f.instagram_validated, compliance_status: r.comp.level, incomplete: r.incomplete, is_minor: isMinor })) return;
+    if (!canGenerateMessage({ compliance_status: r.comp.level, incomplete: r.incomplete, is_minor: isMinor })) return;
     setMessage(generateMessage({ name: f.name, club: f.club, season_hint: seasonHint, language: f.language }));
   };
 
@@ -258,7 +257,7 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
         <div className="flex items-center justify-between">
           <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Message de contact ({f.language})</div>
           <div className="flex gap-2">
-            <Button onClick={handleGenerate} size="sm" variant="outline" className="gap-1.5" disabled={!canGenerateMessage({ instagram_validated: f.instagram_validated, compliance_status: r.comp.level, incomplete: r.incomplete, is_minor: isMinor })}><Wand2 className="w-4 h-4" /> Générer</Button>
+            <Button onClick={handleGenerate} size="sm" variant="outline" className="gap-1.5" disabled={!canGenerateMessage({ compliance_status: r.comp.level, incomplete: r.incomplete, is_minor: isMinor })}><Wand2 className="w-4 h-4" /> Générer</Button>
             <Button onClick={() => message && navigator.clipboard?.writeText(message)} size="sm" variant="outline" className="gap-1.5" disabled={!message}><Copy className="w-4 h-4" /> Copier</Button>
           </div>
         </div>
