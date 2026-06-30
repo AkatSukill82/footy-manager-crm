@@ -13,8 +13,15 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useLanguage } from "../../lib/LanguageContext";
 import { t } from "../../i18n/translations";
 
+const CS = {
+  fr: { errSearch: "Erreur lors de la recherche : ", errSave: "Erreur lors de la sauvegarde : ", searchPh: "Ex: Real Madrid, Manchester City, PSG…", searching: "Recherche en cours…", countryNeeded: "Pays à renseigner :", countryPh: "Ex: France", incomplete: "Infos incomplètes", fetching: "Récupération…" },
+  en: { errSearch: "Search error: ", errSave: "Save error: ", searchPh: "e.g. Real Madrid, Manchester City, PSG…", searching: "Searching…", countryNeeded: "Country required:", countryPh: "e.g. France", incomplete: "Incomplete info", fetching: "Fetching…" },
+  es: { errSearch: "Error de búsqueda: ", errSave: "Error al guardar: ", searchPh: "Ej: Real Madrid, Manchester City, PSG…", searching: "Buscando…", countryNeeded: "País requerido:", countryPh: "Ej: España", incomplete: "Info incompleta", fetching: "Recuperando…" },
+};
+
 export default function ClubSearch({ onClose }) {
   const { lang } = useLanguage();
+  const CT = CS[lang] || CS.fr;
   const queryClient = useQueryClient();
 
   const [query, setQuery]             = useState("");
@@ -58,7 +65,7 @@ export default function ClubSearch({ onClose }) {
         setLoading(false);
       }
     } catch (err) {
-      setError("Erreur lors de la recherche : " + (err?.message || "inconnue"));
+      setError(CT.errSearch + (err?.message || "inconnue"));
       setLoading(false);
     }
   };
@@ -189,7 +196,7 @@ Champs attendus :
       queryClient.invalidateQueries({ queryKey: ['clubs'] });
       setSaved(true);
     } catch (err) {
-      setError("Erreur lors de la sauvegarde : " + (err?.message || "inconnue"));
+      setError(CT.errSave + (err?.message || "inconnue"));
     } finally {
       setSaving(false);
     }
@@ -210,7 +217,7 @@ Champs attendus :
           <Input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Ex: Real Madrid, Manchester City, PSG…"
+            placeholder={CT.searchPh}
             className="pl-9"
           />
         </div>
@@ -232,7 +239,7 @@ Champs attendus :
       {(loading || loadingFull) && (
         <div className="flex items-center justify-center gap-3 py-8 text-slate-500">
           <Loader2 className="w-5 h-5 animate-spin text-green-600" />
-          <span>Recherche en cours…</span>
+          <span>{CT.searching}</span>
         </div>
       )}
 
@@ -315,7 +322,7 @@ Champs attendus :
             {enriching && (
               <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-500">
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-green-600 flex-shrink-0" />
-                Récupération des infos du club (Transfermarkt, SofaScore, site officiel…)
+                {lang === "en" ? "Fetching club info (Transfermarkt, SofaScore, official site…)" : lang === "es" ? "Recuperando info del club (Transfermarkt, SofaScore, sitio oficial…)" : "Récupération des infos du club (Transfermarkt, SofaScore, site officiel…)"}
               </div>
             )}
 
@@ -323,11 +330,11 @@ Champs attendus :
             {!enriching && (!result.pays || !String(result.pays).trim()) && (
               <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                 <Globe className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                <span className="text-xs text-amber-700 font-medium whitespace-nowrap">Pays à renseigner :</span>
+                <span className="text-xs text-amber-700 font-medium whitespace-nowrap">{CT.countryNeeded}</span>
                 <Input
                   value={result.pays || ""}
                   onChange={(e) => setResult(prev => ({ ...prev, pays: e.target.value }))}
-                  placeholder="Ex: France"
+                  placeholder={CT.countryPh}
                   className="h-8 text-sm"
                 />
               </div>
@@ -416,7 +423,7 @@ Champs attendus :
             {!enriching && !result.entraineur && !result.palmares && (
               <div className="flex flex-col sm:flex-row items-center gap-3 bg-slate-50 border border-dashed border-slate-200 rounded-lg px-4 py-3">
                 <div className="flex-1">
-                  <p className="font-medium text-slate-700 text-sm">Infos incomplètes</p>
+                  <p className="font-medium text-slate-700 text-sm">{CT.incomplete}</p>
                   <p className="text-xs text-slate-500 mt-0.5">
                     L'enrichissement automatique n'a pas tout trouvé. Vous pouvez relancer la recherche.
                   </p>
@@ -448,7 +455,7 @@ Champs attendus :
                   {saving
                     ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />{t(lang, 'clubs.saveBtn')}</>
                     : enriching
-                    ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Récupération…</>
+                    ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />{CT.fetching}</>
                     : <><Plus className="w-4 h-4 mr-2" />{t(lang, 'clubs.saveBtn')}</>}
                 </Button>
               )}

@@ -126,13 +126,13 @@ export default function ClubDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['activityLogs', 'Club', clubId] });
       setIsEditing(false);
     },
-    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour du club"),
+    onError: (err) => setMutationError(err.message || (lang === "en" ? "Error updating the club" : lang === "es" ? "Error al actualizar el club" : "Erreur lors de la mise à jour du club")),
   });
 
   const deleteClubMutation = useMutation({
     mutationFn: () => base44.entities.Club.delete(clubId),
     onSuccess: () => navigate(createPageUrl("Clubs")),
-    onError: (err) => setMutationError(err.message || "Erreur lors de la suppression du club"),
+    onError: (err) => setMutationError(err.message || (lang === "en" ? "Error deleting the club" : lang === "es" ? "Error al eliminar el club" : "Erreur lors de la suppression du club")),
   });
 
   if (!club) return null;
@@ -412,7 +412,7 @@ export default function ClubDetailPage() {
       {!club.budget_annuel && !club.budget_transfert && !club.dette && !club.valeur_effectif && (
         <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-sm text-slate-500">
           <TrendingUp className="w-4 h-4 text-slate-400 flex-shrink-0" />
-          <span>Données financières non renseignées —</span>
+          <span>{lang === "en" ? "Financial data not provided —" : lang === "es" ? "Datos financieros no indicados —" : "Données financières non renseignées —"}</span>
           <a
             href={`https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche?query=${encodeURIComponent(club.nom)}&Feld=verein`}
             target="_blank"

@@ -47,7 +47,7 @@ export default function ClubsPage() {
         }).catch(() => {});
       }
     },
-    onError: (err) => setMutationError(err.message || "Erreur lors de la création du club"),
+    onError: (err) => setMutationError(err.message || (lang === "en" ? "Error creating the club" : lang === "es" ? "Error al crear el club" : "Erreur lors de la création du club")),
   });
 
   const PAGE_SIZE = 18;
@@ -80,7 +80,7 @@ export default function ClubsPage() {
         <div className="max-w-3xl mx-auto">
           <Button variant="ghost" onClick={() => setShowSearch(false)} className="mb-4">← {t(lang, 'common.back')}</Button>
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-slate-900">Rechercher un club</h2>
+            <h2 className="text-2xl font-bold text-slate-900">{lang === "en" ? "Search a club" : lang === "es" ? "Buscar un club" : "Rechercher un club"}</h2>
             <p className="text-slate-500 text-sm mt-1">Données récupérées depuis Transfermarkt & Sofascore</p>
           </div>
           <ClubSearch onClose={() => setShowSearch(false)} />
