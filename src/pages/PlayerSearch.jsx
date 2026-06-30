@@ -16,6 +16,13 @@ import { getCache, setCache, normalizeQuery } from "../lib/searchCache";
 import { playerExternalLinks } from "../lib/externalLinks";
 import { ensureClubForPlayer } from "../lib/ensureClub";
 import { cleanPlayerName } from "../lib/cleanName";
+import { useLanguage } from "../lib/LanguageContext";
+
+const PS = {
+  fr: { title: "Recherche Joueurs", infos: "Infos :", stats: "Stats :", homme: "Homme", femme: "Femme", profilVia: (s) => `Profil via ${s}`, phM: "Ex: Cristiano Ronaldo, Kylian Mbappé…", phF: "Ex: Sam Kerr, Lindsey Morgan…", searching: "Recherche en cours…", found: (n) => `${n} joueur${n > 1 ? "s" : ""} trouvé${n > 1 ? "s" : ""}`, loadingSources: "Transfermarkt · BeSoccer · FotMob · SofaScore…", posteConfirm: "Poste à confirmer :", choose: "Choisir…", sourcesInfo: "Sources infos :", saved: "Sauvegardé", add: "Ajouter", addToPlayers: "Ajouter aux joueurs", playerAdded: "Joueur ajouté", identity: "Identité", clubContract: "Club & Contrat", seasonStats: "Stats saison en cours", missingInfo: "Infos manquantes ? Consultez directement :", age: "Âge", taille: "Taille", poids: "Poids", pied: "Pied fort", vm: "Valeur marchande", elo: "ELO BeSoccer", ddn: "Date de naissance", lieu: "Lieu de naissance", nat: "Nationalité", clubActuel: "Club actuel", ligue: "Ligue", maillot: "Numéro maillot", finContrat: "Fin de contrat", agent: "Agent", matchs: "Matchs", titul: "Titularisat.", minutes: "Minutes", buts: "Buts", passesDec: "Passes déc.", cartonsJ: "Cartons J.", note: "Note", tirs: "Tirs", tirsCadres: "Tirs cadrés", passesCles: "Passes clés", dribbles: "Dribbles", tacles: "Tacles", ans: "ans", errNoneF: (q) => `Aucune joueuse trouvée pour "${q}" sur Soccerdonna. Essayez un seul nom (de famille), sans accents.`, errNoneM: (q) => `Aucun joueur trouvé pour "${q}" sur FotMob, BeSoccer ni Transfermarkt. Essayez le nom complet sans accents, ou un seul nom de famille.`, errSearch: (m) => `Erreur de recherche : ${m}`, connFail: "connexion impossible.", errPoste: "Le poste n'a pas été trouvé automatiquement. Sélectionnez-le ci-dessous avant d'ajouter le joueur.", errDup: (n) => `« ${n} » est déjà dans ta liste — pas de doublon créé.`, errSave: (m) => `Erreur lors de la sauvegarde : ${m}`, unknown: "inconnue" },
+  en: { title: "Player search", infos: "Info:", stats: "Stats:", homme: "Men", femme: "Women", profilVia: (s) => `Profile via ${s}`, phM: "e.g. Cristiano Ronaldo, Kylian Mbappé…", phF: "e.g. Sam Kerr, Lindsey Morgan…", searching: "Searching…", found: (n) => `${n} player${n > 1 ? "s" : ""} found`, loadingSources: "Transfermarkt · BeSoccer · FotMob · SofaScore…", posteConfirm: "Position to confirm:", choose: "Choose…", sourcesInfo: "Info sources:", saved: "Saved", add: "Add", addToPlayers: "Add to players", playerAdded: "Player added", identity: "Identity", clubContract: "Club & Contract", seasonStats: "Current season stats", missingInfo: "Missing info? Check directly:", age: "Age", taille: "Height", poids: "Weight", pied: "Strong foot", vm: "Market value", elo: "BeSoccer ELO", ddn: "Date of birth", lieu: "Place of birth", nat: "Nationality", clubActuel: "Current club", ligue: "League", maillot: "Shirt number", finContrat: "Contract end", agent: "Agent", matchs: "Apps", titul: "Starts", minutes: "Minutes", buts: "Goals", passesDec: "Assists", cartonsJ: "Yellow", note: "Rating", tirs: "Shots", tirsCadres: "On target", passesCles: "Key passes", dribbles: "Dribbles", tacles: "Tackles", ans: "yrs", errNoneF: (q) => `No player found for "${q}" on Soccerdonna. Try a single (last) name, without accents.`, errNoneM: (q) => `No player found for "${q}" on FotMob, BeSoccer or Transfermarkt. Try the full name without accents, or a single last name.`, errSearch: (m) => `Search error: ${m}`, connFail: "connection failed.", errPoste: "The position wasn't found automatically. Select it below before adding the player.", errDup: (n) => `"${n}" is already in your list — no duplicate created.`, errSave: (m) => `Error while saving: ${m}`, unknown: "unknown" },
+  es: { title: "Búsqueda de jugadores", infos: "Info:", stats: "Estadísticas:", homme: "Hombres", femme: "Mujeres", profilVia: (s) => `Perfil vía ${s}`, phM: "Ej: Cristiano Ronaldo, Kylian Mbappé…", phF: "Ej: Sam Kerr, Lindsey Morgan…", searching: "Buscando…", found: (n) => `${n} jugador${n > 1 ? "es" : ""} encontrado${n > 1 ? "s" : ""}`, loadingSources: "Transfermarkt · BeSoccer · FotMob · SofaScore…", posteConfirm: "Posición a confirmar:", choose: "Elegir…", sourcesInfo: "Fuentes info:", saved: "Guardado", add: "Añadir", addToPlayers: "Añadir a jugadores", playerAdded: "Jugador añadido", identity: "Identidad", clubContract: "Club y Contrato", seasonStats: "Estadísticas temporada actual", missingInfo: "¿Falta info? Consulta directamente:", age: "Edad", taille: "Altura", poids: "Peso", pied: "Pie hábil", vm: "Valor de mercado", elo: "ELO BeSoccer", ddn: "Fecha de nacimiento", lieu: "Lugar de nacimiento", nat: "Nacionalidad", clubActuel: "Club actual", ligue: "Liga", maillot: "Dorsal", finContrat: "Fin de contrato", agent: "Agente", matchs: "Partidos", titul: "Titular.", minutes: "Minutos", buts: "Goles", passesDec: "Asist.", cartonsJ: "Amar.", note: "Nota", tirs: "Tiros", tirsCadres: "A puerta", passesCles: "Pases clave", dribbles: "Regates", tacles: "Entradas", ans: "años", errNoneF: (q) => `No se encontró ninguna jugadora para "${q}" en Soccerdonna. Prueba un solo apellido, sin acentos.`, errNoneM: (q) => `No se encontró ningún jugador para "${q}" en FotMob, BeSoccer ni Transfermarkt. Prueba el nombre completo sin acentos, o un solo apellido.`, errSearch: (m) => `Error de búsqueda: ${m}`, connFail: "conexión imposible.", errPoste: "No se encontró la posición automáticamente. Selecciónala abajo antes de añadir al jugador.", errDup: (n) => `«${n}» ya está en tu lista — no se creó duplicado.`, errSave: (m) => `Error al guardar: ${m}`, unknown: "desconocida" },
+};
 
 const posteColors = {
   "Gardien":           "bg-yellow-100 text-yellow-800",
@@ -197,6 +204,8 @@ function mergePersonal(tm, tdb, bs, candidate) {
 // ═════════════════════════════════════════════════════════════════════════════
 
 export default function PlayerSearchPage() {
+  const { lang } = useLanguage();
+  const T = PS[lang] || PS.fr;
   const [query, setQuery]             = useState("");
   const [gender, setGender]           = useState("H");   // H = Transfermarkt, F = Soccerdonna
   const [loading, setLoading]         = useState(false);
@@ -309,9 +318,7 @@ export default function PlayerSearchPage() {
           cached.data.length === 1 ? fetchFullProfile(cached.data[0]) : setCandidates(cached.data);
           return;
         }
-        setError(gender === "F"
-          ? `Aucune joueuse trouvée pour "${query}" sur Soccerdonna. Essayez un seul nom (de famille), sans accents.`
-          : `Aucun joueur trouvé pour "${query}" sur FotMob, BeSoccer ni Transfermarkt. Essayez le nom complet sans accents, ou un seul nom de famille.`);
+        setError(gender === "F" ? T.errNoneF(query) : T.errNoneM(query));
         setLoading(false);
         return;
       }
@@ -327,7 +334,7 @@ export default function PlayerSearchPage() {
         cached.data.length === 1 ? fetchFullProfile(cached.data[0]) : setCandidates(cached.data);
         return;
       }
-      setError("Erreur de recherche : " + (err?.message || "connexion impossible."));
+      setError(T.errSearch(err?.message || T.connFail));
       setLoading(false);
     }
   };
@@ -424,7 +431,7 @@ export default function PlayerSearchPage() {
     if (!result) return;
     // Le poste est requis par l'entité Player — on guide l'utilisateur au lieu de planter
     if (!result.poste) {
-      setError("Le poste n'a pas été trouvé automatiquement. Sélectionnez-le ci-dessous avant d'ajouter le joueur.");
+      setError(T.errPoste);
       return;
     }
     setSaving(true);
@@ -509,7 +516,7 @@ export default function PlayerSearchPage() {
       const norm = (x) => (x || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
       const existingPlayers = await base44.entities.Player.filter({});
       if ((existingPlayers || []).some((p) => norm(p.nom) === norm(clean.nom))) {
-        setError(`« ${clean.nom} » est déjà dans ta liste — pas de doublon créé.`);
+        setError(T.errDup(clean.nom));
         setSaving(false);
         return;
       }
@@ -540,7 +547,7 @@ export default function PlayerSearchPage() {
 
       setTimeout(() => navigate(createPageUrl("PlayerDetail") + `?id=${created.id}`), 800);
     } catch (err) {
-      setError("Erreur lors de la sauvegarde : " + (err.message || "inconnue"));
+      setError(T.errSave(err.message || T.unknown));
     } finally {
       setSaving(false);
     }
@@ -556,16 +563,16 @@ export default function PlayerSearchPage() {
         {/* Header */}
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-2">
-            <Search className="w-7 h-7 text-green-500" /> Recherche Joueurs
+            <Search className="w-7 h-7 text-green-500" /> {T.title}
           </h1>
           <div className="flex flex-wrap gap-1.5 mt-2 items-center text-[11px]">
-            <span className="text-slate-400">Infos :</span>
+            <span className="text-slate-400">{T.infos}</span>
             {["Transfermarkt","BeSoccer"].map(s => (
               <span key={s} className={`px-2 py-0.5 rounded-full font-medium ${
                 s === "Transfermarkt" ? "bg-blue-100 text-blue-700" :
                 "bg-emerald-100 text-emerald-700"}`}>{s}</span>
             ))}
-            <span className="text-slate-400 ml-2">Stats :</span>
+            <span className="text-slate-400 ml-2">{T.stats}</span>
             {["FotMob","SofaScore","BeSoccer"].map(s => (
               <span key={s} className={`px-2 py-0.5 rounded-full font-medium ${
                 s === "FotMob"    ? "bg-orange-100 text-orange-700" :
@@ -578,8 +585,8 @@ export default function PlayerSearchPage() {
         {/* Sélecteur Homme / Femme (source d'identité : Transfermarkt / Soccerdonna) */}
         <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl w-fit mb-2">
           {[
-            { v: "H", label: "Homme", src: "Transfermarkt" },
-            { v: "F", label: "Femme", src: "Soccerdonna" },
+            { v: "H", label: T.homme, src: "Transfermarkt" },
+            { v: "F", label: T.femme, src: "Soccerdonna" },
           ].map((g) => (
             <button
               key={g.v}
@@ -588,20 +595,20 @@ export default function PlayerSearchPage() {
               className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
                 gender === g.v ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
               }`}
-              title={`Profil via ${g.src}`}
+              title={T.profilVia(g.src)}
             >
               {g.label}
             </button>
           ))}
           <span className="text-[11px] text-slate-400 px-2 hidden sm:inline">
-            {gender === "F" ? "Profil via Soccerdonna" : "Profil via Transfermarkt"}
+            {gender === "F" ? T.profilVia("Soccerdonna") : T.profilVia("Transfermarkt")}
           </span>
         </div>
 
         {/* Barre de recherche */}
         <form onSubmit={handleSearch} className="flex gap-2">
           <Input value={query} onChange={e => setQuery(e.target.value)}
-            placeholder={gender === "F" ? "Ex: Sam Kerr, Lindsey Morgan…" : "Ex: Cristiano Ronaldo, Kylian Mbappé…"}
+            placeholder={gender === "F" ? T.phF : T.phM}
             className="flex-1 h-12 text-base shadow-sm" />
           <Button type="submit" disabled={loading} className="h-12 px-6 bg-green-600 hover:bg-green-700">
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
@@ -621,7 +628,7 @@ export default function PlayerSearchPage() {
         {loading && (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
-            <p className="text-slate-600 font-medium">Recherche en cours…</p>
+            <p className="text-slate-600 font-medium">{T.searching}</p>
           </div>
         )}
 
@@ -631,7 +638,7 @@ export default function PlayerSearchPage() {
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <Search className="w-4 h-4 text-green-500" />
-                {candidates.length} joueur{candidates.length > 1 ? "s" : ""} trouvé{candidates.length > 1 ? "s" : ""}
+                {T.found(candidates.length)}
                 {searchSource && <SourceBadge sources={[searchSource]} />}
               </CardTitle>
             </CardHeader>
@@ -664,7 +671,7 @@ export default function PlayerSearchPage() {
         {loadingFull && (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
-            <p className="text-slate-600 font-medium">Transfermarkt · BeSoccer · FotMob · SofaScore…</p>
+            <p className="text-slate-600 font-medium">{T.loadingSources}</p>
           </div>
         )}
 
@@ -697,20 +704,20 @@ export default function PlayerSearchPage() {
                     {/* Sélecteur de poste si introuvable (champ requis) */}
                     {!result.poste && (
                       <div className="mt-2 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
-                        <span className="text-xs text-amber-700 font-medium">Poste à confirmer :</span>
+                        <span className="text-xs text-amber-700 font-medium">{T.posteConfirm}</span>
                         <select
                           value=""
                           onChange={e => setPoste(e.target.value)}
                           className="text-xs border border-amber-300 rounded-md px-2 py-1 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-400"
                         >
-                          <option value="" disabled>Choisir…</option>
+                          <option value="" disabled>{T.choose}</option>
                           {POSTES.map(p => <option key={p} value={p}>{p}</option>)}
                         </select>
                       </div>
                     )}
                     {result.sources_perso?.length > 0 && (
                       <div className="flex items-center gap-1.5 mt-2">
-                        <span className="text-[10px] text-slate-400">Sources infos :</span>
+                        <span className="text-[10px] text-slate-400">{T.sourcesInfo}</span>
                         <SourceBadge sources={result.sources_perso} />
                       </div>
                     )}
@@ -728,22 +735,22 @@ export default function PlayerSearchPage() {
 
                   <Button onClick={handleSaveToApp} disabled={saving || saved}
                     className={`flex-shrink-0 ${saved ? "bg-green-600" : "bg-slate-900 hover:bg-slate-700"}`} size="sm">
-                    {saved   ? <><Trophy className="w-4 h-4 mr-1" /> Sauvegardé</>
+                    {saved   ? <><Trophy className="w-4 h-4 mr-1" /> {T.saved}</>
                      : saving ? <Loader2 className="w-4 h-4 animate-spin" />
-                     : <><Plus className="w-4 h-4 mr-1" /> Ajouter</>}
+                     : <><Plus className="w-4 h-4 mr-1" /> {T.add}</>}
                   </Button>
                 </div>
 
                 {/* Stats identité rapides */}
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-4">
-                  <StatBox label="Âge"             value={result.age ? `${result.age} ans` : null} />
-                  <StatBox label="Taille"           value={result.taille ? `${result.taille} cm` : null} />
-                  <StatBox label="Poids"            value={result.poids  ? `${result.poids} kg`  : null} />
-                  <StatBox label="Pied fort"        value={result.pied_fort} />
-                  <StatBox label="Valeur marchande" value={result.valeur_marchande ? `${result.valeur_marchande} M€` : null}
+                  <StatBox label={T.age}             value={result.age ? `${result.age} ${T.ans}` : null} />
+                  <StatBox label={T.taille}           value={result.taille ? `${result.taille} cm` : null} />
+                  <StatBox label={T.poids}            value={result.poids  ? `${result.poids} kg`  : null} />
+                  <StatBox label={T.pied}        value={result.pied_fort} />
+                  <StatBox label={T.vm} value={result.valeur_marchande ? `${result.valeur_marchande} M€` : null}
                     color="bg-green-50" textColor="text-green-700"
                     src={result.sources_perso?.includes("Transfermarkt") ? "TM" : null} />
-                  <StatBox label="ELO BeSoccer"     value={s?.besoccer_elo}
+                  <StatBox label={T.elo}     value={s?.besoccer_elo}
                     color="bg-emerald-50" textColor="text-emerald-700" src="BS" />
                 </div>
               </CardContent>
@@ -754,34 +761,34 @@ export default function PlayerSearchPage() {
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <User className="w-4 h-4 text-blue-500" /> Identité
+                    <User className="w-4 h-4 text-blue-500" /> {T.identity}
                     <SourceBadge sources={result.sources_perso || []} />
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <InfoRow label="Date de naissance" value={result.date_naissance} />
-                  <InfoRow label="Lieu de naissance" value={result.lieu_naissance} />
-                  <InfoRow label="Nationalité"       value={result.nationalite} />
-                  <InfoRow label="Taille"            value={result.taille ? `${result.taille} cm` : null} />
-                  <InfoRow label="Poids"             value={result.poids  ? `${result.poids} kg`  : null} />
-                  <InfoRow label="Pied fort"         value={result.pied_fort} />
+                  <InfoRow label={T.ddn} value={result.date_naissance} />
+                  <InfoRow label={T.lieu} value={result.lieu_naissance} />
+                  <InfoRow label={T.nat}       value={result.nationalite} />
+                  <InfoRow label={T.taille}            value={result.taille ? `${result.taille} cm` : null} />
+                  <InfoRow label={T.poids}             value={result.poids  ? `${result.poids} kg`  : null} />
+                  <InfoRow label={T.pied}         value={result.pied_fort} />
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-orange-500" /> Club &amp; Contrat
+                    <Building2 className="w-4 h-4 text-orange-500" /> {T.clubContract}
                     <SourceBadge sources={result.sources_perso || []} />
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <InfoRow label="Club actuel"      value={result.club_actuel} />
-                  <InfoRow label="Ligue"            value={result.ligue} />
-                  <InfoRow label="Numéro maillot"   value={result.numero_maillot} />
-                  <InfoRow label="Fin de contrat"   value={result.contrat_fin} />
-                  <InfoRow label="Valeur marchande" value={result.valeur_marchande ? `${result.valeur_marchande} M€` : null} />
-                  <InfoRow label="Agent"            value={result.agent} />
+                  <InfoRow label={T.clubActuel}      value={result.club_actuel} />
+                  <InfoRow label={T.ligue}            value={result.ligue} />
+                  <InfoRow label={T.maillot}   value={result.numero_maillot} />
+                  <InfoRow label={T.finContrat}   value={result.contrat_fin} />
+                  <InfoRow label={T.vm} value={result.valeur_marchande ? `${result.valeur_marchande} M€` : null} />
+                  <InfoRow label={T.agent}            value={result.agent} />
                 </CardContent>
               </Card>
             </div>
@@ -792,29 +799,29 @@ export default function PlayerSearchPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <BarChart2 className="w-4 h-4 text-purple-500" />
-                    Stats saison en cours
+                    {T.seasonStats}
                     <SourceBadge sources={s.sources || []} />
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
-                    <StatBox label="Matchs"         value={s.matchs_joues}      src="FM" />
-                    <StatBox label="Titularisat."    value={s.titularisations}   src="FM" />
-                    <StatBox label="Minutes"         value={s.minutes_jouees}    src="FM" />
-                    <StatBox label="Buts"            value={s.buts}              color="bg-green-50" textColor="text-green-700" src="FM" />
-                    <StatBox label="Passes déc."     value={s.passes_decisives}  color="bg-blue-50"  textColor="text-blue-700" src="FM" />
-                    <StatBox label="Cartons J."      value={s.cartons_jaunes}    color="bg-yellow-50" src="FM" />
-                    <StatBox label="Note"            value={s.note_moyenne}      color="bg-indigo-50" textColor="text-indigo-700" src="SS" />
+                    <StatBox label={T.matchs}         value={s.matchs_joues}      src="FM" />
+                    <StatBox label={T.titul}    value={s.titularisations}   src="FM" />
+                    <StatBox label={T.minutes}         value={s.minutes_jouees}    src="FM" />
+                    <StatBox label={T.buts}            value={s.buts}              color="bg-green-50" textColor="text-green-700" src="FM" />
+                    <StatBox label={T.passesDec}     value={s.passes_decisives}  color="bg-blue-50"  textColor="text-blue-700" src="FM" />
+                    <StatBox label={T.cartonsJ}      value={s.cartons_jaunes}    color="bg-yellow-50" src="FM" />
+                    <StatBox label={T.note}            value={s.note_moyenne}      color="bg-indigo-50" textColor="text-indigo-700" src="SS" />
                   </div>
                   {(s.xg != null || s.tirs != null || s.passes_cles != null) && (
                     <div className="grid grid-cols-3 sm:grid-cols-7 gap-2 mt-2">
                       <StatBox label="xG"           value={s.xg}               color="bg-green-50" textColor="text-green-700" src="SS" />
                       <StatBox label="xA"           value={s.xa}               color="bg-blue-50"  textColor="text-blue-700" src="SS" />
-                      <StatBox label="Tirs"         value={s.tirs}             src="SS" />
-                      <StatBox label="Tirs cadrés"  value={s.tirs_cadres}      src="SS" />
-                      <StatBox label="Passes clés"  value={s.passes_cles}      src="SS" />
-                      <StatBox label="Dribbles"     value={s.dribbles_reussis} src="SS" />
-                      <StatBox label="Tacles"       value={s.tacles}           src="SS" />
+                      <StatBox label={T.tirs}         value={s.tirs}             src="SS" />
+                      <StatBox label={T.tirsCadres}  value={s.tirs_cadres}      src="SS" />
+                      <StatBox label={T.passesCles}  value={s.passes_cles}      src="SS" />
+                      <StatBox label={T.dribbles}     value={s.dribbles_reussis} src="SS" />
+                      <StatBox label={T.tacles}       value={s.tacles}           src="SS" />
                     </div>
                   )}
                 </CardContent>
@@ -826,7 +833,7 @@ export default function PlayerSearchPage() {
               <CardContent className="pt-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Link className="w-4 h-4 text-slate-400" />
-                  <p className="text-sm text-slate-500 font-medium">Infos manquantes ? Consultez directement :</p>
+                  <p className="text-sm text-slate-500 font-medium">{T.missingInfo}</p>
                 </div>
                 <ExternalLinks
                   nom={result.nom}
@@ -844,8 +851,8 @@ export default function PlayerSearchPage() {
                 className={`${saved ? "bg-green-600" : "bg-slate-900 hover:bg-slate-700"} px-8`}>
                 {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                 {saved
-                  ? <><Trophy className="w-4 h-4 mr-2" /> Joueur ajouté <ArrowRight className="w-4 h-4 ml-2" /></>
-                  : <><Plus className="w-4 h-4 mr-2" /> Ajouter aux joueurs</>}
+                  ? <><Trophy className="w-4 h-4 mr-2" /> {T.playerAdded} <ArrowRight className="w-4 h-4 ml-2" /></>
+                  : <><Plus className="w-4 h-4 mr-2" /> {T.addToPlayers}</>}
               </Button>
             </div>
           </div>
