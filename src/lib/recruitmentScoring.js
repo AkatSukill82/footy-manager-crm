@@ -61,6 +61,56 @@ export function marketScore(nbClubs) {
   return 0;
 }
 
+// ── Dérivation AUTOMATIQUE des notes "Niveau" et "Production" ─────────────────
+// Alimentées par Transfermarkt (niveau de ligue) et par les stats fusionnées
+// (production /90). Renvoient `null` quand la donnée manque → on garde alors la
+// saisie manuelle. Le scout peut toujours surcharger la note proposée.
+
+// Deuxièmes divisions « fortes » (codes compétition Transfermarkt) → notées 3
+// comme une D1, car le niveau y est comparable (cf. barème "D1 ou D2 forte").
+const STRONG_SECOND_TIERS = new Set(["GB2", "ES2", "IT2", "L2", "FR2", "PO2"]);
+
+// Niveau de ligue → note 0..3 (1er niveau = 3 · 2e = 2 (ou 3 si forte) · 3e = 1 · 4e+ = 0).
+export function tierToLevelNote(tier, code = "") {
+  const t = Number(tier);
+  if (!t || isNaN(t)) return null;          // pas de niveau connu → manuel
+  if (t <= 1) return 3;
+  if (t === 2) return STRONG_SECOND_TIERS.has(String(code).toUpperCase()) ? 3 : 2;
+  if (t === 3) return 1;
+  return 0;                                  // 4e niveau et au-delà / jeunes
+}
+export function deriveLevelNote({ league_tier, league_code } = {}) {
+  return tierToLevelNote(league_tier, league_code);
+}
+
+// Production → note 0..3 à partir des stats saison normalisées par 90 min, selon
+// le poste. Offensifs : jugés sur (buts+passes)/90. Autres : note moyenne
+// (SofaScore) prioritaire, sinon contribution + régularité. Petit échantillon
+// (peu de minutes) → note plafonnée par prudence.
+export function deriveProductionNote(stats = {}, poste = "") {
+  const s = stats || {};
+  const goals   = Number(s.buts ?? s.goals) || 0;
+  const assists = Number(s.passes_decisives ?? s.assists) || 0;
+  const matches = Number(s.matchs_joues ?? s.matches) || 0;
+  const rating  = Number(s.note_moyenne) || 0;
+  const minutes = (Number(s.minutes_jouees ?? s.minutes) || 0) || matches * 72;
+  if (minutes < 270) return null;            // < ~3 matchs : échantillon insuffisant → manuel
+
+  const ga90 = (goals + assists) * 90 / minutes;
+  let note;
+  if (isOffensive(poste)) {
+    note = ga90 >= 0.75 ? 3 : ga90 >= 0.45 ? 2 : ga90 >= 0.20 ? 1 : 0;
+    if (rating >= 7.4 && note < 3) note += 1;     // surperformance confirmée par la note
+    if (rating && rating < 6.6 && note > 0) note -= 1;
+  } else if (rating >= 6.8) {
+    note = rating >= 7.3 ? 3 : rating >= 7.05 ? 2 : 1;   // milieux/déf/GK : note moyenne d'abord
+  } else {
+    note = ga90 >= 0.35 ? 2 : ga90 >= 0.15 ? 1 : minutes >= 1500 ? 1 : 0;
+  }
+  if (minutes < 720 && note > 2) note = 2;     // < ~8 matchs : prudence
+  return Math.max(0, Math.min(3, note));
+}
+
 // Scoring pondéré : ne compte que les critères ACTIVÉS, chacun × son poids.
 // Renvoie aussi `max` (dynamique) car il dépend des critères actifs et des poids.
 export function scoreMajor(notes = {}, config = getCriteriaConfig()) {

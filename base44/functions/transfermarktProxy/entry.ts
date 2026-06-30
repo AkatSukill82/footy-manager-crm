@@ -197,6 +197,24 @@ const parseProfile = (html: string, url: string): Record<string, any> => {
   const clubM = html.match(/href="\/[^"]+\/(?:verein|club)\/\d+"[^>]*>\s*(?:<[^>]+>)*\s*([A-Z][^<\n]{2,40}?)\s*(?:<|$)/im);
   if (clubM) d.club_actuel = clubM[1].replace(/<[^>]+>/g, "").trim();
 
+  // ── Ligue du club + niveau (tier) ──────────────────────────────────────────
+  // L'entête joueur affiche "League level: First Tier" et un lien vers la
+  // compétition. On prend le DERNIER lien /startseite/wettbewerb/ situé AVANT
+  // "League level:" (= la ligue du club courant, pas la sélection nationale).
+  const llIdx = html.indexOf("League level:");
+  const seg = llIdx > 0 ? html.slice(0, llIdx) : "";
+  const leagueLinks = [...seg.matchAll(/href="\/[a-z0-9-]+\/startseite\/wettbewerb\/([A-Z0-9]+)"[^>]*>(?:\s*<img[^>]*>\s*)?\s*([^<\n]*)/gi)];
+  if (leagueLinks.length) {
+    const last = leagueLinks[leagueLinks.length - 1];
+    d.league_code = last[1];
+    const lname = (last[2] || "").replace(/&[^;]+;/g, " ").replace(/\s+/g, " ").trim();
+    if (lname) d.ligue = lname;
+  }
+  // Niveau de ligue : "First Tier" → 1, "Second Tier" → 2, etc.
+  const TIER_WORDS: Record<string, number> = { first: 1, second: 2, third: 3, fourth: 4, fifth: 5, sixth: 6 };
+  const tierM = html.match(/League level:[\s\S]{0,400}?([A-Z][a-z]+)\s+Tier/);
+  if (tierM && TIER_WORDS[tierM[1].toLowerCase()]) d.league_tier = TIER_WORDS[tierM[1].toLowerCase()];
+
   // Photo — cherche l'URL portrait TM (format CDN fiable)
   const photoM = html.match(/https:\/\/img\.a\.transfermarkt\.technology\/portrait\/(?:medium|big)\/[^"'\s>]+\.jpg/i) ||
                  html.match(/https:\/\/img\.a\.transfermarkt\.technology\/portrait\/[^"'\s>]+\.jpg/i) ||

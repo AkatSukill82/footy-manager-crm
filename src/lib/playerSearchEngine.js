@@ -57,7 +57,9 @@ function mergePersonal(tm, tdb, bs, candidate) {
     pied_fort: t.pied_fort || d.pied_fort || b.pied_fort,
     poste: t.poste || d.poste || b.poste || c.poste,
     club_actuel: t.club_actuel || b.club_actuel || d.club_actuel || c.club_actuel,
-    ligue: b.ligue || null,
+    ligue: t.ligue || b.ligue || null,
+    league_tier: t.league_tier ?? null,   // niveau de ligue (1=D1, 2=D2…) depuis Transfermarkt
+    league_code: t.league_code ?? null,   // code compétition TM (ES1, GB2…) pour affiner D2 forte
     valeur_marchande: t.valeur_marchande || b.valeur_marchande,
     contrat_fin: t.contrat_fin || b.contrat_fin,
     agent: t.agent || null,

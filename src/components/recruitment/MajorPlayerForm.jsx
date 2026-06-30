@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ExternalLink, ShieldAlert, ShieldCheck, AlertTriangle, Save, Wand2, Copy, UserPlus, Loader2, CheckCircle2, Target } from "lucide-react";
+import { ExternalLink, ShieldAlert, ShieldCheck, AlertTriangle, Save, Wand2, Copy, UserPlus, Loader2, Target } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -67,6 +67,7 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
   // Préremplissage depuis le moteur de recherche (même moteur que la page Joueurs).
   const [lastFound, setLastFound] = useState(null);   // profil recherché → bouton « prospect »
   const [prospect, setProspect] = useState(null);     // { id, nom } | { exists, nom } | "loading"
+  const [autoNotes, setAutoNotes] = useState({ level: false, production: false }); // notes auto-dérivées
   const qc = useQueryClient();
   const navigate = useNavigate();
 
@@ -74,6 +75,7 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
     setLastFound(p);
     setProspect(null);
     const mapped = playerToMajorFields(p);
+    setAutoNotes({ level: mapped.level_note != null, production: mapped.production_note != null });
     setF((s) => { const next = { ...s }; Object.entries(mapped).forEach(([k, v]) => { if (v) next[k] = v; }); return next; });
   };
 
@@ -214,8 +216,8 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
         <Num label="Minutes" value={f.minutes} onChange={(v) => set("minutes", v)} ph="2400" />
         <Num label="Buts" value={f.goals} onChange={(v) => set("goals", v)} ph="10" />
         <Num label="Passes déc." value={f.assists} onChange={(v) => set("assists", v)} ph="8" />
-        <Sel label="Niveau joué" value={f.level_note} onChange={(v) => set("level_note", v)} options={[{ v: "0", l: "D4 / jeunes" }, { v: "1", l: "D3" }, { v: "2", l: "D2" }, { v: "3", l: "D1 ou D2 forte" }]} />
-        <Sel label="Production (apprécation)" value={f.production_note} onChange={(v) => set("production_note", v)} options={[{ v: "0", l: "Faible" }, { v: "1", l: "Moyen" }, { v: "2", l: "Bon" }, { v: "3", l: "Élite pour l'âge" }]} />
+        <Sel label={`Niveau joué${autoNotes.level ? " · auto (Transfermarkt)" : ""}`} value={f.level_note} onChange={(v) => { set("level_note", v); setAutoNotes((a) => ({ ...a, level: false })); }} options={[{ v: "0", l: "D4 / jeunes" }, { v: "1", l: "D3" }, { v: "2", l: "D2" }, { v: "3", l: "D1 ou D2 forte" }]} />
+        <Sel label={`Production (apprécation)${autoNotes.production ? " · auto (stats)" : ""}`} value={f.production_note} onChange={(v) => { set("production_note", v); setAutoNotes((a) => ({ ...a, production: false })); }} options={[{ v: "0", l: "Faible" }, { v: "1", l: "Moyen" }, { v: "2", l: "Bon" }, { v: "3", l: "Élite pour l'âge" }]} />
       </Section>
 
       {/* Critères personnalisés (config utilisateur) */}

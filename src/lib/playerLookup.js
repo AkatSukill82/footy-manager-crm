@@ -1,5 +1,6 @@
 import { invokeFn } from "@/api/base44Client";
 import { ageFromDob } from "@/lib/transferCalc";
+import { deriveLevelNote, deriveProductionNote } from "@/lib/recruitmentScoring";
 
 /**
  * Récupération de données joueur depuis un lien (Transfermarkt / FotMob) ou un nom.
@@ -37,6 +38,10 @@ const str = (v) => (v != null && v !== "" ? String(v) : "");
 export function playerToMajorFields(p = {}) {
   const ageVal = p.age != null && p.age !== "" ? p.age : ageFromDob(p.date_naissance);
   const st = p.stats_saison || {};
+  // Notes dérivées automatiquement : niveau (tier de ligue Transfermarkt) et
+  // production (stats /90 par poste). `null` → on laisse la saisie manuelle.
+  const levelNote = deriveLevelNote({ league_tier: p.league_tier, league_code: p.league_code });
+  const prodNote = deriveProductionNote(st, p.poste || p.position);
   return {
     name: p.nom || p.name || "",
     age: str(ageVal),
@@ -54,5 +59,8 @@ export function playerToMajorFields(p = {}) {
     minutes: str(st.minutes_jouees),
     goals: str(st.buts),
     assists: str(st.passes_decisives),
+    // Notes auto-dérivées (undefined si non calculable → ne pas écraser le manuel)
+    level_note: levelNote != null ? String(levelNote) : undefined,
+    production_note: prodNote != null ? String(prodNote) : undefined,
   };
 }
