@@ -5,6 +5,13 @@ import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Users, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { useLanguage } from "../../lib/LanguageContext";
+
+const FP = {
+  fr: { filter: "Filtrer :", pays: "Pays", ageMax: "Âge max", niveau: "Niveau", dispo: "Dispo", priorite: "Priorité", reset: "Réinitialiser", projection: "Projection de l'effectif", squad: (n, tot, cov) => `${n} joueur${n > 1 ? "s" : ""}${n !== tot ? ` / ${tot}` : ""} · ${cov}/11 postes couverts`, missingPost: (r) => `Poste manquant : ${r}`, legend: "Cercle plein = joueur de la liste · pointillé rouge = poste manquant · « * » = joueur placé via son poste secondaire.", missingPositions: "Postes manquants", allCovered: (f) => `Tous les postes du ${f} sont couverts ✓`, squadByPos: "Effectif par poste" },
+  en: { filter: "Filter:", pays: "Country", ageMax: "Max age", niveau: "Level", dispo: "Avail.", priorite: "Priority", reset: "Reset", projection: "Squad projection", squad: (n, tot, cov) => `${n} player${n > 1 ? "s" : ""}${n !== tot ? ` / ${tot}` : ""} · ${cov}/11 positions covered`, missingPost: (r) => `Missing position: ${r}`, legend: "Solid circle = player from the list · red dashed = missing position · “*” = player placed via secondary position.", missingPositions: "Missing positions", allCovered: (f) => `All ${f} positions are covered ✓`, squadByPos: "Squad by position" },
+  es: { filter: "Filtrar:", pays: "País", ageMax: "Edad máx", niveau: "Nivel", dispo: "Disp.", priorite: "Prioridad", reset: "Restablecer", projection: "Proyección de la plantilla", squad: (n, tot, cov) => `${n} jugador${n > 1 ? "es" : ""}${n !== tot ? ` / ${tot}` : ""} · ${cov}/11 posiciones cubiertas`, missingPost: (r) => `Posición faltante: ${r}`, legend: "Círculo lleno = jugador de la lista · punteado rojo = posición faltante · «*» = jugador colocado en su posición secundaria.", missingPositions: "Posiciones faltantes", allCovered: (f) => `Todas las posiciones del ${f} están cubiertas ✓`, squadByPos: "Plantilla por posición" },
+};
 
 /**
  * Projection de NOTRE liste de joueurs sur une formation choisie.
@@ -25,9 +32,10 @@ const POSTE_TO_ROLE = {
   "Ailier gauche": "LW",
   "Attaquant": "ST",
 };
-const ROLE_LABEL = {
-  GK: "Gardien", CB: "Déf. central", RB: "Latéral D", LB: "Latéral G", DM: "Milieu déf.",
-  CM: "Milieu central", AM: "Milieu off.", RW: "Ailier D", LW: "Ailier G", ST: "Attaquant",
+const ROLE_LABEL_L = {
+  fr: { GK: "Gardien", CB: "Déf. central", RB: "Latéral D", LB: "Latéral G", DM: "Milieu déf.", CM: "Milieu central", AM: "Milieu off.", RW: "Ailier D", LW: "Ailier G", ST: "Attaquant" },
+  en: { GK: "Goalkeeper", CB: "Centre-back", RB: "Right-back", LB: "Left-back", DM: "Def. mid", CM: "Centre mid", AM: "Att. mid", RW: "Right wing", LW: "Left wing", ST: "Striker" },
+  es: { GK: "Portero", CB: "Central", RB: "Lateral D", LB: "Lateral I", DM: "Medio def.", CM: "Medio centro", AM: "Medio of.", RW: "Extremo D", LW: "Extremo I", ST: "Delantero" },
 };
 const ROLE_COLOR = {
   GK: "#f59e0b", CB: "#3b82f6", RB: "#3b82f6", LB: "#3b82f6",
@@ -84,6 +92,9 @@ const lastName = (nom = "") => { const parts = nom.trim().split(/\s+/); return p
 
 export default function FormationProjection() {
   const navigate = useNavigate();
+  const { lang } = useLanguage();
+  const T = FP[lang] || FP.fr;
+  const ROLE_LABEL = ROLE_LABEL_L[lang] || ROLE_LABEL_L.fr;
   const [formation, setFormation] = useState("4-3-3");
 
   const { data: user } = useQuery({ queryKey: ["currentUser"], queryFn: () => base44.auth.me(), staleTime: Infinity });
@@ -135,23 +146,23 @@ export default function FormationProjection() {
     <div className="space-y-4">
       {/* Filtres (§11) */}
       <div className="flex flex-wrap gap-2 items-center bg-white border border-slate-200 rounded-xl p-2">
-        <span className="text-xs text-slate-400 px-1">Filtrer :</span>
-        <input value={fPays} onChange={(e) => setFPays(e.target.value)} placeholder="Pays" className={`${selCls} w-24`} />
-        <input type="number" min="0" value={fAgeMax} onChange={(e) => setFAgeMax(e.target.value)} placeholder="Âge max" className={`${selCls} w-20`} />
+        <span className="text-xs text-slate-400 px-1">{T.filter}</span>
+        <input value={fPays} onChange={(e) => setFPays(e.target.value)} placeholder={T.pays} className={`${selCls} w-24`} />
+        <input type="number" min="0" value={fAgeMax} onChange={(e) => setFAgeMax(e.target.value)} placeholder={T.ageMax} className={`${selCls} w-20`} />
         <select value={fNiveau} onChange={(e) => setFNiveau(e.target.value)} className={selCls}>
-          <option value="">Niveau</option>
+          <option value="">{T.niveau}</option>
           {["International", "1re division", "2e division", "3e division", "4e division / amateur", "Jeunes / académie", "Autre"].map((v) => <option key={v} value={v}>{v}</option>)}
         </select>
         <select value={fDispo} onChange={(e) => setFDispo(e.target.value)} className={selCls}>
-          <option value="">Dispo</option>
+          <option value="">{T.dispo}</option>
           {["Sous contrat", "Fin de contrat (<12 mois)", "Libre", "Prêt possible", "Indisponible"].map((v) => <option key={v} value={v}>{v}</option>)}
         </select>
         <select value={fPrio} onChange={(e) => setFPrio(e.target.value)} className={selCls}>
-          <option value="">Priorité</option>
+          <option value="">{T.priorite}</option>
           {["Priorité A", "Priorité B", "Veille", "Aucune"].map((v) => <option key={v} value={v}>{v}</option>)}
         </select>
         {anyFilter && (
-          <button onClick={() => { setFPays(""); setFAgeMax(""); setFNiveau(""); setFDispo(""); setFPrio(""); }} className="text-xs text-slate-400 hover:text-slate-700 underline">Réinitialiser</button>
+          <button onClick={() => { setFPays(""); setFAgeMax(""); setFNiveau(""); setFDispo(""); setFPrio(""); }} className="text-xs text-slate-400 hover:text-slate-700 underline">{T.reset}</button>
         )}
       </div>
 
@@ -160,8 +171,8 @@ export default function FormationProjection() {
       <div className="lg:col-span-2">
         <div className="flex items-center justify-between gap-3 mb-3">
           <div>
-            <h2 className="font-semibold text-slate-800">Projection de l'effectif</h2>
-            <p className="text-xs text-slate-500">{fPlayers.length} joueur{fPlayers.length > 1 ? "s" : ""}{fPlayers.length !== players.length ? ` / ${players.length}` : ""} · {placed.filter(s => s.fit !== "empty").length}/11 postes couverts</p>
+            <h2 className="font-semibold text-slate-800">{T.projection}</h2>
+            <p className="text-xs text-slate-500">{T.squad(fPlayers.length, players.length, placed.filter(s => s.fit !== "empty").length)}</p>
           </div>
           <Select value={formation} onValueChange={setFormation}>
             <SelectTrigger className="w-32 bg-white"><SelectValue /></SelectTrigger>
@@ -190,7 +201,7 @@ export default function FormationProjection() {
                   style={empty
                     ? { background: "rgba(239,68,68,0.15)", borderColor: "#ef4444", color: "#fecaca", cursor: "default" }
                     : { background: "#fff", borderColor: color, color }}
-                  title={empty ? `Poste manquant : ${ROLE_LABEL[s.role]}` : `${s.player.nom} — ${s.player.poste}`}
+                  title={empty ? T.missingPost(ROLE_LABEL[s.role]) : `${s.player.nom} — ${s.player.poste}`}
                 >
                   {empty ? "?" : s.role}
                 </button>
@@ -202,7 +213,7 @@ export default function FormationProjection() {
             );
           })}
         </div>
-        <p className="text-[11px] text-slate-400 mt-2">Cercle plein = joueur de la liste · pointillé rouge = poste manquant · « * » = joueur placé via son poste secondaire.</p>
+        <p className="text-[11px] text-slate-400 mt-2">{T.legend}</p>
       </div>
 
       {/* Panneau latéral */}
@@ -211,10 +222,10 @@ export default function FormationProjection() {
         <div className="bg-white border border-slate-100 rounded-xl p-4">
           <h3 className="font-semibold text-slate-800 text-sm flex items-center gap-2 mb-2">
             {Object.keys(missing).length ? <AlertTriangle className="w-4 h-4 text-red-500" /> : <CheckCircle2 className="w-4 h-4 text-green-600" />}
-            Postes manquants
+            {T.missingPositions}
           </h3>
           {Object.keys(missing).length === 0 ? (
-            <p className="text-xs text-green-700">Tous les postes du {formation} sont couverts ✓</p>
+            <p className="text-xs text-green-700">{T.allCovered(formation)}</p>
           ) : (
             <div className="flex flex-wrap gap-1.5">
               {Object.entries(missing).map(([role, n]) => (
@@ -228,7 +239,7 @@ export default function FormationProjection() {
 
         {/* Effectif par poste */}
         <div className="bg-white border border-slate-100 rounded-xl p-4">
-          <h3 className="font-semibold text-slate-800 text-sm mb-2">Effectif par poste</h3>
+          <h3 className="font-semibold text-slate-800 text-sm mb-2">{T.squadByPos}</h3>
           <div className="space-y-1">
             {["GK", "RB", "CB", "LB", "DM", "CM", "AM", "RW", "ST", "LW"].map((role) => (
               <div key={role} className="flex items-center justify-between text-xs">
