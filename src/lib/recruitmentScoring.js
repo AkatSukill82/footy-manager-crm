@@ -32,6 +32,7 @@ export const MAJOR_CRITERIA = [
   { key: "production", label: "Production/minutes", hint: "faible / moyen / bon / élite" },
   { key: "agency",     label: "Agence",             hint: "verrouillé / grande / petite / sans agent" },
   { key: "market",     label: "Fit marché",         hint: "0 club / 2 / 3-4 / 5+" },
+  { key: "fit",        label: "Fit profil cible",   hint: "adéquation au profil recherché (poste, âge, niveau, pays, pied)" },
 ];
 
 // Dérive la note d'âge (0..3) — 18-21 = 3, plus on vieillit moins de potentiel.
@@ -111,6 +112,32 @@ export function deriveProductionNote(stats = {}, poste = "") {
   return Math.max(0, Math.min(3, note));
 }
 
+// ── Adéquation au PROFIL CIBLE (§ profil cible) → note 0..3 ───────────────────
+// Compare uniquement les champs renseignés du profil cible aux données du
+// joueur ; la note reflète la PART de critères respectés. Renvoie `null` quand
+// aucun profil cible n'est défini (le critère "fit" est alors désactivé).
+export function fitScore(player = {}, target = getTargetProfile()) {
+  const inc = (a, b) => !!a && !!b && String(a).toLowerCase().includes(String(b).toLowerCase());
+  const posMatch = (a, b) => {
+    const toksOf = (s) => String(s || "").toLowerCase().split(/[^a-z0-9]+/).filter((x) => x.length >= 2);
+    const A = toksOf(a), B = toksOf(b);
+    return A.some((x) => B.includes(x));
+  };
+  const checks = [];
+  if (target.poste) checks.push(posMatch(player.positions, target.poste));
+  if (target.ageMin || target.ageMax) {
+    const age = Number(player.age);
+    const lo = Number(target.ageMin) || 0, hi = Number(target.ageMax) || 99;
+    checks.push(!!age && age >= lo && age <= hi);
+  }
+  if (target.niveau) checks.push(inc(player.division, target.niveau) || inc(target.niveau, player.division));
+  if (target.pays)   checks.push(inc(player.country, target.pays) || inc(target.pays, player.country));
+  if (target.pied)   checks.push(inc(player.pied, target.pied) || inc(target.pied, player.pied));
+  if (!checks.length) return null;            // aucun profil cible → non noté
+  const ratio = checks.filter(Boolean).length / checks.length;
+  return ratio >= 0.8 ? 3 : ratio >= 0.55 ? 2 : ratio >= 0.3 ? 1 : 0;
+}
+
 // Scoring pondéré : ne compte que les critères ACTIVÉS, chacun × son poids.
 // Renvoie aussi `max` (dynamique) car il dépend des critères actifs et des poids.
 export function scoreMajor(notes = {}, config = getCriteriaConfig()) {
@@ -131,9 +158,15 @@ export function getCriteriaConfig() {
   let saved = {};
   try { saved = JSON.parse(localStorage.getItem(CRITERIA_KEY) || "{}"); } catch { saved = {}; }
   const ov = saved.base || {};
+  // Le critère "fit" n'a de sens qu'avec un profil cible : sinon on le désactive
+  // (et il ne compte donc pas dans le score ni dans le max).
+  const tp = getTargetProfile();
+  const hasTarget = !!(tp.poste || tp.ageMin || tp.ageMax || tp.niveau || tp.pays || tp.pied);
   const base = MAJOR_CRITERIA.map((c) => ({
     key: c.key, label: c.label, hint: c.hint, custom: false,
-    enabled: ov[c.key]?.enabled !== false,                 // activé par défaut
+    enabled: c.key === "fit"
+      ? (hasTarget && ov.fit?.enabled !== false)           // fit : seulement si profil cible défini
+      : (ov[c.key]?.enabled !== false),                    // activé par défaut
     weight: clampInt(ov[c.key]?.weight ?? 1, 1, 5),
   }));
   const custom = Array.isArray(saved.custom) ? saved.custom.map((c) => ({

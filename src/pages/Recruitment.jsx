@@ -1,19 +1,15 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { createPageUrl } from "@/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { UserCheck, Baby, Building2, ArrowRightLeft, ArrowLeft, Save, Search, CheckCircle2, Sliders } from "lucide-react";
+import { UserCheck, Baby, Building2, ArrowLeft, Save, Search, CheckCircle2, Sliders } from "lucide-react";
 import MajorPlayerForm from "../components/recruitment/MajorPlayerForm";
 import MinorPlayerForm from "../components/recruitment/MinorPlayerForm";
-import RecruitmentPipeline from "../components/recruitment/RecruitmentPipeline";
 import RecruitmentScoringConfig from "../components/recruitment/RecruitmentScoringConfig";
 import RecruitmentCriteriaConfig from "../components/recruitment/RecruitmentCriteriaConfig";
 import ActivityLogList from "@/components/activity/ActivityLogList";
 import { useRecruitment } from "../lib/useRecruitment";
-import { caseToDealInputs } from "../lib/recruitmentScoring";
 
 const PATHWAYS = [
   { id: "major", label: "Joueur majeur (18+)", icon: UserCheck, desc: "Sourcing Transfermarkt, fiche, scoring auto, contact.", accent: "border-blue-200 hover:border-blue-300" },
@@ -24,8 +20,7 @@ const PATHWAYS = [
 const safeParse = (s) => { try { return JSON.parse(s || "{}"); } catch { return {}; } };
 
 export default function RecruitmentPage() {
-  const { cases, save, remove } = useRecruitment();
-  const navigate = useNavigate();
+  const { save } = useRecruitment();
   const [tab, setTab] = useState("new");
   const [pathway, setPathway] = useState(null);
   const [editCase, setEditCase] = useState(null);
@@ -34,7 +29,6 @@ export default function RecruitmentPage() {
   const [criteriaVersion, setCriteriaVersion] = useState(0);
 
   const resetForm = () => { setPathway(null); setEditCase(null); };
-  const handleSimulate = (c) => navigate(createPageUrl("TransferManagement"), { state: { dealPrefill: caseToDealInputs(c) } });
   const handleSave = (data) => {
     save.mutate(data, {
       onSuccess: () => {
@@ -45,8 +39,6 @@ export default function RecruitmentPage() {
       },
     });
   };
-  const handleEdit = (c) => { setEditCase(c); setPathway(c.pathway); setTab("new"); };
-
   const initialForm = editCase ? safeParse(editCase.details) : null;
   const editId = editCase?.id || null;
 
@@ -111,11 +103,6 @@ export default function RecruitmentPage() {
     </div>
   );
 }
-
-const tabCls = (active) =>
-  `flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-medium transition-all text-sm ${
-    active ? "bg-slate-900 text-white shadow-lg" : "text-slate-600 hover:text-slate-900"
-  }`;
 
 // Besoin club (V1 simple) — part du besoin de poste pour bâtir une shortlist.
 // ⚠️ Module-level (identité stable) — défini DANS le composant, il remontait

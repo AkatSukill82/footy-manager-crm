@@ -1,18 +1,19 @@
 import React, { useState } from "react";
-import { getTiers, setTiers, resetTiers, SCORE_MAX } from "@/lib/recruitmentScoring";
+import { getTiers, setTiers, resetTiers, currentScoreMax } from "@/lib/recruitmentScoring";
 import { SlidersHorizontal, RotateCcw } from "lucide-react";
 
 /**
  * Configuration des SEUILS de décision du scoring recrutement (§8/§19).
- * Le score reste /SCORE_MAX ; l'utilisateur ajuste les seuils Priorité/Contact/
- * Veille (stockés en localStorage, lus par scoreTier/deriveStatus).
+ * Le score max est DYNAMIQUE (dépend des critères actifs et de leurs poids) :
+ * les seuils Priorité/Contact/Veille s'expriment sur cette échelle courante
+ * (stockés en localStorage, lus par scoreTier/deriveStatus).
  */
-function Row({ label, value, onChange }) {
+function Row({ label, value, onChange, max }) {
   return (
     <div className="flex items-center justify-between gap-2">
       <span className="text-slate-600">{label}</span>
-      <input type="number" min="0" max={SCORE_MAX} value={value}
-        onChange={(e) => onChange(Math.max(0, Math.min(SCORE_MAX, Number(e.target.value) || 0)))}
+      <input type="number" min="0" max={max} value={value}
+        onChange={(e) => onChange(Math.max(0, Math.min(max, Number(e.target.value) || 0)))}
         className="w-16 border border-slate-200 rounded px-2 py-1 text-right" />
     </div>
   );
@@ -21,6 +22,7 @@ function Row({ label, value, onChange }) {
 export default function RecruitmentScoringConfig() {
   const [open, setOpen] = useState(false);
   const [t, setT] = useState(getTiers);
+  const max = currentScoreMax();
   const save = (next) => { setT(next); setTiers(next); };
   const reset = () => { resetTiers(); setT(getTiers()); };
   const incoherent = t.watch >= t.contact || t.contact >= t.priority;
@@ -33,10 +35,10 @@ export default function RecruitmentScoringConfig() {
       </button>
       {open && (
         <div className="absolute right-0 z-20 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-lg p-3 text-xs space-y-2">
-          <p className="text-slate-500">Score sur <b>{SCORE_MAX}</b> — seuils de décision :</p>
-          <Row label="🟢 Priorité A  ≥" value={t.priority} onChange={(v) => save({ ...t, priority: v })} />
-          <Row label="🔵 Contact  ≥" value={t.contact} onChange={(v) => save({ ...t, contact: v })} />
-          <Row label="🟠 Veille  ≥" value={t.watch} onChange={(v) => save({ ...t, watch: v })} />
+          <p className="text-slate-500">Score sur <b>{max}</b> — seuils de décision :</p>
+          <Row max={max} label="🟢 Priorité A  ≥" value={t.priority} onChange={(v) => save({ ...t, priority: v })} />
+          <Row max={max} label="🔵 Contact  ≥" value={t.contact} onChange={(v) => save({ ...t, contact: v })} />
+          <Row max={max} label="🟠 Veille  ≥" value={t.watch} onChange={(v) => save({ ...t, watch: v })} />
           <p className="text-slate-400">En dessous de {t.watch} → Abandon.</p>
           {incoherent && <p className="text-red-500">⚠️ Ordre à respecter : Veille &lt; Contact &lt; Priorité.</p>}
           <button onClick={reset} className="flex items-center gap-1 text-slate-400 hover:text-slate-700 pt-1">

@@ -12,7 +12,7 @@ import { addPlayerAsProspect } from "@/lib/addProspect";
 import {
   TM_LINKS, ageScore, contractScore, marketScore, scoreMajor, scoreTier,
   compliance, deriveStatus, canBeContactReady, generateMessage, canGenerateMessage, isOffensive,
-  getCriteriaConfig, getTargetProfile,
+  getCriteriaConfig, getTargetProfile, fitScore,
 } from "@/lib/recruitmentScoring";
 import { playerToMajorFields } from "@/lib/playerLookup";
 import PlayerSearchBox from "./PlayerSearchBox";
@@ -101,6 +101,7 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
       production: Number(f.production_note),
       agency: agencyNote,
       market: marketScore(f.nb_clubs),
+      fit: fitScore({ positions: f.positions, age: f.age, division: f.division, country: f.country, pied: f.pied }, target),
       ...(f.criteriaNotes || {}),   // critères personnalisés
     };
     const { total, max, breakdown } = scoreMajor(notes, criteriaCfg);
