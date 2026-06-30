@@ -148,7 +148,7 @@ export async function fetchPlayerProfile(candidate) {
     if (!personal.date_naissance && fmStats?.date_naissance) personal.date_naissance = fmStats.date_naissance;
     if (!personal.club_actuel && fmStats?.club_actuel) personal.club_actuel = fmStats.club_actuel;
 
-    const full = { ...personal, stats_saison: stats };
+    const full = { ...personal, stats_saison: stats, stat_percentiles: fmStats?.stat_percentiles ?? null };
     if (personal.poste || stats) setCache(profileKey, full);
     return full;
   } catch {

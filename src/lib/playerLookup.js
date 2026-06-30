@@ -1,6 +1,6 @@
 import { invokeFn } from "@/api/base44Client";
 import { ageFromDob } from "@/lib/transferCalc";
-import { deriveLevelNote, deriveProductionNote } from "@/lib/recruitmentScoring";
+import { deriveLevelNote, deriveProductionNote, statFamilyNotes } from "@/lib/recruitmentScoring";
 
 /**
  * Récupération de données joueur depuis un lien (Transfermarkt / FotMob) ou un nom.
@@ -42,6 +42,8 @@ export function playerToMajorFields(p = {}) {
   // production (stats /90 par poste). `null` → on laisse la saisie manuelle.
   const levelNote = deriveLevelNote({ league_tier: p.league_tier, league_code: p.league_code });
   const prodNote = deriveProductionNote(st, p.poste || p.position);
+  // Notes des 4 familles FotMob (percentile moyen → 0 / 1,5 / 3), si disponibles.
+  const fam = statFamilyNotes(p.stat_percentiles);
   return {
     name: p.nom || p.name || "",
     age: str(ageVal),
@@ -62,5 +64,11 @@ export function playerToMajorFields(p = {}) {
     // Notes auto-dérivées (undefined si non calculable → ne pas écraser le manuel)
     level_note: levelNote != null ? String(levelNote) : undefined,
     production_note: prodNote != null ? String(prodNote) : undefined,
+    // Notes familles FotMob (0 / 1,5 / 3) en chaînes — "0" doit s'appliquer
+    // (sinon le if(v) de applyPlayer garderait la valeur du joueur précédent).
+    stat_shooting:   fam.stat_shooting   != null ? String(fam.stat_shooting)   : undefined,
+    stat_passing:    fam.stat_passing    != null ? String(fam.stat_passing)    : undefined,
+    stat_possession: fam.stat_possession != null ? String(fam.stat_possession) : undefined,
+    stat_defending:  fam.stat_defending  != null ? String(fam.stat_defending)  : undefined,
   };
 }

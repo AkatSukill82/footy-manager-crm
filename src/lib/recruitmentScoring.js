@@ -22,6 +22,8 @@ export const isOffensive = (poste = "") =>
   POSTES_OFFENSIFS.some((p) => String(poste).toLowerCase().includes(p.toLowerCase()));
 
 const clampInt = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.floor(Number(v) || 0)));
+// Note 0..3 avec demi-points autorisés (les familles de stats valent 0 / 1,5 / 3).
+const clampNote = (v) => { const n = Number(v); return isNaN(n) ? 0 : Math.max(0, Math.min(3, Math.round(n * 2) / 2)); };
 
 // ── BARÈMES configurables des critères chiffrés (bornes des 4 paliers) ───────
 // Chaque critère numérique = 3 bornes (entre les notes 3/2/1/0) + un sens :
@@ -77,6 +79,10 @@ export const MAJOR_CRITERIA = [
   { key: "market",       label: "Fit marché",         hint: "barème éditable (nb de clubs cibles)" },
   { key: "market_value", label: "Valeur marchande",   hint: "barème éditable (tranches en M€) — à activer" },
   { key: "fit",          label: "Fit profil cible",   hint: "adéquation au profil recherché (poste, âge, niveau, pays, pied)" },
+  { key: "stat_shooting",   label: "Tir (FotMob)",        hint: "percentile FotMob ≥70=3 · 50-69=1,5 · <50=0 — à activer" },
+  { key: "stat_passing",    label: "Passe (FotMob)",      hint: "percentile FotMob ≥70=3 · 50-69=1,5 · <50=0 — à activer" },
+  { key: "stat_possession", label: "Possession (FotMob)", hint: "percentile FotMob ≥70=3 · 50-69=1,5 · <50=0 — à activer" },
+  { key: "stat_defending",  label: "Défense (FotMob)",    hint: "percentile FotMob ≥70=3 · 50-69=1,5 · <50=0 — à activer" },
 ];
 
 // Note d'âge (0..3) selon le barème configurable (défaut : 18-21=3 … 26+=0).
@@ -150,6 +156,25 @@ export function deriveProductionNote(stats = {}, poste = "", bands = getBandsCon
   return Math.max(0, Math.min(3, note));
 }
 
+// ── Familles de stats FotMob (percentile par famille) → notes 0 / 1,5 / 3 ─────
+// Règle : on part du percentile moyen de la famille. ≥70 → 3 (top tiers),
+// 50-69 → 1,5 (moyen), <50 → 0. (= ton 0 / 0,5 / 1 ramené sur l'échelle /3.)
+export function percentileToNote(avgPercentile) {
+  const a = Number(avgPercentile);
+  if (isNaN(a)) return null;                   // pas de donnée FotMob → non noté
+  return a >= 70 ? 3 : a >= 50 ? 1.5 : 0;
+}
+// Mappe les percentiles moyens par famille → notes des 4 critères stat_*.
+export function statFamilyNotes(percentiles = {}) {
+  const p = percentiles || {};
+  return {
+    stat_shooting:   percentileToNote(p.shooting),
+    stat_passing:    percentileToNote(p.passing),
+    stat_possession: percentileToNote(p.possession),
+    stat_defending:  percentileToNote(p.defending),
+  };
+}
+
 // ── Adéquation au PROFIL CIBLE (§ profil cible) → note 0..3 ───────────────────
 // Compare uniquement les champs renseignés du profil cible aux données du
 // joueur ; la note reflète la PART de critères respectés. Renvoie `null` quand
@@ -182,7 +207,7 @@ export function scoreMajor(notes = {}, config = getCriteriaConfig()) {
   const active = config.filter((c) => c.enabled);
   const breakdown = active.map((c) => ({
     key: c.key, label: c.label, weight: c.weight, custom: !!c.custom,
-    note: clampInt(notes[c.key], 0, 3),
+    note: clampNote(notes[c.key]),
   }));
   const total = breakdown.reduce((s, b) => s + b.note * b.weight, 0);
   const max = active.reduce((s, c) => s + 3 * c.weight, 0) || 1;
@@ -204,7 +229,7 @@ export function getCriteriaConfig() {
   // âge, contrat, niveau, production, valeur marchande. "Agence" et "Fit marché"
   // (nb de clubs) ne sont pas des données du joueur → désactivés par défaut
   // (réactivables). "Fit profil cible" reste conditionné à un profil défini.
-  const OPT_IN = new Set(["agency", "market"]);
+  const OPT_IN = new Set(["agency", "market", "stat_shooting", "stat_passing", "stat_possession", "stat_defending"]);
   const base = MAJOR_CRITERIA.map((c) => ({
     key: c.key, label: c.label, hint: c.hint, custom: false,
     enabled: c.key === "fit"

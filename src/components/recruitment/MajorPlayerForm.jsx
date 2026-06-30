@@ -49,6 +49,7 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
     club: "", country: "", division: "", contract_end: "", is_free: false, market_value: "",
     matches: "", minutes: "", goals: "", assists: "",
     level_note: "2", production_note: "2",
+    stat_shooting: "0", stat_passing: "0", stat_possession: "0", stat_defending: "0",
     agency_status: "unknown", agent_name: "", mandate_locked: false,
     nb_clubs: "", target_clubs: "",
     instagram: "", instagram_validated: false, fifa_agent_validated: false, language: "FR",
@@ -103,6 +104,10 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
       market: marketScore(f.nb_clubs),
       market_value: marketValueScore(f.market_value),
       fit: fitScore({ positions: f.positions, age: f.age, division: f.division, country: f.country, pied: f.pied }, target),
+      stat_shooting: Number(f.stat_shooting) || 0,
+      stat_passing: Number(f.stat_passing) || 0,
+      stat_possession: Number(f.stat_possession) || 0,
+      stat_defending: Number(f.stat_defending) || 0,
       ...(f.criteriaNotes || {}),   // critères personnalisés
     };
     const { total, max, breakdown } = scoreMajor(notes, criteriaCfg);

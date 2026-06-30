@@ -414,9 +414,31 @@ const getDeepStats = async (playerId: number): Promise<Record<string, any>> => {
   return out;
 };
 
+// Familles de percentiles FotMob (panneau "Stats vs joueurs du même poste").
+// firstSeasonStats.statsSection.items = groupes [shooting, passing, possession,
+// defending, discipline] ; chaque stat a un percentileRank (0..100). On renvoie
+// la MOYENNE du percentile (total) par famille — base de la note recrutement.
+const parsePctFamilies = (json: any): Record<string, number> | null => {
+  const groups: any[] = json?.firstSeasonStats?.statsSection?.items ?? [];
+  const want = new Set(["shooting", "passing", "possession", "defending"]);
+  const out: Record<string, number> = {};
+  for (const g of groups) {
+    if (!want.has(g?.localizedTitleId)) continue;
+    const ranks = (g.items ?? [])
+      .map((it: any) => Number(it?.percentileRank))
+      .filter((n: number) => Number.isFinite(n));
+    if (ranks.length) out[g.localizedTitleId] = Math.round(ranks.reduce((a: number, b: number) => a + b, 0) / ranks.length * 10) / 10;
+  }
+  return Object.keys(out).length ? out : null;
+};
+
 const getPlayerStats = async (playerId: number): Promise<Record<string, any>> => {
   const json  = await fmGet(`/playerData?id=${playerId}`);
   const stats: Record<string, any> = {};
+
+  // Familles de percentiles (même réponse playerData, pas d'appel réseau en plus).
+  const pctFamilies = parsePctFamilies(json);
+  if (pctFamilies) stats.stat_percentiles = pctFamilies;
 
   // Ligue principale : valeurs de référence (compteurs + pourcentages).
   for (const item of (json.mainLeague?.stats ?? [])) {
