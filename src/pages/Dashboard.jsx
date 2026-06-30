@@ -18,6 +18,7 @@ import DashboardNews from "../components/dashboard/DashboardNews";
 import DashboardFinance from "../components/dashboard/DashboardFinance";
 import DashboardReports from "../components/dashboard/DashboardReports";
 import DashboardAlerts from "../components/dashboard/DashboardAlerts";
+import { useLanguage } from "../lib/LanguageContext";
 import {
   Users, TrendingUp, AlertTriangle, Clock, ChevronRight,
   Calendar, ArrowRightLeft, Bell, BarChart3, ChevronDown, ChevronUp,
@@ -72,18 +73,25 @@ function SectionHeader({ icon: Icon, title, count, cta, onCta }) {
 // ── Widgets personnalisables (ordre par défaut + libellés) ────────────────────
 const DEFAULT_ORDER = ["stats", "alertes", "today_matches", "agenda", "news", "finance", "reports", "scouting", "focus", "urgent", "contracts", "reminders", "negotiations", "recent", "analytics"];
 const WIDGET_LABEL = {
-  stats: "Indicateurs", alertes: "Alertes (à traiter)",
-  today_matches: "Matchs du jour", agenda: "Agenda", news: "Journal / Actualités",
-  finance: "Finance", reports: "Rapports / Exports",
-  scouting: "Joueurs à suivre",
-  focus: "Focus du jour", urgent: "Points urgents", contracts: "Contrats à surveiller",
-  reminders: "Rappels", negotiations: "Négociations", recent: "Joueurs récents", analytics: "Statistiques",
+  fr: { stats: "Indicateurs", alertes: "Alertes (à traiter)", today_matches: "Matchs du jour", agenda: "Agenda", news: "Journal / Actualités", finance: "Finance", reports: "Rapports / Exports", scouting: "Joueurs à suivre", focus: "Focus du jour", urgent: "Points urgents", contracts: "Contrats à surveiller", reminders: "Rappels", negotiations: "Négociations", recent: "Joueurs récents", analytics: "Statistiques" },
+  en: { stats: "Indicators", alertes: "Alerts (to handle)", today_matches: "Today's matches", agenda: "Calendar", news: "News feed", finance: "Finance", reports: "Reports / Exports", scouting: "Players to watch", focus: "Today's focus", urgent: "Urgent items", contracts: "Contracts to watch", reminders: "Reminders", negotiations: "Negotiations", recent: "Recent players", analytics: "Statistics" },
+  es: { stats: "Indicadores", alertes: "Alertas (a tratar)", today_matches: "Partidos de hoy", agenda: "Agenda", news: "Noticias", finance: "Finanzas", reports: "Informes / Exportes", scouting: "Jugadores a seguir", focus: "Foco del día", urgent: "Puntos urgentes", contracts: "Contratos a vigilar", reminders: "Recordatorios", negotiations: "Negociaciones", recent: "Jugadores recientes", analytics: "Estadísticas" },
+};
+const DLOC = { fr: "fr-FR", en: "en-GB", es: "es-ES" };
+const DASH = {
+  fr: { morning: "Bonjour", afternoon: "Bon après-midi", evening: "Bonsoir", focusToday: "Focus du jour", statPlayers: "Joueurs suivis", inWatchlist: "en watchlist", portfolio: "Valeur portefeuille", totalVM: "valeur marchande totale", contractsRisk: "Contrats à risque", expired: "expirés", in6m: "dans 6 mois", activeNego: "Négociations actives", totalTransfers: "transferts au total", toHandle: "à traiter", contractExpired: "Contrat expiré", reminderLate: "Rappel en retard", commLate: "Commission en retard · échéance", contractsWatch: "Contrats à surveiller", seeAll: "Voir tous", remindersWeek: "Rappels cette semaine", today: "Aujourd'hui", negoOngoing: "Négociations en cours", manage: "Gérer", recentPlayers: "Joueurs ajoutés récemment", done: "Terminé", customize: "Personnaliser", customizeTitle: "Personnaliser le tableau de bord", reset: "Réinitialiser", customizeHint: "Glissez pour réordonner, cliquez sur l'œil pour masquer/afficher. Vos préférences sont synchronisées sur tous vos appareils.", show: "Afficher", hide: "Masquer", urgentLine: (n) => `${n} point${n > 1 ? "s" : ""} urgent${n > 1 ? "s" : ""} à traiter`, inDays: (d) => `Dans ${d}j` },
+  en: { morning: "Good morning", afternoon: "Good afternoon", evening: "Good evening", focusToday: "Today's focus", statPlayers: "Tracked players", inWatchlist: "on watchlist", portfolio: "Portfolio value", totalVM: "total market value", contractsRisk: "Contracts at risk", expired: "expired", in6m: "within 6 months", activeNego: "Active negotiations", totalTransfers: "transfers total", toHandle: "to handle", contractExpired: "Contract expired", reminderLate: "Reminder overdue", commLate: "Commission overdue · due", contractsWatch: "Contracts to watch", seeAll: "See all", remindersWeek: "Reminders this week", today: "Today", negoOngoing: "Ongoing negotiations", manage: "Manage", recentPlayers: "Recently added players", done: "Done", customize: "Customize", customizeTitle: "Customize the dashboard", reset: "Reset", customizeHint: "Drag to reorder, click the eye to hide/show. Your preferences sync across all your devices.", show: "Show", hide: "Hide", urgentLine: (n) => `${n} urgent item${n > 1 ? "s" : ""} to handle`, inDays: (d) => `In ${d}d` },
+  es: { morning: "Buenos días", afternoon: "Buenas tardes", evening: "Buenas noches", focusToday: "Foco del día", statPlayers: "Jugadores seguidos", inWatchlist: "en seguimiento", portfolio: "Valor de cartera", totalVM: "valor de mercado total", contractsRisk: "Contratos en riesgo", expired: "vencidos", in6m: "en 6 meses", activeNego: "Negociaciones activas", totalTransfers: "traspasos en total", toHandle: "a tratar", contractExpired: "Contrato vencido", reminderLate: "Recordatorio atrasado", commLate: "Comisión atrasada · vencimiento", contractsWatch: "Contratos a vigilar", seeAll: "Ver todos", remindersWeek: "Recordatorios esta semana", today: "Hoy", negoOngoing: "Negociaciones en curso", manage: "Gestionar", recentPlayers: "Jugadores añadidos recientemente", done: "Hecho", customize: "Personalizar", customizeTitle: "Personalizar el panel", reset: "Restablecer", customizeHint: "Arrastra para reordenar, haz clic en el ojo para ocultar/mostrar. Tus preferencias se sincronizan en todos tus dispositivos.", show: "Mostrar", hide: "Ocultar", urgentLine: (n) => `${n} punto${n > 1 ? "s" : ""} urgente${n > 1 ? "s" : ""} a tratar`, inDays: (d) => `En ${d}d` },
 };
 // Widgets affichés en pleine largeur (sur toutes les colonnes de la grille).
 const WIDE = new Set(["stats", "analytics"]);
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { lang } = useLanguage();
+  const D = DASH[lang] || DASH.fr;
+  const WL = WIDGET_LABEL[lang] || WIDGET_LABEL.fr;
+  const loc = DLOC[lang] || DLOC.fr;
   const user = useCurrentUser();
   const userEmail = user?.email;
   const [showCharts, setShowCharts] = useState(false);
@@ -185,7 +193,7 @@ export default function Dashboard() {
 
   const now = new Date();
   const hour = now.getHours();
-  const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
+  const greeting = hour < 12 ? D.morning : hour < 18 ? D.afternoon : D.evening;
 
   const contractsExpiring = players
     .filter(p => { const d = daysUntil(p.contrat_fin); return d != null && d >= 0 && d <= 180; })
@@ -231,10 +239,10 @@ export default function Dashboard() {
         <div className="px-4 py-3 border-b border-slate-50 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <span className="w-1.5 h-4 bg-slate-900 rounded-full flex-shrink-0" />
-            <span className="font-semibold text-slate-900 text-sm">Focus du jour</span>
+            <span className="font-semibold text-slate-900 text-sm">{D.focusToday}</span>
             <span className="text-[11px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-medium">{focus.length}</span>
           </div>
-          <span className="text-[11px] text-slate-400">{now.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })}</span>
+          <span className="text-[11px] text-slate-400">{now.toLocaleDateString(loc, { weekday: "short", day: "numeric", month: "short" })}</span>
         </div>
         <div className="divide-y divide-slate-50">
           {sorted.map((item, i) => (
@@ -254,10 +262,10 @@ export default function Dashboard() {
 
   const statsNode = (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <StatCard icon={Users} label="Joueurs suivis" value={players.length} sub={`${watchList.length} en watchlist`} onClick={() => navigate(createPageUrl("Players"))} />
-      <StatCard icon={TrendingUp} label="Valeur portefeuille" value={totalValue >= 1 ? `${totalValue.toFixed(1)}M€` : `${Math.round(totalValue * 1000)}K€`} sub="valeur marchande totale" />
-      <StatCard icon={AlertTriangle} label="Contrats à risque" value={contractsExpiring.length + contractsExpired.length} sub={`${contractsExpired.length} expirés · ${contractsExpiring.length} dans 6 mois`} onClick={() => navigate(createPageUrl("Players"))} />
-      <StatCard icon={ArrowRightLeft} label="Négociations actives" value={activeNego.length} sub={`${transfers.length} transferts au total`} onClick={() => navigate(createPageUrl("TransferManagement"))} />
+      <StatCard icon={Users} label={D.statPlayers} value={players.length} sub={`${watchList.length} ${D.inWatchlist}`} onClick={() => navigate(createPageUrl("Players"))} />
+      <StatCard icon={TrendingUp} label={D.portfolio} value={totalValue >= 1 ? `${totalValue.toFixed(1)}M€` : `${Math.round(totalValue * 1000)}K€`} sub={D.totalVM} />
+      <StatCard icon={AlertTriangle} label={D.contractsRisk} value={contractsExpiring.length + contractsExpired.length} sub={`${contractsExpired.length} ${D.expired} · ${contractsExpiring.length} ${D.in6m}`} onClick={() => navigate(createPageUrl("Players"))} />
+      <StatCard icon={ArrowRightLeft} label={D.activeNego} value={activeNego.length} sub={`${transfers.length} ${D.totalTransfers}`} onClick={() => navigate(createPageUrl("TransferManagement"))} />
     </div>
   );
 
@@ -266,24 +274,24 @@ export default function Dashboard() {
       <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-50">
         <span className="w-1 h-4 bg-red-500 rounded-full flex-shrink-0" />
         <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
-        <span className="font-semibold text-slate-800 text-sm">{urgentCount} point{urgentCount > 1 ? "s" : ""} urgent{urgentCount > 1 ? "s" : ""} à traiter</span>
+        <span className="font-semibold text-slate-800 text-sm">{D.urgentLine(urgentCount)}</span>
       </div>
       <div className="p-3 space-y-1">
         {contractsExpired.map(p => (
           <div key={p.id} onClick={() => navigate(createPageUrl("PlayerDetail") + "?id=" + p.id)} className="flex items-center justify-between rounded-lg px-3 py-2.5 cursor-pointer hover:bg-slate-50 transition-colors">
-            <div><p className="text-sm font-semibold text-slate-900">{p.nom}</p><p className="text-xs text-red-500">Contrat expiré · {p.contrat_fin}</p></div>
+            <div><p className="text-sm font-semibold text-slate-900">{p.nom}</p><p className="text-xs text-red-500">{D.contractExpired} · {p.contrat_fin}</p></div>
             <ChevronRight className="w-4 h-4 text-slate-300" />
           </div>
         ))}
         {overdueReminders.map(r => (
           <div key={r.id} onClick={() => navigate(createPageUrl("Contacts"))} className="flex items-center justify-between rounded-lg px-3 py-2.5 cursor-pointer hover:bg-slate-50 transition-colors">
-            <div><p className="text-sm font-semibold text-slate-900">{r.titre}</p><p className="text-xs text-red-500">Rappel en retard · {new Date(r.date_rappel).toLocaleDateString("fr-FR")}</p></div>
+            <div><p className="text-sm font-semibold text-slate-900">{r.titre}</p><p className="text-xs text-red-500">{D.reminderLate} · {new Date(r.date_rappel).toLocaleDateString(loc)}</p></div>
             <ChevronRight className="w-4 h-4 text-slate-300" />
           </div>
         ))}
         {overdueCommissions.map(c => (
           <div key={c.id} onClick={() => navigate(createPageUrl("Finance"))} className="flex items-center justify-between rounded-lg px-3 py-2.5 cursor-pointer hover:bg-slate-50 transition-colors">
-            <div><p className="text-sm font-semibold text-slate-900">{c.titre}</p><p className="text-xs text-red-500">Commission en retard · échéance {c.date_echeance}</p></div>
+            <div><p className="text-sm font-semibold text-slate-900">{c.titre}</p><p className="text-xs text-red-500">{D.commLate} {c.date_echeance}</p></div>
             <ChevronRight className="w-4 h-4 text-slate-300" />
           </div>
         ))}
@@ -293,7 +301,7 @@ export default function Dashboard() {
 
   const contractsNode = contractsExpiring.length > 0 ? (
     <div className="bg-white rounded-2xl border border-slate-100 p-4">
-      <SectionHeader icon={Calendar} title="Contrats à surveiller" count={contractsExpiring.length} cta="Voir tous" onCta={() => navigate(createPageUrl("Players"))} />
+      <SectionHeader icon={Calendar} title={D.contractsWatch} count={contractsExpiring.length} cta={D.seeAll} onCta={() => navigate(createPageUrl("Players"))} />
       <div className="space-y-2">
         {contractsExpiring.slice(0, 5).map(p => {
           const days = daysUntil(p.contrat_fin);
@@ -314,14 +322,14 @@ export default function Dashboard() {
 
   const remindersNode = upcomingReminders.length > 0 ? (
     <div className="bg-white rounded-2xl border border-slate-100 p-4">
-      <SectionHeader icon={Bell} title="Rappels cette semaine" count={upcomingReminders.length} cta="Voir tous" onCta={() => navigate(createPageUrl("Contacts"))} />
+      <SectionHeader icon={Bell} title={D.remindersWeek} count={upcomingReminders.length} cta={D.seeAll} onCta={() => navigate(createPageUrl("Contacts"))} />
       <div className="space-y-2">
         {upcomingReminders.slice(0, 5).map(r => {
           const days = daysUntil(r.date_rappel);
           return (
             <div key={r.id} className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-slate-50 transition-colors">
               <div className="flex items-center gap-2 min-w-0"><Clock className="w-4 h-4 text-slate-300 flex-shrink-0" /><p className="text-sm text-slate-800 truncate">{r.titre}</p></div>
-              <span className="text-[11px] text-slate-500 font-medium flex-shrink-0 ml-2">{days === 0 ? "Aujourd'hui" : `Dans ${days}j`}</span>
+              <span className="text-[11px] text-slate-500 font-medium flex-shrink-0 ml-2">{days === 0 ? D.today : D.inDays(days)}</span>
             </div>
           );
         })}
@@ -331,7 +339,7 @@ export default function Dashboard() {
 
   const negotiationsNode = activeNego.length > 0 ? (
     <div className="bg-white rounded-2xl border border-slate-100 p-4">
-      <SectionHeader icon={ArrowRightLeft} title="Négociations en cours" count={activeNego.length} cta="Gérer" onCta={() => navigate(createPageUrl("TransferManagement"))} />
+      <SectionHeader icon={ArrowRightLeft} title={D.negoOngoing} count={activeNego.length} cta={D.manage} onCta={() => navigate(createPageUrl("TransferManagement"))} />
       <div className="space-y-2">
         {activeNego.slice(0, 5).map(n => (
           <div key={n.id} onClick={() => navigate(createPageUrl("TransferManagement"))} className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors">
@@ -345,7 +353,7 @@ export default function Dashboard() {
 
   const recentNode = recentPlayers.length > 0 ? (
     <div className="bg-white rounded-2xl border border-slate-100 p-4">
-      <SectionHeader icon={Users} title="Joueurs ajoutés récemment" count={recentPlayers.length} cta="Voir tous" onCta={() => navigate(createPageUrl("Players"))} />
+      <SectionHeader icon={Users} title={D.recentPlayers} count={recentPlayers.length} cta={D.seeAll} onCta={() => navigate(createPageUrl("Players"))} />
       <div className="space-y-2">
         {recentPlayers.map(p => (
           <div key={p.id} onClick={() => navigate(createPageUrl("PlayerDetail") + "?id=" + p.id)} className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors">
@@ -401,10 +409,10 @@ export default function Dashboard() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">{greeting}</h1>
-            <p className="text-slate-400 text-sm mt-0.5">{now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</p>
+            <p className="text-slate-400 text-sm mt-0.5">{now.toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long" })}</p>
           </div>
           <Button variant={editing ? "default" : "outline"} size="sm" onClick={() => setEditing(v => !v)} className="gap-1.5 flex-shrink-0">
-            {editing ? <><Check className="w-4 h-4" /> Terminé</> : <><SlidersHorizontal className="w-4 h-4" /> Personnaliser</>}
+            {editing ? <><Check className="w-4 h-4" /> {D.done}</> : <><SlidersHorizontal className="w-4 h-4" /> {D.customize}</>}
           </Button>
         </div>
 
@@ -412,10 +420,10 @@ export default function Dashboard() {
         {editing && (
           <div className="bg-white border border-slate-200 rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
-              <p className="font-semibold text-slate-800 text-sm">Personnaliser le tableau de bord</p>
-              <button onClick={resetPrefs} className="text-xs text-slate-400 hover:text-slate-700 flex items-center gap-1"><RotateCcw className="w-3.5 h-3.5" /> Réinitialiser</button>
+              <p className="font-semibold text-slate-800 text-sm">{D.customizeTitle}</p>
+              <button onClick={resetPrefs} className="text-xs text-slate-400 hover:text-slate-700 flex items-center gap-1"><RotateCcw className="w-3.5 h-3.5" /> {D.reset}</button>
             </div>
-            <p className="text-xs text-slate-400 mb-3">Glissez pour réordonner, cliquez sur l'œil pour masquer/afficher. Vos préférences sont synchronisées sur tous vos appareils.</p>
+            <p className="text-xs text-slate-400 mb-3">{D.customizeHint}</p>
             <DragDropContext onDragEnd={onDragEnd}>
               <Droppable droppableId="dash-widgets">
                 {(prov) => (
@@ -428,10 +436,10 @@ export default function Dashboard() {
                             <div ref={p.innerRef} {...p.draggableProps}
                               className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${off ? "border-slate-100 bg-slate-50/50 opacity-60" : "border-slate-200 bg-white"} ${snap.isDragging ? "shadow-md ring-1 ring-slate-200" : ""}`}>
                               <span {...p.dragHandleProps} className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing"><GripVertical className="w-4 h-4" /></span>
-                              <button onClick={() => toggleHidden(k)} title={off ? "Afficher" : "Masquer"} className="text-slate-400 hover:text-slate-700">
+                              <button onClick={() => toggleHidden(k)} title={off ? D.show : D.hide} className="text-slate-400 hover:text-slate-700">
                                 {off ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                               </button>
-                              <span className="flex-1 text-sm text-slate-700">{WIDGET_LABEL[k] || k}</span>
+                              <span className="flex-1 text-sm text-slate-700">{WL[k] || k}</span>
                             </div>
                           )}
                         </Draggable>
