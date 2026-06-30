@@ -153,7 +153,7 @@ export default function PlayerDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['activityLogs', 'Player', playerId] });
       setIsEditing(false);
     },
-    onError: (err) => setMutationError(err.message || "Erreur lors de la mise à jour du joueur")
+    onError: (err) => setMutationError(err.message || (lang === "en" ? "Error updating the player" : lang === "es" ? "Error al actualizar el jugador" : "Erreur lors de la mise à jour du joueur"))
   });
 
   const deletePlayerMutation = useMutation({
@@ -172,7 +172,7 @@ export default function PlayerDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['pipeline'] });
       navigate(createPageUrl("Players"));
     },
-    onError: (err) => setMutationError(err.message || "Erreur lors de la suppression du joueur")
+    onError: (err) => setMutationError(err.message || (lang === "en" ? "Error deleting the player" : lang === "es" ? "Error al eliminar el jugador" : "Erreur lors de la suppression du joueur"))
   });
 
   const addToWatchListMutation = useMutation({

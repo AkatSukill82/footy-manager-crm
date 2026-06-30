@@ -76,7 +76,7 @@ export default function PlayerFotmobStats({ player, onApply }) {
       const res = player.fotmob_id
         ? await invokeFn("fotmobProxy", { action: "getStats", fotmob_id: player.fotmob_id })
         : await invokeFn("fotmobProxy", { action: "searchAndGetStats", query: player.nom, club: player.club_actuel });
-      if (!res?.ok) throw new Error(res?.error || "Aucune stat trouvée sur FotMob");
+      if (!res?.ok) throw new Error(res?.error || (lang === "en" ? "No stats found on FotMob" : lang === "es" ? "No se encontraron estadísticas en FotMob" : "Aucune stat trouvée sur FotMob"));
       const s = { ...res.stats };
       // Note FotMob → champ commun.
       if (s.note_moyenne == null && s.note_fotmob != null) s.note_moyenne = s.note_fotmob;
@@ -94,7 +94,7 @@ export default function PlayerFotmobStats({ player, onApply }) {
         }
       }
     } catch (err) {
-      setError(err.message || "Erreur lors du chargement des stats FotMob");
+      setError(err.message || (lang === "en" ? "Error loading FotMob stats" : lang === "es" ? "Error al cargar las estadísticas de FotMob" : "Erreur lors du chargement des stats FotMob"));
     } finally {
       setLoading(false);
     }

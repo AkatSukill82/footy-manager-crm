@@ -96,7 +96,7 @@ function MatchRow({ match, club }) {
       // Surface la vraie cause (souvent : domaine non autorisé pour l'OAuth Google,
       // popup bloquée, ou API Google Calendar non activée).
       console.error("[agenda] échec ajout au calendrier:", err);
-      setErrMsg(err?.message || err?.error || "Connexion à Google Agenda impossible.");
+      setErrMsg(err?.message || err?.error || (lang === "en" ? "Couldn't connect to Google Calendar." : lang === "es" ? "No se pudo conectar con Google Calendar." : "Connexion à Google Agenda impossible."));
       setState("error");
       setTimeout(() => { setState("idle"); setErrMsg(null); }, 6000);
     }

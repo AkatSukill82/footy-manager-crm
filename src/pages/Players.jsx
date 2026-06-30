@@ -26,6 +26,13 @@ const normName = (s) =>
 // Vue tableau par statut (catégorie agent). Sans statut → Prospect.
 const BOARD_ORDER = ["Prospect", "Client", "Mandaté", "En observation"];
 
+// Libellés des colonnes d'import (traduits ; les clés/valeurs restent stables).
+const IMPORT_L = {
+  fr: { import: "Importer", nom: "Nom", age: "Âge", poste: "Poste", club: "Club", nat: "Nationalité", valeur: "Valeur (M€)", finC: "Fin de contrat", agent: "Agent", taille: "Taille", pied: "Pied fort" },
+  en: { import: "Import", nom: "Name", age: "Age", poste: "Position", club: "Club", nat: "Nationality", valeur: "Value (€M)", finC: "Contract end", agent: "Agent", taille: "Height", pied: "Strong foot" },
+  es: { import: "Importar", nom: "Nombre", age: "Edad", poste: "Posición", club: "Club", nat: "Nacionalidad", valeur: "Valor (M€)", finC: "Fin de contrato", agent: "Agente", taille: "Altura", pied: "Pie hábil" },
+};
+
 // Âge : champ `age` sinon calculé depuis la date de naissance.
 function ageOf(player) {
   if (player.age != null && player.age !== "") return player.age;
@@ -157,7 +164,7 @@ export default function PlayersPage() {
           .catch(() => {});
       }
     },
-    onError: (e) => setMutError(e?.message || "Erreur lors de l'ajout du joueur."),
+    onError: (e) => setMutError(e?.message || (lang === "en" ? "Error adding the player." : lang === "es" ? "Error al añadir el jugador." : "Erreur lors de l'ajout du joueur.")),
   });
 
   const addToWatchListMutation = useMutation({
@@ -179,7 +186,7 @@ export default function PlayersPage() {
       return base44.entities.WatchList.create(withOrg({ player_id: player.id, statut, priorite: "Moyenne" }));
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['watchList'] }),
-    onError: (err) => setMutError(err?.message || "Impossible de changer le statut."),
+    onError: (err) => setMutError(err?.message || (lang === "en" ? "Couldn't change the status." : lang === "es" ? "No se pudo cambiar el estado." : "Impossible de changer le statut.")),
   });
 
   // ── Doublons (même nom normalisé) ──────────────────────────────────────────
@@ -302,20 +309,20 @@ export default function PlayersPage() {
             <div className="flex items-center gap-2 flex-shrink-0">
               <QuickImport
                 entity="Player"
-                label="Importer"
+                label={(IMPORT_L[lang] || IMPORT_L.fr).import}
                 onDone={() => queryClient.invalidateQueries({ queryKey: ['players'] })}
-                fields={[
-                  { key: "nom", label: "Nom", aliases: ["name", "joueur", "player"] },
-                  { key: "age", label: "Âge", aliases: ["age"], num: true },
-                  { key: "poste", label: "Poste", aliases: ["position"] },
-                  { key: "club_actuel", label: "Club", aliases: ["club", "team", "equipe"] },
-                  { key: "nationalite", label: "Nationalité", aliases: ["nationality", "pays", "country"] },
-                  { key: "valeur_marchande", label: "Valeur (M€)", aliases: ["market_value", "valeur", "value"], num: true },
-                  { key: "contrat_fin", label: "Fin de contrat", aliases: ["contract_end", "contrat"] },
-                  { key: "agent", label: "Agent", aliases: ["agence", "agency"] },
-                  { key: "taille", label: "Taille", aliases: ["height"], num: true },
-                  { key: "pied_fort", label: "Pied fort", aliases: ["foot", "pied"] },
-                ]}
+                fields={(() => { const L = IMPORT_L[lang] || IMPORT_L.fr; return [
+                  { key: "nom", label: L.nom, aliases: ["name", "joueur", "player"] },
+                  { key: "age", label: L.age, aliases: ["age"], num: true },
+                  { key: "poste", label: L.poste, aliases: ["position"] },
+                  { key: "club_actuel", label: L.club, aliases: ["club", "team", "equipe"] },
+                  { key: "nationalite", label: L.nat, aliases: ["nationality", "pays", "country"] },
+                  { key: "valeur_marchande", label: L.valeur, aliases: ["market_value", "valeur", "value"], num: true },
+                  { key: "contrat_fin", label: L.finC, aliases: ["contract_end", "contrat"] },
+                  { key: "agent", label: L.agent, aliases: ["agence", "agency"] },
+                  { key: "taille", label: L.taille, aliases: ["height"], num: true },
+                  { key: "pied_fort", label: L.pied, aliases: ["foot", "pied"] },
+                ]; })()}
               />
               <Button
                 onClick={() => setShowForm(!showForm)}
