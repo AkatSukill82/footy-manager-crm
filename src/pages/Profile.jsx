@@ -18,7 +18,11 @@ const LANGUAGES = [
 ];
 
 const ROLE_OPTIONS = ["CEO", "Directeur sportif", "Scout", "Agent", "Analyste", "Recruteur", "Autre"];
-const PLAN_LABEL = { standard: "Standard (50 €)", pro: "Pro (100 €)", surmesure: "Sur-mesure" };
+const PI = {
+  fr: { inviteTitle: "Inviter un utilisateur", inviteDesc: "Saisis l'e-mail, choisis la formule, et envoie l'invitation (lien de création de compte).", email: "E-mail", emailPh: "nouveau@agent.com", formule: "Formule", invite: "Inviter", plans: { standard: "Standard (50 €)", pro: "Pro (100 €)", surmesure: "Sur-mesure" }, mailSubject: (b) => `Ton invitation à ${b}`, mailBody: (b, link) => ["Bonjour,", "", `Tu as été invité(e) à rejoindre ${b}.`, "", "Crée ton compte en cliquant sur le lien ci-dessous :", link, "", "À très vite,", `L'équipe ${b}`].join("\n"), sendFail: "Échec de l'envoi.", inviteFail: "Échec de l'invitation.", sent: (e, p) => `Invitation envoyée à ${e} ✓ (formule ${p}).` },
+  en: { inviteTitle: "Invite a user", inviteDesc: "Enter the email, choose the plan, and send the invitation (account-creation link).", email: "Email", emailPh: "new@agent.com", formule: "Plan", invite: "Invite", plans: { standard: "Standard (€50)", pro: "Pro (€100)", surmesure: "Custom" }, mailSubject: (b) => `Your invitation to ${b}`, mailBody: (b, link) => ["Hello,", "", `You've been invited to join ${b}.`, "", "Create your account by clicking the link below:", link, "", "See you soon,", `The ${b} team`].join("\n"), sendFail: "Sending failed.", inviteFail: "Invitation failed.", sent: (e, p) => `Invitation sent to ${e} ✓ (${p} plan).` },
+  es: { inviteTitle: "Invitar a un usuario", inviteDesc: "Introduce el email, elige el plan y envía la invitación (enlace de creación de cuenta).", email: "Email", emailPh: "nuevo@agente.com", formule: "Plan", invite: "Invitar", plans: { standard: "Standard (50 €)", pro: "Pro (100 €)", surmesure: "A medida" }, mailSubject: (b) => `Tu invitación a ${b}`, mailBody: (b, link) => ["Hola,", "", `Has sido invitado/a a unirte a ${b}.`, "", "Crea tu cuenta haciendo clic en el enlace de abajo:", link, "", "¡Hasta pronto!", `El equipo de ${b}`].join("\n"), sendFail: "Error al enviar.", inviteFail: "Error en la invitación.", sent: (e, p) => `Invitación enviada a ${e} ✓ (plan ${p}).` },
+};
 
 function te(lang, key) {
   const keys = key.split(".");
@@ -29,6 +33,7 @@ function te(lang, key) {
 
 export default function ProfilePage() {
   const { lang, setLang } = useLanguage();
+  const PT = PI[lang] || PI.fr;
   const queryClient = useQueryClient();
   const [saved, setSaved] = useState(false);
   const [orgSaved, setOrgSaved] = useState(false);
@@ -74,32 +79,22 @@ export default function ProfilePage() {
 
   const handleInvite = async () => {
     const email = inviteEmail.trim();
-    if (!email || !/.+@.+\..+/.test(email)) { setInviteMsg({ type: "err", text: "E-mail invalide." }); return; }
+    if (!email || !/.+@.+\..+/.test(email)) { setInviteMsg({ type: "err", text: lang === "en" ? "Invalid email." : lang === "es" ? "Email inválido." : "E-mail invalide." }); return; }
     setInviteBusy(true); setInviteMsg(null);
     try {
       // E-mail d'invitation PERSONNALISÉ (au nom de la marque) avec le lien
       // d'inscription — remplace l'e-mail système Base44 (non modifiable).
       const link = `${window.location.origin}/register?email=${encodeURIComponent(email)}&plan=${invitePlan}`;
-      const subject = `Ton invitation à ${BRAND_NAME}`;
-      const body = [
-        "Bonjour,",
-        "",
-        `Tu as été invité(e) à rejoindre ${BRAND_NAME}.`,
-        "",
-        "Crée ton compte en cliquant sur le lien ci-dessous :",
-        link,
-        "",
-        "À très vite,",
-        `L'équipe ${BRAND_NAME}`,
-      ].join("\n");
+      const subject = PT.mailSubject(BRAND_NAME);
+      const body = PT.mailBody(BRAND_NAME, link);
       const res = await sendEmail({ to: email, subject, body });
-      if (!res.ok) throw new Error(res.error || "Échec de l'envoi.");
+      if (!res.ok) throw new Error(res.error || PT.sendFail);
       // Trace l'invitation + la formule choisie (servira à attribuer le plan au compte).
       try { await base44.entities.AccessRequest.create({ email, formule: invitePlan, statut: "valide", message: "Invitation directe (admin)" }); } catch { /* non bloquant */ }
-      setInviteMsg({ type: "ok", text: `Invitation envoyée à ${email} ✓ (formule ${PLAN_LABEL[invitePlan]}).` });
+      setInviteMsg({ type: "ok", text: PT.sent(email, PT.plans[invitePlan] || invitePlan) });
       setInviteEmail("");
     } catch (e) {
-      setInviteMsg({ type: "err", text: e?.message || "Échec de l'invitation." });
+      setInviteMsg({ type: "err", text: e?.message || PT.inviteFail });
     } finally { setInviteBusy(false); }
   };
 
@@ -171,27 +166,27 @@ export default function ProfilePage() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <UserPlus className="w-4 h-4 text-green-600" />
-              Inviter un utilisateur
+              {PT.inviteTitle}
             </CardTitle>
-            <p className="text-xs text-slate-400 mt-1">Saisis l'e-mail, choisis la formule, et envoie l'invitation (lien de création de compte).</p>
+            <p className="text-xs text-slate-400 mt-1">{PT.inviteDesc}</p>
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <label className="text-sm text-slate-500 mb-1 block">E-mail</label>
-              <Input type="email" placeholder="nouveau@agent.com" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} />
+              <label className="text-sm text-slate-500 mb-1 block">{PT.email}</label>
+              <Input type="email" placeholder={PT.emailPh} value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} />
             </div>
             <div>
-              <label className="text-sm text-slate-500 mb-1 block">Formule</label>
+              <label className="text-sm text-slate-500 mb-1 block">{PT.formule}</label>
               <select value={invitePlan} onChange={e => setInvitePlan(e.target.value)}
                 className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400">
-                <option value="standard">Standard (50 €)</option>
-                <option value="pro">Pro (100 €)</option>
-                <option value="surmesure">Sur-mesure</option>
+                <option value="standard">{PT.plans.standard}</option>
+                <option value="pro">{PT.plans.pro}</option>
+                <option value="surmesure">{PT.plans.surmesure}</option>
               </select>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               <Button onClick={handleInvite} disabled={inviteBusy || !inviteEmail.trim()} className="bg-green-600 hover:bg-green-700">
-                {inviteBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />} Inviter
+                {inviteBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />} {PT.invite}
               </Button>
               {inviteMsg && <span className={`text-sm ${inviteMsg.type === "ok" ? "text-green-600" : "text-red-500"}`}>{inviteMsg.text}</span>}
             </div>

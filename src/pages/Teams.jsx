@@ -39,7 +39,7 @@ export default function TeamsPage() {
       queryClient.invalidateQueries({ queryKey: ['teams'] });
       setShowForm(false);
     },
-    onError: (err) => setMutationError(err.message || "Erreur lors de la création de l'équipe"),
+    onError: (err) => setMutationError(err.message || (lang === "en" ? "Error creating the team" : lang === "es" ? "Error al crear el equipo" : "Erreur lors de la création de l'équipe")),
   });
 
   const deleteTeamMutation = useMutation({
@@ -53,7 +53,7 @@ export default function TeamsPage() {
       queryClient.invalidateQueries({ queryKey: ['teams'] });
       queryClient.invalidateQueries({ queryKey: ['team-players'] });
     },
-    onError: (err) => setMutationError(err.message || "Erreur lors de la suppression de l'équipe"),
+    onError: (err) => setMutationError(err.message || (lang === "en" ? "Error deleting the team" : lang === "es" ? "Error al eliminar el equipo" : "Erreur lors de la suppression de l'équipe")),
   });
 
   const getPlayerCount = (teamId) => teamPlayers.filter(tp => tp.team_id === teamId).length;
@@ -65,7 +65,7 @@ export default function TeamsPage() {
   if (isLoading && view === "teams") {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-slate-500">Chargement des équipes...</div>
+        <div className="text-slate-500">{lang === "en" ? "Loading teams..." : lang === "es" ? "Cargando equipos..." : "Chargement des équipes..."}</div>
       </div>
     );
   }
@@ -88,7 +88,7 @@ export default function TeamsPage() {
               <span className="truncate">{t(lang, 'teams.title')}</span>
             </h1>
             <p className="text-slate-500 mt-0.5 text-sm">
-              {view === "projection" ? "Projection de votre effectif sur une formation" : t(lang, 'teams.count', { count: teams.length })}
+              {view === "projection" ? (lang === "en" ? "Projecting your squad onto a formation" : lang === "es" ? "Proyección de tu plantilla en una formación" : "Projection de votre effectif sur une formation") : t(lang, 'teams.count', { count: teams.length })}
             </p>
           </div>
           {view === "teams" && (

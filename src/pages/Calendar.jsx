@@ -472,7 +472,7 @@ export default function CalendarPage() {
           <Card>
             <CardContent className="flex flex-col items-center py-16 gap-4 text-slate-500">
               <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
-              <p className="text-sm text-slate-500">Reconnexion à Google Calendar…</p>
+              <p className="text-sm text-slate-500">{lang === "en" ? "Reconnecting to Google Calendar…" : lang === "es" ? "Reconectando con Google Calendar…" : "Reconnexion à Google Calendar…"}</p>
             </CardContent>
           </Card>
         )}
