@@ -37,6 +37,7 @@ import ActivityLogList from "../components/activity/ActivityLogList";
 import PlayerSofaStats from "../components/players/PlayerSofaStats";
 import PlayerFotmobStats from "../components/players/PlayerFotmobStats";
 import PlayerVideos from "../components/players/PlayerVideos";
+import RecruitmentNote from "../components/players/RecruitmentNote";
 import PlayerMatches from "../components/players/PlayerMatches";
 import { playerExternalLinks } from "../lib/externalLinks";
 
@@ -449,6 +450,7 @@ export default function PlayerDetailPage() {
           </div>
 
           <div className="space-y-6">
+            <RecruitmentNote player={player} />
             <PlayerNoteCard
               notes={playerNotes}
               onCreate={(data) => createNoteMutation.mutate(data)}
