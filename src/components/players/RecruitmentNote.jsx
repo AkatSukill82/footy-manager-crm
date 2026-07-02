@@ -1,89 +1,75 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Target } from "lucide-react";
 import { useLanguage } from "../../lib/LanguageContext";
+import { scorePlayerFromData } from "@/lib/recruitmentScoring";
+import { useConfigVersion } from "@/lib/useRecruitmentConfig";
 
 /**
- * « Note de recrutement /4 » — barème fixe validé (Âge, Taille, Buts+Passes,
- * Temps de jeu), chaque critère noté 0 / 0,5 / 1. Autonome : calculé depuis les
- * données du joueur, sans toucher au moteur de scoring recrutement.
- *
- *  Âge          : <18 → 1 · <21 → 0,5 · ≥21 → 0
- *  Taille       : ≥180 → 1 · ≥175 → 0,5 · <175 → 0
- *  Buts+Passes  : ≥15 → 1 · ≥10 → 0,5 · <10 → 0
- *  Temps de jeu : ≥70% → 1 · ≥60% → 0,5 · <60% → 0
- *  Temps de jeu % = minutes ÷ (matchs × 90) × 100 (plafonné à 100).
+ * « Note de recrutement » de la fiche joueur — désormais calculée par le MÊME
+ * moteur que le formulaire de recrutement (mêmes barèmes, critères et seuils,
+ * partagés par organisation). On ne note que les critères activés dont la donnée
+ * est présente sur la fiche : le score et le tier restent comparables au module
+ * de recrutement, sans logique parallèle divergente.
  */
-export function computeRecruitmentNote(player = {}) {
-  const age = player.age != null && player.age !== "" ? Number(player.age) : null;
-  const taille = player.taille != null && player.taille !== "" ? Number(player.taille) : null;
-  const hasGA = player.buts != null || player.passes_decisives != null || player.matchs_joues != null;
-  const ga = (Number(player.buts) || 0) + (Number(player.passes_decisives) || 0);
-  const matchs = Number(player.matchs_joues) || 0;
-  const minutes = Number(player.minutes_jouees) || 0;
-  const tempsPct = matchs > 0 ? Math.min(100, Math.round((minutes / (matchs * 90)) * 100)) : null;
-
-  const sAge = age != null ? (age < 18 ? 1 : age < 21 ? 0.5 : 0) : null;
-  const sTaille = taille != null ? (taille >= 180 ? 1 : taille >= 175 ? 0.5 : 0) : null;
-  const sGA = hasGA ? (ga >= 15 ? 1 : ga >= 10 ? 0.5 : 0) : null;
-  const sTemps = tempsPct != null ? (tempsPct >= 70 ? 1 : tempsPct >= 60 ? 0.5 : 0) : null;
-
-  const total = (sAge || 0) + (sTaille || 0) + (sGA || 0) + (sTemps || 0);
-  return {
-    total, tempsPct, ga,
-    items: [
-      { key: "age", score: sAge, value: age },
-      { key: "taille", score: sTaille, value: taille },
-      { key: "ga", score: sGA, value: hasGA ? ga : null },
-      { key: "temps", score: sTemps, value: tempsPct },
-    ],
-  };
-}
-
-const RN = {
-  fr: { title: "Note de recrutement", age: "Âge", taille: "Taille", ga: "Buts + passes", temps: "Temps de jeu", ans: "ans", na: "—" },
-  en: { title: "Recruitment score", age: "Age", taille: "Height", ga: "Goals + assists", temps: "Playing time", ans: "yrs", na: "—" },
-  es: { title: "Nota de reclutamiento", age: "Edad", taille: "Altura", ga: "Goles + asistencias", temps: "Tiempo de juego", ans: "años", na: "—" },
+const T = {
+  fr: {
+    title: "Note de recrutement", insufficient: "Données insuffisantes pour un score fiable.",
+    crit: { age: "Âge", contract: "Contrat", level: "Niveau joué", production: "Production", market_value: "Valeur marchande", fit: "Fit profil cible" },
+    tier: { priority: "Priorité A", contact: "Contact", watch: "Observation", abandon: "Abandon" },
+  },
+  en: {
+    title: "Recruitment score", insufficient: "Not enough data for a reliable score.",
+    crit: { age: "Age", contract: "Contract", level: "Level played", production: "Production", market_value: "Market value", fit: "Target-profile fit" },
+    tier: { priority: "Priority A", contact: "Contact", watch: "Watchlist", abandon: "Drop" },
+  },
+  es: {
+    title: "Nota de reclutamiento", insufficient: "Datos insuficientes para una nota fiable.",
+    crit: { age: "Edad", contract: "Contrato", level: "Nivel jugado", production: "Producción", market_value: "Valor de mercado", fit: "Ajuste al perfil" },
+    tier: { priority: "Prioridad A", contact: "Contacto", watch: "Seguimiento", abandon: "Descartar" },
+  },
 };
 
-const scoreColor = (s) => s === 1 ? "text-green-600 bg-green-50 border-green-200"
-  : s === 0.5 ? "text-amber-600 bg-amber-50 border-amber-200"
-  : s === 0 ? "text-red-500 bg-red-50 border-red-200"
-  : "text-slate-400 bg-slate-50 border-slate-200";
+const noteColor = (n) => n >= 2.5 ? "text-green-600 bg-green-50 border-green-200"
+  : n >= 1.5 ? "text-emerald-600 bg-emerald-50 border-emerald-200"
+  : n >= 1 ? "text-amber-600 bg-amber-50 border-amber-200"
+  : "text-red-500 bg-red-50 border-red-200";
 
-const fmtVal = (key, value, T) => {
-  if (value == null) return T.na;
-  if (key === "age") return `${value} ${T.ans}`;
-  if (key === "taille") return `${value} cm`;
-  if (key === "temps") return `${value}%`;
-  return String(value);
-};
+const tierColor = (c) => c === "green" ? "text-green-600" : c === "blue" ? "text-blue-600" : c === "amber" ? "text-amber-600" : "text-slate-500";
+const fmt = (n) => (n % 1 === 0 ? n : n.toFixed(1));
 
 export default function RecruitmentNote({ player }) {
   const { lang } = useLanguage();
-  const T = RN[lang] || RN.fr;
-  const { total, items } = computeRecruitmentNote(player);
+  const L = T[lang] || T.fr;
+  const cfgV = useConfigVersion();                       // recalcul si la config d'org change
+  const r = useMemo(() => scorePlayerFromData(player || {}), [player, cfgV]);
 
   return (
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm flex items-center justify-between gap-2">
-          <span className="flex items-center gap-2"><Target className="w-4 h-4 text-green-600" /> {T.title}</span>
-          <span className="text-base font-bold text-slate-900">{total % 1 === 0 ? total : total.toFixed(1)}<span className="text-xs text-slate-400"> / 4</span></span>
+          <span className="flex items-center gap-2"><Target className="w-4 h-4 text-green-600" /> {L.title}</span>
+          {r.hasData && (
+            <span className="text-base font-bold text-slate-900">{fmt(r.total)}<span className="text-xs text-slate-400"> / {r.max}</span></span>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-1.5">
-        {items.map((it) => (
-          <div key={it.key} className="flex items-center justify-between gap-2 text-sm">
-            <span className="text-slate-500">{T[it.key]}</span>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">{fmtVal(it.key, it.value, T)}</span>
-              <span className={`text-[11px] font-semibold rounded-md border px-1.5 py-0.5 min-w-[38px] text-center ${scoreColor(it.score)}`}>
-                {it.score == null ? T.na : `${it.score % 1 === 0 ? it.score : it.score.toFixed(1)}/1`}
-              </span>
-            </div>
-          </div>
-        ))}
+        {!r.hasData ? (
+          <p className="text-xs text-slate-400">{L.insufficient}</p>
+        ) : (
+          <>
+            <div className={`text-xs font-semibold ${tierColor(r.tier.color)}`}>{L.tier[r.tier.key] || r.tier.label}</div>
+            {r.breakdown.map((b) => (
+              <div key={b.key} className="flex items-center justify-between gap-2 text-sm">
+                <span className="text-slate-500">{L.crit[b.key] || b.label}{b.weight > 1 ? ` ×${b.weight}` : ""}</span>
+                <span className={`text-[11px] font-semibold rounded-md border px-1.5 py-0.5 min-w-[38px] text-center ${noteColor(b.note)}`}>
+                  {fmt(b.note)}/3
+                </span>
+              </div>
+            ))}
+          </>
+        )}
       </CardContent>
     </Card>
   );

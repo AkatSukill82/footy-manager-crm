@@ -1,0 +1,56 @@
+{
+  "name": "RecruitmentConfig",
+  "type": "object",
+  "properties": {
+    "organization_id": {
+      "type": "string",
+      "description": "ID du groupe (partage de la config entre membres)"
+    },
+    "config": {
+      "type": "string",
+      "description": "Config de scoring recrutement (barèmes, critères, seuils, profil cible) sérialisée en JSON"
+    }
+  },
+  "required": ["config"],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        { "created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } },
+        {
+          "$and": [
+            { "data.organization_id": "{{user.data.organization_id}}" },
+            { "data.organization_id": { "$ne": null } }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } },
+        {
+          "$and": [
+            { "data.organization_id": "{{user.data.organization_id}}" },
+            { "data.organization_id": { "$ne": null } }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } },
+        {
+          "$and": [
+            { "data.organization_id": "{{user.data.organization_id}}" },
+            { "data.organization_id": { "$ne": null } }
+          ]
+        }
+      ]
+    }
+  }
+}

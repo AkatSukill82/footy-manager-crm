@@ -1,10 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Trash2, Search, Clock, User, ShieldAlert, ShieldCheck, AlertTriangle, Pencil, ArrowRightLeft } from "lucide-react";
+import { Trash2, Search, Clock, User, Pencil, ArrowRightLeft } from "lucide-react";
 import { CRM_STATUS, CRM_ORDER } from "@/lib/recruitmentScoring";
-
-const compIcon = { red: ShieldAlert, amber: AlertTriangle, green: ShieldCheck };
-const compColor = { red: "text-red-500", amber: "text-amber-500", green: "text-green-600" };
 
 const isOverdue = (d) => d && new Date(d) < new Date(new Date().toDateString());
 
@@ -47,10 +44,8 @@ export default function RecruitmentPipeline({ cases = [], onDelete, onOpen, onSi
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {items.map((c) => {
-                const CI = compIcon[c.compliance_status] || ShieldCheck;
                 return (
                   <div key={c.id} className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
-                    <CI className={`w-4 h-4 flex-shrink-0 mt-0.5 ${compColor[c.compliance_status] || "text-slate-400"}`} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-800 truncate">
                         {c.name}{c.is_minor ? <span className="ml-1 text-[10px] text-red-600">mineur</span> : ""}

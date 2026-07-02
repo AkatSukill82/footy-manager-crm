@@ -25,6 +25,54 @@ const clampInt = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.floor(Number(v) |
 // Note 0..3 avec demi-points autorisés (les familles de stats valent 0 / 1,5 / 3).
 const clampNote = (v) => { const n = Number(v); return isNaN(n) ? 0 : Math.max(0, Math.min(3, Math.round(n * 2) / 2)); };
 
+// Mois entre aujourd'hui et une date (aaaa-mm-jj). NaN si vide/invalide.
+export function monthsUntil(dateStr) {
+  if (!dateStr) return NaN;
+  const end = new Date(dateStr), now = new Date();
+  if (isNaN(end.getTime())) return NaN;
+  return (end.getFullYear() - now.getFullYear()) * 12 + (end.getMonth() - now.getMonth());
+}
+
+// ── PERSISTANCE de la config de scoring (par ORGANISATION) ───────────────────
+// Migration localStorage → Base44 : la config (barèmes, critères, seuils, profil
+// cible) est partagée dans le groupe via l'entité RecruitmentConfig. Le moteur
+// reste SYNCHRONE : un cache mémoire (`_store`) est hydraté au chargement par
+// `hydrateConfigCache` (cf. useRecruitmentConfig) et sert de source prioritaire ;
+// localStorage reste un miroir de repli hors-ligne / avant hydratation.
+export const CFG_KEYS = { bands: "fdm_recruit_bands", criteria: "fdm_recruit_criteria", tiers: "fdm_recruit_tiers", target: "fdm_recruit_target" };
+const _store = Object.create(null);   // clé → objet déjà parsé (prioritaire sur localStorage)
+
+function readRaw(key) {
+  if (key in _store) return _store[key];
+  try { return JSON.parse(localStorage.getItem(key) || "null"); } catch { return null; }
+}
+function writeRaw(key, val) {
+  _store[key] = val;
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch { /* quota */ }
+}
+function removeRaw(key) {
+  delete _store[key];
+  try { localStorage.removeItem(key); } catch { /* ignore */ }
+}
+
+// Abonnement aux changements de config → les vues (fiche joueur, formulaire)
+// recalculent leur score. Pont de réactivité pour un cache hors de React.
+const _subs = new Set();
+export function onConfigChange(fn) { _subs.add(fn); return () => _subs.delete(fn); }
+function emitChange() { for (const fn of _subs) { try { fn(); } catch { /* ignore */ } } }
+
+// Hydrate le cache depuis la config d'organisation chargée (Base44).
+export function hydrateConfigCache(cfg = {}) {
+  for (const k of Object.keys(CFG_KEYS)) if (cfg && cfg[k] != null) writeRaw(CFG_KEYS[k], cfg[k]);
+  emitChange();
+}
+// Sérialise la config courante (barèmes, critères, seuils, cible) → persistance.
+export function serializeConfig() {
+  const out = {};
+  for (const [k, key] of Object.entries(CFG_KEYS)) out[k] = readRaw(key);
+  return out;
+}
+
 // ── BARÈMES configurables des critères chiffrés (bornes des 4 paliers) ───────
 // Chaque critère numérique = 3 bornes (entre les notes 3/2/1/0) + un sens :
 //   dir "desc" → valeur ≤ borne donne la note haute (plus petit = mieux)
@@ -38,11 +86,8 @@ export const NUMERIC_BANDS = {
   market_value: { label: "Valeur marchande", unit: "M€",             dir: "desc", step: 0.1,  t: [1, 5, 15] },
   production:   { label: "Production",       unit: "(buts+passes)/90", dir: "asc", step: 0.05, t: [0.75, 0.45, 0.20] },
 };
-const BANDS_KEY = "fdm_recruit_bands";
-
 export function getBandsConfig() {
-  let saved = {};
-  try { saved = JSON.parse(localStorage.getItem(BANDS_KEY) || "{}"); } catch { saved = {}; }
+  const saved = readRaw(CFG_KEYS.bands) || {};
   const out = {};
   for (const [k, def] of Object.entries(NUMERIC_BANDS)) {
     const t = Array.isArray(saved[k]?.t) && saved[k].t.length === 3
@@ -55,9 +100,9 @@ export function getBandsConfig() {
 export function setBandsConfig(cfg) {
   const slim = {};
   for (const k of Object.keys(NUMERIC_BANDS)) if (cfg?.[k]?.t) slim[k] = { t: cfg[k].t.map((x) => Number(x)) };
-  try { localStorage.setItem(BANDS_KEY, JSON.stringify(slim)); } catch { /* ignore */ }
+  writeRaw(CFG_KEYS.bands, slim); emitChange();
 }
-export function resetBandsConfig() { try { localStorage.removeItem(BANDS_KEY); } catch { /* ignore */ } }
+export function resetBandsConfig() { removeRaw(CFG_KEYS.bands); emitChange(); }
 
 // Note 0..3 d'une valeur selon une définition de bande { dir, t:[a,b,c] }.
 export function noteFromBands(value, band) {
@@ -214,12 +259,9 @@ export function scoreMajor(notes = {}, config = getCriteriaConfig()) {
   return { total, max, breakdown };
 }
 
-// ── Critères CONFIGURABLES : activer/désactiver, pondérer, ajouter (par user) ─
-const CRITERIA_KEY = "fdm_recruit_criteria";
-
+// ── Critères CONFIGURABLES : activer/désactiver, pondérer, ajouter (par org) ──
 export function getCriteriaConfig() {
-  let saved = {};
-  try { saved = JSON.parse(localStorage.getItem(CRITERIA_KEY) || "{}"); } catch { saved = {}; }
+  const saved = readRaw(CFG_KEYS.criteria) || {};
   const ov = saved.base || {};
   // Le critère "fit" n'a de sens qu'avec un profil cible : sinon on le désactive
   // (et il ne compte donc pas dans le score ni dans le max).
@@ -251,44 +293,39 @@ export function setCriteriaConfig(list) {
     if (c.custom) custom.push({ key: c.key, label: c.label, hint: c.hint, enabled: !!c.enabled, weight: clampInt(c.weight, 1, 5) });
     else base[c.key] = { enabled: !!c.enabled, weight: clampInt(c.weight, 1, 5) };
   }
-  try { localStorage.setItem(CRITERIA_KEY, JSON.stringify({ base, custom })); } catch { /* ignore */ }
+  writeRaw(CFG_KEYS.criteria, { base, custom }); emitChange();
 }
-export function resetCriteriaConfig() { try { localStorage.removeItem(CRITERIA_KEY); } catch { /* ignore */ } }
+export function resetCriteriaConfig() { removeRaw(CFG_KEYS.criteria); emitChange(); }
 export function currentScoreMax(config = getCriteriaConfig()) {
   return config.filter((c) => c.enabled).reduce((s, c) => s + 3 * c.weight, 0) || 18;
 }
 
-// ── Profil cible de recherche (par user) ─────────────────────────────────────
-const TARGET_KEY = "fdm_recruit_target";
+// ── Profil cible de recherche (par org) ──────────────────────────────────────
 const DEFAULT_TARGET = { poste: "", ageMin: "", ageMax: "", niveau: "", pays: "", pied: "" };
 export function getTargetProfile() {
-  try { return { ...DEFAULT_TARGET, ...JSON.parse(localStorage.getItem(TARGET_KEY) || "{}") }; }
-  catch { return { ...DEFAULT_TARGET }; }
+  return { ...DEFAULT_TARGET, ...(readRaw(CFG_KEYS.target) || {}) };
 }
-export function setTargetProfile(t) { try { localStorage.setItem(TARGET_KEY, JSON.stringify({ ...DEFAULT_TARGET, ...t })); } catch { /* ignore */ } }
-export function resetTargetProfile() { try { localStorage.removeItem(TARGET_KEY); } catch { /* ignore */ } }
+export function setTargetProfile(t) { writeRaw(CFG_KEYS.target, { ...DEFAULT_TARGET, ...t }); emitChange(); }
+export function resetTargetProfile() { removeRaw(CFG_KEYS.target); emitChange(); }
 
 // ── Seuils de décision CONFIGURABLES (§8/§19 : critères pas figés) ───────────
 // Le score reste /18 (6 critères × 3). Les seuils sont éditables et stockés en
 // localStorage → scoreTier/deriveStatus s'y réfèrent automatiquement.
 export const SCORE_MAX = MAJOR_CRITERIA.length * 3; // 18
-const TIERS_KEY = "fdm_recruit_tiers";
 const DEFAULT_TIERS = { priority: 16, contact: 13, watch: 9 };
 
 export function getTiers() {
   const max = currentScoreMax();
-  try {
-    const t = { ...DEFAULT_TIERS, ...JSON.parse(localStorage.getItem(TIERS_KEY) || "{}") };
-    // garde-fou : borné au max courant (dépend des critères actifs + poids)
-    return {
-      priority: clampInt(t.priority, 1, max),
-      contact:  clampInt(t.contact, 1, max),
-      watch:    clampInt(t.watch, 0, max),
-    };
-  } catch { return DEFAULT_TIERS; }
+  const t = { ...DEFAULT_TIERS, ...(readRaw(CFG_KEYS.tiers) || {}) };
+  // garde-fou : borné au max courant (dépend des critères actifs + poids)
+  return {
+    priority: clampInt(t.priority, 1, max),
+    contact:  clampInt(t.contact, 1, max),
+    watch:    clampInt(t.watch, 0, max),
+  };
 }
-export function setTiers(t) { try { localStorage.setItem(TIERS_KEY, JSON.stringify(t)); } catch { /* ignore */ } }
-export function resetTiers() { try { localStorage.removeItem(TIERS_KEY); } catch { /* ignore */ } }
+export function setTiers(t) { writeRaw(CFG_KEYS.tiers, t); emitChange(); }
+export function resetTiers() { removeRaw(CFG_KEYS.tiers); emitChange(); }
 
 // Libellé "tier" du score final (§7) — seuils configurables.
 export function scoreTier(total, tiers = getTiers()) {
@@ -296,6 +333,54 @@ export function scoreTier(total, tiers = getTiers()) {
   if (total >= tiers.contact)  return { key: "contact",  label: "Contact (après validation)", color: "blue" };
   if (total >= tiers.watch)    return { key: "watch",    label: "Observation / watchlist", color: "amber" };
   return { key: "abandon", label: "Abandon", color: "slate" };
+}
+
+// ── SCORING UNIFIÉ depuis une fiche joueur stockée ───────────────────────────
+// Réutilise EXACTEMENT le moteur (mêmes barèmes, critères, seuils) que le
+// formulaire de recrutement, mais alimenté par les seules données présentes sur
+// la fiche. Renvoie `null` pour un critère non calculable → il est IGNORÉ (et
+// non noté 0), pour ne pas pénaliser une fiche incomplète.
+export function notesFromPlayer(player = {}, { target = getTargetProfile(), bands = getBandsConfig() } = {}) {
+  const p = player || {};
+  const age = p.age != null && p.age !== "" ? Number(p.age) : null;
+  const poste = p.poste || p.position || "";
+  const stats = {
+    buts: p.buts, passes_decisives: p.passes_decisives,
+    matchs_joues: p.matchs_joues, minutes_jouees: p.minutes_jouees, note_moyenne: p.note_moyenne,
+  };
+  const months = monthsUntil(p.contrat_fin);
+  const mv = p.valeur_marchande != null && p.valeur_marchande !== "" ? Number(p.valeur_marchande) : null;
+
+  return {
+    age:          age != null ? ageScore(age, bands) : null,
+    contract:     isNaN(months) ? null : contractScore(months, false, bands),
+    level:        deriveLevelNote({ league_tier: p.league_tier, league_code: p.league_code }),
+    production:   deriveProductionNote(stats, poste, bands),
+    market_value: mv != null && !isNaN(mv) ? marketValueScore(mv, bands) : null,
+    fit:          fitScore({ positions: poste, age: p.age, division: p.ligue || p.division, country: p.pays, pied: p.pied_fort || p.pied }, target),
+    // Non dérivables d'une fiche stockée (données de sourcing / saisie manuelle).
+    agency: null, market: null,
+    stat_shooting: null, stat_passing: null, stat_possession: null, stat_defending: null,
+  };
+}
+
+// Score d'un joueur stocké : ne note que les critères ACTIVÉS dont la donnée est
+// disponible. Le tier est projeté sur le max complet (critères actifs) pour
+// rester comparable au score du formulaire de recrutement.
+export function scorePlayerFromData(player = {}, {
+  config = getCriteriaConfig(), target = getTargetProfile(), bands = getBandsConfig(), tiers = getTiers(),
+} = {}) {
+  const notes = notesFromPlayer(player, { target, bands });
+  const usable = config.filter((c) => c.enabled && notes[c.key] != null);
+  const { total, max, breakdown } = scoreMajor(notes, usable);
+  const fullMax = currentScoreMax(config);
+  const projected = max > 0 ? (total / max) * fullMax : 0;
+  return {
+    total, max, breakdown,
+    hasData: usable.length > 0,
+    ratio: max > 0 ? total / max : 0,
+    tier: scoreTier(projected, tiers),
+  };
 }
 
 // ── Scoring joueur MINEUR (§12) — 6 critères 0..3, total /18, indicatif ──────
@@ -313,58 +398,17 @@ export function scoreMinor(notes = {}) {
   return { total, breakdown };
 }
 
-// ── Conformité : feux vert / orange / rouge (§13) ────────────────────────────
-export function compliance(c = {}) {
-  const reasons = [];
-  let level = "green";
-  const bump = (lvl) => { if (lvl === "red") level = "red"; else if (lvl === "amber" && level !== "red") level = "amber"; };
-
-  if (c.is_minor && !c.fifa_agent_validated) { reasons.push("Mineur sans validation d'un agent FIFA"); bump("red"); }
-  if (c.mandate_locked) { reasons.push("Mandat exclusif verrouillé confirmé"); bump("red"); }
-
-  if (c.agency_status === "unknown") { reasons.push("Situation d'agence incertaine"); bump("amber"); }
-  if (c.contract_long) { reasons.push("Contrat long (faible fenêtre)"); bump("amber"); }
-  if (c.incomplete) { reasons.push("Fiche incomplète"); bump("amber"); }
-
-  if (level === "green" && reasons.length === 0) reasons.push("Aucun point bloquant détecté");
-  return { level, reasons };
-}
-
-// ── Statut CRM dérivé (§7 pseudo-code + §17) ─────────────────────────────────
-export function deriveStatus({ is_minor, score, compliance_status, minor_requirements_ok }, tiers = getTiers()) {
+// ── Statut CRM dérivé — depuis le SCORE seul ─────────────────────────────────
+// La logique de conformité (feux vert/orange/rouge) a été retirée du module de
+// recrutement : le statut pipeline ne dépend plus que du score (et du cas mineur).
+export function deriveStatus({ is_minor, score, minor_requirements_ok }, tiers = getTiers()) {
   if (is_minor) {
     return score >= 14 && minor_requirements_ok ? "monitor_high" : "monitor";
   }
-  if (score >= tiers.priority && compliance_status === "green") return "contact_ready";
-  if (score >= tiers.contact) return "qualified"; // contact après validation agent FIFA
+  if (score >= tiers.priority) return "contact_ready";
+  if (score >= tiers.contact) return "qualified";
   if (score >= tiers.watch) return "watchlist";
   return "closed_lost"; // abandon
-}
-
-// Peut-on passer "Contact ready" ? (§8 blocage / §17)
-export function canBeContactReady(c = {}) {
-  if (c.is_minor) return { ok: false, reason: "Mineur : approche directe interdite sans validation." };
-  if (c.compliance_status === "red") return { ok: false, reason: "Conformité rouge : à corriger avant contact." };
-  if (c.mandate_locked) return { ok: false, reason: "Mandat exclusif verrouillé." };
-  if ((Number(c.nb_clubs) || 0) < 3) return { ok: false, reason: "Moins de 3 clubs cibles réalistes." };
-  if (!c.fifa_agent_validated) return { ok: false, reason: "Validation d'un agent FIFA requise." };
-  return { ok: true, reason: "Conditions réunies pour un contact." };
-}
-
-// ── Génération du message de contact Instagram (§9) ──────────────────────────
-// Message respectueux : mentionne un élément de saison, parle projet/contrat,
-// demande si le joueur est accompagné. FR ou EN. Ne JAMAIS promettre un club.
-export function generateMessage({ name = "", club = "", season_hint = "", language = "FR" }) {
-  const prenom = String(name).split(" ")[0] || "";
-  if (language === "EN") {
-    return `Hi ${prenom}, I've been following your season at ${club || "your club"}${season_hint ? ` (${season_hint})` : ""} and I'm impressed by your progress. I work with ProPulse Agency & Academy on career planning and market positioning. Out of curiosity — are you currently represented? Happy to share a concrete plan if it's useful to you.`;
-  }
-  return `Bonjour ${prenom}, je suis ta saison à ${club || "ton club"}${season_hint ? ` (${season_hint})` : ""} et ta progression m'impressionne. Je travaille avec ProPulse Agency & Academy sur le projet de carrière et le positionnement marché. Par curiosité : es-tu accompagné actuellement ? Je peux te partager un plan concret si ça t'est utile.`;
-}
-
-// Le message ne se génère que si fiche complète + conformité non rouge + non mineur (§9/§17).
-export function canGenerateMessage(c = {}) {
-  return c.compliance_status !== "red" && !c.incomplete && !c.is_minor;
 }
 
 // Libellés CRM (§14) pour l'affichage.

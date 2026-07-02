@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { getTiers, setTiers, resetTiers, currentScoreMax } from "@/lib/recruitmentScoring";
+import { useRecruitmentConfig } from "@/lib/useRecruitmentConfig";
 import { SlidersHorizontal, RotateCcw } from "lucide-react";
 
 /**
@@ -23,8 +24,9 @@ export default function RecruitmentScoringConfig() {
   const [open, setOpen] = useState(false);
   const [t, setT] = useState(getTiers);
   const max = currentScoreMax();
-  const save = (next) => { setT(next); setTiers(next); };
-  const reset = () => { resetTiers(); setT(getTiers()); };
+  const { save: saveOrg } = useRecruitmentConfig();
+  const save = (next) => { setT(next); setTiers(next); saveOrg.mutate(); };
+  const reset = () => { resetTiers(); setT(getTiers()); saveOrg.mutate(); };
   const incoherent = t.watch >= t.contact || t.contact >= t.priority;
 
   return (

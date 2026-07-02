@@ -44,7 +44,7 @@ function toPayload(row) {
   return {
     pathway: "major", name: row.name, is_minor: age > 0 && age < 18, age: age || null,
     positions: row.positions || "", club: row.club || "", division: row.division || "",
-    status: "long_list", compliance_status: "amber", score: 0, next_action: "Qualifier le profil",
+    status: "long_list", score: 0, next_action: "Qualifier le profil",
     details: JSON.stringify({
       name: row.name, age: age ? String(age) : "", positions: row.positions || "", club: row.club || "",
       division: row.division || "", goals: row.goals || "", assists: row.assists || "", contract_end: "",

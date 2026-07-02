@@ -2,20 +2,21 @@ import React, { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ExternalLink, ShieldAlert, ShieldCheck, AlertTriangle, Save, Wand2, Copy, UserPlus, Loader2, Target } from "lucide-react";
+import { ExternalLink, ShieldAlert, Save, UserPlus, Loader2, Target } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { addPlayerAsProspect } from "@/lib/addProspect";
 import {
   TM_LINKS, ageScore, contractScore, marketScore, scoreMajor, scoreTier,
-  compliance, deriveStatus, canBeContactReady, generateMessage, canGenerateMessage, isOffensive,
-  getCriteriaConfig, getTargetProfile, fitScore, marketValueScore,
+  deriveStatus, isOffensive,
+  getCriteriaConfig, getTargetProfile, fitScore, marketValueScore, monthsUntil,
 } from "@/lib/recruitmentScoring";
+import { useConfigVersion } from "@/lib/useRecruitmentConfig";
 import { playerToMajorFields } from "@/lib/playerLookup";
 import PlayerSearchBox from "./PlayerSearchBox";
+import { useFotmobScout, FotmobFamilyBars, FotmobScoutDetail } from "./FotmobScout";
 
 const F = ({ label, children }) => (
   <div><Label className="text-[11px] text-slate-500 mb-1 block">{label}</Label>{children}</div>
@@ -36,13 +37,6 @@ const Sel = ({ label, value, onChange, options }) => (
   </Select></F>
 );
 
-const monthsUntil = (d) => {
-  if (!d) return NaN;
-  const end = new Date(d), now = new Date();
-  if (isNaN(end.getTime())) return NaN;
-  return (end.getFullYear() - now.getFullYear()) * 12 + (end.getMonth() - now.getMonth());
-};
-
 export default function MajorPlayerForm({ initial = null, editId = null, onSave, saving, criteriaVersion = 0 }) {
   const [f, setF] = useState(() => ({
     name: "", age: "", positions: "", nationalite: "", taille: "", pied: "",
@@ -59,11 +53,12 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
   }));
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const setNote = (key, val) => setF((s) => ({ ...s, criteriaNotes: { ...(s.criteriaNotes || {}), [key]: val } }));
-  // Config critères + profil cible (par utilisateur), recalculés quand ils changent.
-  const criteriaCfg = useMemo(() => getCriteriaConfig(), [criteriaVersion]);
-  const target = useMemo(() => getTargetProfile(), [criteriaVersion]);
+  // Config critères + profil cible (partagés par organisation), recalculés quand
+  // ils changent — édition locale (criteriaVersion) OU hydratation Base44 (cfgV).
+  const cfgV = useConfigVersion();
+  const criteriaCfg = useMemo(() => getCriteriaConfig(), [criteriaVersion, cfgV]);
+  const target = useMemo(() => getTargetProfile(), [criteriaVersion, cfgV]);
   const hasTarget = !!(target.poste || target.ageMin || target.ageMax || target.niveau || target.pays || target.pied);
-  const [message, setMessage] = useState(initial?.message ?? initial?.message_text ?? "");
 
   // Préremplissage depuis le moteur de recherche (même moteur que la page Joueurs).
   const [lastFound, setLastFound] = useState(null);   // profil recherché → bouton « prospect »
@@ -93,6 +88,11 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
   const isMinor = age > 0 && age < 18;
   const offensive = isOffensive(f.positions);
 
+  // Stats FotMob (détail + percentiles par famille) : auto-chargées pour un
+  // joueur issu de la recherche, sinon à la demande via le bouton du panneau.
+  const scout = useFotmobScout({ name: f.name, club: f.club, fotmobId: lastFound?.fotmob_id, auto: !!lastFound });
+  const familyPercentiles = scout.percentiles || lastFound?.stat_percentiles || null;
+
   const r = useMemo(() => {
     const agencyNote = f.mandate_locked ? 0 : f.agency_status === "none" ? 3 : f.agency_status === "small" ? 2 : f.agency_status === "large" ? 1 : 1;
     const notes = {
@@ -112,27 +112,9 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
     };
     const { total, max, breakdown } = scoreMajor(notes, criteriaCfg);
     const tier = scoreTier(total);
-    const incomplete = !f.name || !f.age || !f.club || !f.division || !f.positions;
-    const comp = compliance({
-      is_minor: isMinor, fifa_agent_validated: f.fifa_agent_validated, mandate_locked: f.mandate_locked,
-      agency_status: f.agency_status, contract_long: monthsUntil(f.contract_end) > 24, incomplete,
-    });
-    const status = deriveStatus({ is_minor: isMinor, score: total, compliance_status: comp.level });
-    const ready = canBeContactReady({
-      is_minor: isMinor, compliance_status: comp.level,
-      mandate_locked: f.mandate_locked, nb_clubs: f.nb_clubs, fifa_agent_validated: f.fifa_agent_validated,
-    });
-    return { total, max, breakdown, tier, comp, status, ready, incomplete };
+    const status = deriveStatus({ is_minor: isMinor, score: total });
+    return { total, max, breakdown, tier, status };
   }, [f, age, isMinor, criteriaCfg]);
-
-  const seasonHint = offensive
-    ? [f.goals && `${f.goals} buts`, f.assists && `${f.assists} passes`].filter(Boolean).join(", ")
-    : [f.matches && `${f.matches} matchs`, f.minutes && `${f.minutes} min`].filter(Boolean).join(", ");
-
-  const handleGenerate = () => {
-    if (!canGenerateMessage({ compliance_status: r.comp.level, incomplete: r.incomplete, is_minor: isMinor })) return;
-    setMessage(generateMessage({ name: f.name, club: f.club, season_hint: seasonHint, language: f.language }));
-  };
 
   const handleSave = () => {
     onSave?.({
@@ -141,16 +123,12 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
       positions: f.positions, club: f.club, country: f.country, division: f.division,
       contract_end: f.contract_end || "", market_value: Number(f.market_value) || null,
       agency_status: f.agency_status, agent_name: f.agent_name, mandate_locked: !!f.mandate_locked,
-      instagram: f.instagram, instagram_validated: !!f.instagram_validated, fifa_agent_validated: !!f.fifa_agent_validated,
-      language: f.language, message_text: message,
-      score: r.total, score_breakdown: JSON.stringify(r.breakdown), compliance_status: r.comp.level,
+      instagram: f.instagram, language: f.language,
+      score: r.total, score_breakdown: JSON.stringify(r.breakdown),
       status: r.status, owner: f.owner, next_action: f.next_action, next_action_date: f.next_action_date || "",
-      details: JSON.stringify({ ...f, message }), // état complet du formulaire → édition round-trip
+      details: JSON.stringify({ ...f }), // état complet du formulaire → édition round-trip
     });
   };
-
-  const CompIcon = r.comp.level === "red" ? ShieldAlert : r.comp.level === "amber" ? AlertTriangle : ShieldCheck;
-  const compBox = r.comp.level === "red" ? "bg-red-50 border-red-200 text-red-800" : r.comp.level === "amber" ? "bg-amber-50 border-amber-200 text-amber-800" : "bg-green-50 border-green-200 text-green-800";
 
   return (
     <div className="space-y-4">
@@ -240,7 +218,7 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
         </Section>
       )}
 
-      {/* ── RÉCAP / SCORING / CONFORMITÉ ── */}
+      {/* ── RÉCAP : SCORE + DIAGRAMME FOTMOB ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t border-slate-200">
         <div className="rounded-xl border border-slate-200 p-4">
           <div className="text-xs text-slate-500 mb-1">Score recrutement</div>
@@ -250,25 +228,11 @@ export default function MajorPlayerForm({ initial = null, editId = null, onSave,
             {r.breakdown.map((b) => <div key={b.key} className="flex justify-between text-[11px] text-slate-500"><span>{b.label}</span><span className="font-medium text-slate-700">{b.note}/3</span></div>)}
           </div>
         </div>
-        <div className={`rounded-xl border p-4 ${compBox} md:col-span-2`}>
-          <div className="flex items-center gap-2 font-semibold mb-1"><CompIcon className="w-4 h-4" /> Conformité — {r.comp.level === "red" ? "rouge" : r.comp.level === "amber" ? "orange" : "vert"}</div>
-          <ul className="text-xs space-y-0.5 list-disc list-inside">{r.comp.reasons.map((x, i) => <li key={i}>{x}</li>)}</ul>
-          <div className="text-[11px] mt-2 opacity-90">Contact ready : {r.ready.ok ? "✅ possible" : `🚫 ${r.ready.reason}`}</div>
-        </div>
+        <FotmobFamilyBars percentiles={familyPercentiles} loading={scout.loading} onLoad={scout.load} />
       </div>
 
-      {/* Message */}
-      <div className="rounded-xl border border-slate-200 p-4 space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Message de contact ({f.language})</div>
-          <div className="flex gap-2">
-            <Button onClick={handleGenerate} size="sm" variant="outline" className="gap-1.5" disabled={!canGenerateMessage({ compliance_status: r.comp.level, incomplete: r.incomplete, is_minor: isMinor })}><Wand2 className="w-4 h-4" /> Générer</Button>
-            <Button onClick={() => message && navigator.clipboard?.writeText(message)} size="sm" variant="outline" className="gap-1.5" disabled={!message}><Copy className="w-4 h-4" /> Copier</Button>
-          </div>
-        </div>
-        <Textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={4} placeholder="Le message se génère si la fiche est complète, l'IG validé et la conformité non rouge." />
-        <p className="text-[10px] text-slate-400">Ne jamais promettre un club, un salaire ou un transfert. Mentionner un élément précis de la saison.</p>
-      </div>
+      {/* ── STATS FOTMOB COMPLÈTES + ANALYSE ── */}
+      <FotmobScoutDetail stats={scout.stats} percentiles={familyPercentiles} loading={scout.loading} error={scout.error} onLoad={scout.load} />
 
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={saving || !f.name} className="gap-1.5"><Save className="w-4 h-4" /> Enregistrer le dossier</Button>

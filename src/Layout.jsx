@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "./utils";
 import {
-  Users, Star, LogOut, BarChart3, Bell, Phone, Shield,
+  Users, Star, LogOut, BarChart3, Phone, Shield,
   FileText, Network, ArrowRightLeft, Menu, X, Building2,
   Sparkles, Newspaper, FileSpreadsheet, CalendarDays, UserCircle,
   ClipboardList, Columns, ChevronDown, Search, GitCompare, Wallet, Store,
@@ -17,6 +17,7 @@ import { t } from "./i18n/translations";
 import { useQuery } from "@tanstack/react-query";
 import { canAccessPage } from "@/lib/planAccess";
 import GlobalSearch from "./components/ui/GlobalSearch";
+import { useRecruitmentConfig } from "@/lib/useRecruitmentConfig";
 
 // Pages principales — toujours visibles
 const CORE_PAGES = ["Dashboard", "Players", "Clubs", "MyWatchList", "ClubContacts", "Organization"];
@@ -114,6 +115,10 @@ export default function Layout({ children, currentPageName }) {
     queryFn: () => base44.auth.me(),
     staleTime: Infinity,
   });
+
+  // Hydrate la config de scoring recrutement (partagée par organisation) dès le
+  // login → score cohérent sur la fiche joueur et le formulaire de recrutement.
+  useRecruitmentConfig();
 
   // Menu filtré selon la formule (Standard masque les pages Pro).
   const accessibleItems = items.filter(i => canAccessPage(user, i.name));

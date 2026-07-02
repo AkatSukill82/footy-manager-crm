@@ -121,7 +121,7 @@ function ClubNeedForm({ initial = null, editId = null, onSave, saving }) {
     ...(editId ? { id: editId } : {}),
     pathway: "club_need", name: `Besoin ${f.poste || "poste"} — ${f.club || "club"}`,
     is_minor: false, club: f.club, country: f.country, positions: f.poste, division: f.niveau,
-    status: "long_list", compliance_status: "green", next_action: "Constituer la shortlist de profils compatibles",
+    status: "long_list", next_action: "Constituer la shortlist de profils compatibles",
     details: JSON.stringify({ ...f }),
   });
   return (

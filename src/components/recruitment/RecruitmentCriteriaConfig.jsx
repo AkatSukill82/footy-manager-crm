@@ -4,6 +4,7 @@ import {
   getTargetProfile, setTargetProfile,
   getBandsConfig, setBandsConfig, resetBandsConfig,
 } from "@/lib/recruitmentScoring";
+import { useRecruitmentConfig } from "@/lib/useRecruitmentConfig";
 import { Plus, Trash2, RotateCcw, Save, Sliders } from "lucide-react";
 
 // Réglage par utilisateur : activer/désactiver des critères, les pondérer,
@@ -13,6 +14,7 @@ export default function RecruitmentCriteriaConfig({ onSaved }) {
   const [target, setTarget] = useState(() => getTargetProfile());
   const [bands, setBands] = useState(() => getBandsConfig());
   const [saved, setSaved] = useState(false);
+  const { save: saveOrg } = useRecruitmentConfig();
 
   const upd = (key, patch) => setList((l) => l.map((c) => (c.key === key ? { ...c, ...patch } : c)));
   const addCustom = () => setList((l) => [...l, { key: "c_" + Date.now(), label: "Nouveau critère", hint: "Faible / Moyen / Bon / Excellent", custom: true, enabled: true, weight: 1 }]);
@@ -24,10 +26,15 @@ export default function RecruitmentCriteriaConfig({ onSaved }) {
     setCriteriaConfig(list);
     setTargetProfile(target);
     setBandsConfig(bands);
+    saveOrg.mutate();                 // persistance partagée par organisation (Base44)
     setSaved(true); setTimeout(() => setSaved(false), 2000);
     onSaved?.();
   };
-  const reset = () => { resetCriteriaConfig(); resetBandsConfig(); setList(getCriteriaConfig()); setBands(getBandsConfig()); };
+  const reset = () => {
+    resetCriteriaConfig(); resetBandsConfig();
+    setList(getCriteriaConfig()); setBands(getBandsConfig());
+    saveOrg.mutate();
+  };
 
   const max = list.filter((c) => c.enabled).reduce((s, c) => s + 3 * c.weight, 0);
 
